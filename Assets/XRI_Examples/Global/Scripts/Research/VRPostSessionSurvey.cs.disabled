@@ -1,0 +1,285 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace UnityEngine.XR.Content.Interaction.Research
+{
+    /// <summary>
+    /// Full NASA-TLX post-session survey with 6 workload subscales + Presence + Sickness.
+    /// Design: NASA TLX blue/white/gray clinical style from PIC_REF images.
+    /// Total 8 rating sliders, each 0-10 integer scale.
+    /// </summary>
+    public class VRPostSessionSurvey : MonoBehaviour
+    {
+        [Header("UI References - Header")]
+        [SerializeField] private Canvas _canvas;
+        [SerializeField] private TMPro.TextMeshProUGUI _titleText;
+        [SerializeField] private TMPro.TextMeshProUGUI _subtitleText;
+        [SerializeField] private Image _borderImage;
+        [SerializeField] private Image _backgroundImage;
+
+        [Header("NASA-TLX Sliders (6 subscales)")]
+        [SerializeField] private Slider _mentalDemandSlider;
+        [SerializeField] private Slider _physicalDemandSlider;
+        [SerializeField] private Slider _temporalDemandSlider;
+        [SerializeField] private Slider _performanceSlider;
+        [SerializeField] private Slider _effortSlider;
+        [SerializeField] private Slider _frustrationSlider;
+
+        [Header("Additional Ratings")]
+        [SerializeField] private Slider _presenceSlider;
+        [SerializeField] private Slider _sicknessSlider;
+
+        [Header("Rating Display Texts")]
+        [SerializeField] private TMPro.TextMeshProUGUI _mentalDemandValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _physicalDemandValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _temporalDemandValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _performanceValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _effortValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _frustrationValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _presenceValue;
+        [SerializeField] private TMPro.TextMeshProUGUI _sicknessValue;
+
+        [Header("Low/High Labels")]
+        [SerializeField] private TMPro.TextMeshProUGUI _mentalDemandLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _mentalDemandHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _physicalDemandLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _physicalDemandHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _temporalDemandLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _temporalDemandHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _performanceLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _performanceHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _effortLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _effortHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _frustrationLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _frustrationHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _presenceLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _presenceHigh;
+        [SerializeField] private TMPro.TextMeshProUGUI _sicknessLow;
+        [SerializeField] private TMPro.TextMeshProUGUI _sicknessHigh;
+
+        [Header("Submit")]
+        [SerializeField] private Button _submitButton;
+        [SerializeField] private TMPro.TextMeshProUGUI _submitText;
+
+        [Header("Design (PIC_REF NASA TLX Style)")]
+        [SerializeField] private Color _panelBg = new Color(0.95f, 0.95f, 0.97f, 0.95f);
+        [SerializeField] private Color _borderColor = new Color(0.18f, 0.35f, 0.65f, 1f);
+        [SerializeField] private Color _accentColor = new Color(0.25f, 0.55f, 0.85f, 1f);
+        [SerializeField] private Color _textColor = new Color(0.12f, 0.12f, 0.18f, 1f);
+        [SerializeField] private Color _sliderFill = new Color(0.30f, 0.62f, 0.92f, 1f);
+        [SerializeField] private Color _submitButtonColor = new Color(0.20f, 0.50f, 0.80f, 1f);
+        [SerializeField] private Color _labelLowColor = new Color(0.45f, 0.45f, 0.50f, 1f);
+        [SerializeField] private Color _labelHighColor = new Color(0.45f, 0.45f, 0.50f, 1f);
+
+        [Header("Positioning")]
+        [SerializeField] private Transform _headTransform;
+        [SerializeField] private float _distanceFromHead = 1.2f;
+        [SerializeField] private float _heightOffset = -0.1f;
+        [SerializeField] private float _followSpeed = 3f;
+        [SerializeField] private float _lookAtSpeed = 5f;
+
+        [Header("References")]
+        [SerializeField] private VRParticipantMetadata _metadata;
+        [SerializeField] private VRSessionManager _sessionManager;
+
+        private bool _isSubmitted;
+        private CanvasGroup _canvasGroup;
+
+        // NASA-TLX score storage
+        private int _mentalDemand, _physicalDemand, _temporalDemand;
+        private int _performance, _effort, _frustration;
+        private int _presence, _sickness;
+
+        private void Awake()
+        {
+            if (_canvas == null) _canvas = GetComponentInChildren<Canvas>();
+            if (_canvas != null)
+            {
+                _canvas.renderMode = RenderMode.WorldSpace;
+                _canvasGroup = _canvas.gameObject.GetComponent<CanvasGroup>();
+                if (_canvasGroup == null) _canvasGroup = _canvas.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            if (_headTransform == null)
+            {
+                var cam = Camera.main;
+                if (cam != null) _headTransform = cam.transform;
+            }
+
+            SetupSlider(_mentalDemandSlider, OnMentalDemandChanged);
+            SetupSlider(_physicalDemandSlider, OnPhysicalDemandChanged);
+            SetupSlider(_temporalDemandSlider, OnTemporalDemandChanged);
+            SetupSlider(_performanceSlider, OnPerformanceChanged);
+            SetupSlider(_effortSlider, OnEffortChanged);
+            SetupSlider(_frustrationSlider, OnFrustrationChanged);
+            SetupSlider(_presenceSlider, OnPresenceChanged);
+            SetupSlider(_sicknessSlider, OnSicknessChanged);
+
+            if (_submitButton != null)
+                _submitButton.onClick.AddListener(OnSubmit);
+
+            SetLabels();
+            ApplyDesignStyle();
+            Hide();
+        }
+
+        private void SetupSlider(Slider slider, UnityEngine.Events.UnityAction<float> callback)
+        {
+            if (slider == null) return;
+            slider.minValue = 0;
+            slider.maxValue = 10;
+            slider.wholeNumbers = true;
+            slider.value = 0;
+            slider.onValueChanged.AddListener(callback);
+        }
+
+        private void LateUpdate()
+        {
+            if (_canvas == null || _headTransform == null) return;
+
+            Vector3 targetPos = _headTransform.position
+                + _headTransform.forward * _distanceFromHead
+                + Vector3.up * _heightOffset;
+
+            _canvas.transform.position = Vector3.Lerp(
+                _canvas.transform.position, targetPos, _followSpeed * Time.deltaTime);
+
+            Vector3 lookDir = _headTransform.position - _canvas.transform.position;
+            lookDir.y = 0;
+            if (lookDir.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(-lookDir);
+                _canvas.transform.rotation = Quaternion.Slerp(
+                    _canvas.transform.rotation, targetRot, _lookAtSpeed * Time.deltaTime);
+            }
+        }
+
+        public void Show()
+        {
+            _isSubmitted = false;
+            ResetAllSliders();
+            gameObject.SetActive(true);
+            if (_canvasGroup != null) _canvasGroup.alpha = 1f;
+        }
+
+        public void Hide() => gameObject.SetActive(false);
+
+        private void ResetAllSliders()
+        {
+            SetSliderValue(_mentalDemandSlider, _mentalDemandValue, 0);
+            SetSliderValue(_physicalDemandSlider, _physicalDemandValue, 0);
+            SetSliderValue(_temporalDemandSlider, _temporalDemandValue, 0);
+            SetSliderValue(_performanceSlider, _performanceValue, 0);
+            SetSliderValue(_effortSlider, _effortValue, 0);
+            SetSliderValue(_frustrationSlider, _frustrationValue, 0);
+            SetSliderValue(_presenceSlider, _presenceValue, 0);
+            SetSliderValue(_sicknessSlider, _sicknessValue, 0);
+            _mentalDemand = _physicalDemand = _temporalDemand = 0;
+            _performance = _effort = _frustration = 0;
+            _presence = _sickness = 0;
+        }
+
+        private void SetSliderValue(Slider slider, TMPro.TextMeshProUGUI text, int val)
+        {
+            if (slider != null) slider.value = val;
+            if (text != null) text.text = val.ToString();
+        }
+
+        // Callbacks
+        private void OnMentalDemandChanged(float v) { _mentalDemand = (int)v; UpdateVal(_mentalDemandValue, v); }
+        private void OnPhysicalDemandChanged(float v) { _physicalDemand = (int)v; UpdateVal(_physicalDemandValue, v); }
+        private void OnTemporalDemandChanged(float v) { _temporalDemand = (int)v; UpdateVal(_temporalDemandValue, v); }
+        private void OnPerformanceChanged(float v) { _performance = (int)v; UpdateVal(_performanceValue, v); }
+        private void OnEffortChanged(float v) { _effort = (int)v; UpdateVal(_effortValue, v); }
+        private void OnFrustrationChanged(float v) { _frustration = (int)v; UpdateVal(_frustrationValue, v); }
+        private void OnPresenceChanged(float v) { _presence = (int)v; UpdateVal(_presenceValue, v); }
+        private void OnSicknessChanged(float v) { _sickness = (int)v; UpdateVal(_sicknessValue, v); }
+
+        private void UpdateVal(TMPro.TextMeshProUGUI text, float v)
+        {
+            if (text != null) text.text = ((int)v).ToString();
+        }
+
+        private void OnSubmit()
+        {
+            if (_isSubmitted) return;
+            _isSubmitted = true;
+
+            // Transfer all scores to metadata
+            if (_metadata != null)
+            {
+                _metadata.SetNASA_TLXScores(_mentalDemand, _physicalDemand, _temporalDemand,
+                    _performance, _effort, _frustration);
+                _metadata.SetPresenceRating(_presence);
+                _metadata.SetSicknessRating(_sickness);
+            }
+
+            // Export session summary + master CSV
+            if (_metadata != null)
+            {
+                string sessionPath = System.IO.Path.Combine(
+                    Application.persistentDataPath, "VRResearch", _metadata.GetSessionFolderName());
+                _metadata.ExportSessionSummary(sessionPath);
+                _metadata.AppendMasterCSV(sessionPath);
+            }
+
+            // Stop recording
+            if (_sessionManager != null && _sessionManager.IsRecording)
+                _sessionManager.StopSession();
+
+            if (_submitButton != null) _submitButton.interactable = false;
+            if (_submitText != null) _submitText.text = "Submitted ✓";
+
+            Debug.Log($"[VRResearch] NASA-TLX submitted: MD={_mentalDemand} PD={_physicalDemand} " +
+                $"TD={_temporalDemand} P={_performance} E={_effort} F={_frustration} " +
+                $"Presence={_presence} Sickness={_sickness}");
+
+            Invoke(nameof(Hide), 3f);
+        }
+
+        private void SetLabels()
+        {
+            // NASA-TLX standard low/high labels
+            SetLabel(_mentalDemandLow, "Low"); SetLabel(_mentalDemandHigh, "High");
+            SetLabel(_physicalDemandLow, "Low"); SetLabel(_physicalDemandHigh, "High");
+            SetLabel(_temporalDemandLow, "Low"); SetLabel(_temporalDemandHigh, "High");
+            SetLabel(_performanceLow, "Good"); SetLabel(_performanceHigh, "Poor");
+            SetLabel(_effortLow, "Low"); SetLabel(_effortHigh, "High");
+            SetLabel(_frustrationLow, "Low"); SetLabel(_frustrationHigh, "High");
+            SetLabel(_presenceLow, "Not at all"); SetLabel(_presenceHigh, "Very much");
+            SetLabel(_sicknessLow, "None"); SetLabel(_sicknessHigh, "Severe");
+        }
+
+        private void SetLabel(TMPro.TextMeshProUGUI text, string val)
+        {
+            if (text != null) text.text = val;
+        }
+
+        private void ApplyDesignStyle()
+        {
+            if (_borderImage != null) _borderImage.color = _borderColor;
+            if (_backgroundImage != null) _backgroundImage.color = _panelBg;
+            if (_submitButton != null)
+            {
+                var btnImg = _submitButton.GetComponent<Image>();
+                if (btnImg != null) btnImg.color = _submitButtonColor;
+            }
+
+            ApplySliderColor(_mentalDemandSlider);
+            ApplySliderColor(_physicalDemandSlider);
+            ApplySliderColor(_temporalDemandSlider);
+            ApplySliderColor(_performanceSlider);
+            ApplySliderColor(_effortSlider);
+            ApplySliderColor(_frustrationSlider);
+            ApplySliderColor(_presenceSlider);
+            ApplySliderColor(_sicknessSlider);
+        }
+
+        private void ApplySliderColor(Slider slider)
+        {
+            if (slider == null) return;
+            var fill = slider.fillRect?.GetComponent<Image>();
+            if (fill != null) fill.color = _sliderFill;
+        }
+    }
+}
