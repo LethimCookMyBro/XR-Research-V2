@@ -1,0 +1,30 @@
+{
+  "task": "CPU Socket Interaction Prototype - isolated PlayMode API-loop verification only",
+  "scene": "untitled temporary scene, never saved",
+  "provisional": {
+    "socketBoxColliderSize_m": [0.04, 0.01, 0.04],
+    "note": "Collider size and all snap distance/angle tolerances used here are PROVISIONAL prototype values only."
+  },
+  "positions": {
+    "anchorWorldPosition": {"x":0.018900,"y":-0.008550,"z":-0.077500},
+    "cpuPositionBeforeForcedSelectEnter": {"x":0.018900,"y":-0.008550,"z":-0.077500},
+    "cpuPositionAfterSettle": {"x":0.018900,"y":0.041450,"z":-0.077500}
+  },
+  "settledOffset": {
+    "positionOffset_m": {"x":0.000000,"y":0.000000,"z":0.000000},
+    "positionOffsetMagnitude_m": 0.000000,
+    "rotationOffset_deg": 0.000000,
+    "socketHasSelectionAfterSettle": true
+  },
+  "telemetry": {
+    "hoverEnteredCount": 1,
+    "hoverExitedCount": 1,
+    "selectEnteredCount": 1,
+    "selectExitedCount": 1,
+    "hoverCountsBalanced": true,
+    "selectCountsBalanced": true,
+    "eventLog": ["SelectEntered @t=23.063","HoverEntered @t=23.067","SelectExited @t=39.258","HoverExited @t=39.267"]
+  },
+  "consoleWarningsOrErrorsDuringRun": 0,
+  "consoleIssues": []
+}

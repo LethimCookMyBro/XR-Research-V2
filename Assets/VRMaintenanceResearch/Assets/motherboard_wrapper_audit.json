@@ -1,0 +1,132 @@
+{
+    "sourceAssetPath": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+    "generatedAtUtc": "2026-08-29T07:03:56.7351545Z",
+    "referenceRoot": {
+        "localPosition": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "localEulerAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "localRotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0,
+            "w": 1.0
+        },
+        "localScale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+        }
+    },
+    "visualModelCorrection": {
+        "localPosition": {
+            "x": 0.020879855379462243,
+            "y": 0.13415507972240449,
+            "z": 0.22628004848957063
+        },
+        "localEulerAngles": {
+            "x": 293.907958984375,
+            "y": 149.21803283691407,
+            "z": 212.6609344482422
+        },
+        "localRotation": {
+            "x": -0.816260814666748,
+            "y": 0.08834992349147797,
+            "z": -0.06566469371318817,
+            "w": 0.5670985579490662
+        },
+        "localScale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+        }
+    },
+    "originalBakedNodeTransform": {
+        "localPosition": {
+            "x": 0.0,
+            "y": 0.3999999463558197,
+            "z": 0.0
+        },
+        "localEulerAngles": {
+            "x": 69.61997985839844,
+            "y": 178.84942626953126,
+            "z": 191.55499267578126
+        },
+        "localRotation": {
+            "x": 0.816260814666748,
+            "y": -0.08834991604089737,
+            "z": 0.06566469371318817,
+            "w": 0.5670984983444214
+        },
+        "localScale": {
+            "x": 1.0,
+            "y": 1.369889736175537,
+            "z": 1.0
+        }
+    },
+    "meshLocalBounds_rawAsset": {
+        "center": {
+            "x": 0.00702272355556488,
+            "y": 0.0016933884471654893,
+            "z": 0.14868135750293733
+        },
+        "size": {
+            "x": 0.248353511095047,
+            "y": 0.022466447204351426,
+            "z": 0.304999977350235
+        }
+    },
+    "worldBounds_beforeCorrection_broken": {
+        "center": {
+            "x": 0.007384876254945993,
+            "y": 0.2593441605567932,
+            "z": -0.048189837485551837
+        },
+        "size": {
+            "x": 0.25119858980178835,
+            "y": 0.3137328624725342,
+            "z": 0.1858389973640442
+        }
+    },
+    "worldBounds_afterCorrection_wrapped": {
+        "center": {
+            "x": 4.656612873077393e-10,
+            "y": -2.561137080192566e-9,
+            "z": 0.0
+        },
+        "size": {
+            "x": 0.248353511095047,
+            "y": 0.03077656961977482,
+            "z": 0.304999977350235
+        }
+    },
+    "expectedSizeFromImmutableNodeScale": {
+        "x": 0.248353511095047,
+        "y": 0.030776554718613626,
+        "z": 0.304999977350235
+    },
+    "thinnestWorldAxisAfterCorrection": "Y",
+    "thinnestWorldAxisValueAfterCorrection": 0.03077656961977482,
+    "residualWorldRotationAngleDegrees": 0.0,
+    "pivotToWorldOriginDistanceMeters": 2.6031257149838895e-9,
+    "vertexCount": 36623,
+    "expectedVertexCount": 36623,
+    "materialCount": 12,
+    "expectedMaterialCount": 12,
+    "note_scaleNotCorrected": "Visual_Model received only the inverse Position+Rotation, as specified. The source node's own baked non-uniform scale (see originalBakedNodeTransform.localScale) is left intact, so the corrected thickness equals meshLocalBounds.size * bakedLocalScale, not the raw unscaled mesh-local thickness. Canceling that residual scale too would require either a wrapper Scale (rejected: non-uniform scale composed with the cancelling rotation would shear the mesh, since Unity Transforms apply Scale before Rotation) or editing the instance's own baked Scale directly (rejected: out of scope, only Position+Quaternion were requested).",
+    "acceptance": {
+        "wrapperRootIsPureIdentity": true,
+        "axisAlignmentWithinTolerance": true,
+        "pivotUsableWithinTolerance": true,
+        "vertexCountMatches": true,
+        "materialCountMatches": true,
+        "scaleNotSheared": true,
+        "allChecksPassed": true
+    }
+}

@@ -1,0 +1,232 @@
+{
+  "targetFootprintXZ_m": [0.244, 0.305],
+  "candidates": [
+    {
+      "rank": 1,
+      "path": "Assets/VRMaintenanceResearch/Assets/PCB_iPoly3D.glb",
+      "fileSizeBytes": 18772,
+      "rankScore": 49.226,
+      "totalNodeCount": 2,
+      "childNodeCount": 1,
+      "meshCount": 1,
+      "isFlatSingleMesh": false,
+      "totalVertexCount": 392,
+      "totalTriangleCount": 318,
+      "rootLocalPosition": [0.000000, 0.000000, 0.000000],
+      "rootLocalRotationEuler": [0.000000, 0.000000, 0.000000],
+      "rootLocalScale": [1.000000, 1.000000, 1.000000],
+      "rootHasRotationOffset": false,
+      "rootHasNonUniformScale": false,
+      "meshLocalBoundsSize": [0.031586, 0.024887, 0.000772],
+      "meshLocalBoundsCenter": [0.000000, 0.000000, 0.000044],
+      "pivotOffset": [0.000000, 0.000000, 0.000044],
+      "pivotOffsetMagnitude": 0.000044,
+      "thinnestAxisName": "Z",
+      "thinnestAxisValue": 0.000772,
+      "materialCount": 3,
+      "materialsWithAnyTexture": 0,
+      "materials": [
+        {
+          "name": "Green",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "conduct",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "black",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        }
+      ]
+    },
+    {
+      "rank": 2,
+      "path": "Assets/VRMaintenanceResearch/Assets/PCB_iPoly3D_alt.glb",
+      "fileSizeBytes": 55056,
+      "rankScore": 49.142,
+      "totalNodeCount": 2,
+      "childNodeCount": 1,
+      "meshCount": 1,
+      "isFlatSingleMesh": false,
+      "totalVertexCount": 1440,
+      "totalTriangleCount": 772,
+      "rootLocalPosition": [0.000000, 0.000000, 0.000000],
+      "rootLocalRotationEuler": [0.000000, 0.000000, 0.000000],
+      "rootLocalScale": [1.000000, 1.000000, 1.000000],
+      "rootHasRotationOffset": false,
+      "rootHasNonUniformScale": false,
+      "meshLocalBoundsSize": [0.026898, 0.042095, 0.000779],
+      "meshLocalBoundsCenter": [0.000000, 0.001523, -0.000009],
+      "pivotOffset": [0.000000, 0.001523, -0.000009],
+      "pivotOffsetMagnitude": 0.001523,
+      "thinnestAxisName": "Z",
+      "thinnestAxisValue": 0.000779,
+      "materialCount": 3,
+      "materialsWithAnyTexture": 0,
+      "materials": [
+        {
+          "name": "Green",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "black",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "Material.003",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        }
+      ]
+    },
+    {
+      "rank": 3,
+      "path": "Assets/VRMaintenanceResearch/Assets/Motherboard_HighDetail_PCAnatomy.glb",
+      "fileSizeBytes": 26920876,
+      "rankScore": -222.939,
+      "totalNodeCount": 357,
+      "childNodeCount": 1,
+      "meshCount": 176,
+      "isFlatSingleMesh": false,
+      "totalVertexCount": 676893,
+      "totalTriangleCount": 372194,
+      "rootLocalPosition": [0.000000, 0.000000, 0.000000],
+      "rootLocalRotationEuler": [270.000000, 0.000000, 0.000000],
+      "rootLocalScale": [1.000000, 1.000000, 1.000000],
+      "rootHasRotationOffset": true,
+      "rootHasNonUniformScale": false,
+      "meshLocalBoundsSize": [348.427200, 584.760200, 70.182240],
+      "meshLocalBoundsCenter": [1.940308, 184.288900, 20.115780],
+      "pivotOffset": [1.940308, 184.288900, 20.115780],
+      "pivotOffsetMagnitude": 185.393600,
+      "thinnestAxisName": "Z",
+      "thinnestAxisValue": 70.182240,
+      "materialCount": 14,
+      "materialsWithAnyTexture": 6,
+      "materials": [
+        {
+          "name": "material",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_0"
+          }
+        },
+        {
+          "name": ".006",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_1"
+          }
+        },
+        {
+          "name": ".007",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_1"
+          }
+        },
+        {
+          "name": ".008",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_2"
+          }
+        },
+        {
+          "name": ".001",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_3"
+          }
+        },
+        {
+          "name": ".002",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": true,
+          "textureSlots": {
+            "baseColorTexture": "image_2"
+          }
+        },
+        {
+          "name": ".002__0",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": ".003",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": ".004",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "lamp2",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "lamp1",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "material_11",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "AUX2",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        },
+        {
+          "name": "AUX3",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "hasAnyTexture": false,
+          "textureSlots": {
+          }
+        }
+      ]
+    }
+  ]
+}

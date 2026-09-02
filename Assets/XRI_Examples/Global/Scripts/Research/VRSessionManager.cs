@@ -514,44 +514,6 @@ namespace UnityEngine.XR.Content.Interaction.Research
 
         private void Update()
         {
-            // Researcher hotkeys with Double-start Guard (must press S first)
-            if (Input.GetKeyDown(KeyCode.T))
-            {
-                if (_isRecording)
-                {
-                    Debug.LogWarning("[VRResearch] Double-start Guard: Already recording, press S to stop first. T ignored.");
-                    return;
-                }
-                Debug.Log("[VRResearch] Hotkey T pressed -> StartTraining");
-                StartTraining();
-            }
-            else if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1))
-            {
-                if (_isRecording)
-                {
-                    Debug.LogWarning("[VRResearch] Double-start Guard: Already recording, press S to stop first. 1 ignored.");
-                    return;
-                }
-                Debug.Log("[VRResearch] Hotkey 1 pressed -> StartSession(1)");
-                StartSession(1);
-            }
-            else if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2))
-            {
-                if (_isRecording)
-                {
-                    Debug.LogWarning("[VRResearch] Double-start Guard: Already recording, press S to stop first. 2 ignored.");
-                    return;
-                }
-                Debug.Log("[VRResearch] Hotkey 2 pressed -> StartSession(2)");
-                StartSession(2);
-            }
-            else if (Input.GetKeyDown(KeyCode.S))
-            {
-                Debug.Log("[VRResearch] Hotkey S pressed -> StopSession");
-                if (_isRecording) StopSession();
-                else Debug.Log("[VRResearch] Stop pressed but not recording");
-            }
-
             // Update status display periodically
             if (_isRecording && _statusText != null && Time.frameCount % 30 == 0)
             {

@@ -1,0 +1,6 @@
+ParticipantID,Age,Gender,VRExperience,Task1_Condition,Task2_Condition,T1_MentalDemand,T1_PhysicalDemand,T1_TemporalDemand,T1_Performance,T1_Effort,T1_Frustration,T1_Presence,T1_Sickness,T2_MentalDemand,T2_PhysicalDemand,T2_TemporalDemand,T2_Performance,T2_Effort,T2_Frustration,T2_Presence,T2_Sickness
+P001,25,Male,Beginner,A,B,6,4,5,7,5,4,8,2,7,5,6,5,6,5,7,3
+P002,30,Female,Intermediate,B,A,5,3,4,8,4,3,7,1,6,4,5,6,5,4,8,2
+P003,22,Male,Expert,A,B,4,3,3,8,3,2,9,1,5,4,4,7,4,3,8,1
+P004,28,Female,Beginner,B,A,7,5,6,6,6,5,7,3,8,6,7,4,7,6,6,4
+P005,35,Male,Intermediate,A,B,5,4,4,7,4,3,8,1,6,5,5,6,5,4,7,2

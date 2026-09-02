@@ -1,0 +1,9 @@
+[
+  {"TimestampMs":5.00,"EventType":"Zone_Enter","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_1_Locomotion\"}"},
+  {"TimestampMs":55.00,"EventType":"Teleport","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.75,"y":0.0,"z":1.5},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"destination\":\"Station2\"}"},
+  {"TimestampMs":60.00,"EventType":"Zone_Exit","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_1_Locomotion\",\"duration\":55.0}"},
+  {"TimestampMs":62.00,"EventType":"Zone_Enter","ObjectName":"GrabInteractables","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_2_Grab\"}"},
+  {"TimestampMs":75.00,"EventType":"Grab","ObjectName":"Pyramid_Simple","ObjectId":"12345","Hand":"Right","Position":{"x":1.35,"y":1.0,"z":2.7},"Rotation":{"x":0.03,"y":0.036,"z":0.01,"w":0.999},"Duration":0.0,"ExtraData":"{\"motionType\":\"Instantaneous\"}"},
+  {"TimestampMs":95.00,"EventType":"Release","ObjectName":"Pyramid_Simple","ObjectId":"12345","Hand":"Unknown","Position":{"x":1.45,"y":1.2,"z":2.9},"Rotation":{"x":0.034,"y":0.04,"z":0.012,"w":0.999},"Duration":2000.0,"ExtraData":"{\"holdDuration\":2000.0}"},
+  {"TimestampMs":111.11,"EventType":"Zone_Exit","ObjectName":"GrabInteractables","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_2_Grab\",\"duration\":49.11}"}
+]

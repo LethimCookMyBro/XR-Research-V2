@@ -1,0 +1,10 @@
+[
+  {"TimestampMs":5.00,"EventType":"Zone_Enter","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_1\"}"},
+  {"TimestampMs":25.00,"EventType":"Teleport","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.5,"y":0.0,"z":1.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{}"},
+  {"TimestampMs":50.00,"EventType":"Zone_Exit","ObjectName":"Locomotion","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_1\",\"duration\":45.0}"},
+  {"TimestampMs":55.00,"EventType":"Zone_Enter","ObjectName":"Grab","ObjectId":"","Hand":"System","Position":{"x":0.0,"y":0.0,"z":0.0},"Rotation":{"x":0.0,"y":0.0,"z":0.0,"w":1.0},"Duration":0.0,"ExtraData":"{\"zoneName\":\"Station_2\"}"},
+  {"TimestampMs":70.00,"EventType":"Grab","ObjectName":"Pyramid","ObjectId":"12345","Hand":"Right","Position":{"x":1.2,"y":1.0,"z":2.4},"Rotation":{"x":0.02,"y":0.02,"z":0.01,"w":0.999},"Duration":0.0,"ExtraData":"{}"},
+  {"TimestampMs":90.00,"EventType":"Release","ObjectName":"Pyramid","ObjectId":"12345","Hand":"Unknown","Position":{"x":1.3,"y":1.1,"z":2.5},"Rotation":{"x":0.02,"y":0.02,"z":0.01,"w":0.999},"Duration":2000.0,"ExtraData":"{}"},
+  {"TimestampMs":95.00,"EventType":"Grab","ObjectName":"Cube","ObjectId":"12346","Hand":"Left","Position":{"x":-1.0,"y":1.0,"z":2.0},"Rotation":{"x":0.01,"y":0.01,"z":0.005,"w":0.999},"Duration":0.0,"ExtraData":"{}"},
+  {"TimestampMs":105.00,"EventType":"Release","ObjectName":"Cube","ObjectId":"12346","Hand":"Unknown","Position":{"x":-0.9,"y":1.1,"z":2.1},"Rotation":{"x":0.01,"y":0.01,"z":0.005,"w":0.999},"Duration":1000.0,"ExtraData":"{}"}
+]

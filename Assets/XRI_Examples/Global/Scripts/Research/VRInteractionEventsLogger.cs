@@ -143,6 +143,11 @@ namespace UnityEngine.XR.Content.Interaction.Research
         {
             if (!_isLogging) return;
 
+            // Socket-driven selects are already logged as a dedicated "SocketSnap" event by
+            // OnSocketSelectEntered; skip the generic entry here so a single physical snap
+            // isn't double-counted as both "SocketSnap" and "Grab".
+            if (args.interactorObject is XRSocketInteractor) return;
+
             var interactable = args.interactableObject as XRGrabInteractable;
             if (interactable == null) return;
 
@@ -188,6 +193,12 @@ namespace UnityEngine.XR.Content.Interaction.Research
             float timestamp = GetTimestamp();
             float duration = timestamp - grabStartTime;
 
+            // Pre-format into its own string rather than embedding "{duration:F1}" directly
+            // against the JSON object's closing "}}" - with nothing separating the format
+            // specifier from the escaped closing braces, the interpolated hole silently
+            // resolves to the literal format specifier text ("F1") instead of the value.
+            string durationText = duration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+
             var entry = new InteractionLogEntry
             {
                 TimestampMs = timestamp,
@@ -198,7 +209,7 @@ namespace UnityEngine.XR.Content.Interaction.Research
                 Position = interactable.transform.position,
                 Rotation = interactable.transform.rotation,
                 Duration = duration,
-                ExtraData = $"{{\"holdDuration\":{duration:F1}}}"
+                ExtraData = $"{{\"holdDuration\":{durationText}}}"
             };
 
             _dataLogger?.LogEvent(entry);

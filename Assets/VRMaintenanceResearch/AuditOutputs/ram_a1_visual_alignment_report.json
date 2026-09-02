@@ -1,0 +1,137 @@
+{
+  "task": "RAM A1 Visual Alignment + Non-destructive Reference-Frame Validation",
+  "scene": "untitled temporary scene, never saved",
+  "sourceAssets": {
+    "motherboard": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+    "ram": "Assets/VRMaintenanceResearch/Assets/RAM_DDR4_Quest_Optimized.glb"
+  },
+  "masterSceneUntouched": "VRResearch_Master.unity was never opened or modified this session.",
+
+  "step1_coordinateTransformSetup": {
+    "status": "Verified",
+    "candidateBoardFrame": {
+      "definition": "Empty GameObject at world identity. Motherboard_Quest_Optimized instantiated as its child with localRotation=Euler(180,0,0), localPosition=0, localScale=1 (same convention re-used from cpu_socket_coordinate_mapping_verification.json).",
+      "conversionFormula": "candidate = (raw.x, -raw.y, -raw.z)"
+    },
+    "dimmA1Coordinate": {
+      "raw": [0.07140, 0.00918, 0.07850],
+      "convertedCandidateFrame": [0.07140, -0.00918, -0.07850],
+      "note": "Raw value matches motherboard_measurement_report.json exactly; conversion re-derived using the same verified formula, not copy-pasted as a final placement value."
+    }
+  },
+
+  "step2_visualAlignmentAndExtentMeasurement": {
+    "status": "Verified with caveats",
+    "orientationFound": {
+      "wrapperLocalRotation_euler": [0, 90, 0],
+      "reasoning": "RotateY(90 deg) maps RAM local (x,y,z) -> candidate-frame offset (z,y,-x). This puts the RAM's long axis (raw local X) along the slot's long axis (candidate Z), keeps the RAM's height axis (raw local Y) vertical (candidate Y), and puts the RAM's thin axis (raw local Z) along the narrow pitch/width direction (candidate X) - matching the slot housing's own measured footprint (142.59mm long x 8.50mm wide).",
+      "connectorEdgeDirection": "Empirically identified via an isolated side-profile screenshot (gold contact-finger pins + off-center DDR4 key notch visible at raw local -Y). Wrapper Y position was set so this connector edge, not the RAM's geometric center, lands at the board surface Y level."
+    },
+    "slotLongitudinalExtent_measured": {
+      "method": "Connected-component (union-find) clustering on submesh 1 ('mat siyah') vertices, isolating the specific DIMM_A1 island only (not the older ~142.6mm average-of-4 figure from motherboard_measurement_report.json - re-measured independently for this specific slot).",
+      "lengthMm": 142.59,
+      "widthMm": 8.50
+    },
+    "ramLength_measured": {
+      "method": "MeshRenderer.bounds world-space measurement of the raw RAM instance.",
+      "lengthMm": 182.909,
+      "claimedLengthMm": 182.91,
+      "note": "Measured value matches the claimed 182.91mm almost exactly - cross-validated, not a discrepancy."
+    },
+    "lengthComparison": {
+      "ramLongerThanSlotByMm": 40.319,
+      "ramLongerThanSlotByPercent": 28.3
+    },
+    "overlapScan": {
+      "status": "Verified - real geometric overlap found",
+      "boardTopEdgeOverhangMm": 9.13,
+      "description": "With the RAM correctly centered on DIMM_A1's slot position and rotated to align its long axis with the slot, the RAM's far end overhangs the motherboard's own physical mesh edge by ~9.13mm (measured via MeshRenderer.bounds min/max boolean comparison, not estimated). The near end extends well past the slot housing's own footprint toward the CPU-socket side but remains within the board's edge on that side.",
+      "pivotCorrectionApplied": {
+        "residualFoundMm": 2.114,
+        "axis": "candidate X",
+        "cause": "RAM mesh's own local Z-centroid offset getting rotated onto candidate X by the 90 deg Y rotation; corrected purely at the wrapper level.",
+        "verifiedBy": "Zoomed screenshot (TEMP_ZoomSlotCenter) confirming RAM is laterally centered on the slot's X-pitch position after correction."
+      }
+    },
+    "screenshots": [
+      "Assets/VRMaintenanceResearch/AuditOutputs/ram_a1_01_before_baseline_identity_fullboard_topdown.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/ram_a1_02_after_aligned_fullboard_topdown.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/ram_a1_03_after_zoom_slot_center.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/ram_a1_04_after_zoom_topedge_overhang.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/ram_a1_05_after_zoom_farend_overlap.png"
+    ]
+  },
+
+  "step3_nonDestructiveReferenceFrame": {
+    "status": "Verified",
+    "hierarchy": "CandidateBoardFrame > RAM_A1_ReferenceFrame_NONDESTRUCTIVE (wrapper) > RAM_DDR4_Quest_Optimized (untouched prefab instance)",
+    "wrapperTransform_finalAligned": {
+      "localPosition": [0.06929, 0.01257, -0.07850],
+      "localRotation_euler": [0, 90, 0],
+      "localScale": [1, 1, 1]
+    },
+    "originalPrefabTransform_insideWrapper": {
+      "localPosition": [0, 0, 0],
+      "localRotation_euler": [0, 0, 0],
+      "localScale": [1, 1, 1],
+      "note": "Prefab instance sits at identity local transform relative to the wrapper - all positioning/rotation is applied only at the wrapper level, never on the prefab root or any internal node."
+    },
+    "internalNodeHierarchyBeforeAndAfter": {
+      "unchanged": true,
+      "path": "e71dcdf6599d478da607c5a442ac9cd8.fbx (localRot=(90,0,0), localScale=0.0254) > RootNode > RAM_LP (localRot=(270,0,0)) > RAM_LP__0 (mesh, 486 verts)",
+      "verification": "Local transform values on every internal node were read and compared against the original, unmodified prefab asset - identical in both cases. No flattening, no node extraction, no baked transforms."
+    },
+    "sourceGlbUnmodified": true
+  },
+
+  "step4_scaleCorrection": {
+    "status": "Provisional - calculated but NOT applied to the wrapper",
+    "necessity": "The RAM's own measured length (182.909mm) exceeds the DIMM_A1 slot's own measured longitudinal extent (142.59mm) by 28.3%, causing a real, quantified 9.13mm overhang past the board's physical edge. A uniform scale-down would remove the overhang but was not applied because the task scope is visual alignment/validation only, not fitting/correction.",
+    "correctionFactor": {
+      "value": 0.7796,
+      "formula": "slotLengthMm / ramLengthMm = 142.59 / 182.909",
+      "derivedFrom": "Both operands were independently re-measured directly from mesh geometry in step 2 of this session (MeshRenderer.bounds for RAM, connected-component clustering for the slot) - not guessed, not reused from an older report's rounded figures.",
+      "appliedInScene": false
+    }
+  },
+
+  "definitionOfDone": {
+    "q1_visualPlaneAlignmentSuccess": "Partially. The RAM can be visually plane-aligned in-line with the slot's long axis and correctly centered on DIMM_A1's converted position (candidate frame). However, full assembly is NOT achieved without qualification: the RAM's real measured length (182.909mm) exceeds the slot's real measured length (142.59mm) by 40.3mm / 28.3%, producing a quantified 9.13mm overhang past the motherboard's own physical edge. Plane/axis alignment: Verified. Full-length fit without overhang: Verified as failing (not a guess - directly measured).",
+    "q2_nonDestructiveWrapperStructure": "CandidateBoardFrame > RAM_A1_ReferenceFrame_NONDESTRUCTIVE (localPosition=[0.06929,0.01257,-0.07850], localRotation euler=[0,90,0], localScale=[1,1,1]) > RAM_DDR4_Quest_Optimized prefab instance at local identity. Internal prefab node hierarchy and all internal local transforms confirmed byte-for-byte identical to the untouched source asset.",
+    "q3_scaleCorrectionNeeded": "Yes, if the goal were a snug fit: a uniform Correction Factor of 0.7796 (=142.59/182.909mm) was calculated from step 2's independently re-measured RAM length and slot length. It was NOT applied - this task's scope is limited to measurement/validation and non-destructive wrapper testing, not producing a final fitted prototype."
+  },
+
+  "orientationDisclaimer": {
+    "status": "Unknown - explicitly not claimed as physically accurate",
+    "statement": "The rotation (Euler 0,90,0) and connector-edge direction used here were derived from this asset's own visible geometry (bounding-box proportions, slot footprint, and a rendered close-up showing gold contact pins/DDR4 notch) and are visually plausible only. No claim is made that this orientation matches real physical Quest hardware installation, since no photographic evidence from the real device or a physical manual was available for this session, consistent with the constraint and the prior CPU-socket audit's Pin-1 precedent."
+  },
+
+  "constraintsRespected": {
+    "sourceGlbFilesUnmodified": true,
+    "ramPrefabHierarchyNotFlattened": true,
+    "masterResearchSceneUntouchedOrUnsaved": true,
+    "noXRSocketInteractorOrProductionCollidersCreated": true,
+    "noSnapToleranceDefined": true,
+    "noInteractionPrototypeBuilt": true,
+    "scopeLimitedToDimmA1Only_noA2B1B2": true,
+    "sceneNeverSaved": true
+  },
+
+  "categorizedSummary": {
+    "Verified": [
+      "DIMM_A1 raw-to-candidate coordinate conversion (0.07140,0.00918,0.07850) -> (0.07140,-0.00918,-0.07850)",
+      "RAM length measurement: 182.909mm (matches claimed 182.91mm)",
+      "DIMM_A1 slot length measurement: 142.59mm x 8.50mm width",
+      "RAM overhangs board's physical edge by 9.13mm when aligned to the slot's long axis and centered on DIMM_A1",
+      "Non-destructive wrapper hierarchy preserves the RAM prefab's internal node structure and transforms unchanged",
+      "2.114mm lateral pivot residual identified and corrected at the wrapper level only"
+    ],
+    "Provisional": [
+      "Scale Correction Factor 0.7796 - calculated from real measured data but not applied to any object in this session"
+    ],
+    "Unknown": [
+      "Whether the chosen rotation/connector-edge orientation matches real physical Quest/DDR4 hardware installation (no photographic/manual evidence available)"
+    ],
+    "Blocked": []
+  }
+}

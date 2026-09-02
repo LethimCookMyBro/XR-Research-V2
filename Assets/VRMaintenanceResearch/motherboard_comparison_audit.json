@@ -1,0 +1,266 @@
+{
+  "assets": [
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+      "totalNodeCount": 1,
+      "childNodeCount": 0,
+      "isFlatSingleMesh": true,
+      "meshCount": 1,
+      "totalVertexCount": 36623,
+      "rootLocalPosition": [0.000000, 0.400000, 0.000000],
+      "rootLocalRotationEuler": [69.619980, 178.849400, 191.555000],
+      "rootLocalScale": [1.000000, 1.369890, 1.000000],
+      "rootHasRotationOffset": true,
+      "rootHasNonUniformScale": true,
+      "boundsSize": [0.248354, 0.022466, 0.305000],
+      "boundsCenter": [0.007023, 0.001693, 0.148681],
+      "pivotOffset": [0.007023, 0.001693, 0.148681],
+      "pivotOffsetMagnitude": 0.148857,
+      "thinnestAxisName": "Y",
+      "thinnestAxisValue": 0.022466,
+      "materialCount": 12,
+      "materialsWithAnyTexture": 2,
+      "materials": [
+        {
+          "name": "anakart",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": "b450_upscayl_5x_ultrasharp",
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "mat siyah",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "anakart.rear",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "Material.001",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "rgb",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "msi logo",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": "msi-dragon_logo",
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "metal",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "Material.005",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "red",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "green",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "yellow",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "MSI LOGO",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": null,
+            "normalTexture": null,
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": null,
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        }
+      ],
+      "cpuRamAnchorsFound": false,
+      "socketKeywordMatches": [
+      ]
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/Circuit_Board_Generic.glb",
+      "totalNodeCount": 1,
+      "childNodeCount": 0,
+      "isFlatSingleMesh": true,
+      "meshCount": 1,
+      "totalVertexCount": 18273,
+      "rootLocalPosition": [0.000000, 0.000000, 0.000000],
+      "rootLocalRotationEuler": [0.000000, 0.000000, 0.000000],
+      "rootLocalScale": [1.000000, 1.000000, 1.000000],
+      "rootHasRotationOffset": false,
+      "rootHasNonUniformScale": false,
+      "boundsSize": [0.403506, 0.078296, 0.397384],
+      "boundsCenter": [0.004861, 0.033106, 0.000077],
+      "pivotOffset": [0.004861, 0.033106, 0.000077],
+      "pivotOffsetMagnitude": 0.033462,
+      "thinnestAxisName": "Y",
+      "thinnestAxisValue": 0.078296,
+      "materialCount": 2,
+      "materialsWithAnyTexture": 2,
+      "materials": [
+        {
+          "name": "circuit_board",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": "circuit_board_diff",
+            "normalTexture": "circuit_board_nor_gl",
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": "circuit_board_metal-circuit_board_rough",
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        },
+        {
+          "name": "circuit_board_alpha",
+          "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+          "textureSlots": {
+            "baseColorTexture": "circuit_board_diff-circuit_board_alpha",
+            "normalTexture": "circuit_board_nor_gl",
+            "occlusionTexture": null,
+            "metallicRoughnessTexture": "circuit_board_metal-circuit_board_rough",
+            "emissiveTexture": null,
+            "transmissionTexture": null,
+            "unity_Lightmaps": null,
+            "unity_LightmapsInd": null,
+            "unity_ShadowMasks": null
+          }
+        }
+      ],
+      "cpuRamAnchorsFound": false,
+      "socketKeywordMatches": [
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "before": {
+        "path": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+        "rootPosition": [0.00000000, 0.39999990, 0.00000000],
+        "rootRotationEuler": [69.61998000, 178.84940000, 191.55500000],
+        "rootScale": [1.00000000, 1.36989000, 1.00000000],
+        "boundsSize": [0.24835350, 0.02246645, 0.30499990],
+        "boundsCenter": [0.00702273, 0.00169339, 0.14868130],
+        "pivotOffsetMagnitude_m": 0.14885670,
+        "totalVertexCount": 36623,
+        "materialCount": 12,
+        "materialsWithBaseColor": 2
+      },
+  "after": {
+        "path": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Normalized.glb",
+        "rootPosition": [0.00000000, 0.00000000, 0.00000000],
+        "rootRotationEuler": [0.00000000, 0.00000000, 0.00000000],
+        "rootScale": [1.00000000, 1.00000000, 1.00000000],
+        "boundsSize": [0.24525360, 0.30639080, 0.15769800],
+        "boundsCenter": [0.00000000, 0.00000000, 0.00000000],
+        "pivotOffsetMagnitude_m": 0.00000000,
+        "totalVertexCount": 45135,
+        "materialCount": 12,
+        "materialsWithBaseColor": 2
+      },
+  "acceptance": {
+    "transformIdentity_scale": true,
+    "transformIdentity_rotation": true,
+    "pivotOffsetWithinTolerance": true,
+    "pivotOffsetMagnitude_m": 0.00000000,
+    "pivotToleranceUsed_m": 0.00001000,
+    "dimensionsStable": false,
+    "dimensionToleranceUsed_m": 0.00050000,
+    "vertexCountMatches": false,
+    "materialCountMatches": true,
+    "baseColorTexturesPreserved": true,
+    "allChecksPassed": false
+  }
+}

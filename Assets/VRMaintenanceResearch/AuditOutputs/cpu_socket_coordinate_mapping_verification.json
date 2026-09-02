@@ -1,0 +1,94 @@
+{
+  "task": "CPU Socket Coordinate-Mapping Prototype - isolated verification only",
+  "status": "VERIFIED",
+  "confidence": "High",
+  "sourceAsset": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+  "verifiedSourceCoordinateFrame": "RawMeshLocal (Mesh.vertices as loaded, identity position/rotation/scale)",
+
+  "rawCoordinate": { "x": 0.01890, "y": 0.00855, "z": 0.07750, "space": "raw mesh-local" },
+
+  "step1_visualConfirmation": {
+    "method": "Fresh untitled scene (never saved). Instantiated Motherboard_Quest_Optimized.glb at identity transform (world == raw mesh-local). Placed a red sphere marker as a child at localPosition = rawCoordinate (no offset, no snapping). Rebuilt the 13 material slots on Universal Render Pipeline/Lit preserving each original base color texture (the glTF-pbrMetallicRoughness shader does not render through this project's camera-capture path). Added a temporary camera positioned in the raw -Y region looking toward +Y (the front/populated surface's known outward direction) and a directional light.",
+    "result": "Marker renders centered inside the CPU socket housing cavity on the real baked photographic texture of an MSI B450 TOMAHAWK MAX board, next to the 'CORE BOOST'/'DDR4 BOOST' silkscreen and DIMM slots. A close-up zoom (orthographic size 0.035m) confirms the marker sits inside the flat black socket cavity with a curved retention-lever bracket visible along one edge.",
+    "screenshots": [
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_01_raw_fullboard_topdown.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_02_raw_zoom.png"
+    ]
+  },
+
+  "step2_surfaceNormalAndInsertionDirection": {
+    "method": "Pure software ray-triangle intersection (Moller-Trumbore) against Mesh.vertices/GetTriangles() directly, iterating all 12 submeshes. No PhysX Collider or Physics API used (constraint-safe: no collider creation). Ray cast from (rawX, -0.5, rawZ) in direction +Y (from outside the front surface, per the previously-verified finding that raw -Y is the populated/front outward direction), taking the first (nearest) intersection.",
+    "independentCoordinateMatch": {
+      "measuredHitPoint_rawSpace": [0.01890, 0.00855, 0.07750],
+      "storedRawCoordinate": [0.01890, 0.00855, 0.07750],
+      "difference": 0.0,
+      "note": "The nearest ray-triangle hit on this XZ column reproduces the stored CPU socket coordinate exactly, independently re-deriving it via raw triangle geometry rather than reusing the stored value directly."
+    },
+    "boardSurfaceNormal_rawSpace": [0.0, -1.0, 0.0],
+    "cpuSocketPlaneOrientation": "Flat, axis-aligned: the socket cavity floor triangle at this point is exactly perpendicular to the mesh's raw Y axis (no tilt/component on X or Z). Normal == board surface normal at this location.",
+    "insertionDirection_rawSpace": [0.0, 1.0, 0.0],
+    "insertionDirectionMeaning": "The CPU travels opposite to the outward surface normal (i.e. +Y in raw space) to seat into the socket from outside the board's front face toward the socket floor."
+  },
+
+  "step3_pin1Orientation": {
+    "status": "Unknown",
+    "reason": "Angled close-up inspection of the socket cavity (screenshot 04) shows only a flat molded surface with baked-in 'SOCKET AM4' text (confirming socket identity from the real source photograph) and a plain curved retention-lever bracket along one edge. No asymmetric Pin-1 triangle/dot/notch marking is visually discernible at this asset's resolution ('Quest_Optimized' low-poly/simplified geometry). Per instructions, this is reported as Unknown rather than guessed.",
+    "screenshot": "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_04_candidateframe_angled.png"
+  },
+
+  "step4_candidateCleanReferenceFrame": {
+    "name": "CandidateBoardFrame",
+    "definition": "Temporary GameObject at world identity (position=0, rotation=identity). The model was instantiated as its child with localRotation = Euler(180,0,0) (localPosition=0, localScale=1), so the frame's local axes = raw mesh-local axes rotated 180 degrees about X. This makes the front/populated surface's outward normal point to local/world +Y (up), a more intuitive 'up = front' convention than the raw frame (raw -Y = front).",
+    "conversionFormula": "candidate = R * raw, where R = RotateX(180) = diag(1, -1, -1). Equivalently: candidate.x = raw.x, candidate.y = -raw.y, candidate.z = -raw.z. R is a proper rotation (det = +1, orthonormal) - no shear, no mirroring.",
+    "conversionMatrix": [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, -1]
+    ],
+    "appliedToCpuCoordinate": {
+      "raw": [0.01890, 0.00855, 0.07750],
+      "candidate": [0.01890, -0.00855, -0.07750]
+    },
+    "surfaceNormal_candidateSpace": [0.0, 1.0, 0.0],
+    "insertionDirection_candidateSpace": [0.0, -1.0, 0.0],
+    "insertionDirectionSelfConsistencyCheck": "In this frame, +Y is defined as 'up/outward' by construction, and the independently-measured insertion direction converts to exactly -Y ('downward'). This matches ordinary physical intuition (a CPU is lowered down onto its socket) and is an internal consistency signal for the conversion, not additional independent evidence."
+  },
+
+  "step5_conversionVerifiedByRepeatMarker": {
+    "method": "A second, independently-placed marker (cyan) was added as a direct child of CandidateBoardFrame (sibling of the model, NOT nested under it) at localPosition = the CONVERTED coordinate (0.01890, -0.00855, -0.07750), computed fresh from the conversion formula rather than copied from the raw-frame marker's transform. Because CandidateBoardFrame sits at world identity, this local position equals its world position directly.",
+    "cameraSetup": "Top-down orthographic camera at world (0.01890, 0.15, -0.07750) looking straight down (-Y), matching the candidate frame's 'up = front' convention.",
+    "result": "The cyan marker renders centered in the exact same CPU socket cavity as the raw-frame red marker (same board, same silkscreen text visible around it). This confirms the conversion formula round-trips correctly using a genuinely independent placement path (frame-relative coordinate, not a reparented copy of the original marker).",
+    "screenshot": "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_03_candidateframe_zoom.png"
+  },
+
+  "summary": {
+    "rawCoordinate": [0.01890, 0.00855, 0.07750],
+    "convertedCoordinate_candidateFrame": [0.01890, -0.00855, -0.07750],
+    "conversionFormula": "candidate = (raw.x, -raw.y, -raw.z)  [180 degree rotation about raw mesh-local X axis]",
+    "boardSurfaceNormal_raw": [0.0, -1.0, 0.0],
+    "boardSurfaceNormal_candidate": [0.0, 1.0, 0.0],
+    "insertionDirection_raw": [0.0, 1.0, 0.0],
+    "insertionDirection_candidate": [0.0, -1.0, 0.0],
+    "pin1Status": "Unknown - no distinguishing visual marking found, not guessed",
+    "screenshotPaths": [
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_01_raw_fullboard_topdown.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_02_raw_zoom.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_03_candidateframe_zoom.png",
+      "Assets/VRMaintenanceResearch/AuditOutputs/cpu_socket_verification_04_candidateframe_angled.png"
+    ],
+    "confidence": "High for coordinate mapping, orientation, and insertion direction (two independent re-derivations: software ray-triangle intersection exactly reproduced the stored coordinate with 0.0 diff, and the converted-coordinate marker independently landed on the same visible socket). Unknown/no-confidence for Pin-1 (insufficient asset detail, explicitly not guessed)."
+  },
+
+  "safetyConstraints": {
+    "masterSceneUntouched": "VRResearch_Master.unity was never opened or referenced this session; git status shows no modification (still '??' untracked from before, no 'M').",
+    "workDoneIn": "A fresh untitled scene created via EditorSceneManager.NewScene, never saved (scene.path == '' throughout).",
+    "noProductionGameObjectsCreated": true,
+    "noXRSocketInteractorCreated": true,
+    "noCollidersCreatedOrResized": "True - surface/normal measurement used pure software ray-triangle math (Moller-Trumbore) against Mesh data directly, no Collider or Physics API calls anywhere in this task.",
+    "noRamWork": true,
+    "noSnapToleranceDefined": true,
+    "sourceGlbUnmodified": true,
+    "oldWrapperAuditNotUsedAsEvidence": "Confirmed - only the RawMeshLocal frame (already verified in the prior audit) was used as the source of truth.",
+    "allTemporaryObjectsDestroyed": "Motherboard_RawInstance, CandidateBoardFrame (with nested model + marker), and all 4 temporary cameras/lights were destroyed via Object.DestroyImmediate at the end of the session. Only the scene's default Main Camera and Directional Light remain in the untitled, unsaved scene."
+  }
+}

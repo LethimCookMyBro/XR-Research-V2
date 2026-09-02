@@ -1,0 +1,49 @@
+{
+  "auditVersion": "Unity6000.3.20f1",
+  "sourceAsset": "Assets/VRMaintenanceResearch/Assets/Motherboard_Quest_Optimized.glb",
+  "status": "VERIFIED",
+  "confidence": "High",
+  "referenceFrame": {
+    "name": "RawMeshLocal",
+    "description": "Coordinates are expressed directly in the untransformed local space of the imported mesh (Mesh.vertices / Mesh.bounds as loaded from the .glb, identity position/rotation/scale). This matches the 'meshLocalBounds*' convention already used elsewhere in this project's audit files. It intentionally supersedes the old 'Motherboard_Reference (Root Identity)' wrapper frame referenced by the previous UNVERIFIED report.",
+    "whyChanged": "The wrapper's documented correction transform (Assets/VRMaintenanceResearch/Assets/motherboard_wrapper_audit.json, field 'visualModelCorrection') could not be reproduced: applying its exact stated localPosition and localRotation (verified equal to Quaternion.Inverse of the model's baked node rotation) to the model with its original baked scale produces world bounds center=(0.058, 0.268, 0.172) size=(0.308, 0.344, 0.137) m, not the file's claimed center~(0,0,0) size~(0.248, 0.031, 0.305) m. That claimed result is only obtainable by a pure-scale (no rotation) transform, which contradicts the file's own stated rotation field. The 'Motherboard_Reference' GameObject this wrapper describes also does not exist anywhere in VRResearch_Master.unity (confirmed by read-only hierarchy inspection) or as a saved prefab. The wrapper audit is therefore treated as unreliable and was not used."
+  },
+  "measurementMethod": {
+    "steps": [
+      "1. Loaded Motherboard_Quest_Optimized.glb directly (AssetDatabase.LoadMainAssetAtPath), read Mesh.vertices in raw mesh-local space. Asset is a single flat mesh (isFlatSingleMesh=true, 1 node, 0 children, 12 submesh materials) with no named sub-parts, so landmarks cannot be found by node/name lookup.",
+      "2. Ran connected-component (union-find) clustering on the vertices of submesh material index 1 ('mat siyah' / black plastic), the material most likely to represent socket and slot housings, isolating 2182 disconnected geometric islands and ranking them by vertex count and footprint size.",
+      "3. Identified 4 evenly-spaced islands (9mm pitch, ~142.6mm length each) as RAM DIMM slot connector candidates, and used them as-is; the elongated shape and even spacing closely matches real DDR DIMM slot connector geometry.",
+      "4. The initial vertex-cluster candidate for the CPU socket did not visually verify (see step 6) and was discarded in favor of direct visual identification.",
+      "5. Discovered the raw mesh's +Y axis points toward the BACK (solder side) of the board, not the populated/component side (confirmed via full-board raycast heightmaps: +Y-up raycasts hit an almost perfectly flat plateau across ~95% of the footprint, characteristic of a bare PCB back; -Y-up raycasts revealed rich, irregular height variation characteristic of populated components). Built a temporary, never-saved verification scene: instantiated the model with a 180 degree rotation about the local X axis (flips Y and Z, preserves X) so the populated component side faces world +Y, added an orthographic top-down camera, and rebuilt working copies of the original 12 materials on Universal Render Pipeline/Lit (the original 'Shader Graphs/glTF-pbrMetallicRoughness' shader does not render through this project's camera-capture path), preserving each material's real base color texture (submesh 0 'anakart' carries an upscaled real photograph of the physical board, 'b450_upscayl_5x_ultrasharp').",
+      "6. Rendered the board top-down. The real texture identifies the board as an MSI B450 TOMAHAWK MAX. The 4 DIMM-slot vertex-cluster candidates landed visually correct, directly on the 4 black RAM slot connectors. The vertex-cluster CPU candidate landed on an unrelated chipset/heatsink area, not the socket, and was rejected.",
+      "7. Visually identified the true CPU socket by its distinctive 4-hole mounting bracket pattern in the rendered image, converted the image pixel location to world space using the known orthographic camera parameters (position, orthographic size, resolution), then to raw mesh-local space by inverting the 180 degree X-flip. Re-rendered to confirm the corrected marker sits centered in the socket housing.",
+      "8. For all 5 landmarks, snapped final Y by raycasting straight down onto the mesh surface (temporary MeshCollider) at each candidate X/Z, then converted the raycast hit back into raw mesh-local space.",
+      "9. Destroyed all temporary GameObjects (model instance, camera, light) and never saved the temporary scene. VRResearch_Master.unity was opened once, read-only (EditorSceneManager.OpenScene, no SaveScene/MarkSceneDirty call), to confirm no 'Motherboard_Reference' object exists there; git diff of that scene file is 0."
+    ],
+    "visualVerification": "Passed. Rendered against the model's real baked photographic texture (not a synthetic/placeholder material). CPU socket marker centered within the socket's 4-hole mounting bracket outline; all 4 DIMM markers landed on their respective black slot connector bars at the correct 9mm pitch."
+  },
+  "landmarks": {
+    "cpuSocketCenter": {
+      "localPosition": [0.01890, 0.00855, 0.07750],
+      "landmarkIntent": "AM4 CPU socket housing center",
+      "source": "Visual landmark analysis (image-to-mesh-space projection), surface-snapped via raycast"
+    },
+    "ramDimmSlots": [
+      { "slotName": "DIMM_A1", "localPosition": [0.07140, 0.00918, 0.07850], "source": "Vertex-cluster analysis (connected-component islands, 'mat siyah' submesh), surface-snapped via raycast" },
+      { "slotName": "DIMM_A2", "localPosition": [0.08040, 0.00918, 0.07850], "source": "Vertex-cluster analysis (connected-component islands, 'mat siyah' submesh), surface-snapped via raycast" },
+      { "slotName": "DIMM_B1", "localPosition": [0.08940, 0.00918, 0.07850], "source": "Vertex-cluster analysis (connected-component islands, 'mat siyah' submesh), surface-snapped via raycast" },
+      { "slotName": "DIMM_B2", "localPosition": [0.09840, 0.00918, 0.07850], "source": "Vertex-cluster analysis (connected-component islands, 'mat siyah' submesh), surface-snapped via raycast" }
+    ]
+  },
+  "flaggedDiscrepancies": [
+    "The task's 'Strict Environment Facts' claimed the real Unity 6000.3.20f1 executable was at 'D:\\Unity_download2\\6000.3.20f1\\Editor\\Unity.exe' and that the actual installed version to avoid was 'C:\\Program Files\\Unity\\Hub\\Editor\\6000.3.14f1\\Editor\\Unity.exe'. Neither claim checked out on this machine; no CLI batch-mode invocation was used or needed since an Editor instance was already live and connected via MCP.",
+    "The task claimed a pre-existing draft script at 'Assets/VRMaintenanceResearch/Editor/VerifiedLandmarkCaptureEditor.cs'. This file does not exist in the project.",
+    "'Assets/VRMaintenanceResearch/Assets/motherboard_wrapper_audit.json' claims 'allChecksPassed: true' for its 'Motherboard_Reference' correction transform; this could not be reproduced and is internally inconsistent (see referenceFrame.whyChanged above). Treat that file as unreliable.",
+    "ProjectSettings/ProjectVersion.txt shows a git diff (6000.3.0f1 -> 6000.3.20f1). This was not written by any script in this session; it is the Unity Editor's automatic behavior on opening a project whose ProjectVersion.txt records an older editor version than the one actually running. It was left untouched (reverting it while this editor instance is live would not prevent, and could worsen, the reimport concern the original constraint was meant to avoid)."
+  ],
+  "safetyConstraints": {
+    "masterSceneUntouched": "VRResearch_Master.unity was opened once for read-only inspection (no Motherboard_Reference object found there) and never saved; git diff for this file is 0.",
+    "projectVersionTxtNotWrittenByThisSession": true,
+    "temporaryObjectsCleanedUp": "All temporary GameObjects (model instance, camera, light, mesh colliders) created during measurement were destroyed via Object.DestroyImmediate. No .cs files were created on disk during this task, so there is nothing to delete there."
+  }
+}
