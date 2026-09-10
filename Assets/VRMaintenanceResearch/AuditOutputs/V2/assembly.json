@@ -1,0 +1,108 @@
+{
+  "scene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+  "imported": [
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "group": "Training",
+      "source_sha256": "7055cdb1e5bcb12bcd1b21d0f4eb14bc22dfe19f085b4abdfed4d8d35bf7a6f8",
+      "bytes": 3017864
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "group": "Computer",
+      "source_sha256": "18d44590418373bad766f1e6b2435c3ee05186b7fe8c528b47becfc63f9620eb",
+      "bytes": 3055512
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "group": "Fan",
+      "source_sha256": "b0ddeec058316cfb2a8efd139e78bdded5545901da150d72d63dc8917f6eb60f",
+      "bytes": 3106028
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "group": "Corridor",
+      "source_sha256": "3dbaad6d5f0b08c3f7163978524851fcfa34c82e2e035280ec654a0b90cedea7",
+      "bytes": 2690660
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "group": "Factory_Static",
+      "source_sha256": "0e424ad46a35c8dca15be90e35b39c54f3926389b4a5b0b78774fb93fb00c261",
+      "bytes": 2317120
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "group": "Factory_Activity",
+      "source_sha256": "89bda71b20ebe55be24d0730750fea6d3a16f149390a2cc042ac4a528100b439",
+      "bytes": 1670076
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "group": "Vehicles_Background",
+      "source_sha256": "af9d8492bf93a924d43031808347e7099ec0e0a337fb016fd5c24ec9510650fa",
+      "bytes": 3032120
+    }
+  ],
+  "collision_objects": [
+    "Factory_Slab",
+    "Factory_SideWall",
+    "Factory_SideWall.001",
+    "Factory_EndWall",
+    "Factory_EndWall.001",
+    "Neutral_Corridor_Floor",
+    "Corridor_EastSolid",
+    "Corridor_EndView_SillWall",
+    "Corridor_EndView_UpperWall",
+    "Corridor_EndView_Glass",
+    "Corridor_EndView_Glass.001",
+    "Corridor_EndView_Glass.002",
+    "Training_Floor",
+    "Training_SouthWall",
+    "Training_NorthWall",
+    "Training_SolidSouth",
+    "Training_SolidNorth",
+    "Training_WallJoint",
+    "Training_WallJoint.001",
+    "Training_WallJoint.002",
+    "Training_WallJoint.003",
+    "Training_WallJoint.004",
+    "Computer_Floor",
+    "Computer_SouthWall",
+    "Computer_FactoryWindow_SillWall",
+    "Computer_FactoryWindow_UpperWall",
+    "Computer_FactoryWindow_Glass",
+    "Computer_FactoryWindow_Glass.001",
+    "Computer_FactoryWindow_Glass.002",
+    "Computer_OuterSolid",
+    "Computer_SolidSouth",
+    "Computer_SolidNorth",
+    "Computer_PrivacyBaffle",
+    "Computer_WallJoint",
+    "Computer_WallJoint.001",
+    "Computer_WallJoint.002",
+    "Computer_WallJoint.003",
+    "Computer_WallJoint.004",
+    "Computer_PrivacyReturn",
+    "Fan_Floor",
+    "Fan_SouthWall",
+    "Fan_FactoryWindow_SillWall",
+    "Fan_FactoryWindow_UpperWall",
+    "Fan_FactoryWindow_Glass",
+    "Fan_FactoryWindow_Glass.001",
+    "Fan_FactoryWindow_Glass.002",
+    "Fan_OuterSolid",
+    "Fan_SolidSouth",
+    "Fan_SolidNorth",
+    "Fan_PrivacyBaffle",
+    "Fan_WallJoint",
+    "Fan_WallJoint.001",
+    "Fan_WallJoint.002",
+    "Fan_WallJoint.003",
+    "Fan_WallJoint.004",
+    "Fan_PrivacyReturn"
+  ],
+  "basic_colliders": 56,
+  "lighting": "one nonshadow directional + flat ambient; no global pipeline edits",
+  "xr_prefab": "Assets/Samples/XR Interaction Toolkit/3.4.0/Starter Assets/Prefabs/XR Origin (XR Rig).prefab"
+}

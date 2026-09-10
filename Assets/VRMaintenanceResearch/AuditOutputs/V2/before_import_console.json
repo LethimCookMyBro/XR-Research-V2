@@ -1,0 +1,20 @@
+{
+    "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+    "unityVersion": "6000.3.20f1",
+    "activeScene": "",
+    "utc": "2026-09-10T15:17:39.2131523Z",
+    "status": "COMPILE_GATE_PASS",
+    "isCompiling": false,
+    "isUpdating": false,
+    "isPlaying": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "compileErrorEntries": 0,
+    "entries": [
+        {
+            "message": "Leak Detected : Persistent allocates 1 individual allocations. To find out more please enable 'Preferences > Jobs > Leak Detection Level > Enabled With Stack Trace' and reproduce the leak again.\n",
+            "mode": 4
+        }
+    ]
+}

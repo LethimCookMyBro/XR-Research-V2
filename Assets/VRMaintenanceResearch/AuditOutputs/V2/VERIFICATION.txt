@@ -1,0 +1,41 @@
+Unity Environment V1 Import - Isolated Baseline
+Branch: research-v2-custom-assets
+Changed field: new Environment_V1 root / seven independent environment groups in a NEW scene.
+MODIFIED_FILE: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Scenes\V2\VRResearch_Environment_V2.unity
+DIFF_FILE: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\environment_scene_diff.json
+VERIFICATION: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\VERIFICATION.txt
+ROLLBACK: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\ROLLBACK.sh
+
+Live Unity verification: version 6000.3.20f1; project D:\VR_TMU\XR-Research-V2; EditMode.
+Command (PowerShell in project root):
+'verify_final' | Set-Content -Encoding ascii Temp/EnvironmentV2Preflight/request.tmp
+Move-Item -LiteralPath Temp/EnvironmentV2Preflight/request.tmp -Destination Temp/EnvironmentV2Preflight/request.txt -Force
+Input: saved V2 scene plus Rollback_Test/Restored_Empty_Baseline.unity.
+Observed Unity result: ENVIRONMENT_V2_FINAL_PASS groups=7 baseline_roots=0 rollback_roots=0 protected_scenes=2
+Dispatch exit status: 0. Unity callback result: PASS (final_verification.json).
+The callback reopened both scenes through EditorSceneManager, retained the modified scene and left it active.
+
+BASELINE / MODIFIED / ROLLBACK package command (PowerShell in project root):
+python Assets/VRMaintenanceResearch/AuditOutputs/V2/verify_delivery.py
+Input: frozen GLBs, saved V2 scene, baseline/rollback scenes, live Unity reports and 8 PNGs.
+Literal output:
+BASELINE_PASS roots=0 protected_scenes=2
+MODIFIED_PASS groups=7 glbs=7 screenshots=8 robots=2 workpieces=8 loop_seconds=48 compile_errors=0
+ROLLBACK_PASS roots=0 exact=1 modified_retained=1
+Exit status: 0
+
+ROLLBACK shell command:
+& 'C:\Program Files\Git\bin\bash.exe' -c 'chmod +x Assets/VRMaintenanceResearch/AuditOutputs/V2/ROLLBACK.sh && ./Assets/VRMaintenanceResearch/AuditOutputs/V2/ROLLBACK.sh'
+Input: Environment_V2_BASELINE.unity; destination is a separate Rollback_Test copy only.
+Literal output: ROLLBACK_COPY_PASS baseline_exact=1 modified_scene_untouched=1
+Exit status: 0
+Restored behavior/status: empty baseline opens with 0 roots; V2 retains 7 groups and SHA256 a1a4a5069812e309f885597c89c701b57c2cf6746da8cbedab557c2e87e68257.
+
+Protected originals unchanged:
+VRResearch_Master.unity SHA256 be657e90ee0bcea1095e9a3d9418c574a9dd4559f42d69c1d06cd6ac52cd3bc8
+XRI_Examples_Main.unity SHA256 5702122dcac5497d96d4a508ebeba89b603c2b49636b36da1d25eff8d3edaa73
+
+Live runtime evidence: natural 48-second clip loop observed for 59.851 seconds; 2 robot roots, 8 persistent parts; object count stable; four XR eye positions passed at 1.65 m. No headset used.
+Final Console snapshot: 0 compile errors, 0 errors, 0 warnings. Earlier noncompile diagnostics, temporary helper failures and pre-import native DX12 crash retained in evidence files; final counts are not historical cumulative counts.
+Known visual issues: room glass opaque-looking; Oak wood detail missing/white; lighting and material refinement remain.
+No Quest performance or production-readiness verification.

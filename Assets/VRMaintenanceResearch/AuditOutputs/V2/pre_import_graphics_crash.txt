@@ -1,0 +1,24 @@
+﻿[D3D12 Device Filter] Vendor Name: NVIDIA
+[D3D12 Device Filter] Device Name: NVIDIA GeForce RTX 4050 Laptop GPU
+[D3D12 Device Filter] Driver Version: 32.0.16.1656
+[D3D12 Device Filter] Feature Level: 12.2
+[D3D12 Device Filter] Graphics Memory: 5920 MB
+[D3D12 Device Filter] Processor Count: 16
+[D3D12 Device Filter] Device Type: Discrete
+d3d12: failed to query info queue interface (0x80004002).
+d3d12: upload buffer was too small for the requested resource! Size: 16777216. Requested: 786432000.
+D3D12Fence::Wait(46722) error: got 18446744073709551615. Device removal.
+d3d12: Failed to process DXGI messages. Enable the debug layer!
+d3d12: Device failed error (887a0006).
+d3d12: GfxDevice was not out of Local memory
+d3d12: Local memory usage:
+d3d12: GfxDevice was not out of Non-Local memory
+d3d12: Non-Local memory usage:
+d3d12: Unrecoverable GPU device error! Run with -force-d3d12-debug and see logs for more info.
+Cannot use DisplayDialog because it was run from a thread that is not the main thread: Fatal Error! d3d12: Unrecoverable GPU device error! Run with -force-d3d12-debug and see logs for more info.
+C:\Windows\SYSTEM32\d3d12.dll:d3d12.dll (00007FFE036B0000), size: 143360 (result: 0), SymType: '-deferred-', PDB: '', fileVersion: 10.0.26100.9278
+D:\Unity_downlaod2\6000.3.20f1\Editor\D3D12\D3D12Core.dll:D3D12Core.dll (00007FFC74320000), size: 4780032 (result: 0), SymType: '-deferred-', PDB: '', fileVersion: 1.618.1.0
+========== OUTPUTTING STACK TRACE ==================
+0x00007FFC6A30C73A (Unity) D3D12Fence::Wait
+0x00007FFC6A35A8D2 (Unity) GfxDeviceD3D12::FlushCommandList
+0x00007FFC6A3621CB (Unity) GfxDeviceD3D12::ReadbackImage

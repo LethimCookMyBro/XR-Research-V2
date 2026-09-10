@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "scene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+  "scene_sha256": "a1a4a5069812e309f885597c89c701b57c2cf6746da8cbedab557c2e87e68257",
+  "baseline_roots": 0,
+  "modified_groups": 7,
+  "rollback_roots": 0,
+  "rollback_exact": true,
+  "modified_retained": true,
+  "protected_scenes_unchanged": true,
+  "console_errors": 0,
+  "console_warnings": 0,
+  "compile_errors": 0,
+  "unity_version": "6000.3.20f1"
+}

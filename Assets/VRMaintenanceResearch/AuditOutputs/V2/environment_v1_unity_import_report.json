@@ -1,0 +1,1873 @@
+{
+  "status": "ISOLATED_BASELINE_COMPLETE_WITH_DOCUMENTED_VISUAL_ISSUES",
+  "project_root": "D:/VR_TMU/XR-Research-V2",
+  "unity_version": "6000.3.20f1",
+  "graphics_api": "Direct3D11",
+  "branch": "research-v2-custom-assets",
+  "scene_path": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+  "source_files": [
+    {
+      "name": "01_Training_Static.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\01_Training_Static.glb",
+      "bytes": 3017864,
+      "sha256": "7055cdb1e5bcb12bcd1b21d0f4eb14bc22dfe19f085b4abdfed4d8d35bf7a6f8"
+    },
+    {
+      "name": "02_Computer_Static.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\02_Computer_Static.glb",
+      "bytes": 3055512,
+      "sha256": "18d44590418373bad766f1e6b2435c3ee05186b7fe8c528b47becfc63f9620eb"
+    },
+    {
+      "name": "03_Fan_Static.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\03_Fan_Static.glb",
+      "bytes": 3106028,
+      "sha256": "b0ddeec058316cfb2a8efd139e78bdded5545901da150d72d63dc8917f6eb60f"
+    },
+    {
+      "name": "04_Corridor_Static.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\04_Corridor_Static.glb",
+      "bytes": 2690660,
+      "sha256": "3dbaad6d5f0b08c3f7163978524851fcfa34c82e2e035280ec654a0b90cedea7"
+    },
+    {
+      "name": "05_Factory_Static.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\05_Factory_Static.glb",
+      "bytes": 2317120,
+      "sha256": "0e424ad46a35c8dca15be90e35b39c54f3926389b4a5b0b78774fb93fb00c261"
+    },
+    {
+      "name": "06_Factory_Activity.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\06_Factory_Activity.glb",
+      "bytes": 1670076,
+      "sha256": "89bda71b20ebe55be24d0730750fea6d3a16f149390a2cc042ac4a528100b439"
+    },
+    {
+      "name": "07_Vehicles_Background.glb",
+      "source": "D:\\for_model_codex_vr_tmu\\exports\\environment_v1\\07_Vehicles_Background.glb",
+      "bytes": 3032120,
+      "sha256": "af9d8492bf93a924d43031808347e7099ec0e0a337fb016fd5c24ec9510650fa"
+    }
+  ],
+  "scale_orientation": {
+    "mapping": "Blender(x,y,z) -> Unity(-x,z,-y); glTFast handedness X inversion; identity wrappers",
+    "max_position_error_m": 3.03691377e-06,
+    "max_static_bounds_error_m": 2.861023e-06,
+    "errors": [],
+    "rooms": [
+      {
+        "room": "Training",
+        "floor_center": [
+          5.2,
+          -0.025,
+          1.9
+        ],
+        "floor_size": [
+          7.6,
+          0.05,
+          6.6
+        ],
+        "door_height": 2.45,
+        "ceiling_height": 3.9,
+        "tables": [
+          {
+            "name": "Training_Practice_A_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              2.0,
+              0.08,
+              0.9
+            ]
+          },
+          {
+            "name": "Training_Practice_B_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              0.900000632,
+              0.08,
+              2.00000024
+            ]
+          }
+        ]
+      },
+      {
+        "room": "Computer",
+        "floor_center": [
+          5.7,
+          -0.025,
+          -4.9
+        ],
+        "floor_size": [
+          8.6,
+          0.05,
+          6.6
+        ],
+        "door_height": 2.45,
+        "ceiling_height": 3.9,
+        "tables": [
+          {
+            "name": "Computer_Main_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              2.6,
+              0.08,
+              1.1
+            ]
+          },
+          {
+            "name": "Computer_Support_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              0.8500006,
+              0.08,
+              1.90000021
+            ]
+          }
+        ]
+      },
+      {
+        "room": "Fan",
+        "floor_center": [
+          -5.7,
+          -0.025,
+          -4.9
+        ],
+        "floor_size": [
+          8.6,
+          0.05,
+          6.6
+        ],
+        "door_height": 2.45,
+        "ceiling_height": 3.9,
+        "tables": [
+          {
+            "name": "Fan_Main_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              2.6,
+              0.08,
+              1.1
+            ]
+          },
+          {
+            "name": "Fan_Support_Top",
+            "height_above_floor": 0.92,
+            "size": [
+              0.8500004,
+              0.08,
+              2.2
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "toggle_result": [
+    {
+      "group": "Factory_Activity",
+      "rooms_remain_active": true,
+      "disabled_renderers": 498
+    },
+    {
+      "group": "Vehicles_Background",
+      "rooms_remain_active": true,
+      "disabled_renderers": 43
+    }
+  ],
+  "materials": [
+    {
+      "name": "potted_plant_02_pot",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "potted_plant_02_leaves",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2450,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "R02_WarmWall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Door",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "TrainingFloor",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Ink",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "BlueCabinet",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Wall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Yellow",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Rubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Oak",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "R02_Equipment",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "AcousticPanel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "TimberEdge",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Ink",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "BlueCabinet",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R02_Equipment",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Door",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Rubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "Wall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Floor",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Oak",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "R02_WarmWall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Yellow",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R02_Dado",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "potted_plant_04",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/02_Computer_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "BlueCabinet",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Door",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "Wall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Floor",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Ink",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Yellow",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Rubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Oak",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "R02_WarmWall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Orange",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "TimberEdge",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "R02_Equipment",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R02_Dado",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R02_ToolBlue",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "potted_plant_04",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/03_Fan_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Wall",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Red",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Floor",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R02_Dado",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "potted_plant_02_pot",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "potted_plant_02_leaves",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2450,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/04_Corridor_Static.glb"
+        }
+      ],
+      "visual_status": "PRESENT; alpha quality and overdraw pending"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Light",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Ink",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "BlueCabinet",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "FactoryCladding",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Yellow",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "FactoryFloor",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Door",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Oak",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PROCEDURAL_WOOD_RECREATION_REQUIRED; Oak tops white"
+    },
+    {
+      "name": "Rubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03_SmokedGlass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/05_Factory_Static.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Steel",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "BlueCabinet",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Red",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Yellow",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03_Belt",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03_Part",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03Arm_MachinedMetal",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03Arm_IvoryCasting",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03Arm_Graphite",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03Arm_CableRubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "R03Arm_Pedestal",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "Green",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/06_Factory_Activity.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "STRUCTURALLY_ASSIGNED; baseline colors visible, no per-material Cycles equivalence claim"
+    },
+    {
+      "name": "White",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "disk",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        }
+      ],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "chassis",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R02_Brake",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "grille",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "occlusionTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "metallicRoughnessTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        }
+      ],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R02_Equipment",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "phong5",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        }
+      ],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "material",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        }
+      ],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R02_UnmarkedTire",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "chrome",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "metal",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "plastic",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "rubber",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "light_glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness-Clearcoat",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "red_glass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "window",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "carbon",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness-Clearcoat",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [
+        {
+          "slot": "normalTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        },
+        {
+          "slot": "baseColorTexture",
+          "texture": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb"
+        }
+      ],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R02_PaintSilver",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "glass_surr",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "mirrors",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "Aluminium",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R03_SupraPaint",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness-Clearcoat",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R03_MatteBlack",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R03_RedLens",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    },
+    {
+      "name": "R03_SmokedGlass",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 2000,
+      "transparent": false,
+      "texture_inputs": [],
+      "visual_status": "GLAZING_REVIEW_REQUIRED; room Glass visibly opaque, vehicle glass not individually validated"
+    },
+    {
+      "name": "R03_HeadlightLens",
+      "path": "Assets/VRMaintenanceResearch/Assets/V2/Environment/07_Vehicles_Background.glb",
+      "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+      "supported": true,
+      "render_queue": 3000,
+      "transparent": true,
+      "texture_inputs": [],
+      "visual_status": "PRESENT_BACKGROUND_ONLY; detailed appearance pending"
+    }
+  ],
+  "missing_material_objects": [],
+  "animation": {
+    "clip": "VR_Research_Factory",
+    "duration_seconds": 48.0,
+    "loopTime": true,
+    "robot_roots": 2,
+    "persistent_workpieces": 8,
+    "animated_transform_paths": 30,
+    "preview_endpoint_matrix_error": 1.45909989e-05,
+    "playmode": {
+      "status": "PASS",
+      "duration_seconds": 48.0,
+      "wall_observation_seconds": 59.851138799999944,
+      "natural_normalized_time": 1.04036891,
+      "natural_loop_observed": true,
+      "workpiece_motion_max_m": 5.78195953,
+      "robot_joint_motion_max_deg": 90.0,
+      "workpiece_start_to_final_m": 1.23164463,
+      "xr_all_positions_pass": true,
+      "robot_roots": 2,
+      "persistent_parts": [
+        "R03_A_Part_0",
+        "R03_A_Part_1",
+        "R03_A_Part_2",
+        "R03_A_Part_3",
+        "R03_B_Part_0",
+        "R03_B_Part_1",
+        "R03_B_Part_2",
+        "R03_B_Part_3"
+      ],
+      "environment_object_count": 1901,
+      "object_count_stable": true,
+      "loop_endpoint_matrix_error": 0.0,
+      "near_seam_part_displacement_over_20ms_m": 0.010869503,
+      "xr_positions": [
+        {
+          "view": "05_Training_Participant",
+          "camera_world": [
+            5.1,
+            1.65,
+            3.65
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "06_Computer_Wide",
+          "camera_world": [
+            9.35,
+            1.64999986,
+            -2.1
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "08_Fan_Wide",
+          "camera_world": [
+            -2.4,
+            1.64999986,
+            -2.18
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "03_Neutral_Corridor",
+          "camera_world": [
+            -0.1,
+            1.65,
+            4.8
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        }
+      ],
+      "hardware_used": false,
+      "scope": "Editor PlayMode natural playback plus normalized-time endpoint/second-loop samples; no headset ergonomics or Quest profiling"
+    }
+  },
+  "statistics": {
+    "renderer_count": 1849,
+    "material_asset_count": 116,
+    "unique_material_names": 58,
+    "mesh_instances": 1849,
+    "unique_mesh_assets": 1561,
+    "triangles": 254489,
+    "realtime_lights": 1,
+    "transparent_material_assets": 9,
+    "imported_asset_bytes": 18889380,
+    "animated_transform_paths": 30,
+    "scope": "Environment renderer/mesh/material counts; light count from isolated scene. Repeated material assets across modular GLBs are counted separately."
+  },
+  "xr_scale_sanity": {
+    "result": "PASS_EDITOR_ONLY",
+    "rig_prefab": "Assets/Samples/XR Interaction Toolkit/3.4.0/Starter Assets/Prefabs/XR Origin (XR Rig).prefab",
+    "positions": [
+      {
+        "view": "05_Training_Participant",
+        "camera_world": [
+          5.1,
+          1.65,
+          3.65
+        ],
+        "eye_height_above_floor": 1.65,
+        "major_boundary_capsule_blockers": [],
+        "pass": true
+      },
+      {
+        "view": "06_Computer_Wide",
+        "camera_world": [
+          9.35,
+          1.64999986,
+          -2.1
+        ],
+        "eye_height_above_floor": 1.65,
+        "major_boundary_capsule_blockers": [],
+        "pass": true
+      },
+      {
+        "view": "08_Fan_Wide",
+        "camera_world": [
+          -2.4,
+          1.64999986,
+          -2.18
+        ],
+        "eye_height_above_floor": 1.65,
+        "major_boundary_capsule_blockers": [],
+        "pass": true
+      },
+      {
+        "view": "03_Neutral_Corridor",
+        "camera_world": [
+          -0.1,
+          1.65,
+          4.8
+        ],
+        "eye_height_above_floor": 1.65,
+        "major_boundary_capsule_blockers": [],
+        "pass": true
+      }
+    ],
+    "visual_findings": "Coherent room scale and clear test positions; table tops 0.92 m, doors 2.45 m, ceilings 3.9 m. Six tables retained. Capsule checks cover major architecture only, not detailed furniture clearance or a full walking route.",
+    "headset_ergonomics_verified": false
+  },
+  "remaining": [
+    "Recreate/fix room glass transparency in URP without assuming Cycles transmission equivalence.",
+    "Recreate or bake procedural wood/floor/wall appearance; review vehicle paint/chrome and vegetation alpha.",
+    "Profile renderer/material count, overdraw and lighting on intended hardware after import.",
+    "Review lighting/shadows/reflection probes and aliasing; current baseline uses one realtime directional light and simple ambient.",
+    "Perform full walking-route, headset ergonomics and collision tuning later; only four Editor human-scale stations and basic boundaries checked."
+  ],
+  "visual_audit": {
+    "method": "Actual Unity URP camera RenderRequest screenshots; PlayMode motion sampled through more than one natural loop. Overall cutaway temporarily hides 306 objects only for that capture; saved scene restores them.",
+    "findings": [
+      {
+        "category": "glass",
+        "result": "REQUIRES_URP_RECREATION",
+        "finding": "Assigned transparent shaders/queue, but glazing appears opaque blue-gray and blocks factory sightlines. Transmission does not match Blender. Existing URP Opaque Texture remains disabled."
+      },
+      {
+        "category": "workbench surfaces / Oak",
+        "result": "REQUIRES_URP_RECREATION",
+        "finding": "Table tops render white; procedural wood grain/color detail does not reproduce."
+      },
+      {
+        "category": "room floors / factory floor",
+        "result": "ACCEPTABLE_GEOMETRY_BASELINE_ONLY",
+        "finding": "Surface placement and colors present. Procedural detail and lighting are flat; no Cycles match claimed."
+      },
+      {
+        "category": "painted metal",
+        "result": "ACCEPTABLE_GEOMETRY_BASELINE_ONLY",
+        "finding": "Painted panels and robot material assignments readable. Reflection/roughness needs subsequent lighting review."
+      },
+      {
+        "category": "plants",
+        "result": "PRESENT_WITH_ALPHA_REVIEW_PENDING",
+        "finding": "Imported colors/cutouts visible, no missing shader. Alpha edge quality and overdraw still need review."
+      },
+      {
+        "category": "vehicle materials",
+        "result": "PRESENT_BACKGROUND_ONLY",
+        "finding": "Vehicle geometry and materials visible incidentally. Paint, chrome, clearcoat and glazing require dedicated URP lighting/material review."
+      }
+    ],
+    "screenshots": [
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/02_Overall_Cutaway_Unity.png",
+        "position": [
+          -26.0,
+          29.0,
+          30.0
+        ],
+        "temporary_cutaway": 306,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/05_Training_Participant_Unity.png",
+        "position": [
+          5.1,
+          1.65,
+          3.65
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/06_Computer_Wide_Unity.png",
+        "position": [
+          9.35,
+          1.65,
+          -2.1
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/08_Fan_Wide_Unity.png",
+        "position": [
+          -2.4,
+          1.65,
+          -2.18
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/03_Neutral_Corridor_Unity.png",
+        "position": [
+          -0.1,
+          1.65,
+          4.8
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/17_Computer_Activity_Unity.png",
+        "position": [
+          8.5,
+          1.65,
+          -7.3
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/22_Robot_Grip_Diagnostic_Unity.png",
+        "position": [
+          6.9,
+          1.72,
+          -10.95
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      },
+      {
+        "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/21_Factory_ActivityOverview_Unity.png",
+        "position": [
+          11.0,
+          5.5,
+          -9.8
+        ],
+        "temporary_cutaway": 0,
+        "graphics_api": "Direct3D11"
+      }
+    ],
+    "missing_or_error_shader_assignments": []
+  },
+  "collision": {
+    "count": 56,
+    "objects": [
+      "Factory_Slab",
+      "Factory_SideWall",
+      "Factory_SideWall.001",
+      "Factory_EndWall",
+      "Factory_EndWall.001",
+      "Neutral_Corridor_Floor",
+      "Corridor_EastSolid",
+      "Corridor_EndView_SillWall",
+      "Corridor_EndView_UpperWall",
+      "Corridor_EndView_Glass",
+      "Corridor_EndView_Glass.001",
+      "Corridor_EndView_Glass.002",
+      "Training_Floor",
+      "Training_SouthWall",
+      "Training_NorthWall",
+      "Training_SolidSouth",
+      "Training_SolidNorth",
+      "Training_WallJoint",
+      "Training_WallJoint.001",
+      "Training_WallJoint.002",
+      "Training_WallJoint.003",
+      "Training_WallJoint.004",
+      "Computer_Floor",
+      "Computer_SouthWall",
+      "Computer_FactoryWindow_SillWall",
+      "Computer_FactoryWindow_UpperWall",
+      "Computer_FactoryWindow_Glass",
+      "Computer_FactoryWindow_Glass.001",
+      "Computer_FactoryWindow_Glass.002",
+      "Computer_OuterSolid",
+      "Computer_SolidSouth",
+      "Computer_SolidNorth",
+      "Computer_PrivacyBaffle",
+      "Computer_WallJoint",
+      "Computer_WallJoint.001",
+      "Computer_WallJoint.002",
+      "Computer_WallJoint.003",
+      "Computer_WallJoint.004",
+      "Computer_PrivacyReturn",
+      "Fan_Floor",
+      "Fan_SouthWall",
+      "Fan_FactoryWindow_SillWall",
+      "Fan_FactoryWindow_UpperWall",
+      "Fan_FactoryWindow_Glass",
+      "Fan_FactoryWindow_Glass.001",
+      "Fan_FactoryWindow_Glass.002",
+      "Fan_OuterSolid",
+      "Fan_SolidSouth",
+      "Fan_SolidNorth",
+      "Fan_PrivacyBaffle",
+      "Fan_WallJoint",
+      "Fan_WallJoint.001",
+      "Fan_WallJoint.002",
+      "Fan_WallJoint.003",
+      "Fan_WallJoint.004",
+      "Fan_PrivacyReturn"
+    ],
+    "scope": "Basic floor/major wall boundaries only; one irregular floor MeshCollider, other candidates BoxCollider. No detailed prop, vehicle, robot or task interaction colliders."
+  },
+  "console": {
+    "final": {
+      "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+      "unityVersion": "6000.3.20f1",
+      "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+      "utc": "2026-09-10T15:42:24.2523795Z",
+      "status": "COMPILE_GATE_PASS",
+      "isCompiling": false,
+      "isUpdating": false,
+      "isPlaying": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "consoleLogs": 2,
+      "compileErrorEntries": 0,
+      "entries": [
+        {
+          "message": "ENVIRONMENT_V2_RENDER_PASS views=8\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:CaptureViews () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:170)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:39)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+          "mode": 8406016
+        },
+        {
+          "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:FinalCheck () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2FinalCheck.cs:15)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:41)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+          "mode": 8406016
+        }
+      ]
+    },
+    "historical_snapshots": [
+      "before_import_console.json",
+      "preflight_editor.json",
+      "after_import_console_raw.json",
+      "after_import_console.json",
+      "after_playmode_console.json"
+    ],
+    "note": "Final snapshot has zero errors/warnings. Earlier diagnostics and helper failures are preserved in these files and helper_error.txt; no Console Clear or warning suppression was invoked by this task. Snapshot counts are not cumulative across Editor restart/PlayMode. Initial pre-existing compile gate passed. A temporary helper CS0619 error was corrected before assembly."
+  },
+  "editor_recovery": {
+    "initial_api": "Direct3D12",
+    "event": "Native D3D12Fence::Wait / ReadbackImage GPU crash before GLB copy/import",
+    "recovery": "Same project and Unity executable restarted with launch-only -force-d3d11; no global graphics settings changed",
+    "evidence": "pre_import_graphics_crash.txt"
+  },
+  "verification": {
+    "status": "PASS",
+    "scene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+    "scene_sha256": "a1a4a5069812e309f885597c89c701b57c2cf6746da8cbedab557c2e87e68257",
+    "baseline_roots": 0,
+    "modified_groups": 7,
+    "rollback_roots": 0,
+    "rollback_exact": true,
+    "modified_retained": true,
+    "protected_scenes_unchanged": true,
+    "console_errors": 0,
+    "console_warnings": 0,
+    "compile_errors": 0,
+    "unity_version": "6000.3.20f1"
+  },
+  "boundaries": {
+    "master_unchanged": true,
+    "xri_examples_main_unchanged": true,
+    "hardware_used": false,
+    "quest_performance_verified": false,
+    "production_ready": false,
+    "gui_or_research_interactions_added": false
+  }
+}

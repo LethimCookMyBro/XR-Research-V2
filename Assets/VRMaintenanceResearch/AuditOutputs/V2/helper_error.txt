@@ -1,0 +1,5 @@
+System.InvalidOperationException: Cannot create a new scene additively with an untitled scene unsaved.
+  at (wrapper managed-to-native) UnityEditor.SceneManagement.EditorSceneManager.NewScene_Injected(UnityEditor.SceneManagement.NewSceneSetup,UnityEditor.SceneManagement.NewSceneMode,UnityEngine.SceneManagement.Scene&)
+  at UnityEditor.SceneManagement.EditorSceneManager.NewScene (UnityEditor.SceneManagement.NewSceneSetup setup, UnityEditor.SceneManagement.NewSceneMode mode) [0x00000] in <a90f148a0c664ac8982a824605784e74>:0 
+  at EnvironmentV2Isolated.EnvironmentV2Import.Build () [0x0012e] in D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Assets\V2\Environment\Editor\EnvironmentV2Build.cs:58 
+  at EnvironmentV2Isolated.EnvironmentV2Import.Poll () [0x000b6] in D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Assets\V2\Environment\Editor\EnvironmentV2Import.cs:37 

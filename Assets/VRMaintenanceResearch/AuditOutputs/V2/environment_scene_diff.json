@@ -1,0 +1,24 @@
+{
+  "branch": "research-v2-custom-assets",
+  "head": "7861d56a885f5b44d69674d37eb5640f8c049671",
+  "changed_field": "new isolated scene root Environment_V1 with seven independent child groups; existing research scenes unchanged",
+  "modified_file": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\Scenes\\V2\\VRResearch_Environment_V2.unity",
+  "scene_sha256": "a1a4a5069812e309f885597c89c701b57c2cf6746da8cbedab557c2e87e68257",
+  "baseline": "Environment_V2_BASELINE.unity",
+  "baseline_roots": 0,
+  "modified_groups": 7,
+  "added": [
+    "seven original-hash GLBs",
+    "Factory_Loop AnimatorController",
+    "basic architectural colliders",
+    "existing XRI rig prefab instance",
+    "XR Interaction Manager test instance",
+    "one baseline Directional Light",
+    "disabled audit camera",
+    "Editor-only import/verification helpers"
+  ],
+  "unrelated_change_restored": "BezierLink.mat tool-induced _EMISSION keyword addition restored exactly to HEAD; backup retained",
+  "preexisting_untracked_preserved": "XR-Research-V2.slnx",
+  "protected_scenes_unchanged": true,
+  "rollback": "ROLLBACK.sh restores only a separate test copy; retained V2 scene unchanged"
+}

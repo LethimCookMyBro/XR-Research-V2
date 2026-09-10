@@ -1,0 +1,82 @@
+[
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/02_Overall_Cutaway_Unity.png",
+    "position": [
+      -26.0,
+      29.0,
+      30.0
+    ],
+    "temporary_cutaway": 306,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/05_Training_Participant_Unity.png",
+    "position": [
+      5.1,
+      1.65,
+      3.65
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/06_Computer_Wide_Unity.png",
+    "position": [
+      9.35,
+      1.65,
+      -2.1
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/08_Fan_Wide_Unity.png",
+    "position": [
+      -2.4,
+      1.65,
+      -2.18
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/03_Neutral_Corridor_Unity.png",
+    "position": [
+      -0.1,
+      1.65,
+      4.8
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/17_Computer_Activity_Unity.png",
+    "position": [
+      8.5,
+      1.65,
+      -7.3
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/22_Robot_Grip_Diagnostic_Unity.png",
+    "position": [
+      6.9,
+      1.72,
+      -10.95
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/21_Factory_ActivityOverview_Unity.png",
+    "position": [
+      11.0,
+      5.5,
+      -9.8
+    ],
+    "temporary_cutaway": 0,
+    "graphics_api": "Direct3D11"
+  }
+]
