@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "structure_unchanged": true,
+  "scene_sha256": "53971340bbe74d54ce8a7ca20f6311e5a3977e994d14a691fa37f7b73a6b3631",
+  "groups": 7,
+  "console": {
+    "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+    "unityVersion": "6000.3.20f1",
+    "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+    "utc": "2026-09-10T16:50:51.1191371Z",
+    "status": "COMPILE_GATE_PASS",
+    "isCompiling": false,
+    "isUpdating": false,
+    "isPlaying": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "consoleLogs": 1,
+    "compileErrorEntries": 0,
+    "entries": [
+      {
+        "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+        "mode": 8406016
+      }
+    ]
+  }
+}

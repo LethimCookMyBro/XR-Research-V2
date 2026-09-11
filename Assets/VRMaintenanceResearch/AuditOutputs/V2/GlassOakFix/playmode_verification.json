@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "duration_seconds": 48.0,
+  "wall_observation_seconds": 58.327135300000009,
+  "natural_normalized_time": 1.04012907,
+  "natural_loop_observed": true,
+  "workpiece_motion_max_m": 5.78195238,
+  "robot_joint_motion_max_deg": 90.0,
+  "workpiece_start_to_final_m": 1.22355986,
+  "xr_all_positions_pass": true,
+  "robot_roots": 2,
+  "persistent_parts": [
+    "R03_A_Part_0",
+    "R03_A_Part_1",
+    "R03_A_Part_2",
+    "R03_A_Part_3",
+    "R03_B_Part_0",
+    "R03_B_Part_1",
+    "R03_B_Part_2",
+    "R03_B_Part_3"
+  ],
+  "environment_object_count": 1901,
+  "object_count_stable": true,
+  "loop_endpoint_matrix_error": 0.0,
+  "near_seam_part_displacement_over_20ms_m": 0.010869503,
+  "xr_positions": [
+    {
+      "view": "05_Training_Participant",
+      "camera_world": [
+        5.1,
+        1.65,
+        3.65
+      ],
+      "eye_height_above_floor": 1.65,
+      "major_boundary_capsule_blockers": [],
+      "pass": true
+    },
+    {
+      "view": "06_Computer_Wide",
+      "camera_world": [
+        9.35,
+        1.64999986,
+        -2.1
+      ],
+      "eye_height_above_floor": 1.65,
+      "major_boundary_capsule_blockers": [],
+      "pass": true
+    },
+    {
+      "view": "08_Fan_Wide",
+      "camera_world": [
+        -2.4,
+        1.64999986,
+        -2.18
+      ],
+      "eye_height_above_floor": 1.65,
+      "major_boundary_capsule_blockers": [],
+      "pass": true
+    },
+    {
+      "view": "03_Neutral_Corridor",
+      "camera_world": [
+        -0.1,
+        1.65,
+        4.8
+      ],
+      "eye_height_above_floor": 1.65,
+      "major_boundary_capsule_blockers": [],
+      "pass": true
+    }
+  ],
+  "hardware_used": false,
+  "scope": "Editor PlayMode natural playback plus normalized-time endpoint/second-loop samples; no headset ergonomics or Quest profiling"
+}

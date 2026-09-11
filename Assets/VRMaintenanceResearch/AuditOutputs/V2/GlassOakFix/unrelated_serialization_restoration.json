@@ -1,0 +1,14 @@
+[
+  {
+    "path": "Assets/Samples/XR Interaction Toolkit/3.4.0/Starter Assets/Prefabs/XR Origin (XR Rig).prefab",
+    "before_tool_side_effect_sha256": "9b0d0cf6539d67714dcf5ee3530deb70a8a9ef79cabb2504be91fb8cd606cff0",
+    "autosaved_sha256": "fcf794b175fb20e7a371895f9de80475b68bad8340ac3da3e5b8757111f2ccb5",
+    "restored_exactly_to_checkpoint": true
+  },
+  {
+    "path": "Assets/XRI_Examples/VRWalkthrough/Materials/BezierLink.mat",
+    "before_tool_side_effect_sha256": "111602bc0de50dada1ca4e721fb4dcafdf56c65aa914f890c638f87fc20e07b3",
+    "autosaved_sha256": "30bb51ff66696af82c85397789095a65fe3f56cc1bd6f798a1a492155bd227a5",
+    "restored_exactly_to_checkpoint": true
+  }
+]

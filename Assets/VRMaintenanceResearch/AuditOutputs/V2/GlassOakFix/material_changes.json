@@ -1,0 +1,98 @@
+[
+  {
+    "path": "Environment_V1/Training/Training_Practice_A_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Training/Training_Practice_B_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Training/Training_Window",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass.001",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass.002",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Computer/Computer_Main_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Computer/Computer_Support_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass.001",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass.002",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Fan/Fan_Main_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Fan/Fan_Support_Top",
+    "slot": 0,
+    "before": "Oak",
+    "after": "V2_Oak_Simple"
+  },
+  {
+    "path": "Environment_V1/Corridor/Corridor_EndView_Glass",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Corridor/Corridor_EndView_Glass.001",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  },
+  {
+    "path": "Environment_V1/Corridor/Corridor_EndView_Glass.002",
+    "slot": 0,
+    "before": "Glass",
+    "after": "V2_RoomGlass_Alpha"
+  }
+]

@@ -1,0 +1,454 @@
+{
+  "status": "VISUAL_SCOPE_COMPLETE_WITH_RETAINED_EDITOR_WARNINGS",
+  "project_root": "D:\\VR_TMU\\XR-Research-V2",
+  "unity_version": "6000.3.20f1",
+  "branch": "research-v2-custom-assets",
+  "baseline_checkpoint": "b446c0ad73cbe9d25ad8f8125771ba473286633c",
+  "checkpoint_scope": "Only Environment V2 Assets, Scenes, AuditOutputs and their meta files. Existing XR-Research-V2.slnx excluded and preserved.",
+  "scene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+  "fixes_committed": false,
+  "root_causes": {
+    "glass": {
+      "confirmed_live_properties": {
+        "path": "Environment_V1/Training/Training_Window",
+        "slot": 0,
+        "material": "Glass",
+        "asset": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+        "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+        "queue": 3000,
+        "keywords": [],
+        "properties": {
+          "_SrcBlend": 1.0,
+          "_DstBlend": 0.0,
+          "_ZWrite": 1.0,
+          "_Surface": 0.0,
+          "transmissionFactor": 0.0
+        },
+        "colors": {
+          "baseColorFactor": "RGBA(0.891, 0.945, 0.955, 0.500)"
+        },
+        "textures": []
+      },
+      "mechanism": "GLB transmission material without alphaMode enters glTFast fallback because URP Opaque Texture is disabled. ShaderGraphMaterialGenerator chooses Premultiply using white; UniversalRPMaterialGenerator does not override the empty SetShaderModePremultiply implementation. Material gets transparent queue but keeps opaque blending and depth write. Live SrcBlend=1, DstBlend=0, ZWrite=1, Surface=0 confirms this path.",
+      "source_evidence": [
+        "Library/PackageCache/com.unity.cloud.gltfast@11ddc2436f97/Runtime/Scripts/Material/UniveralRPMaterialGenerator.cs:104-109",
+        "ShaderGraphMaterialGenerator.cs:437-438,615,676-685",
+        "MaterialGenerator.cs:486-504"
+      ]
+    },
+    "oak": {
+      "mechanism": "Exported Oak material has neither baseColorFactor nor baseColorTexture; glTF default white is correctly imported. Blender procedural color/grain was not encoded in GLB. Material slots and UV0 exist.",
+      "confirmed_live_properties": {
+        "path": "Environment_V1/Training/Training_Practice_A_Top",
+        "slot": 0,
+        "material": "Oak",
+        "asset": "Assets/VRMaintenanceResearch/Assets/V2/Environment/01_Training_Static.glb",
+        "shader": "Shader Graphs/glTF-pbrMetallicRoughness",
+        "queue": 2000,
+        "keywords": [],
+        "properties": {
+          "_SrcBlend": 1.0,
+          "_DstBlend": 0.0,
+          "_ZWrite": 1.0,
+          "_Surface": 0.0,
+          "transmissionFactor": 0.0
+        },
+        "colors": {
+          "baseColorFactor": "RGBA(1.000, 1.000, 1.000, 1.000)"
+        },
+        "textures": []
+      }
+    }
+  },
+  "exact_fixes": {
+    "glass": "Shared URP Lit V2_RoomGlass_Alpha, Surface Transparent, Alpha blend via installed BaseShaderGUI.SetupMaterialBlendMode, Src/Dst 5/10, ZWrite0, alpha0.12, pale blue (.72,.87,.92), metallic0, smoothness.6, CullBack for closed pane meshes, ShadowCaster off. No refraction, opaque texture or pipeline setting changes.",
+    "oak": "Shared opaque URP Lit V2_Oak_Simple plus reusable 256x256 periodic wood color map, sRGB, mipmaps, repeat, trilinear, anisotropy2, max256, compression enabled; metallic0, smoothness.28. Existing UVs unchanged.",
+    "slots": [
+      {
+        "path": "Environment_V1/Training/Training_Practice_A_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Training/Training_Practice_B_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Training/Training_Window",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass.001",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Computer/Computer_FactoryWindow_Glass.002",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Computer/Computer_Main_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Computer/Computer_Support_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass.001",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Fan/Fan_FactoryWindow_Glass.002",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Fan/Fan_Main_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Fan/Fan_Support_Top",
+        "slot": 0,
+        "before": "Oak",
+        "after": "V2_Oak_Simple"
+      },
+      {
+        "path": "Environment_V1/Corridor/Corridor_EndView_Glass",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Corridor/Corridor_EndView_Glass.001",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      },
+      {
+        "path": "Environment_V1/Corridor/Corridor_EndView_Glass.002",
+        "slot": 0,
+        "before": "Glass",
+        "after": "V2_RoomGlass_Alpha"
+      }
+    ],
+    "assignment_method": "Scene renderer material-slot overrides only; imported GLBs unchanged.",
+    "documentation": "https://docs.unity3d.com/6000.0/Documentation/Manual/urp/lit-shader.html"
+  },
+  "verification": {
+    "saved_scene": {
+      "status": "PASS",
+      "structure_unchanged": true,
+      "scene_sha256": "53971340bbe74d54ce8a7ca20f6311e5a3977e994d14a691fa37f7b73a6b3631",
+      "groups": 7,
+      "console": {
+        "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+        "unityVersion": "6000.3.20f1",
+        "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+        "utc": "2026-09-10T16:50:51.1191371Z",
+        "status": "COMPILE_GATE_PASS",
+        "isCompiling": false,
+        "isUpdating": false,
+        "isPlaying": false,
+        "consoleErrors": 0,
+        "consoleWarnings": 0,
+        "consoleLogs": 1,
+        "compileErrorEntries": 0,
+        "entries": [
+          {
+            "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+            "mode": 8406016
+          }
+        ]
+      }
+    },
+    "playmode": {
+      "status": "PASS",
+      "duration_seconds": 48.0,
+      "wall_observation_seconds": 58.32713530000001,
+      "natural_normalized_time": 1.04012907,
+      "natural_loop_observed": true,
+      "workpiece_motion_max_m": 5.78195238,
+      "robot_joint_motion_max_deg": 90.0,
+      "workpiece_start_to_final_m": 1.22355986,
+      "xr_all_positions_pass": true,
+      "robot_roots": 2,
+      "persistent_parts": [
+        "R03_A_Part_0",
+        "R03_A_Part_1",
+        "R03_A_Part_2",
+        "R03_A_Part_3",
+        "R03_B_Part_0",
+        "R03_B_Part_1",
+        "R03_B_Part_2",
+        "R03_B_Part_3"
+      ],
+      "environment_object_count": 1901,
+      "object_count_stable": true,
+      "loop_endpoint_matrix_error": 0.0,
+      "near_seam_part_displacement_over_20ms_m": 0.010869503,
+      "xr_positions": [
+        {
+          "view": "05_Training_Participant",
+          "camera_world": [
+            5.1,
+            1.65,
+            3.65
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "06_Computer_Wide",
+          "camera_world": [
+            9.35,
+            1.64999986,
+            -2.1
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "08_Fan_Wide",
+          "camera_world": [
+            -2.4,
+            1.64999986,
+            -2.18
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        },
+        {
+          "view": "03_Neutral_Corridor",
+          "camera_world": [
+            -0.1,
+            1.65,
+            4.8
+          ],
+          "eye_height_above_floor": 1.65,
+          "major_boundary_capsule_blockers": [],
+          "pass": true
+        }
+      ],
+      "hardware_used": false,
+      "scope": "Editor PlayMode natural playback plus normalized-time endpoint/second-loop samples; no headset ergonomics or Quest profiling"
+    },
+    "rollback": {
+      "status": "PASS",
+      "restored_original_materials": true,
+      "groups": 7,
+      "modified_retained": true,
+      "baseline_exact": true,
+      "console": {
+        "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+        "unityVersion": "6000.3.20f1",
+        "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+        "utc": "2026-09-10T16:51:16.6879402Z",
+        "status": "COMPILE_GATE_PASS",
+        "isCompiling": false,
+        "isUpdating": false,
+        "isPlaying": false,
+        "consoleErrors": 0,
+        "consoleWarnings": 1,
+        "consoleLogs": 2,
+        "compileErrorEntries": 0,
+        "entries": [
+          {
+            "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+            "mode": 8406016
+          },
+          {
+            "message": "VISUAL_CHECK_PASS structure_unchanged=1 groups=7\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:57)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+            "mode": 8406016
+          },
+          {
+            "message": "Releasing render texture that is set to be RenderTexture.active!\n",
+            "mode": 512
+          }
+        ]
+      }
+    },
+    "scene_diff": "Only 16 material slot override blocks, 64 added YAML lines; removing exactly those blocks reproduces checkpoint scene.",
+    "structure_records_compared": 1967,
+    "reused": "Existing AuditScene, BeginRuntime/RuntimeTick and Console probe; output routing writes to GlassOakFix, leaving original evidence unchanged.",
+    "geometry_layout_lighting_animation_collision_xr_unchanged": true,
+    "source_glbs_unchanged": true,
+    "protected_research_scenes_unchanged": true
+  },
+  "screenshots": [
+    {
+      "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/06_Computer_Wide_After.png",
+      "position": [
+        9.35,
+        1.65,
+        -2.1
+      ]
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/08_Fan_Wide_After.png",
+      "position": [
+        -2.4,
+        1.65,
+        -2.18
+      ]
+    },
+    {
+      "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/17_Computer_Activity_After.png",
+      "position": [
+        8.5,
+        1.65,
+        -7.3
+      ]
+    }
+  ],
+  "visual_findings": [
+    "Computer and Fan room windows show the factory behind the panes.",
+    "Computer/Fan workbench tops have warm wood color and simple grain, no longer white.",
+    "Same view positions, geometry, layout, lighting and material assignments outside Glass/Oak retained."
+  ],
+  "console": {
+    "final": {
+      "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+      "unityVersion": "6000.3.20f1",
+      "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+      "utc": "2026-09-10T16:51:16.6879402Z",
+      "status": "COMPILE_GATE_PASS",
+      "isCompiling": false,
+      "isUpdating": false,
+      "isPlaying": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 1,
+      "consoleLogs": 2,
+      "compileErrorEntries": 0,
+      "entries": [
+        {
+          "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+          "mode": 8406016
+        },
+        {
+          "message": "VISUAL_CHECK_PASS structure_unchanged=1 groups=7\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:57)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+          "mode": 8406016
+        },
+        {
+          "message": "Releasing render texture that is set to be RenderTexture.active!\n",
+          "mode": 512
+        }
+      ]
+    },
+    "runtime": {
+      "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+      "unityVersion": "6000.3.20f1",
+      "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+      "utc": "2026-09-10T16:46:09.7331225Z",
+      "status": "COMPILE_GATE_PASS",
+      "isCompiling": false,
+      "isUpdating": false,
+      "isPlaying": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 6,
+      "consoleLogs": 1,
+      "compileErrorEntries": 0,
+      "entries": [
+        {
+          "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        },
+        {
+          "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        },
+        {
+          "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        },
+        {
+          "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        },
+        {
+          "message": "Loading OpenXR loader library at path: D:\\VR_TMU\\XR-Research-V2\\Library\\PackageCache\\com.unity.xr.openxr@ef0033a586bf\\RuntimeLoaders\\windows\\x64\\openxr_loader.dll\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad () (at ./Library/PackageCache/com.unity.xr.management@e3a3882b360a/Runtime/XRGeneralSettings.cs:145)\n",
+          "mode": 8406016
+        },
+        {
+          "message": "XR: Error setting active audio output driver. Falling back to default.\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        },
+        {
+          "message": "XR: Error setting active audio output driver. Falling back to default.\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+          "mode": 512
+        }
+      ]
+    },
+    "retained_known_warnings": [
+      "PlayMode reports the same four missing-script warnings and two XR audio-driver fallback warnings recorded in the original V2 after_playmode_console.json. Saved baseline and modified scene have zero missing component entries in structural snapshot. Origin of runtime-only warning references remains uninvestigated in this material-only task.",
+      "Final Editor snapshot retains one Releasing render texture that is set to be RenderTexture.active warning following scene reopen/capture workflow. Capture helper explicitly unbinds its target before releasing it; warning still occurs and is not suppressed."
+    ],
+    "transient_helper_issues": "Baseline helper fake-null MeshFilter access, JSON Color serialization, preexisting baseline-copy guard, and float/double JSON comparison were corrected before verification; no scene geometry changed. Last failed helper snapshot retained. No Console Clear or warning suppression invoked."
+  },
+  "unrelated_serialization": {
+    "restoration": [
+      {
+        "path": "Assets/Samples/XR Interaction Toolkit/3.4.0/Starter Assets/Prefabs/XR Origin (XR Rig).prefab",
+        "before_tool_side_effect_sha256": "9b0d0cf6539d67714dcf5ee3530deb70a8a9ef79cabb2504be91fb8cd606cff0",
+        "autosaved_sha256": "fcf794b175fb20e7a371895f9de80475b68bad8340ac3da3e5b8757111f2ccb5",
+        "restored_exactly_to_checkpoint": true
+      },
+      {
+        "path": "Assets/XRI_Examples/VRWalkthrough/Materials/BezierLink.mat",
+        "before_tool_side_effect_sha256": "111602bc0de50dada1ca4e721fb4dcafdf56c65aa914f890c638f87fc20e07b3",
+        "autosaved_sha256": "30bb51ff66696af82c85397789095a65fe3f56cc1bd6f798a1a492155bd227a5",
+        "restored_exactly_to_checkpoint": true
+      }
+    ],
+    "evidence": "URP MaterialPostprocessor schedules global AssetDatabase.SaveAssets after creating material assets; this flushed dirty shared XR assets. Two redundant .01 width overrides and _EMISSION keyword restored narrowly after preserving their bytes. The exact rig-dirty call stack is not captured. Existing m_LineWidth=.01 already governs runtime width. BezierLink may be reserialized again by normal URP validation; no package/global workaround introduced."
+  },
+  "remaining_known_issues": [
+    "Transparent glass still has normal alpha sorting/overdraw tradeoffs; no device performance or headset verification.",
+    "Wood is intentionally simple reusable color grain, not Cycles equivalence.",
+    "Existing runtime warning references/audio fallback and Editor render-texture cleanup warning remain for separate investigation.",
+    "Vehicle materials, existing flat lighting/aliasing and other baseline material issues are unchanged and out of this pass."
+  ],
+  "handoff_decision": "Yes for moving beyond these two visual blockers in the isolated Editor baseline. Not a release or hardware acceptance; retained Console warnings still require separate triage before participant-facing validation. Hardware Kit V2 was not started.",
+  "files_changed": [
+    "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Materials\\V2_RoomGlass_Alpha.mat",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Materials\\V2_Oak_Simple.mat",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Materials\\Oak_Grain_256.png",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Editor\\EnvironmentV2VisualFix.cs",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Editor\\EnvironmentV2Build.cs",
+    "Assets\\VRMaintenanceResearch\\Assets\\V2\\Environment\\Editor\\EnvironmentV2Import.cs",
+    "Assets\\VRMaintenanceResearch\\AuditOutputs\\V2\\GlassOakFix/* (new evidence and matching meta files)"
+  ]
+}

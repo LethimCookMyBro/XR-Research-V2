@@ -1,0 +1,3 @@
+System.InvalidOperationException: Non-material scene structure changed
+  at EnvironmentV2Isolated.EnvironmentV2Import.VisualCommand (System.String command) [0x003ba] in D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Assets\V2\Environment\Editor\EnvironmentV2VisualFix.cs:70 
+  at EnvironmentV2Isolated.EnvironmentV2Import.Poll () [0x0009c] in D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Assets\V2\Environment\Editor\EnvironmentV2Import.cs:37 

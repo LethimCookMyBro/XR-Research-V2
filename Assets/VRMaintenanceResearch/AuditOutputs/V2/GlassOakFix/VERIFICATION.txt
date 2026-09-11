@@ -1,0 +1,43 @@
+Environment V2 Glass / Oak material-only fix
+Checkpoint: b446c0ad73cbe9d25ad8f8125771ba473286633c (baseline commit created and verified before visual changes).
+Changed field: 16 Renderer.m_Materials.Array.data[0] scene overrides: 10 Glass, 6 Oak.
+MODIFIED_FILE: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\Scenes\V2\VRResearch_Environment_V2.unity
+DIFF_FILE: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\GlassOakFix\DIFF_FILE.patch
+VERIFICATION.txt: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\GlassOakFix\VERIFICATION.txt
+ROLLBACK.sh: D:\VR_TMU\XR-Research-V2\Assets\VRMaintenanceResearch\AuditOutputs\V2\GlassOakFix\ROLLBACK.sh
+
+BASELINE / MODIFIED / ROLLBACK exact command (cwd=D:\VR_TMU\XR-Research-V2):
+python Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/verify_visual_fix.py
+Input: checkpoint scene copy, modified scene, 7 original GLBs, live Unity structural/runtime/rollback reports, 3 PNGs.
+Literal stdout:
+BASELINE_PASS checkpoint_preserved=1 original_evidence_unchanged=1
+MODIFIED_PASS glass_slots=10 oak_slots=6 material_only=1 structure=1967 loop_seconds=48 screenshots=3
+ROLLBACK_PASS original_materials=1 groups=7 modified_retained=1
+Exit status: 0
+Git also emits its existing LF-to-CRLF working-copy warnings for the two edited helper files; no warnings are suppressed.
+
+ROLLBACK exact command:
+& 'C:/Program Files/Git/bin/bash.exe' -c 'chmod +x Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/ROLLBACK.sh && bash Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/ROLLBACK.sh'
+Input: BASELINE.unity -> separate Rollback_Test/Restored_Baseline.unity only.
+Literal stdout: ROLLBACK_COPY_PASS original_material_baseline_exact=1 modified_scene_untouched=1
+Exit status: 0
+
+Live Unity input dispatch (PowerShell; substitute the literal input below for COMMAND):
+'COMMAND' | Set-Content -Encoding ascii Temp/EnvironmentV2Preflight/request.tmp
+Move-Item -LiteralPath Temp/EnvironmentV2Preflight/request.tmp -Destination Temp/EnvironmentV2Preflight/request.txt -Force
+Inputs, in order: visual_baseline, visual_fix, visual_check, visual_play, visual_check, visual_rollback.
+Corrected checks/captures were rerun after helper fixes. All final callbacks completed; no pending request remains.
+Observed callback outputs:
+VISUAL_BASELINE_PASS checkpoint_scene_preserved=1
+VISUAL_FIX_PASS material_slots=16
+VISUAL_CHECK_PASS structure_unchanged=1 groups=7
+ENVIRONMENT_V2_PLAYMODE_COMPLETE
+VISUAL_ROLLBACK_PASS restored_original_materials=1 modified_retained=1
+Dispatch exit statuses: 0; callback status fields: PASS.
+
+Restored behavior/status: rollback copy reopens in Unity with original opaque Glass/white Oak assignments and all 7 groups; modified scene stays open separately with fixed materials and hash 53971340bbe74d54ce8a7ca20f6311e5a3977e994d14a691fa37f7b73a6b3631.
+Structure: 1967 records identical; removing exactly 16 new material overrides reproduces baseline scene bytes (normalized line endings).
+Runtime: natural 48-second loop observed for 58.327 seconds; two robots, eight persistent pieces, object count stable.
+Console: final 0 compile errors / 0 errors / 1 render-texture cleanup warning; PlayMode 0 errors / 6 warnings matching baseline missing-script and audio fallback messages. Full snapshots preserved. No clearing/suppression.
+No layout, geometry, lighting, collision, research/XR logic, source GLB, vehicle or animation edits. Original research scenes/evidence preserved.
+Visual blockers resolved for isolated Editor baseline; remaining warnings and device validation are separate gates. Hardware Kit V2 not started.

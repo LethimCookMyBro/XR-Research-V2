@@ -28,7 +28,7 @@ namespace EnvironmentV2Isolated
         static void Check(bool ok,string why) { if(!ok)throw new InvalidOperationException(why); }
         static float[] V(Vector3 v)=>new[]{v.x,v.y,v.z};
         static Vector3 Vec(JToken v)=>new Vector3((float)v[0],(float)v[1],(float)v[2]);
-        static void Write(string name,object value)=>File.WriteAllText(Audit+"/"+name,JsonConvert.SerializeObject(value,Formatting.Indented));
+        static void Write(string name,object value)=>File.WriteAllText(OutputAudit+"/"+name,JsonConvert.SerializeObject(value,Formatting.Indented));
         static void Protected()
         {
             foreach(var p in (JObject)Source["protected_hashes"])Check(Hash(p.Key)==(string)p.Value,"Protected scene hash changed: "+p.Key);

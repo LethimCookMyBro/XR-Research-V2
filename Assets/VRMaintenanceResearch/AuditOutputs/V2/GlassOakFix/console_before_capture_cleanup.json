@@ -1,0 +1,60 @@
+{
+    "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+    "unityVersion": "6000.3.20f1",
+    "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+    "utc": "2026-09-10T16:48:09.2054094Z",
+    "status": "COMPILE_GATE_PASS",
+    "isCompiling": false,
+    "isUpdating": false,
+    "isPlaying": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 7,
+    "consoleLogs": 4,
+    "compileErrorEntries": 0,
+    "entries": [
+        {
+            "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "The referenced script (Unknown) on this Behaviour is missing!\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "Loading OpenXR loader library at path: D:\\VR_TMU\\XR-Research-V2\\Library\\PackageCache\\com.unity.xr.openxr@ef0033a586bf\\RuntimeLoaders\\windows\\x64\\openxr_loader.dll\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad () (at ./Library/PackageCache/com.unity.xr.management@e3a3882b360a/Runtime/XRGeneralSettings.cs:145)\n",
+            "mode": 8406016
+        },
+        {
+            "message": "XR: Error setting active audio output driver. Falling back to default.\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "XR: Error setting active audio output driver. Falling back to default.\nUnityEngine.XR.Management.XRGeneralSettings:AttemptInitializeXRSDKOnLoad ()\n",
+            "mode": 512
+        },
+        {
+            "message": "ENVIRONMENT_V2_PLAYMODE_COMPLETE\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:OnPlayState (UnityEditor.PlayModeStateChange) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2RuntimeAudit.cs:31)\nUnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)\n",
+            "mode": 8406016
+        },
+        {
+            "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+            "mode": 8406016
+        },
+        {
+            "message": "VISUAL_CHECK_PASS structure_unchanged=1 groups=7\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:57)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+            "mode": 8406016
+        },
+        {
+            "message": "Releasing render texture that is set to be RenderTexture.active!\n",
+            "mode": 512
+        }
+    ]
+}

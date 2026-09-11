@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "restored_original_materials": true,
+  "groups": 7,
+  "modified_retained": true,
+  "baseline_exact": true,
+  "console": {
+    "projectRoot": "D:\\VR_TMU\\XR-Research-V2",
+    "unityVersion": "6000.3.20f1",
+    "activeScene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity",
+    "utc": "2026-09-10T16:51:16.6879402Z",
+    "status": "COMPILE_GATE_PASS",
+    "isCompiling": false,
+    "isUpdating": false,
+    "isPlaying": false,
+    "consoleErrors": 0,
+    "consoleWarnings": 1,
+    "consoleLogs": 2,
+    "compileErrorEntries": 0,
+    "entries": [
+      {
+        "message": "ENVIRONMENT_V2_AUDIT_PASS renderers=1849 triangles=254489\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:AuditScene () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs:146)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:56)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+        "mode": 8406016
+      },
+      {
+        "message": "VISUAL_CHECK_PASS structure_unchanged=1 groups=7\nUnityEngine.Debug:Log (object)\nEnvironmentV2Isolated.EnvironmentV2Import:VisualCommand (string) (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs:57)\nEnvironmentV2Isolated.EnvironmentV2Import:Poll () (at Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs:37)\nUnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n",
+        "mode": 8406016
+      },
+      {
+        "message": "Releasing render texture that is set to be RenderTexture.active!\n",
+        "mode": 512
+      }
+    ]
+  }
+}

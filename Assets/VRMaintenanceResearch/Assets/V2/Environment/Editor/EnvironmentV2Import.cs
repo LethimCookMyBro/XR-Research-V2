@@ -14,6 +14,7 @@ namespace EnvironmentV2Isolated
     {
         const string Root = "D:/VR_TMU/XR-Research-V2";
         const string Audit = "Assets/VRMaintenanceResearch/AuditOutputs/V2";
+        static string OutputAudit => SessionState.GetString("EnvironmentV2Isolated.OutputAudit", Audit);
         const string Request = "Temp/EnvironmentV2Preflight/request.txt";
         [Serializable] public class Entry { public string message; public int mode; }
         [Serializable] public class Probe
@@ -33,7 +34,8 @@ namespace EnvironmentV2Isolated
             {
                 if (Path.GetFullPath(Application.dataPath + "/..").Replace('\\','/').TrimEnd('/') != Root)
                     throw new InvalidOperationException("Wrong project root; no scene action performed.");
-                if (request == "preflight") SaveProbe("preflight_editor.json");
+                if (request.StartsWith("visual_")) VisualCommand(request);
+                else if (request == "preflight") SaveProbe("preflight_editor.json");
                 else if (request == "build") Build();
                 else if(request == "audit") AuditScene();
                 else if(request == "render") CaptureViews();
@@ -41,7 +43,7 @@ namespace EnvironmentV2Isolated
                 else if(request == "verify_final") FinalCheck();
                 else throw new InvalidOperationException("Unknown request: " + request);
             }
-            catch (Exception e) { File.WriteAllText(Audit + "/helper_error.txt", e.ToString()); Debug.LogException(e); }
+            catch (Exception e) { File.WriteAllText(OutputAudit + "/helper_error.txt", e.ToString()); Debug.LogException(e); }
         }
         static Probe SaveProbe(string filename)
         {
@@ -71,7 +73,7 @@ namespace EnvironmentV2Isolated
             }
             finally { logs.GetMethod("EndGettingEntries",flags).Invoke(null,null); }
             p.status=p.compileErrorEntries==0&&!p.isCompiling?"COMPILE_GATE_PASS":"STOP_PREEXISTING_COMPILE_ERRORS";
-            File.WriteAllText(Audit+"/"+filename,JsonUtility.ToJson(p,true));
+            File.WriteAllText(OutputAudit+"/"+filename,JsonUtility.ToJson(p,true));
             return p;
         }
     }

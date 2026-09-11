@@ -1,0 +1,26 @@
+[
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/06_Computer_Wide_After.png",
+    "position": [
+      9.35,
+      1.65,
+      -2.1
+    ]
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/08_Fan_Wide_After.png",
+    "position": [
+      -2.4,
+      1.65,
+      -2.18
+    ]
+  },
+  {
+    "path": "Assets/VRMaintenanceResearch/AuditOutputs/V2/GlassOakFix/17_Computer_Activity_After.png",
+    "position": [
+      8.5,
+      1.65,
+      -7.3
+    ]
+  }
+]

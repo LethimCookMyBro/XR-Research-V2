@@ -1,0 +1,589 @@
+diff --git a/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs b/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs
+index 5e53663..c9a8f15 100644
+--- a/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs
++++ b/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Build.cs
+@@ -28,7 +28,7 @@ namespace EnvironmentV2Isolated
+         static void Check(bool ok,string why) { if(!ok)throw new InvalidOperationException(why); }
+         static float[] V(Vector3 v)=>new[]{v.x,v.y,v.z};
+         static Vector3 Vec(JToken v)=>new Vector3((float)v[0],(float)v[1],(float)v[2]);
+-        static void Write(string name,object value)=>File.WriteAllText(Audit+"/"+name,JsonConvert.SerializeObject(value,Formatting.Indented));
++        static void Write(string name,object value)=>File.WriteAllText(OutputAudit+"/"+name,JsonConvert.SerializeObject(value,Formatting.Indented));
+         static void Protected()
+         {
+             foreach(var p in (JObject)Source["protected_hashes"])Check(Hash(p.Key)==(string)p.Value,"Protected scene hash changed: "+p.Key);
+diff --git a/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs b/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs
+index 8a7c877..ed37ee4 100644
+--- a/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs
++++ b/Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2Import.cs
+@@ -14,6 +14,7 @@ namespace EnvironmentV2Isolated
+     {
+         const string Root = "D:/VR_TMU/XR-Research-V2";
+         const string Audit = "Assets/VRMaintenanceResearch/AuditOutputs/V2";
++        static string OutputAudit => SessionState.GetString("EnvironmentV2Isolated.OutputAudit", Audit);
+         const string Request = "Temp/EnvironmentV2Preflight/request.txt";
+         [Serializable] public class Entry { public string message; public int mode; }
+         [Serializable] public class Probe
+@@ -33,7 +34,8 @@ namespace EnvironmentV2Isolated
+             {
+                 if (Path.GetFullPath(Application.dataPath + "/..").Replace('\\','/').TrimEnd('/') != Root)
+                     throw new InvalidOperationException("Wrong project root; no scene action performed.");
+-                if (request == "preflight") SaveProbe("preflight_editor.json");
++                if (request.StartsWith("visual_")) VisualCommand(request);
++                else if (request == "preflight") SaveProbe("preflight_editor.json");
+                 else if (request == "build") Build();
+                 else if(request == "audit") AuditScene();
+                 else if(request == "render") CaptureViews();
+@@ -41,7 +43,7 @@ namespace EnvironmentV2Isolated
+                 else if(request == "verify_final") FinalCheck();
+                 else throw new InvalidOperationException("Unknown request: " + request);
+             }
+-            catch (Exception e) { File.WriteAllText(Audit + "/helper_error.txt", e.ToString()); Debug.LogException(e); }
++            catch (Exception e) { File.WriteAllText(OutputAudit + "/helper_error.txt", e.ToString()); Debug.LogException(e); }
+         }
+         static Probe SaveProbe(string filename)
+         {
+@@ -71,7 +73,7 @@ namespace EnvironmentV2Isolated
+             }
+             finally { logs.GetMethod("EndGettingEntries",flags).Invoke(null,null); }
+             p.status=p.compileErrorEntries==0&&!p.isCompiling?"COMPILE_GATE_PASS":"STOP_PREEXISTING_COMPILE_ERRORS";
+-            File.WriteAllText(Audit+"/"+filename,JsonUtility.ToJson(p,true));
++            File.WriteAllText(OutputAudit+"/"+filename,JsonUtility.ToJson(p,true));
+             return p;
+         }
+     }
+diff --git a/Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity b/Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity
+index 9e565f2..ff6fb9a 100644
+--- a/Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity
++++ b/Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_Environment_V2.unity
+@@ -894,6 +894,14 @@ PrefabInstance:
+     serializedVersion: 3
+     m_TransformParent: {fileID: 409695643}
+     m_Modifications:
++    - target: {fileID: -6443592892950748768, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
++    - target: {fileID: 656548583205526834, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     - target: {fileID: 1173753634317377396, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
+       propertyPath: m_Name
+       value: Fan
+@@ -938,6 +946,18 @@ PrefabInstance:
+       propertyPath: m_LocalEulerAnglesHint.z
+       value: 0
+       objectReference: {fileID: 0}
++    - target: {fileID: 8082198765677479065, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
++    - target: {fileID: 8133257973873258311, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
++    - target: {fileID: 8141220595644696318, guid: d5e5323162ed09543a5805c37d63e4df, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     m_RemovedComponents: []
+     m_RemovedGameObjects: []
+     m_AddedGameObjects: []
+@@ -1511,10 +1531,22 @@ PrefabInstance:
+     serializedVersion: 3
+     m_TransformParent: {fileID: 409695643}
+     m_Modifications:
++    - target: {fileID: -4774876036630625277, guid: 0e5fcc06cb403c047a4c3906ffd67902, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
++    - target: {fileID: 153010644946818551, guid: 0e5fcc06cb403c047a4c3906ffd67902, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
+     - target: {fileID: 1173753634317377396, guid: 0e5fcc06cb403c047a4c3906ffd67902, type: 3}
+       propertyPath: m_Name
+       value: Training
+       objectReference: {fileID: 0}
++    - target: {fileID: 5154695676188720594, guid: 0e5fcc06cb403c047a4c3906ffd67902, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
+     - target: {fileID: 7937054914734428953, guid: 0e5fcc06cb403c047a4c3906ffd67902, type: 3}
+       propertyPath: m_LocalPosition.x
+       value: 0
+@@ -1863,10 +1895,22 @@ PrefabInstance:
+     serializedVersion: 3
+     m_TransformParent: {fileID: 409695643}
+     m_Modifications:
++    - target: {fileID: -8782927468627146682, guid: bf49c4e28d59ff74dba02c7ed8183857, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
++    - target: {fileID: -5532005576832201439, guid: bf49c4e28d59ff74dba02c7ed8183857, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     - target: {fileID: 1173753634317377396, guid: bf49c4e28d59ff74dba02c7ed8183857, type: 3}
+       propertyPath: m_Name
+       value: Corridor
+       objectReference: {fileID: 0}
++    - target: {fileID: 7888360543431465889, guid: bf49c4e28d59ff74dba02c7ed8183857, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     - target: {fileID: 7937054914734428953, guid: bf49c4e28d59ff74dba02c7ed8183857, type: 3}
+       propertyPath: m_LocalPosition.x
+       value: 0
+@@ -2128,10 +2172,26 @@ PrefabInstance:
+     serializedVersion: 3
+     m_TransformParent: {fileID: 409695643}
+     m_Modifications:
++    - target: {fileID: -2524469064562522461, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
++    - target: {fileID: -1728680813712029290, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     - target: {fileID: 1173753634317377396, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
+       propertyPath: m_Name
+       value: Computer
+       objectReference: {fileID: 0}
++    - target: {fileID: 1678666248886791078, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
++    - target: {fileID: 3388362104177211426, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 4efb6a211601fd64e86dc32b446962f0, type: 2}
+     - target: {fileID: 7937054914734428953, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
+       propertyPath: m_LocalPosition.x
+       value: 0
+@@ -2172,6 +2232,10 @@ PrefabInstance:
+       propertyPath: m_LocalEulerAnglesHint.z
+       value: 0
+       objectReference: {fileID: 0}
++    - target: {fileID: 8194119546152384108, guid: 5ecbe69c35868054dbeec0630564a178, type: 3}
++      propertyPath: 'm_Materials.Array.data[0]'
++      value: 
++      objectReference: {fileID: 2100000, guid: 76909af08e9f410498b0424e4dc842dc, type: 2}
+     m_RemovedComponents: []
+     m_RemovedGameObjects: []
+     m_AddedGameObjects: []
+--- /dev/null
++++ Assets/VRMaintenanceResearch/Assets/V2/Environment/Editor/EnvironmentV2VisualFix.cs
+@@ -0,0 +1,127 @@
++#if UNITY_EDITOR
++using System;
++using System.IO;
++using System.Linq;
++using System.Collections.Generic;
++using Newtonsoft.Json;
++using Newtonsoft.Json.Linq;
++using UnityEditor;
++using UnityEditor.SceneManagement;
++using UnityEngine;
++using UnityEngine.Rendering;
++using UnityEngine.Rendering.Universal;
++using Object = UnityEngine.Object;
++
++namespace EnvironmentV2Isolated
++{
++ public static partial class EnvironmentV2Import
++ {
++  const string VisualAudit=Audit+"/GlassOakFix";
++  const string VisualMaterials=Folder+"/Materials";
++  static IEnumerable<Renderer> RoomRenderers()=>Groups.Take(4).SelectMany(n=>Environment().transform.Find(n).GetComponentsInChildren<Renderer>(true));
++  static string Hierarchy(Transform t)=>t.parent?Hierarchy(t.parent)+"/"+t.name:t.name;
++  static string AssetId(Object obj){if(!obj)return "";AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj,out string guid,out long id);return guid+":"+id;}
++  static object Structure()=>TargetScene().GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<Transform>(true)).OrderBy(Hierarchy).Select(t=>new{
++   path=Hierarchy(t),position=V(t.localPosition),rotation=new[]{t.localRotation.x,t.localRotation.y,t.localRotation.z,t.localRotation.w},scale=V(t.localScale),active=t.gameObject.activeSelf,
++   components=t.GetComponents<Component>().Select(c=>c?c.GetType().FullName:"MISSING").ToArray(),mesh=t.TryGetComponent<MeshFilter>(out var mf)?AssetId(mf.sharedMesh):"",
++   renderer=t.TryGetComponent<Renderer>(out var r)?new{enabled=r.enabled,shadows=r.shadowCastingMode,receive=r.receiveShadows}:null,
++   box=t.TryGetComponent<BoxCollider>(out var b)?new{center=V(b.center),size=V(b.size),trigger=b.isTrigger,enabled=b.enabled}:null,
++   meshCollider=t.TryGetComponent<MeshCollider>(out var mc)?new{mesh=AssetId(mc.sharedMesh),convex=mc.convex,trigger=mc.isTrigger,enabled=mc.enabled}:null,
++   animator=t.TryGetComponent<Animator>(out var a)?new{controller=AssetId(a.runtimeAnimatorController),rootMotion=a.applyRootMotion,culling=a.cullingMode,enabled=a.enabled}:null,
++   light=t.TryGetComponent<Light>(out var l)?new{type=l.type,intensity=l.intensity,color=new[]{l.color.r,l.color.g,l.color.b,l.color.a},shadows=l.shadows}:null
++  }).ToArray();
++  static void VisualCommand(string command)
++  {
++   Directory.CreateDirectory(VisualAudit);SessionState.SetString("EnvironmentV2Isolated.OutputAudit",VisualAudit);
++   TargetScene();Protected();Check(Application.unityVersion=="6000.3.20f1","Unexpected Unity version");
++   if(command=="visual_baseline")
++   {
++    Check(!EditorApplication.isPlaying,"Exit PlayMode before baseline capture");
++    Check(!TargetScene().isDirty,"Unsaved scene changes; baseline must be preserved first");
++    Check(SaveProbe("baseline_console.json").compileErrorEntries==0,"Baseline compile errors");
++    Check(!File.Exists(VisualAudit+"/baseline_structure.json"),"Baseline already captured");
++    if(!File.Exists(VisualAudit+"/BASELINE.unity"))File.Copy(ScenePath,VisualAudit+"/BASELINE.unity");
++    Check(Hash(ScenePath)==Hash(VisualAudit+"/BASELINE.unity"),"Baseline file differs");Write("baseline_structure.json",Structure());
++    Write("baseline_materials.json",RoomRenderers().SelectMany(r=>r.sharedMaterials.Select((m,i)=>new{r,m,i})).Where(x=>x.m&& (x.m.name=="Glass"||x.m.name=="Oak")).Select(x=>new{path=Hierarchy(x.r.transform),slot=x.i,material=x.m.name,asset=AssetDatabase.GetAssetPath(x.m),shader=x.m.shader.name,queue=x.m.renderQueue,keywords=x.m.shaderKeywords,properties=new[]{"_SrcBlend","_DstBlend","_ZWrite","_Surface","transmissionFactor"}.Where(x.m.HasProperty).ToDictionary(n=>n,n=>x.m.GetFloat(n)),colors=new[]{"baseColorFactor","_BaseColor"}.Where(x.m.HasProperty).ToDictionary(n=>n,n=>x.m.GetColor(n).ToString()),textures=x.m.GetTexturePropertyNames().Where(n=>x.m.GetTexture(n)).ToArray()}).ToArray());
++    Debug.Log("VISUAL_BASELINE_PASS checkpoint_scene_preserved=1");
++   }
++   else if(command=="visual_fix") ApplyVisualFix();
++   else if(command=="visual_check")
++   {
++    Check(!EditorApplication.isPlaying,"Exit PlayMode first");
++    EditorSceneManager.OpenScene(ScenePath,OpenSceneMode.Single);
++    // Compare the same JSON numeric representation on both sides (float versus parsed double).
++    var before=JToken.Parse(File.ReadAllText(VisualAudit+"/baseline_structure.json"));var after=JToken.Parse(JsonConvert.SerializeObject(Structure()));
++    Write("modified_structure.json",after);Check(JToken.DeepEquals(before,after),"Non-material scene structure changed");
++    AuditScene();Write("visual_verification.json",new{status="PASS",structure_unchanged=true,scene_sha256=Hash(ScenePath),groups=Environment().transform.childCount,console=SaveProbe("final_console.json")});
++    CaptureVisualProof();Debug.Log("VISUAL_CHECK_PASS structure_unchanged=1 groups=7");
++   }
++   else if(command=="visual_play") BeginRuntime();
++   else if(command=="visual_rollback")
++   {
++    string modified=Hash(ScenePath);var restored=EditorSceneManager.OpenScene(VisualAudit+"/Rollback_Test/Restored_Baseline.unity",OpenSceneMode.Additive);
++    var root=restored.GetRootGameObjects().Single(g=>g.name=="Environment_V1");
++    var mats=root.GetComponentsInChildren<Renderer>(true).SelectMany(r=>r.sharedMaterials).Where(m=>m).ToArray();
++    Check(!mats.Any(m=>m.name.StartsWith("V2_RoomGlass")||m.name.StartsWith("V2_Oak")),"Rollback retained overrides");
++    Check(root.transform.childCount==7,"Rollback groups missing");EditorSceneManager.CloseScene(restored,true);
++    Check(Hash(ScenePath)==modified,"Rollback modified current scene");
++    Write("rollback_verification.json",new{status="PASS",restored_original_materials=true,groups=7,modified_retained=true,baseline_exact=Hash(VisualAudit+"/BASELINE.unity")==Hash(VisualAudit+"/Rollback_Test/Restored_Baseline.unity"),console=SaveProbe("rollback_console.json")});
++    SessionState.EraseString("EnvironmentV2Isolated.OutputAudit");Debug.Log("VISUAL_ROLLBACK_PASS restored_original_materials=1 modified_retained=1");
++   }
++   else throw new InvalidOperationException(command);
++  }
++  static void ApplyVisualFix()
++  {
++   Check(File.Exists(VisualAudit+"/baseline_structure.json"),"Capture baseline first");
++   Check(!Directory.Exists(VisualMaterials),"Material folder already exists; do not overwrite");Directory.CreateDirectory(VisualMaterials);AssetDatabase.Refresh();
++   var shader=Shader.Find("Universal Render Pipeline/Lit");Check(shader&&shader.isSupported,"URP Lit missing");
++   var glass=new Material(shader){name="V2_RoomGlass_Alpha",renderQueue=3000};
++   glass.SetFloat("_Surface",1);glass.SetFloat("_Blend",0);glass.SetFloat("_BlendModePreserveSpecular",0);
++   glass.SetFloat("_ZWrite",0);glass.SetFloat("_Cull",(float)CullMode.Back);glass.SetFloat("_ReceiveShadows",0);
++   glass.SetFloat("_Metallic",0);glass.SetFloat("_Smoothness",.6f);glass.SetColor("_BaseColor",new Color(.72f,.87f,.92f,.12f));
++   UnityEditor.BaseShaderGUI.SetupMaterialBlendMode(glass);glass.EnableKeyword("_RECEIVE_SHADOWS_OFF");glass.SetShaderPassEnabled("ShadowCaster",false);
++   AssetDatabase.CreateAsset(glass,VisualMaterials+"/V2_RoomGlass_Alpha.mat");
++   // Small reusable color map only; no custom shader, refraction or render feature.
++   var tex=new Texture2D(256,256,TextureFormat.RGB24,false);var pixels=new Color[256*256];
++   for(int y=0;y<256;y++)for(int x=0;x<256;x++)
++   {
++    float u=x/256f,v=y/256f;float warp=.025f*Mathf.Sin(v*Mathf.PI*2)+.012f*Mathf.Sin(v*Mathf.PI*6);
++    float grain=Mathf.Pow(.5f+.5f*Mathf.Sin((u+warp)*Mathf.PI*2*24),12);
++    float broad=.5f+.5f*Mathf.Sin((u+warp)*Mathf.PI*2*5);float fine=Mathf.Sin(u*Mathf.PI*2*91+Mathf.Sin(v*Mathf.PI*2*7));
++    pixels[y*256+x]=Color.Lerp(new Color(.42f,.25f,.12f),new Color(.73f,.53f,.30f),.52f+.25f*broad-.24f*grain+.025f*fine);
++   }
++   tex.SetPixels(pixels);tex.Apply();string texturePath=VisualMaterials+"/Oak_Grain_256.png";File.WriteAllBytes(texturePath,tex.EncodeToPNG());Object.DestroyImmediate(tex);
++   AssetDatabase.ImportAsset(texturePath,ImportAssetOptions.ForceSynchronousImport);var importer=(TextureImporter)AssetImporter.GetAtPath(texturePath);
++   importer.sRGBTexture=true;importer.mipmapEnabled=true;importer.wrapMode=TextureWrapMode.Repeat;importer.filterMode=FilterMode.Trilinear;importer.anisoLevel=2;importer.maxTextureSize=256;importer.textureCompression=TextureImporterCompression.Compressed;importer.SaveAndReimport();
++   var oak=new Material(shader){name="V2_Oak_Simple"};oak.SetColor("_BaseColor",Color.white);oak.SetTexture("_BaseMap",AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath));oak.SetFloat("_Metallic",0);oak.SetFloat("_Smoothness",.28f);
++   AssetDatabase.CreateAsset(oak,VisualMaterials+"/V2_Oak_Simple.mat");
++   var changes=new List<object>();
++   foreach(var r in RoomRenderers())
++   {
++    var mats=r.sharedMaterials;bool changed=false;
++    for(int i=0;i<mats.Length;i++)if(mats[i]&&(mats[i].name=="Glass"||mats[i].name=="Oak"))
++    {var old=mats[i];mats[i]=old.name=="Glass"?glass:oak;changed=true;changes.Add(new{path=Hierarchy(r.transform),slot=i,before=old.name,after=mats[i].name});}
++    if(changed){r.sharedMaterials=mats;PrefabUtility.RecordPrefabInstancePropertyModifications(r);}
++   }
++   Check(changes.Count>0,"No material assignments changed");AssetDatabase.SaveAssetIfDirty(glass);AssetDatabase.SaveAssetIfDirty(oak);EditorSceneManager.MarkSceneDirty(TargetScene());Check(EditorSceneManager.SaveScene(TargetScene()),"Save failed");
++   Write("material_changes.json",changes);Debug.Log("VISUAL_FIX_PASS material_slots="+changes.Count);
++  }
++  static void CaptureVisualProof()
++  {
++   var camera=TargetScene().GetRootGameObjects().Single(g=>g.name=="Audit_Camera").GetComponent<Camera>();var pos=camera.transform.position;var rot=camera.transform.rotation;float fov=camera.fieldOfView;var rows=new List<object>();
++   try
++   {
++    foreach(var view in Source["views"].Where(v=>new[]{"06_Computer_Wide","08_Fan_Wide","17_Computer_Activity"}.Contains((string)v["name"])))
++    {
++     camera.transform.position=Vec(view["position"]);var p=camera.transform.position;p.y=1.65f;camera.transform.position=p;camera.transform.rotation=Quaternion.LookRotation(Vec(view["forward"]),Vector3.up);camera.fieldOfView=60;
++     var previous=RenderTexture.active;var rt=new RenderTexture(1080,720,24,RenderTextureFormat.ARGB32);rt.Create();var tex=new Texture2D(1080,720,TextureFormat.RGB24,false);
++     try{RenderPipeline.SubmitRenderRequest(camera,new UniversalRenderPipeline.SingleCameraRequest{destination=rt});RenderTexture.active=rt;tex.ReadPixels(new Rect(0,0,1080,720),0,0);tex.Apply();string path=VisualAudit+"/"+(string)view["name"]+"_After.png";File.WriteAllBytes(path,tex.EncodeToPNG());rows.Add(new{path,position=V(camera.transform.position)});}
++     finally{RenderTexture.active=null;Object.DestroyImmediate(tex);rt.Release();Object.DestroyImmediate(rt);RenderTexture.active=previous;}
++    }
++   }
++   finally{camera.transform.SetPositionAndRotation(pos,rot);camera.fieldOfView=fov;}
++   Write("screenshots.json",rows);
++  }
++ }
++}
++#endif
+--- /dev/null
++++ Assets/VRMaintenanceResearch/Assets/V2/Environment/Materials/V2_RoomGlass_Alpha.mat
+@@ -0,0 +1,141 @@
++%YAML 1.1
++%TAG !u! tag:unity3d.com,2011:
++--- !u!114 &-1339066261055669658
++MonoBehaviour:
++  m_ObjectHideFlags: 11
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 0}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
++  version: 10
++--- !u!21 &2100000
++Material:
++  serializedVersion: 8
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_Name: V2_RoomGlass_Alpha
++  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
++  m_Parent: {fileID: 0}
++  m_ModifiedSerializedProperties: 0
++  m_ValidKeywords:
++  - _RECEIVE_SHADOWS_OFF
++  - _SURFACE_TYPE_TRANSPARENT
++  m_InvalidKeywords: []
++  m_LightmapFlags: 4
++  m_EnableInstancingVariants: 0
++  m_DoubleSidedGI: 0
++  m_CustomRenderQueue: 3000
++  stringTagMap:
++    RenderType: Transparent
++  disabledShaderPasses:
++  - DepthOnly
++  - SHADOWCASTER
++  - MOTIONVECTORS
++  m_LockedProperties: 
++  m_SavedProperties:
++    serializedVersion: 3
++    m_TexEnvs:
++    - _BaseMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _BumpMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailAlbedoMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailMask:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailNormalMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _EmissionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MainTex:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MetallicGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _OcclusionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _ParallaxMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _SpecGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_Lightmaps:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_LightmapsInd:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_ShadowMasks:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    m_Ints: []
++    m_Floats:
++    - _AddPrecomputedVelocity: 0
++    - _AlphaClip: 0
++    - _AlphaToMask: 0
++    - _Blend: 0
++    - _BlendModePreserveSpecular: 0
++    - _BumpScale: 1
++    - _ClearCoatMask: 0
++    - _ClearCoatSmoothness: 0
++    - _Cull: 2
++    - _Cutoff: 0.5
++    - _DetailAlbedoMapScale: 1
++    - _DetailNormalMapScale: 1
++    - _DstBlend: 10
++    - _DstBlendAlpha: 10
++    - _EnvironmentReflections: 1
++    - _GlossMapScale: 0
++    - _Glossiness: 0
++    - _GlossyReflections: 0
++    - _Metallic: 0
++    - _OcclusionStrength: 1
++    - _Parallax: 0.005
++    - _QueueOffset: 0
++    - _ReceiveShadows: 0
++    - _Smoothness: 0.6
++    - _SmoothnessTextureChannel: 0
++    - _SpecularHighlights: 1
++    - _SrcBlend: 5
++    - _SrcBlendAlpha: 1
++    - _Surface: 1
++    - _WorkflowMode: 1
++    - _XRMotionVectorsPass: 1
++    - _ZWrite: 0
++    m_Colors:
++    - _BaseColor: {r: 0.72, g: 0.87, b: 0.92, a: 0.12}
++    - _Color: {r: 0.72, g: 0.87, b: 0.92, a: 0.12}
++    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
++    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
++  m_BuildTextureStacks: []
++  m_AllowLocking: 1
+--- /dev/null
++++ Assets/VRMaintenanceResearch/Assets/V2/Environment/Materials/V2_Oak_Simple.mat
+@@ -0,0 +1,137 @@
++%YAML 1.1
++%TAG !u! tag:unity3d.com,2011:
++--- !u!114 &-6293900737125422169
++MonoBehaviour:
++  m_ObjectHideFlags: 11
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 0}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
++  version: 10
++--- !u!21 &2100000
++Material:
++  serializedVersion: 8
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_Name: V2_Oak_Simple
++  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
++  m_Parent: {fileID: 0}
++  m_ModifiedSerializedProperties: 0
++  m_ValidKeywords: []
++  m_InvalidKeywords: []
++  m_LightmapFlags: 4
++  m_EnableInstancingVariants: 0
++  m_DoubleSidedGI: 0
++  m_CustomRenderQueue: -1
++  stringTagMap:
++    RenderType: Opaque
++  disabledShaderPasses:
++  - MOTIONVECTORS
++  m_LockedProperties: 
++  m_SavedProperties:
++    serializedVersion: 3
++    m_TexEnvs:
++    - _BaseMap:
++        m_Texture: {fileID: 2800000, guid: 3bbe9c24ee7f278479452022587cc0a1, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _BumpMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailAlbedoMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailMask:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailNormalMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _EmissionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MainTex:
++        m_Texture: {fileID: 2800000, guid: 3bbe9c24ee7f278479452022587cc0a1, type: 3}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MetallicGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _OcclusionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _ParallaxMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _SpecGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_Lightmaps:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_LightmapsInd:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_ShadowMasks:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    m_Ints: []
++    m_Floats:
++    - _AddPrecomputedVelocity: 0
++    - _AlphaClip: 0
++    - _AlphaToMask: 0
++    - _Blend: 0
++    - _BlendModePreserveSpecular: 1
++    - _BumpScale: 1
++    - _ClearCoatMask: 0
++    - _ClearCoatSmoothness: 0
++    - _Cull: 2
++    - _Cutoff: 0.5
++    - _DetailAlbedoMapScale: 1
++    - _DetailNormalMapScale: 1
++    - _DstBlend: 0
++    - _DstBlendAlpha: 0
++    - _EnvironmentReflections: 1
++    - _GlossMapScale: 0
++    - _Glossiness: 0
++    - _GlossyReflections: 0
++    - _Metallic: 0
++    - _OcclusionStrength: 1
++    - _Parallax: 0.005
++    - _QueueOffset: 0
++    - _ReceiveShadows: 1
++    - _Smoothness: 0.28
++    - _SmoothnessTextureChannel: 0
++    - _SpecularHighlights: 1
++    - _SrcBlend: 1
++    - _SrcBlendAlpha: 1
++    - _Surface: 0
++    - _WorkflowMode: 1
++    - _XRMotionVectorsPass: 1
++    - _ZWrite: 1
++    m_Colors:
++    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _Color: {r: 1, g: 1, b: 1, a: 1}
++    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
++    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
++  m_BuildTextureStacks: []
++  m_AllowLocking: 1
