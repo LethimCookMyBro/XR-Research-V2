@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>TRAINING_CORE_SELF_TEST</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Core/TrainingSession.cs"/><Compile Include="TrainingCoreChecks.cs"/>
+    <Reference Include="Newtonsoft.Json"><HintPath>../../../../Library/PackageCache/com.unity.nuget.newtonsoft-json@4dfd81071c64/Runtime/Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

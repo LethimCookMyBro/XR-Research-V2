@@ -102,3 +102,6 @@ crashlytics-build.properties
 /.cursor/
 *.slnx
 /Assets/VRMaintenanceResearch/AuditOutputs/
+
+# Hand-written test projects under Assets (used by Run-*Checks.ps1); their .meta files are tracked
+!/Assets/VRMaintenanceResearch/**/Tests/*.csproj
