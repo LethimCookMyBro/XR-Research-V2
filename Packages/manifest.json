@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.meta.xr.sdk.interaction": "205.0.0",
     "com.unity.ai.assistant": "2.18.0-pre.2",
     "com.unity.ai.inference": "2.6.1",
     "com.unity.ai.navigation": "2.0.10",
@@ -12,6 +13,7 @@
     "com.unity.test-framework": "1.6.0",
     "com.unity.timeline": "1.8.10",
     "com.unity.ugui": "2.0.0",
+    "com.unity.xr.hands": "1.9.0",
     "com.unity.xr.interaction.toolkit": "3.4.0",
     "com.unity.xr.management": "4.5.4",
     "com.unity.xr.openxr": "1.16.1",

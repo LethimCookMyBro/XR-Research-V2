@@ -1,3 +1,7 @@
+# Environment V2 asset credits
+
+Original author and license records follow unchanged. V2 retains the two background vehicles and authored robot/conveyor concept. Poly Haven vegetation has been removed from active V2; its historical attribution remains here for provenance. All new room/workbench/rack/process-cell/utility geometry is authored for this project; no third-party generative assets added. Vehicles remain background-only and retain the restrictions below.
+
 # Asset credits — REVIEW03
 
 ## Background R35 exterior

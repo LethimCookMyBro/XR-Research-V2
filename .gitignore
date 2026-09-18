@@ -96,3 +96,9 @@ crashlytics-build.properties
 *.preformat.bak
 *.preformat.bak.meta
 
+
+# Cross-PC sync: machine-local / generated
+/.claude/
+/.cursor/
+*.slnx
+/Assets/VRMaintenanceResearch/AuditOutputs/

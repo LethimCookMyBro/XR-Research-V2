@@ -1,0 +1,562 @@
+{
+  "canonical_path": "D:\\for_model_codex_vr_tmu\\blender\\VR_Research_Factory_ENVIRONMENT_V2_WORKING.blend",
+  "canonical_sha256": "00feafda3f101ed75df3c4c748acf763606f8a48db8776634112c46dff47b42a",
+  "export_adapted_path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\EXPORT_ADAPTED.blend",
+  "export_adapted_sha256": "1c5df9202f7fddaf80d6d08f7358a610f74d099e52b683aa97adba6da5bdda04",
+  "recipe_sha256": "f4a7181284ad6f6314e4f4573c80bf43b704dd98883298516ec73fe0a6d996bd",
+  "changed_packages": [
+    "01_Training_Static",
+    "02_Computer_Static",
+    "03_Fan_Static",
+    "04_Corridor_Static"
+  ],
+  "packages": [
+    {
+      "key": "01_Training_Static",
+      "sha256": "d11421058b5f994b8cb29787658564dc8387160307fcd7a063b6b5e60c2aac73",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 118,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 2645792,
+        "sha256": "d11421058b5f994b8cb29787658564dc8387160307fcd7a063b6b5e60c2aac73",
+        "nodes": 28,
+        "mesh_nodes": 28,
+        "unique_meshes": 28,
+        "primitives_unique": 52,
+        "primitives_instanced": 52,
+        "vertices_unique_accessors": 18680,
+        "triangles_instanced": 14512,
+        "materials": 15,
+        "images": 2,
+        "animations": 0,
+        "extensions_used": [],
+        "double_sided_materials": [
+          "V2_Frame",
+          "White.001",
+          "V2_PaintedMetal",
+          "V2_Wall",
+          "V2_Tote",
+          "V2_RawMetal",
+          "Ink",
+          "Rubber.001",
+          "V2_Ink",
+          "Glass_Export_Blend",
+          "FactoryFloor.001",
+          "BlueCabinet.001",
+          "Steel.001",
+          "Oak_Export_Training_Practice_A",
+          "Aluminium.001"
+        ],
+        "transparent_materials": [
+          "Glass_Export_Blend"
+        ]
+      }
+    },
+    {
+      "key": "02_Computer_Static",
+      "sha256": "32c66f1462a429d7514310d39c2522b8b6ac2cd9110fc34fcf28ac4f8b829914",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 229,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 5457424,
+        "sha256": "32c66f1462a429d7514310d39c2522b8b6ac2cd9110fc34fcf28ac4f8b829914",
+        "nodes": 49,
+        "mesh_nodes": 48,
+        "unique_meshes": 44,
+        "primitives_unique": 82,
+        "primitives_instanced": 92,
+        "vertices_unique_accessors": 33232,
+        "triangles_instanced": 27494,
+        "materials": 19,
+        "images": 4,
+        "animations": 0,
+        "extensions_used": [],
+        "double_sided_materials": [
+          "TimberEdge",
+          "V2_PaintedMetal",
+          "Ink",
+          "V2_Tote",
+          "V2_Wall",
+          "V2_RawMetal",
+          "Steel.001",
+          "White.001",
+          "Aluminium.001",
+          "BlueCabinet.001",
+          "R02_Equipment.001",
+          "V2_Frame",
+          "Glass_Export_Blend",
+          "FactoryFloor.001",
+          "Rubber.001",
+          "Oak_Export_Computer_Main",
+          "Oak_Export_Computer_Support",
+          "Yellow.001",
+          "V2_Ink"
+        ],
+        "transparent_materials": [
+          "Glass_Export_Blend"
+        ]
+      }
+    },
+    {
+      "key": "03_Fan_Static",
+      "sha256": "6daf8489103fd396a26363db8cedb63fe912b91a55fd19e28b4c536bd9cfc198",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 247,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 5499924,
+        "sha256": "6daf8489103fd396a26363db8cedb63fe912b91a55fd19e28b4c536bd9cfc198",
+        "nodes": 51,
+        "mesh_nodes": 50,
+        "unique_meshes": 46,
+        "primitives_unique": 82,
+        "primitives_instanced": 92,
+        "vertices_unique_accessors": 32844,
+        "triangles_instanced": 25832,
+        "materials": 21,
+        "images": 4,
+        "animations": 0,
+        "extensions_used": [],
+        "double_sided_materials": [
+          "V2_PaintedMetal",
+          "Ink",
+          "V2_Tote",
+          "V2_Wall",
+          "V2_RawMetal",
+          "BlueCabinet.001",
+          "V2_Frame",
+          "Glass_Export_Blend",
+          "FactoryFloor.001",
+          "Yellow.001",
+          "Steel.001",
+          "Rubber.001",
+          "Oak_Export_Fan_Main",
+          "Orange",
+          "Aluminium.001",
+          "TimberEdge",
+          "White.001",
+          "R02_Equipment.001",
+          "Oak_Export_Fan_Support",
+          "R02_ToolBlue",
+          "V2_Ink"
+        ],
+        "transparent_materials": [
+          "Glass_Export_Blend"
+        ]
+      }
+    },
+    {
+      "key": "04_Corridor_Static",
+      "sha256": "1445c6bcf36fcc246d74f9e60f392e398655a81bc4c47fe3707148f0950a892b",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 0,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 126120,
+        "sha256": "1445c6bcf36fcc246d74f9e60f392e398655a81bc4c47fe3707148f0950a892b",
+        "nodes": 15,
+        "mesh_nodes": 15,
+        "unique_meshes": 12,
+        "primitives_unique": 15,
+        "primitives_instanced": 19,
+        "vertices_unique_accessors": 4112,
+        "triangles_instanced": 3416,
+        "materials": 6,
+        "images": 0,
+        "animations": 0,
+        "extensions_used": [],
+        "double_sided_materials": [
+          "V2_Wall",
+          "V2_Frame",
+          "Glass_Export_Blend",
+          "V2_PaintedMetal",
+          "V2_RawMetal",
+          "FactoryFloor.001"
+        ],
+        "transparent_materials": [
+          "Glass_Export_Blend"
+        ]
+      }
+    },
+    {
+      "key": "05_Factory_Static",
+      "sha256": "1bec4dfdf75047325e0deca4eda79a84122a9f25c5e9ab33e5ea1907c3d922b9",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 0,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 1737084,
+        "sha256": "1bec4dfdf75047325e0deca4eda79a84122a9f25c5e9ab33e5ea1907c3d922b9",
+        "nodes": 41,
+        "mesh_nodes": 41,
+        "unique_meshes": 32,
+        "primitives_unique": 55,
+        "primitives_instanced": 94,
+        "vertices_unique_accessors": 48459,
+        "triangles_instanced": 47652,
+        "materials": 16,
+        "images": 0,
+        "animations": 0,
+        "extensions_used": [
+          "KHR_materials_emissive_strength"
+        ],
+        "double_sided_materials": [
+          "V2_Frame",
+          "White.001",
+          "R03Arm_CableRubber",
+          "V2_RawMetal",
+          "V2_PaintedMetal",
+          "V2_Safety",
+          "V2_Ink",
+          "FactoryFloor.001",
+          "V2_Wall",
+          "Light.001",
+          "Ink",
+          "Production_PASS",
+          "Aluminium.001",
+          "BlueCabinet.001",
+          "Steel.001",
+          "V2_Tote"
+        ],
+        "transparent_materials": []
+      }
+    },
+    {
+      "key": "06_Factory_Activity",
+      "sha256": "2dc6e4ab66cce365899c237077d22ac6958384d46e0b4f5a3483c3c9f8a40ec5",
+      "same_bytes_as_prior_stage": false,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 0,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PRIOR_PACKAGE_PASS; MODIFIED_JSON_VALIDATED; UNITY_PENDING",
+      "metrics": {
+        "bytes": 1247424,
+        "sha256": "2dc6e4ab66cce365899c237077d22ac6958384d46e0b4f5a3483c3c9f8a40ec5",
+        "nodes": 62,
+        "mesh_nodes": 60,
+        "unique_meshes": 29,
+        "primitives_unique": 58,
+        "primitives_instanced": 137,
+        "vertices_unique_accessors": 18480,
+        "triangles_instanced": 22752,
+        "materials": 8,
+        "images": 0,
+        "animations": 1,
+        "extensions_used": [
+          "KHR_materials_emissive_strength"
+        ],
+        "double_sided_materials": [
+          "V2_RawMetal",
+          "R03Arm_CableRubber",
+          "V2_PaintedMetal",
+          "White.001",
+          "V2_Safety",
+          "V2_Frame",
+          "R03_RedLens",
+          "Production_PASS"
+        ],
+        "transparent_materials": [],
+        "duration_seconds": 48
+      }
+    },
+    {
+      "key": "07_Vehicles_Background",
+      "sha256": "83d155e807be423def0c9cdcba49f47ece1583c309c0839bc6209c7f0abe1a76",
+      "same_bytes_as_prior_stage": true,
+      "max_expanded_position_error": 0.0,
+      "max_expanded_normal_error": 0.0,
+      "vertex_count_delta_vs_prior_glb": 0,
+      "sharing": "UNCHANGED",
+      "material_groups": "UNCHANGED",
+      "reimport": "PASS",
+      "metrics": {
+        "bytes": 2236772,
+        "sha256": "83d155e807be423def0c9cdcba49f47ece1583c309c0839bc6209c7f0abe1a76",
+        "nodes": 2,
+        "mesh_nodes": 2,
+        "unique_meshes": 2,
+        "primitives_unique": 25,
+        "primitives_instanced": 25,
+        "vertices_unique_accessors": 61509,
+        "triangles_instanced": 65005,
+        "materials": 25,
+        "images": 12,
+        "animations": 0,
+        "extensions_used": [
+          "KHR_materials_clearcoat",
+          "KHR_materials_transmission",
+          "KHR_materials_specular",
+          "KHR_materials_ior"
+        ],
+        "double_sided_materials": [
+          "grille",
+          "metal",
+          "carbon",
+          "R02_PaintSilver",
+          "phong5",
+          "rubber",
+          "red_glass",
+          "window",
+          "mirrors",
+          "R02_Equipment",
+          "light_glass",
+          "glass_surr",
+          "chrome",
+          "chassis",
+          "material",
+          "plastic",
+          "disk",
+          "R02_UnmarkedTire",
+          "R02_Brake",
+          "R03_MatteBlack",
+          "Aluminium",
+          "R03_SmokedGlass",
+          "R03_HeadlightLens",
+          "R03_SupraPaint",
+          "R03_RedLens"
+        ],
+        "transparent_materials": [
+          "grille",
+          "red_glass",
+          "window",
+          "light_glass"
+        ]
+      }
+    }
+  ],
+  "material_adaptations": {
+    "oak": [
+      {
+        "object": "Training_Practice_A",
+        "source_material": "Oak.001",
+        "export_material": "Oak_Export_Training_Practice_A",
+        "source_topology": {
+          "vertices": 672,
+          "polygons": 648,
+          "uv_layers": [
+            "UVMap"
+          ]
+        },
+        "export_uv_layer": "Export_Oak_Bake",
+        "images": {
+          "BaseColor": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Training_Practice_A_BaseColor.png",
+            "sha256": "c099b9408798aaba4f21dee45d94109e4891d4dcd7698b414ef62e7214a55a71",
+            "size": [
+              1024,
+              1024
+            ]
+          },
+          "Normal": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Training_Practice_A_Normal.png",
+            "sha256": "f4bc3e1b094aa8b1b8fd7e0f1d8d81b3c43e62eac6bf95836d3afec90d8ccde6",
+            "size": [
+              1024,
+              1024
+            ]
+          }
+        }
+      },
+      {
+        "object": "Computer_Main",
+        "source_material": "Oak.001",
+        "export_material": "Oak_Export_Computer_Main",
+        "source_topology": {
+          "vertices": 672,
+          "polygons": 648,
+          "uv_layers": [
+            "UVMap"
+          ]
+        },
+        "export_uv_layer": "Export_Oak_Bake",
+        "images": {
+          "BaseColor": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Computer_Main_BaseColor.png",
+            "sha256": "a9c4bc1e0f0164d32efc3eec2217fd9f279bbeece857758275884b9a832951a3",
+            "size": [
+              1024,
+              1024
+            ]
+          },
+          "Normal": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Computer_Main_Normal.png",
+            "sha256": "e90f019a1ade08bb640359726cb404779b69c4cb74d4a2fdaa7685c08fbd1af0",
+            "size": [
+              1024,
+              1024
+            ]
+          }
+        }
+      },
+      {
+        "object": "Computer_Support",
+        "source_material": "Oak.001",
+        "export_material": "Oak_Export_Computer_Support",
+        "source_topology": {
+          "vertices": 672,
+          "polygons": 648,
+          "uv_layers": [
+            "UVMap"
+          ]
+        },
+        "export_uv_layer": "Export_Oak_Bake",
+        "images": {
+          "BaseColor": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Computer_Support_BaseColor.png",
+            "sha256": "a97a37f1ff7d3fe94012c87320f7789ec3f510c5ed334113885ca9e1e89c2e40",
+            "size": [
+              1024,
+              1024
+            ]
+          },
+          "Normal": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Computer_Support_Normal.png",
+            "sha256": "100d5e34b061d3deaae31c9ea82cdb1e6558936e65138718f1fb25bd11db6944",
+            "size": [
+              1024,
+              1024
+            ]
+          }
+        }
+      },
+      {
+        "object": "Fan_Main",
+        "source_material": "Oak.001",
+        "export_material": "Oak_Export_Fan_Main",
+        "source_topology": {
+          "vertices": 672,
+          "polygons": 648,
+          "uv_layers": [
+            "UVMap"
+          ]
+        },
+        "export_uv_layer": "Export_Oak_Bake",
+        "images": {
+          "BaseColor": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Fan_Main_BaseColor.png",
+            "sha256": "d5c3ee49af21161a140e5b189600760a3fd4fe3e312e6c70400de523a6e47817",
+            "size": [
+              1024,
+              1024
+            ]
+          },
+          "Normal": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Fan_Main_Normal.png",
+            "sha256": "eab8b9c636a959e677d3885db17f66a6e9c07400a2e0d7b426b42da6c3e424fd",
+            "size": [
+              1024,
+              1024
+            ]
+          }
+        }
+      },
+      {
+        "object": "Fan_Support",
+        "source_material": "Oak.001",
+        "export_material": "Oak_Export_Fan_Support",
+        "source_topology": {
+          "vertices": 672,
+          "polygons": 648,
+          "uv_layers": [
+            "UVMap"
+          ]
+        },
+        "export_uv_layer": "Export_Oak_Bake",
+        "images": {
+          "BaseColor": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Fan_Support_BaseColor.png",
+            "sha256": "5788b9ef1e3982c40e3ce995e1c73231d7a55cc4d7efd69da858ea7298385ef2",
+            "size": [
+              1024,
+              1024
+            ]
+          },
+          "Normal": {
+            "path": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr\\textures\\Fan_Support_Normal.png",
+            "sha256": "69d13e4d32cb6b55759aa5dbfd33a924b5ffbaac5c0490778ab04e7f401d826e",
+            "size": [
+              1024,
+              1024
+            ]
+          }
+        }
+      }
+    ],
+    "glass": {
+      "users": [
+        "Computer_Door_Glass",
+        "Computer_Window_Glass",
+        "Corridor_East_Door_Glass",
+        "Corridor_Glass",
+        "Corridor_West_Door_Glass",
+        "Fan_Door_Glass",
+        "Fan_Window_Glass",
+        "Training_Door_Glass",
+        "Training_Window_Glass"
+      ],
+      "source_material": "Glass",
+      "source_shader": "0.965 Transparent + 0.035 Glossy",
+      "export_material": "Glass_Export_Blend",
+      "export_alpha": 0.03500000014901161,
+      "metallic": 1,
+      "roughness": 0.10000000149011612,
+      "approximation": "Core glTF alpha blend plus metallic reflection; not mathematically identical to the source Glossy BSDF. Visual comparison required.",
+      "users_verified_from": "Actual final GLB node-to-primitive material bindings (9 objects; shared datablock assignment previously counted only 5 writes)."
+    }
+  },
+  "recipe_current_sha256": "f178631e2697a76aba7cc961775985e45d137946945d735b6400dc1894469c95",
+  "recipe_note": "recipe_sha256 retains the executed export-time recipe hash. Current recipe differs only in reporting all linked glass object users, not adaptation behavior.",
+  "source_note": "Saved V2 snapshot, not subsequent unsaved live edits. Adapter was run from this saved version; hash checks before continuation commit and after export agree. No bake-start manifest was recorded.",
+  "validation": "7 fresh Blender reimports; indexed positions/normals/material groups and sharing compared to prior stage; 9 matched Cycles visual pairs.",
+  "status": {
+    "Blender": "CHECKED",
+    "export_reimport": "CHECKED",
+    "Unity": "NOT_TESTED",
+    "Quest": "NOT_TESTED"
+  },
+  "evidence_root": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\continuation_gtr",
+  "unity_continuation_repair": {
+    "evidence_root": "D:\\for_model_codex_vr_tmu\\outputs\\unity_environment_v2_20260914_153441\\export_pass_fix",
+    "source_sha256": "00feafda3f101ed75df3c4c748acf763606f8a48db8776634112c46dff47b42a",
+    "source_evidence": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\inventory.json",
+    "source_evidence_sha256": "517f23c074667453c6edac69054153d8887472350416cfd90355170749b58114",
+    "historical_packages_recipe": "D:\\for_model_codex_vr_tmu\\outputs\\environment_mesh_cleanup_20260914\\packages.py",
+    "historical_packages_recipe_sha256": "a6959acacfb23409b6fe2888afadff3676b5b5c856ad7a4943f90292016fb142",
+    "repaired_packages_recipe": "D:\\for_model_codex_vr_tmu\\outputs\\unity_environment_v2_20260914_153441\\export_pass_fix\\packages.py",
+    "repaired_packages_recipe_sha256": "3026d7136123a09d397e51f535fea1ad169612b7c714be2c86220a5d5d54fa51",
+    "package": "06_Factory_Activity.glb",
+    "before_sha256": "6225b136f0cf585aa2279b7141ec24e8115777d4fdf52b7f903502066c3d7139",
+    "after_sha256": "2dc6e4ab66cce365899c237077d22ac6958384d46e0b4f5a3483c3c9f8a40ec5",
+    "changes": [
+      "nodes[16].rotation restored from identical source orientation of Production_Gauge_Label",
+      "animations[0].channels appended target node16 scale with existing lamp sampler19"
+    ],
+    "method": "JSON-only repair; BIN byte-identical. Source label/lamp scale actions exactly equal; isolated no-save Blender source/API regression verified. No full re-export.",
+    "historical_evidence_note": "Prior continuation_gtr hashes and validation describe the prior package; preserved unchanged. This secondary repair supersedes only package06 hash. Existing recipe_sha256/recipe_current_sha256 describe bake_oak.py, not packages.py.",
+    "validation": "Scoped source and structural checks; Unity playback/visual verification belongs to Unity integration report."
+  }
+}
