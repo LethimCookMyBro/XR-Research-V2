@@ -1,6 +1,8 @@
 # Start here: S1 Q5 current-source handoff
 
-Updated 2026-10-14. This is a **PARTIAL technical source checkpoint**, not a participant-ready release. Use repository-relative paths. The original Windows workspace has substantial previously uncommitted source; a cloud clone of the old branch/HEAD does not contain it.
+Updated 2026-10-14. **Use `main` as the single current working and delivery branch**, as explicitly requested by the user. It includes the complete committed S1 Q5 source checkpoint `4a3f14bfa257b4cecf70674fecab98aec4a7bad4`. This remains a **PARTIAL technical source checkpoint**, not a participant-ready release. Use repository-relative paths and check actual Git status; the earlier uncommitted-source warning no longer describes this checkpoint.
+
+Do not create extra branches/worktrees by default. Use one writer per checkout, commit reviewed batches, and deliver them to `main` without force-push. If a host requires a temporary branch, integrate reviewed changes into `main` before reporting delivery complete. Never overwrite newer local/cloud edits.
 
 ## Read order
 
@@ -13,8 +15,8 @@ Updated 2026-10-14. This is a **PARTIAL technical source checkpoint**, not a par
 
 ## Source and artifact identities
 
-- Original branch before this handoff: `research-v2-custom-assets`, HEAD `3c2655ed05c7655021a64f98c480ee9b88960ada`.
-- Target handoff branch: `handoff/s1-q5-advisor-20261014`. Verify the checkout/commit on start; creation/push status is in the delivery message, not assumed from this planned name.
+- Canonical working/delivery branch: `main`. Verify local and remote commit/status before each batch.
+- Source checkpoint: `4a3f14bfa257b4cecf70674fecab98aec4a7bad4`; its ancestors include the earlier research checkpoint `3c2655ed05c7655021a64f98c480ee9b88960ada` and old main `3c0ee3d74d2db5b0c332c41fca92806b48062ff5`. The handoff and research branches are historical only; do not select them for new work.
 - Unity: `6000.3.20f1` with URP 17.3, Meta Interaction SDK 205 and OpenXR from Packages lock.
 - Canonical scene: `Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity`.
 - Current source contains Q5 changes: render scale 1.10, MSAA 4x, incremental GC enabled, narrowed panel-clearance candidate checks, cached cable validation, operator AB/BA/P/Q and abort reason tools.

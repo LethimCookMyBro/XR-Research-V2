@@ -2,6 +2,12 @@
 
 This is the TMU/TMU Meta Quest 3 research project, not a generic XRI sample project.
 
+## Git workflow — user decision, 14 October 2026
+- `main` is the single canonical working and delivery branch. Work on `main` by default; do not create extra feature/handoff branches or worktrees unless the user requests them.
+- Keep one writer per checkout. Before editing/pushing, check local status and remote `main`; preserve other work and reconcile divergence without force-push, reset or clean.
+- Commit reviewed changes in small batches and push to `main` when authorized. If a host requires a temporary branch, integrate its reviewed changes back into `main` before calling delivery complete; do not leave the user to choose between versions.
+- Existing older branches are historical checkpoints, not active alternatives. This branch policy does not imply runtime, wearer or study approval.
+
 ## Read first
 - Cloud/current S1 handoff: read `Documentation/S1/CLOUD_START_HERE.md` first. It uses portable paths and distinguishes current work from historical reports.
 - Latest user/advisor UI revision: `Documentation/S1/ADVISOR_UI_AMENDMENT_20261014.md` supersedes free participant panel dragging for the revised technical demo. Preserve baseline task rules and record protocol/UI versions.
@@ -23,7 +29,7 @@ Historical Presentation prototype, crash recovery scenes, obsolete UX handoff do
 Do not restore them unless explicitly requested.
 
 ## Safety / verification
-- Working tree is intentionally dirty. Never broad reset/clean/stash/checkout/pull/revert.
+- Check the actual working-tree state; earlier reports of a dirty tree are historical. Preserve any current uncommitted work. Never broad reset/clean/stash/checkout/pull/revert.
 - Do not say fixed/pass/ready without direct evidence.
 - Editor/synthetic pass != Quest hardware pass.
 - Preserve TH/JP study gate. Production Task A/B content remains blocked until approved; do not invent task answers/criteria.

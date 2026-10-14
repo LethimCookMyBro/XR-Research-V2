@@ -1,6 +1,7 @@
 # Claude project note
 
 Read and follow `AGENTS.md` before working.
+Use `main` as the single working/delivery branch per the user's 14 October 2026 decision. Do not split work into additional branches by default; preserve existing changes and use one writer per checkout. Earlier handoff-branch instructions are superseded.
 For UI/workflow work, use `design_rule.md` as the current design contract. Re-read it after integration and before reporting completion or Build; verify actual visuals and interactions, not only programmatic tests.
 
 Context discipline:

@@ -3,7 +3,9 @@
 
 1. อ่าน Documentation/S1/CLOUD_START_HERE.md ก่อน แล้ว AGENTS.md, CLAUDE.md, design_rule.md v1.1, ADVISOR_UI_AMENDMENT_20261014.md, CAPTURE_REVIEW_20261014.md และสเปก/JSON ใน Documentation/S1
 ใช้ path สัมพัทธ์จาก root ของ checkout ไม่วนหา D: บนเครื่อง cloud
-เลือก source branch handoff/s1-q5-advisor-20261014 หรือ branch ที่แตกมาจาก snapshot นี้จริง ตรวจ commit ก่อนเริ่ม
+ใช้ main เป็นสาขาทำงานและส่งมอบเดียวตามคำขอผู้ใช้ล่าสุด 14 ต.ค. 2026 ไม่แตก branch/worktree เพิ่มเอง
+ตรวจว่ามี source checkpoint 4a3f14bfa257b4cecf70674fecab98aec4a7bad4 อยู่ในประวัติ และตรวจสถานะ local/remote main ก่อนเริ่ม
+หากระบบบังคับสาขาชั่วคราว ให้รวมงานที่ตรวจแล้วกลับ main ก่อนรายงานส่งมอบ ไม่ปล่อยหลายสาขาให้ผู้ใช้เลือกเอง
 
 2. ข้อกำหนดใหม่จากผู้ใช้และอาจารย์มีผลแทน free-drag UI เดิม:
 - ทำปุ่มสื่อสี่รูปแบบที่ตำแหน่งคงที่ ใช้ viewer กรอบเดียว
@@ -78,17 +80,18 @@ cleanupเฉพาะของไม่ใช้ที่ตรวจdependency
 ตรวจว่ามี Unity license, Android tools และ authenticated local MCPจริงหรือไม่
 cloud sessionไม่ใช่เครื่องWindows/USB Questโดยอัตโนมัติ ไม่เขียนserverสาธารณะหรือtokenในrepoเพื่อเชื่อมเอง
 ถ้ามีbridgeจริงให้ใช้ภายใต้สิทธิผู้ใช้เดิมและเจ้าของUnityคนเดียว
-ถ้าไม่มี ทำsource/tests/mediaที่ทำได้ต่อจนจบและส่งpatch/PRพร้อมขั้นตรวจlocal ไม่ติดว่าขาดD:แล้วหยุดทั้งงาน
+ถ้าไม่มี ทำsource/tests/mediaที่ทำได้ต่อจนจบ ส่งงานที่ตรวจแล้วเข้าmainพร้อมขั้นตรวจlocal ถ้าสิทธิส่งไม่พอให้ส่งpatchและแจ้งข้อจำกัด ไม่ติดว่าขาดD:แล้วหยุดทั้งงาน
 อย่าอ้างplay/compile/build/deviceผ่านจากstatic review
 ไม่ทำบนแว่นแบตต่ำหรือร้อน ไม่ปลอมpresence/tracking และไม่รัน scripted head motionขณะแว่นถูกสวม
 
 12. วิธีทำและส่งมอบ:
-ทำbatchเล็ก reproduce→patch→focused tests→เปิดภาพ/พฤติกรรมจริงเมื่อมีเครื่องมือ→regression→commitบนbranchงาน
-แบ่งงานcloudที่ไม่ชนกันได้ แต่ห้ามหลายagentเขียนไฟล์เดียวกันหรือสั่งUnity/Questพร้อมกัน
+ทำbatchเล็ก reproduce→patch→focused tests→เปิดภาพ/พฤติกรรมจริงเมื่อมีเครื่องมือ→regression→commitและpushเข้าmainตามสิทธิที่ได้รับ
+ใช้ผู้เขียนcheckoutหลักทีละราย งานอ่าน/ตรวจที่ไม่แก้ไฟล์แบ่งช่วยกันได้ แต่ห้ามหลายagentเขียนcheckoutเดียวกันหรือสั่งUnity/Questพร้อมกัน
 รักษา code baselineและแจ้งข้อกำหนดใหม่ที่เป็นdemo revision ไม่ตั้งhuman/ethics approvalเอง
 ไม่วนสร้างแกลเลอรี/รายงาน/เครื่องมือวัดแทนปิดfunctionality
 ก่อนจบทุกbatchอ่านdesign_ruleและissue ledgerซ้ำ ปิดเฉพาะข้อที่มีหลักฐาน
 ส่งสถานะเดียวที่บอกทำอะไรได้เพิ่ม ไฟล์ที่เปลี่ยน ผลทดสอบ งานค้าง และขั้นทดสอบlocalที่ทำตามได้
 ต้องเหลือเฉพาะขั้นที่ใช้เครื่องมือ/คนที่ไม่มีจริง ไม่ใช่งานโค้ดที่ยังไม่ทำแล้วเรียกว่ารอผู้วิจัย
-ไม่force-push ไม่mergeเข้าmain ไม่ล้างworking treeของเครื่องlocal และไม่รับรองโปรแกรม100%โดยไม่มีหลักฐาน
+ผู้ใช้อนุญาตให้รวมและส่งงานปัจจุบันเข้าmainแล้ว ข้อความเก่าที่ห้ามmergeเข้าmainหรือบังคับbranchแยกถูกแทนด้วยกติกานี้
+ไม่force-push ไม่ล้างworking treeของเครื่องlocal ตรวจและรวมงานใหม่ที่ชนกันก่อนpush และไม่รับรองโปรแกรม100%โดยไม่มีหลักฐาน
 เริ่มอ่านจุดรับช่วงแล้วลงมือ fixed UI + Training/Reader bugs ที่ยืนยันได้ก่อน ไม่ตอบเพียงแผน

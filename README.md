@@ -4,6 +4,9 @@ Unity 6 VR research application for the TMU/TMU study. This repository started f
 
 ## Active project
 
+**Use `main` for all current work.** It includes the S1 Q5 source checkpoint and advisor handoff; older branches are historical, not alternative versions to work on.
+Start with [`Documentation/S1/CLOUD_START_HERE.md`](Documentation/S1/CLOUD_START_HERE.md). The continuation prompt is [`Documentation/S1/CLOUD_CONTINUATION_PROMPT_TH.txt`](Documentation/S1/CLOUD_CONTINUATION_PROMPT_TH.txt).
+
 - Main scene: `Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity`
 - ResearchFlow code/UI/tests: `Assets/VRMaintenanceResearch/ResearchFlow/`
 - Reused hand/controller/logger runtime: `Assets/VRMaintenanceResearch/HandsLabQuest3/`
@@ -13,7 +16,7 @@ Unity 6 VR research application for the TMU/TMU study. This repository started f
 
 ## Important
 
-The working tree is intentionally dirty and contains active research work. Do not use broad Git cleanup/reset operations.
+Check the actual working-tree status before editing; preserve any uncommitted work. Do not use broad Git cleanup/reset operations. Keep one writer per checkout and do not force-push over another session's work.
 
 Real-study Task A/B production content is not approved yet. Technical/demo fixtures are not study content.
 
