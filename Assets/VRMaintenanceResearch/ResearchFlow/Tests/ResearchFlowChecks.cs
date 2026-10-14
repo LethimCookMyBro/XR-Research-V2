@@ -90,6 +90,37 @@ static class ResearchFlowChecks
             Check(r.List(ParticipantGroup.Thai).Single(p => p.participant_id == "TH05").session_state == RegistryState.Available, "invalid setup never consumes ID");
             var overrideLanguage = r.StartOrResume("TH05", ParticipantLanguage.Japanese, ExperimentInputMode.Controller, technicalOverride: true);
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
+            // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
+            Check(th.ui_policy == ResearchUIPolicy.FixedDemo && th.protocol_version == ResearchUIPolicy.ProtocolFixedDemo
+                && th.training_version == ResearchUIPolicy.TrainingFixedDemo && th.layout_version == ResearchUIPolicy.LayoutVersion,
+                "new study session records fixed UI policy, protocol, training and layout versions");
+            Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
+            var legacyDev = r.CreateNext(ParticipantGroup.Dev);
+            legacyDev = r.StartOrResume(legacyDev.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable);
+            Check(legacyDev.ui_policy == ResearchUIPolicy.LegacyMovable && legacyDev.training_version == ResearchUIPolicy.TrainingBaseline
+                && legacyDev.protocol_version == ResearchUIPolicy.ProtocolBaseline, "technical regression session may record the legacy movable policy explicitly");
+            var policyStudy = r.CreateNext(ParticipantGroup.Japanese);
+            string policyBefore = File.ReadAllText(r.RegistryPath);
+            Reject(() => r.StartOrResume(policyStudy.participant_id, ParticipantLanguage.Japanese, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable),
+                "study ID refuses a non-default UI policy");
+            Reject(() => r.StartOrResume(policyStudy.participant_id, ParticipantLanguage.Japanese, ExperimentInputMode.Controller, uiPolicy: "S1_FREE_DRAG"), "unknown UI policy rejected");
+            Check(File.ReadAllText(r.RegistryPath) == policyBefore, "rejected UI policy reserves nothing");
+            Check(ResearchUIPolicy.ForRecord(null) == ResearchUIPolicy.LegacyMovable && ResearchUIPolicy.ForRecord(ResearchUIPolicy.FixedDemo) == ResearchUIPolicy.FixedDemo,
+                "records predating the policy field are attributed to the movable-panel UI");
+            Check(ResearchUIPolicy.Parse(null) == ResearchUIPolicy.FixedDemo && ResearchUIPolicy.Parse("fixed") == ResearchUIPolicy.FixedDemo
+                && ResearchUIPolicy.Parse("legacy_movable") == ResearchUIPolicy.LegacyMovable, "operator policy aliases parse");
+            Reject(() => ResearchUIPolicy.Parse("free"), "unknown operator policy alias rejected");
+            Check(ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && !ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed
+                && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
+            var policyRegistry = JObject.Parse(File.ReadAllText(r.RegistryPath));
+            Check(policyRegistry["participants"].Where(p => (string)p["session_state"] == "Available").All(p => p["ui_policy"] == null),
+                "available IDs carry no policy (fields are omitted, not null)");
+            var tampered = (JObject)policyRegistry.DeepClone();
+            tampered["participants"].First(p => p["ui_policy"] != null)["ui_policy"] = "S1_FREE_DRAG";
+            string untampered = File.ReadAllText(r.RegistryPath);
+            File.WriteAllText(r.RegistryPath, tampered.ToString());
+            Reject(() => new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai), "unknown recorded UI policy fails closed");
+            File.WriteAllText(r.RegistryPath, untampered);
             var f = new ResearchSessionFlow(th.task_order, th.flow_state);
             f.StartTutorial(); f.CompleteTutorialStep(TutorialStep.Movement); f.Pause();
             var stale = th; th = r.SaveProgress(th, f);

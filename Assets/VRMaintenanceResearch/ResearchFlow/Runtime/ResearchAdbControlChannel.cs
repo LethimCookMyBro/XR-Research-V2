@@ -225,17 +225,22 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (parts.Length == 2) layout = parts[1];
             }
 
+            // Participant UI policy: fixed-position demo by default; "legacy_movable" only for technical regression of the old drag UI.
+            string uiPolicy;
+            try { uiPolicy = ResearchUIPolicy.Parse((string)request["ui_policy"]); }
+            catch (ArgumentException ex) { return Fail(ex.Message + " Use 'fixed' (default) or 'legacy_movable'."); }
+
             if (!controller.LoggerReady) return Fail("Logger not ready: " + controller.Error);
             if (!controller.DeviceReady)
                 return Fail("Device not ready: both input guards must report valid tracking. " +
                             "Put the headset on and wake the controllers or show both hands.");
 
-            controller.StartSession(id, language, input, order, layout);
+            controller.StartSession(id, language, input, order, layout, uiPolicy);
             bool started = controller.Flow != null && string.IsNullOrEmpty(controller.Error);
             LogCommand("start", id, input.ToString(), order == null ? "Auto" : order + (layout == null ? "" : "_" + layout), started ? "Started" : "Failed");
             return started
                 ? Ok("start", new { started = id, language = language.ToString(), input = input.ToString(), order = controller.Record?.task_order.ToString(),
-                    task_a_layout = controller.Record?.task_a_layout })
+                    task_a_layout = controller.Record?.task_a_layout, ui_policy = ResearchUIPolicy.Active, layout_version = controller.Record?.layout_version })
                 : Fail("StartSession did not take: " + controller.Error);
         }
 
@@ -507,6 +512,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 unresolved = p.UnresolvedContacts, contact_updates = p.ContactUpdates, separation = p.SeparationMetres, saturated = p.SaturatedQueries,
                 max_ms = p.MaxUpdateMilliseconds }).ToArray() : null,
             drag_filter = ResearchDragHandle.FilterEnabled,
+            ui_policy = ResearchUIPolicy.Active,
+            panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed,
+            layout_version = controller.Record?.layout_version,
             held_objects = controller.trainingObjects.Where(o => o && o.TryGetComponent(out ResearchHeldObjectConstraint _))
                 .Select(o => o.GetComponent<ResearchHeldObjectConstraint>()).Select(c => new { target = c.name, holding = c.Holding,
                     desired_separation = c.DesiredSeparationMetres, max_desired_separation = c.MaxDesiredSeparationMetres, updates = c.Updates,

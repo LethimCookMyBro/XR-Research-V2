@@ -547,6 +547,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static string RunTutorialLayoutChecks(string evidenceFolder)
         {
+            using var legacyPolicy = ResearchUIPolicy.LegacyRegressionScope(); // exercises the retired panel-drag lesson
             var donor = UnityEngine.Object.FindFirstObjectByType<ResearchFlowView>();
             if (!donor) throw new InvalidOperationException("Canonical donor fonts required.");
             var root = new GameObject("LocalizedTutorialLayoutController"); root.SetActive(false);

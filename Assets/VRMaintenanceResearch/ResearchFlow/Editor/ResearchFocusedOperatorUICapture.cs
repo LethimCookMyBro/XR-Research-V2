@@ -24,6 +24,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static bool dirty;
         static int previews;
         static int phase;
+        static IDisposable legacyPolicy; // this capture exercises the retired panel-drag lesson
         static readonly string[][] facts = {
             new[] { "teleport", "snap", "roomscale" }, new[] { "select" },
             new[] { "grab", "move", "rotate", "release" },
@@ -109,6 +110,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             caller = SceneManager.GetActiveScene(); dirty = caller.isDirty; previews = EditorSceneManager.previewSceneCount;
             cursorColors = Resources.FindObjectsOfTypeAll<Oculus.Interaction.RayInteractorCursorVisual>().ToDictionary(c => c, c => c.HoverColor);
             rows.Clear(); readerGeometry.Clear(); phase = 0; Status = "Running";
+            legacyPolicy?.Dispose(); legacyPolicy = ResearchUIPolicy.LegacyRegressionScope();
             try
             {
                 foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese, ParticipantLanguage.English })
@@ -235,6 +237,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static void Finish(string error)
         {
             EditorApplication.update -= Tick;
+            legacyPolicy?.Dispose(); legacyPolicy = null;
             foreach (var fixture in fixtures) ((IDisposable)fixture).Dispose(); fixtures.Clear();
             foreach (var entry in cursorColors) if (entry.Key) entry.Key.HoverColor = entry.Value;
             bool preserved = SceneManager.GetActiveScene() == caller && caller.isDirty == dirty && EditorSceneManager.previewSceneCount == previews;

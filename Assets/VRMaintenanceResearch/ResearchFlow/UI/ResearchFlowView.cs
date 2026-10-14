@@ -246,6 +246,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         Quaternion savedTaskRotation;
         bool hasTaskPose;
         bool savedTaskMinimized;
+        // Fixed-UI policy: the Reader keeps the pose it was first given in the current task/tutorial and reopens there.
+        Vector3 readerAnchorPosition;
+        Quaternion readerAnchorRotation;
+        string readerAnchorKey;
+        string ReaderAnchorKey => controller?.Flow == null ? null : controller.Flow.IsTaskActive ? "task:" + controller.Flow.CurrentTask
+            : controller.Flow.IsTutorial ? "tutorial" : controller.Flow.State.ToString();
         Vector2 expandedMainSize = new Vector2(1000, 620);
         void Awake()
         {
@@ -1305,7 +1311,22 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
             }
             RefreshRecoveryUtility();
+            ApplyUIPolicyToToolbars();
             if (tutorialChecklist) controller.TutorialPromptShown();
+        }
+
+        // ADVISOR_UI_AMENDMENT_20261014: in the fixed policy the drag handle (grip line AND its invisible hit area) and the
+        // participant Recenter control are removed, not merely hidden. Minimize/Close/Pause and Reader reopen stay available.
+        void ApplyUIPolicyToToolbars()
+        {
+            foreach (var toolbar in new[] { mainToolbar ? mainToolbar.transform : null, referenceExpanded ? referenceExpanded.transform.Find("Toolbar") : null })
+            {
+                if (!toolbar) continue;
+                var handle = toolbar.Find("DragHandle");
+                if (handle && handle.gameObject.activeSelf != ResearchUIPolicy.PanelDragAllowed) handle.gameObject.SetActive(ResearchUIPolicy.PanelDragAllowed);
+                var recenter = toolbar.Find("Recenter");
+                if (recenter && !ResearchUIPolicy.ParticipantRecenterAllowed && recenter.gameObject.activeSelf) recenter.gameObject.SetActive(false);
+            }
         }
 
         static bool Interrupting(string state) => state == "checking" || state == "fail" || state == "pause" || state == "tracking";
@@ -1883,6 +1904,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool open = controller && controller.ReferenceOpen && string.IsNullOrEmpty(controller.Error) && !SessionEnded && !SessionWriterUnavailable;
             if (!open)
             {
+                // Remember the placed Reader pose (participants cannot move it in the fixed policy) before the close visual runs.
+                if (ResearchUIPolicy.ReaderPoseFixedPerTask && referencePanel.gameObject.activeSelf && !referencePanel.PlacementBlocked
+                    && !referencePanel.RecenterPending && ReaderAnchorKey != null)
+                {
+                    readerAnchorPosition = referencePanel.transform.position; readerAnchorRotation = referencePanel.transform.rotation;
+                    readerAnchorKey = ReaderAnchorKey;
+                }
                 ReferenceViewer?.SetVisible(false);
                 if (referenceTutorialCue) referenceTutorialCue.gameObject.SetActive(false);
                 referenceGroup.blocksRaycasts = referenceGroup.interactable = false;
@@ -1911,7 +1939,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!wasOpen)
             {
                 if (controller.Flow.IsTaskActive && mainPanel.PlacementBlocked) mainPanel.Recenter(false, false);
-                referencePanel.Recenter(false, false);
+                // Fixed policy: reopen where the Reader was first placed in this task (RestorePose re-validates clearance and
+                // falls back to a logged System placement); legacy policy keeps the original head-relative placement.
+                if (ResearchUIPolicy.ReaderPoseFixedPerTask && readerAnchorKey != null && readerAnchorKey == ReaderAnchorKey)
+                    referencePanel.RestorePose(readerAnchorPosition, readerAnchorRotation);
+                else referencePanel.Recenter(false, false, reason: ResearchUIPolicy.ReaderPoseFixedPerTask ? "fixed_reader_anchor_established" : "recenter");
             }
             bool showTask = controller.Flow.IsTaskActive;
             mainGroup.interactable = showTask; mainGroup.blocksRaycasts = showTask; mainGroup.alpha = 1;
@@ -1950,9 +1982,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                     mainPanel.EnsureClear();
                     controller.Log("PANEL_RESTORE", "task_information", "Restored", inputSource: input); Animate(mainGroup, ref mainAnimation, enter: true); accepted = true; break;
                 case "main_recenter":
+                    if (!ResearchUIPolicy.ParticipantRecenterAllowed)
+                    { controller?.Log("PANEL_RECENTER", "task_information", "RejectedByUIPolicy", source: "User", inputSource: input, reason: ResearchUIPolicy.Active); return false; }
                     if (!allowed || !Head || !mainPanel.movable) return false;
                     mainPanel.Recenter(true, true, input); accepted = true; break;
                 case "reference_recenter":
+                    if (!ResearchUIPolicy.ParticipantRecenterAllowed)
+                    { controller?.Log("PANEL_RECENTER", "reference", "RejectedByUIPolicy", source: "User", inputSource: input, reason: ResearchUIPolicy.Active); return false; }
                     if (!allowed || !Head || !controller.ReferenceOpen || controller.ReferenceMinimized) return false;
                     referencePanel.Recenter(true, true, input); accepted = true; break;
                 default: accepted = controller && controller.Command(command, input); break;

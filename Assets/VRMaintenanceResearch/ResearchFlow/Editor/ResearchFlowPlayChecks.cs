@@ -204,6 +204,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static string CheckTutorialReferenceEarlyClose(string evidenceFolder)
         {
+            using var legacyPolicy = ResearchUIPolicy.LegacyRegressionScope(); // exercises the retired panel-drag lesson
             var donor = Resources.FindObjectsOfTypeAll<ResearchFlowView>().First(v => v.thaiFont && v.japaneseFont && v.englishFont);
             var root = new GameObject("ResearchFlow_EarlyCloseFixture") { hideFlags = HideFlags.HideAndDontSave };
             root.SetActive(false);

@@ -33,6 +33,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Written only once a session is ended by the researcher, so untouched registries stay readable by older builds.
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public string termination_reason;
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public List<TerminationAmendment> termination_amendments;
+        // Written when a session starts under a build that versions the participant UI (ResearchUIPolicy). Absent = earlier
+        // movable-panel build. Note: older builds reject registries containing these fields (MissingMemberHandling.Error), fail-closed.
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public string protocol_version, ui_policy, training_version, layout_version;
     }
 
     /// <summary>A later researcher correction of the ending category; the original reason and every change stay on record.</summary>
@@ -105,8 +108,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         public ParticipantRecord StartOrResume(string participantId, ParticipantLanguage language, ExperimentInputMode inputMode,
-            TaskOrder? orderOverride = null, bool technicalOverride = false, string layoutOverride = null)
+            TaskOrder? orderOverride = null, bool technicalOverride = false, string layoutOverride = null, string uiPolicy = null)
         {
+            uiPolicy = uiPolicy ?? ResearchUIPolicy.Default;
+            if (!ResearchUIPolicy.IsKnown(uiPolicy)) throw new ArgumentException("Invalid session settings");
             if (!Enum.IsDefined(typeof(ParticipantLanguage), language) || !Enum.IsDefined(typeof(ExperimentInputMode), inputMode)
                 || (orderOverride.HasValue && !Enum.IsDefined(typeof(TaskOrder), orderOverride.Value))
                 || (layoutOverride != null && layoutOverride != "P" && layoutOverride != "Q")) throw new ArgumentException("Invalid session settings");
@@ -121,6 +126,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (record.session_state != RegistryState.Available) throw new InvalidOperationException("Participant ID is locked: " + participantId);
                 var defaultLanguage = record.group == ParticipantGroup.Japanese ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai;
                 if (!technical && language != defaultLanguage && !technicalOverride) throw new InvalidOperationException("Study language override requires explicit technical override");
+                if (!technical && uiPolicy != ResearchUIPolicy.Default) throw new InvalidOperationException("Study sessions use the default participant UI policy");
                 (record.task_order, record.task_a_layout) = Balance(doc, record.group, orderOverride, layoutOverride);
                 record.task_order_overridden = orderOverride.HasValue;
                 record.task_a_layout_overridden = layoutOverride != null;
@@ -130,6 +136,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 record.session_id = Guid.NewGuid().ToString("N"); record.run_id = Guid.NewGuid().ToString("N");
                 record.started_at = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
                 record.session_state = RegistryState.InProgress; record.flow_state = ResearchFlowState.TutorialWelcome;
+                record.ui_policy = uiPolicy; record.protocol_version = ResearchUIPolicy.ProtocolFor(uiPolicy);
+                record.training_version = ResearchUIPolicy.TrainingFor(uiPolicy); record.layout_version = ResearchUIPolicy.LayoutVersion;
                 record.revision++; Save(doc); return record;
             }
         }
@@ -216,7 +224,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     || !ids.Add(p.participant_id) || !Enum.IsDefined(typeof(RegistryState), p.session_state)
                     || !Enum.IsDefined(typeof(ParticipantLanguage), p.language) || !Enum.IsDefined(typeof(TaskOrder), p.task_order)
                     || !Enum.IsDefined(typeof(ExperimentInputMode), p.input_mode) || p.revision < 0
-                    || !DateTime.TryParse(p.created_at, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)) throw new InvalidDataException("Invalid participant record");
+                    || !DateTime.TryParse(p.created_at, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)
+                    || (p.ui_policy != null && !ResearchUIPolicy.IsKnown(p.ui_policy))) throw new InvalidDataException("Invalid participant record");
                 new ResearchSessionFlow(p.task_order, p.flow_state, p.tutorial_completed, p.paused, p.inspect_passed);
                 if (p.session_state == RegistryState.Available && (p.session_id != "" || p.run_id != "" || p.flow_state != ResearchFlowState.ResearcherSetup || p.revision != 0))
                     throw new InvalidDataException("Available participant contains session reservation data");

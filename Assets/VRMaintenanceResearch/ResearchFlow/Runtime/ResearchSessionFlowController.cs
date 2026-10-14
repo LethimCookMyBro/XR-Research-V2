@@ -148,10 +148,20 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "grab", "move", "rotate", "release" },
             new[] { "reference", "switch", "reposition", "close" }, new[] { "inspect" }
         };
+        // Fixed-position UI policy (ADVISOR_UI_AMENDMENT_20261014): panels cannot be dragged, so the drag lesson is
+        // removed together with the drag interaction; open/switch/close Reader practice is unchanged.
+        static readonly string[][] FixedBasicTutorialFacts = BasicTutorialFacts
+            .Select(facts => facts.Where(fact => fact != "reposition").ToArray()).ToArray();
         // With the neutral Trainer_FX1 station the last group practises the S1 §4 mechanisms before the Inspect samples.
-        static readonly string[][] TrainerTutorialFacts = BasicTutorialFacts.Take(4)
+        static readonly string[][] TrainerTutorialFacts = WithTrainer(BasicTutorialFacts);
+        static readonly string[][] FixedTrainerTutorialFacts = WithTrainer(FixedBasicTutorialFacts);
+        static string[][] WithTrainer(string[][] basic) => basic.Take(4)
             .Concat(new[] { ResearchTrainingStation.Facts.Concat(new[] { "inspect" }).ToArray() }).ToArray();
-        string[][] TutorialFacts => trainingStation ? TrainerTutorialFacts : BasicTutorialFacts;
+        string[][] TutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
+            ? (trainingStation ? TrainerTutorialFacts : BasicTutorialFacts)
+            : (trainingStation ? FixedTrainerTutorialFacts : FixedBasicTutorialFacts);
+        /// <summary>True when the current policy's training requires this practice fact (e.g. "reposition" only in the legacy policy).</summary>
+        public bool TutorialRequires(string fact) => TutorialFacts.Any(facts => facts.Contains(fact));
         public ResearchTrainingStation trainingStation;
         public bool TutorialUsesHands => Record?.input_mode == ExperimentInputMode.HandTracking ||
             (Record?.input_mode == ExperimentInputMode.TechnicalBoth && guards.Any(g => g && g.TrackingValid && g.Mode == HandsLabInputGuard.InputMode.TrackedHand));
@@ -329,7 +339,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             else view?.Refresh();
         }
 
-        public void StartSession(string id, ParticipantLanguage language, ExperimentInputMode input, TaskOrder? order = null, string layout = null)
+        public void StartSession(string id, ParticipantLanguage language, ExperimentInputMode input, TaskOrder? order = null, string layout = null, string uiPolicy = null)
         {
             if (Record != null) { Error = "A session is already open. End it before opening another."; return; }
             try
@@ -341,7 +351,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!technical && (!DeviceReady || !translationsReviewed || taskPorts.Length != 2 || taskPorts.Any(t => !t || !t.IsReadyForStudy)
                     || taskPorts.Select(t => t.taskId).Distinct().Count() != 2))
                     throw new InvalidOperationException("Study requires tracked device, bilingual review and two approved task adapters. Use DEV/TEST for the integration demo.");
-                Record = Registry.StartOrResume(id, language, input, order, layoutOverride: layout);
+                Record = Registry.StartOrResume(id, language, input, order, layoutOverride: layout, uiPolicy: uiPolicy);
+                // A resumed record keeps the policy it started with (absent = earlier movable-panel build), so training facts,
+                // drag availability and analysis grouping never mix policies within one session.
+                ResearchUIPolicy.Apply(ResearchUIPolicy.ForRecord(Record.ui_policy));
                 foreach (var task in FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsSortMode.None))
                     task.ApplyLayout(Record.task_a_layout ?? task.layout);
                 Flow = new ResearchSessionFlow(Record.task_order, Record.flow_state, Record.tutorial_completed, Record.paused, Record.inspect_passed);
@@ -356,6 +369,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (Logger.State != HandsLabLogState.Active) throw new IOException(Logger.LastError);
                 if (resume && !RestoreTutorialCredits()) return;
                 Log(resume ? "SESSION_RESUMED" : "SESSION_CONFIGURED", "session", "Ready", after: Record, source: "System");
+                Log("SESSION_PROTOCOL_VERSIONS", "session", ResearchUIPolicy.Active, after: new { ui_policy = ResearchUIPolicy.Active,
+                    recorded_ui_policy = Record.ui_policy, protocol_version = Record.protocol_version ?? ResearchUIPolicy.ProtocolFor(ResearchUIPolicy.Active),
+                    training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
+                    layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
+                    panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
+                    tutorial_facts = TutorialFacts }, source: "System", reason: Record.ui_policy == null ? "record_predates_ui_policy_field" : "recorded_at_session_start");
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
                 Error = "";
                 if (resume && Flow.IsTaskActive)
