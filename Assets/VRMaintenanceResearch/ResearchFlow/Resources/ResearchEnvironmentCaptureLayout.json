@@ -1,0 +1,2647 @@
+{
+  "version": 1,
+  "scene": "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity",
+  "renderers": [
+    {
+      "path": "Environment_V2/0:Training/0:Instruction_Board_0",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/1:Polish_Training_CartBins",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Bin",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/10:Training_Door_Leaf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/10:Training_Door_Leaf/0:Training_Door_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/11:Training_Door_Threshold",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/12:Training_Entry_Fascia",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/13:Training_Facade",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/14:Training_Floor",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/16:Training_Practice_A",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Timber"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/17:Training_RearWall",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/18:Training_Room_Sign",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/19:Training_Skirting",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/2:Polish_Training_LogStation",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/20:Training_Stool_2",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/21:Training_Storage",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Blue",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/22:Training_WallShell",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/23:Training_Window_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/24:Training_Window_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/25:Training_Window_Mullion",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/26:V22_Training_Door_Masonry_Returns",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/3:Polish_Training_Manuals",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/4:Polish_Training_ReturnCart",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/5:Polish_Training_SupplyTray",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/6:Room_Steps_0",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/7:Room_Title_0",
+      "submesh_count": 1,
+      "materials": [
+        "V2_Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/8:Training_Ceiling",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Ceiling"
+      ]
+    },
+    {
+      "path": "Environment_V2/0:Training/9:Training_Door_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/0:Computer_BenchFrontEdge",
+      "submesh_count": 1,
+      "materials": [
+        "SP_TimberEdge"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/0:Computer_Cabinet_Carcass_STATIC",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/1:Computer_Drawer_01_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/1:Computer_Drawer_01_INTERACTIVE/0:Polish_Computer_DrawerContents_01",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/2:Computer_Drawer_02_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/2:Computer_Drawer_02_INTERACTIVE/0:Polish_Computer_DrawerContents_02",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/3:Computer_Drawer_03_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/1:Computer_Cabinet_Root/3:Computer_Drawer_03_INTERACTIVE/0:Polish_Computer_DrawerContents_03",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/10:Computer_ESD_Mat",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Rubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/11:Computer_ESDWristStrapStation",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/12:Computer_Facade",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/13:Computer_Floor",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/14:Computer_Main",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Timber"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/15:Computer_RearWall",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/16:Computer_RollingToolCabinet",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Blue",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/17:Computer_Room_Sign",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/18:Computer_Skirting",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/19:Computer_Stool_Parked",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/2:Computer_CableRaceway",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/20:Computer_Support",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Timber"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/21:Computer_TaskCase",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "Ink",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/22:Computer_ToolPanel",
+      "submesh_count": 5,
+      "materials": [
+        "SP_Blue",
+        "Ink",
+        "SP_Steel",
+        "Yellow.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/23:Computer_Window_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/24:Computer_Window_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 1"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/25:Computer_Window_Mullion",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/26:Instruction_Board_1",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/27:Polish_Computer_LogStation",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/28:Polish_Computer_MaintenanceSupplies",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/29:Polish_Computer_SealedSpares",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Bin",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/3:Computer_Ceiling",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Ceiling"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/30:Polish_Computer_ServicePowerRail",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "UXS_Wall",
+        "Ink",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/31:Polish_Computer_UtilityShelf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Steel",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/32:R02_Computer_CaseHandle",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/33:R02_Computer_ClosedToolCase",
+      "submesh_count": 1,
+      "materials": [
+        "R02_Equipment.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/34:R02_Computer_ESDSupplyBox",
+      "submesh_count": 2,
+      "materials": [
+        "White.001",
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/35:R02_Computer_Iron",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/36:R02_Computer_SolderSpool",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/37:R02_Computer_SolderStand",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/39:Room_Title_1",
+      "submesh_count": 1,
+      "materials": [
+        "V2_Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/4:Computer_ComponentStorage",
+      "submesh_count": 5,
+      "materials": [
+        "White.001",
+        "SP_Steel",
+        "SP_Blue",
+        "R02_Equipment.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/40:V22_Computer_Door_Masonry_Returns",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/5:Computer_ComponentTray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/6:Computer_Door_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/7:Computer_Door_Leaf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/7:Computer_Door_Leaf/0:Computer_Door_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 1"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/8:Computer_Door_Threshold",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/1:Computer/9:Computer_Entry_Fascia",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/0:Fan_Cabinet_Carcass_STATIC",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/1:Fan_Drawer_01_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/1:Fan_Drawer_01_INTERACTIVE/0:Polish_Fan_DrawerContents_01",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/2:Fan_Drawer_02_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/2:Fan_Drawer_02_INTERACTIVE/0:Polish_Fan_DrawerContents_02",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/3:Fan_Drawer_03_INTERACTIVE",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/0:Fan_Cabinet_Root/3:Fan_Drawer_03_INTERACTIVE/0:Polish_Fan_DrawerContents_03",
+      "submesh_count": 4,
+      "materials": [
+        "Ink",
+        "SP_Bin",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/1:Fan_Ceiling",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Ceiling"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/10:Fan_InspectionTray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/11:Fan_Main",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Timber"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/12:Fan_MeterBlankDisplay",
+      "submesh_count": 1,
+      "materials": [
+        "Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/13:Fan_MeterDial",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/14:Fan_RearWall",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/15:Fan_ReturnTray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/16:Fan_Room_Sign",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/17:Fan_ScrewdriverGrip",
+      "submesh_count": 1,
+      "materials": [
+        "Orange"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/18:Fan_ScrewdriverShaft",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/19:Fan_Service_Mat",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Rubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/2:Fan_DiagnosticTray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/20:Fan_ServiceBenchFrontEdge",
+      "submesh_count": 1,
+      "materials": [
+        "SP_TimberEdge"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/21:Fan_Skirting",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/22:Fan_SparesLowerShelf",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/23:Fan_SparesRack",
+      "submesh_count": 5,
+      "materials": [
+        "White.001",
+        "SP_Steel",
+        "R02_Equipment.001",
+        "SP_Blue",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/24:Fan_Stool_Parked",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/25:Fan_Support",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "SP_Rubber",
+        "SP_Timber"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/26:Fan_TaskFan",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "White.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/27:Fan_ToolPanel",
+      "submesh_count": 5,
+      "materials": [
+        "SP_Blue",
+        "Ink",
+        "SP_Steel",
+        "Yellow.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/28:Fan_WallShell",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/29:Fan_Window_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/3:Fan_Door_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/30:Fan_Window_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 2"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/31:Fan_Window_Mullion",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/32:Instruction_Board_2",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/33:Polish_Fan_LogStation",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/34:Polish_Fan_MaintenanceSupplies",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/35:Polish_Fan_SealedSpares",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "UXS_Wall",
+        "SP_Bin",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/36:Polish_Fan_ServicePowerRail",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "UXS_Wall",
+        "Ink",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/37:Polish_Fan_UtilityShelf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Steel",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/38:R02_Fan_CableReel",
+      "submesh_count": 1,
+      "materials": [
+        "R02_ToolBlue"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/39:R02_Fan_ReelCore",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/4:Fan_Door_Leaf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/4:Fan_Door_Leaf/0:Fan_Door_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 2"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/41:Room_Title_2",
+      "submesh_count": 1,
+      "materials": [
+        "V2_Ink"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/42:V22_Fan_Door_Masonry_Returns",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/5:Fan_Door_Threshold",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/6:Fan_Entry_Fascia",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/7:Fan_Facade",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/8:Fan_Floor",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/2:Fan/9:Fan_GenericMultimeter",
+      "submesh_count": 1,
+      "materials": [
+        "Yellow.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/0:Corridor_Ceiling",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Ceiling"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/1:Corridor_East_Door_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/10:Corridor_West_Portal",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/11:Corridor_Window_Base",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/12:Corridor_Window_Frames",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/2:Corridor_East_Door_Leaf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/2:Corridor_East_Door_Leaf/0:Corridor_East_Door_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 3"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/3:Corridor_East_Landing",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/4:Corridor_East_Portal",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/5:Corridor_Floor",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/6:Corridor_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 3"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/7:Corridor_West_Door_Frame",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/8:Corridor_West_Door_Leaf",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/8:Corridor_West_Door_Leaf/0:Corridor_West_Door_Glass",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Glass 3"
+      ]
+    },
+    {
+      "path": "Environment_V2/3:Corridor/9:Corridor_West_Landing",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/0:CNC_01",
+      "submesh_count": 6,
+      "materials": [
+        "SP_Frame",
+        "White.001",
+        "R03Arm_CableRubber",
+        "SP_Steel",
+        "SP_Paint",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/1:CNC_02",
+      "submesh_count": 6,
+      "materials": [
+        "SP_Frame",
+        "White.001",
+        "R03Arm_CableRubber",
+        "SP_Steel",
+        "SP_Paint",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/11:Factory_Perimeter",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/12:Factory_Portal_Frames",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/13:Factory_Roof",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/17:Hall_Suite_Backwall",
+      "submesh_count": 2,
+      "materials": [
+        "UXS_Wall",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/18:Hall_Suite_SupportBay",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/19:Hall_Suite_SupportBay_Linked",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/2:CNC_03",
+      "submesh_count": 6,
+      "materials": [
+        "SP_Frame",
+        "White.001",
+        "R03Arm_CableRubber",
+        "SP_Steel",
+        "SP_Paint",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/20:Luminaires_Shared",
+      "submesh_count": 1,
+      "materials": [
+        "Light.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/21:Polish_CNC_Service_01",
+      "submesh_count": 5,
+      "materials": [
+        "SP_Frame",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink",
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/22:Polish_CNC_Service_02",
+      "submesh_count": 5,
+      "materials": [
+        "SP_Frame",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink",
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/23:Polish_CNC_Service_03",
+      "submesh_count": 5,
+      "materials": [
+        "SP_Frame",
+        "UXS_Wall",
+        "SP_Steel",
+        "Ink",
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/26:Receiving_Shutter",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Steel",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/27:Storage_Low",
+      "submesh_count": 4,
+      "materials": [
+        "White.001",
+        "SP_Steel",
+        "SP_Blue",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/28:Storage_Low_Finished",
+      "submesh_count": 4,
+      "materials": [
+        "White.001",
+        "SP_Steel",
+        "SP_Blue",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/29:Storage_Tall",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "SP_Steel",
+        "SP_Bin",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/30:Storage_Tall_Linked_0",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "SP_Steel",
+        "SP_Bin",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/31:Storage_Tall_Linked_1",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "SP_Steel",
+        "SP_Bin",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/32:Storage_Tall_Linked_2",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "SP_Steel",
+        "SP_Bin",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/33:Suite_Ceiling_Grid",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Frame",
+        "UXS_Wall",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/34:Suite_Continuous_Fascia",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/35:Suite_Fan_Wayfinding",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/36:Suite_Research_Identity",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/37:Suite_Service_Apron",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/38:Suite_Service_Cladding",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel",
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/39:Suite_Training_Wayfinding",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/40:V22_Building_Integration",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "Environment_V2/4:Factory_Static/9:Factory_Floor",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/0:Loop_Pallet_00",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/1:Loop_Pallet_01",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/12:Production_Gauge_Scan",
+      "submesh_count": 1,
+      "materials": [
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/14:Production_InlineGauge",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Frame",
+        "SP_Paint",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/15:Production_Optical_Scan",
+      "submesh_count": 1,
+      "materials": [
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/17:Production_PASS_Lamp",
+      "submesh_count": 1,
+      "materials": [
+        "Production_PASS"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/18:Production_PASS_Mast",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/19:Production_Return_00",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/2:Loop_Pallet_02",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/20:Production_Return_01",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/22:Production_SafetySensor_00",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Frame",
+        "V2_Safety",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/23:Production_SafetySensor_01",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Frame",
+        "V2_Safety",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/24:Production_Stop_A",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/25:Production_Stop_B",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/26:Production_Straight_00",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/27:Production_Straight_01",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/28:Production_Straight_02",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/29:Production_Straight_03",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/3:Loop_Pallet_03",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/30:Production_Straight_04",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/31:Production_Straight_05",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/32:Production_Support_00",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/33:Production_Support_01",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/34:Production_Support_02",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/35:Production_Support_03",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/36:Production_Support_04",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/37:Production_Support_05",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/38:Production_Support_06",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/39:Production_Support_07",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/4:Loop_Pallet_04",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/40:Production_Support_08",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/41:Production_Support_09",
+      "submesh_count": 2,
+      "materials": [
+        "SP_Frame",
+        "R03Arm_CableRubber"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/0:Robot_A_Base",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "White.001",
+        "SP_Paint",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "White.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2/0:Robot_A_Joint_3",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "White.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2/0:Robot_A_Joint_3/0:Robot_A_Joint_4",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2/0:Robot_A_Joint_3/0:Robot_A_Joint_4/0:Robot_A_Joint_5",
+      "submesh_count": 1,
+      "materials": [
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2/0:Robot_A_Joint_3/0:Robot_A_Joint_4/0:Robot_A_Joint_5/0:Robot_A_Joint_6",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/43:Robot_A_RobotRoot/1:Robot_A_Joint_1/0:Robot_A_Joint_2/0:Robot_A_Joint_3/0:Robot_A_Joint_4/0:Robot_A_Joint_5/0:Robot_A_Joint_6/0:Robot_A_Tool",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "SP_Steel",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/0:Robot_B_Base",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Frame",
+        "White.001",
+        "SP_Paint",
+        "V2_Safety"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "White.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2/0:Robot_B_Joint_3",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Paint",
+        "White.001",
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2/0:Robot_B_Joint_3/0:Robot_B_Joint_4",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2/0:Robot_B_Joint_3/0:Robot_B_Joint_4/0:Robot_B_Joint_5",
+      "submesh_count": 1,
+      "materials": [
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2/0:Robot_B_Joint_3/0:Robot_B_Joint_4/0:Robot_B_Joint_5/0:Robot_B_Joint_6",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Paint"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/45:Robot_B_RobotRoot/1:Robot_B_Joint_1/0:Robot_B_Joint_2/0:Robot_B_Joint_3/0:Robot_B_Joint_4/0:Robot_B_Joint_5/0:Robot_B_Joint_6/0:Robot_B_Tool",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Paint",
+        "R03Arm_CableRubber",
+        "Production_PASS",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/5:Loop_Pallet_05",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/6:Loop_Pallet_06",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/7:Loop_Pallet_07",
+      "submesh_count": 4,
+      "materials": [
+        "SP_Steel",
+        "R03Arm_CableRubber",
+        "SP_Paint",
+        "White.001"
+      ]
+    },
+    {
+      "path": "Environment_V2/5:Factory_Activity/9:Production_EStop",
+      "submesh_count": 3,
+      "materials": [
+        "SP_Frame",
+        "V2_Safety",
+        "R03_RedLens"
+      ]
+    },
+    {
+      "path": "Environment_V2/6:Vehicles_Background/0:Vehicle_R35",
+      "submesh_count": 19,
+      "materials": [
+        "grille",
+        "metal",
+        "carbon",
+        "R02_PaintSilver",
+        "phong5",
+        "rubber",
+        "UXS_Glass 4",
+        "window",
+        "mirrors",
+        "R02_Equipment",
+        "UXS_Glass 5",
+        "UXS_Glass 6",
+        "chrome",
+        "chassis",
+        "material",
+        "plastic",
+        "disk",
+        "R02_UnmarkedTire",
+        "R02_Brake"
+      ]
+    },
+    {
+      "path": "Environment_V2/6:Vehicles_Background/1:Vehicle_Supra",
+      "submesh_count": 6,
+      "materials": [
+        "R03_MatteBlack",
+        "SP_Steel",
+        "UXS_Glass 7",
+        "R03_HeadlightLens",
+        "R03_SupraPaint",
+        "R03_RedLens"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/0:Contact_Training_Practice_A",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/1:Contact_Computer_Main",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/10:WorkZone_Training_Practice_A_0",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/11:WorkZone_Training_Practice_A_1",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/12:WorkZone_Training_Practice_A_2",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/13:WorkZone_Training_Practice_A_3",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/14:WorkZone_Computer_Main_0",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/15:WorkZone_Computer_Main_1",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/16:WorkZone_Computer_Main_2",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/17:WorkZone_Computer_Main_3",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/18:WorkZone_Fan_Main_0",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/19:WorkZone_Fan_Main_1",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/2:Contact_Computer_Support",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/20:WorkZone_Fan_Main_2",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/21:WorkZone_Fan_Main_3",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_SafetyMarking"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/3:Contact_Fan_Main",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/4:Contact_Fan_Support",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/5:Contact_Polish_Training_ReturnCart",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/6:Contact_Robot_A_Base",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/7:Contact_Robot_B_Base",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/8:Contact_Vehicle_R35",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentDepthPass/9:Contact_Vehicle_Supra",
+      "submesh_count": 1,
+      "materials": [
+        "DepthPass_ContactShadow"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/0:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/1:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/10:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/11:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/12:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/13:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/14:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/15:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/16:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/17:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/18:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/2:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/3:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/4:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/5:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/6:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/7:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/8:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/0:Training_Practice_A_ArchitecturalDetail/9:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/0:Brushed sill trim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/1:Wall mounted lab plaque",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/2:Plaque rule",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/3:Permanent neutral lab identification",
+      "submesh_count": 1,
+      "materials": [
+        "SP_PlaqueText"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/4:Service outlet plate",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/5:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/1:Training_Window_Frame_InteriorDetails/6:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/10:Facade base closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/11:Landing end closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/12:Landing end closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/0:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/1:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/10:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/11:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/12:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/13:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/14:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/15:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/16:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/17:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/18:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/2:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/20:Empty parts tray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/21:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/22:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/23:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/24:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/3:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/4:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/5:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/6:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/7:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/8:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/2:Computer_Main_ArchitecturalDetail/9:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/0:Brushed sill trim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/1:Wall mounted lab plaque",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/2:Plaque rule",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/3:Permanent neutral lab identification",
+      "submesh_count": 1,
+      "materials": [
+        "SP_PlaqueText"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/4:Service outlet plate",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/5:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/3:Computer_Window_Frame_InteriorDetails/6:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/0:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/1:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/10:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/11:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/12:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/13:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/14:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/15:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/16:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/17:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/18:Service tray crossbar",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/2:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/20:Empty parts tray",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/21:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/22:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/23:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/24:Tray rim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/3:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/4:Pendant housing",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/5:Warm white diffuser",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Diffuser"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/6:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/7:Suspension",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/8:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/4:Fan_Main_ArchitecturalDetail/9:Ceiling service tray rail",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Steel"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/0:Brushed sill trim",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/1:Wall mounted lab plaque",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Blue"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/2:Plaque rule",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Trim"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/3:Permanent neutral lab identification",
+      "submesh_count": 1,
+      "materials": [
+        "SP_PlaqueText"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/4:Service outlet plate",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Wall"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/5:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/5:Fan_Window_Frame_InteriorDetails/6:Outlet recess",
+      "submesh_count": 1,
+      "materials": [
+        "SP_Frame"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/6:Organized spare board on support bench",
+      "submesh_count": 12,
+      "materials": [
+        "anakart",
+        "mat siyah",
+        "anakart.rear",
+        "Material.001",
+        "rgb",
+        "msi logo",
+        "metal",
+        "Material.005",
+        "red",
+        "green",
+        "yellow",
+        "MSI LOGO"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/7:Facade base closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/8:Facade base closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    },
+    {
+      "path": "ResearchFlow_EnvironmentSecondPass/9:Facade base closer",
+      "submesh_count": 1,
+      "materials": [
+        "UXS_Floor"
+      ]
+    }
+  ]
+}

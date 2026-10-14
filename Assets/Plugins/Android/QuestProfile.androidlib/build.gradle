@@ -1,0 +1,8 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'th.ac.tmu.vr.researchflow.transport'
+    compileSdk 35
+    defaultConfig { minSdk 29 }
+    sourceSets { main { manifest.srcFile 'AndroidManifest.xml'; java.srcDirs = ['src'] } }
+}

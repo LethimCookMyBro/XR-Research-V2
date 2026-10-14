@@ -27,6 +27,65 @@ static class HandsLabLoggerChecks
         Check(leftSource.Observe(false,true)=="Controller","fresh physical observation permits real source transition");
         Check(leftSource.Observe(true,true)=="SimulatedController","synthetic observation takes priority consistent with provider selection");
         string root=args[0];Directory.CreateDirectory(root);
+        // This fails if the writer cannot preserve a structured task state on disk.
+        using(var structured=new HandsLabLogger(root,"SimulatedController","TestRuntime"))
+        {
+            var state=new JObject { ["components"]=new JObject { ["fixture.X"]="installed" } };
+            structured.Record("INSPECT","fixture.X","FAIL",state,"None",source:"Tester");
+            structured.Complete(source:"Tester");
+            var row=File.ReadAllLines(structured.EventsPath).Select(JObject.Parse).Single(e=>(string)e["event"]=="INSPECT");
+            Check((string)row["task_state"]["components"]["fixture.X"]=="installed","structured task_state survives saved JSON");
+        }
+        // Technical fixture only: these are neither Task A/B rules nor participant data.
+        using(var research=new HandsLabLogger(root,"SimulatedController","TestRuntime",executionEnvironment:"Editor",
+            phase:"LoggingFixture",taskId:"fixture",contentVersion:"fixture.1",technicalTest:true,testData:true))
+        {
+            var state=JObject.Parse("{\"components\":{\"fixture.X\":{\"installed\":true,\"removed\":false,\"connected\":false,\"incorrectly_placed\":false}}}");
+            string[] names={"INFORMATION_OPEN","INFORMATION_CLOSE","ACTION","EXAMINE","EXAMINE","REPAIR","INSPECT","FAIL","INFORMATION_OPEN","ACTION","ACTION","RETRY","INSPECT","TASK_COMPLETED","SYSTEM_ERROR"};
+            string[] targets={"fixture.manual","fixture.manual","fixture.X","fixture.A","fixture.B","fixture.B","fixture","fixture.X","fixture.manual","fixture.X","fixture.X","fixture","fixture","fixture","fixture.logger"};
+            for(int i=0;i<names.Length;i++)
+            {
+                var before=state.DeepClone();
+                if(i==5)state["components"]["fixture.X"]["connected"]=true;
+                string result=i==6||i==7?"FAIL":i==12||i==13?"PASS":null;
+                Check(research.Record(names[i],targets[i],result,state,"None",before,state,"Tester",actionId:i==6||i==7?"fixture-inspect-1":null),"fixture event "+i);
+            }
+            Check(research.Record("OPTIONAL_FIELDS","fixture",null,null,null,source:"Tester"),"missing optional fields accepted");
+            bool rejected=false;try{research.Record("ACTION"," ",null,null,null);}catch(ArgumentException){rejected=true;}
+            Check(rejected,"missing stable target rejected before writing");
+            research.Complete(source:"Tester");
+            state["components"]["fixture.X"]["installed"]=false;
+            var rows=File.ReadAllLines(research.EventsPath).Select(JObject.Parse).ToArray();
+            var behavior=rows.Skip(1).Take(names.Length).ToArray();
+            Check(behavior.Select(e=>(string)e["event"]).SequenceEqual(names),"H1-H4 chronology reconstructs from closed file only");
+            Check(behavior.Select(e=>(string)e["target"]).SequenceEqual(targets),"stable target sequence survives serialization");
+            Check(rows.All(e=>(string)e["phase"]=="LoggingFixture"&&(string)e["task_id"]=="fixture"&&(bool)e["test_data"]),"generic context never mislabeled HandsLab or participant data");
+            Check(rows.Select(e=>(long)e["seq"]).SequenceEqual(Enumerable.Range(1,rows.Length).Select(i=>(long)i)),"repeated events have separate unambiguous sequence numbers");
+            Check(rows.Zip(rows.Skip(1),(a,b)=>(double)a["timestamp"]<=(double)b["timestamp"]).All(x=>x),"timestamps monotonic; seq resolves equal timestamps");
+            Check((bool)behavior[5]["task_state"]["components"]["fixture.X"]["installed"]&&!(bool)behavior[5]["before"]["components"]["fixture.X"]["connected"]&&(bool)behavior[5]["after"]["components"]["fixture.X"]["connected"],"component change and immutable task_state preserved");
+            Check((string)behavior[6]["result"]=="FAIL"&&(string)behavior[12]["result"]=="PASS"&&(string)behavior[6]["action_id"]==(string)behavior[7]["action_id"],"Inspect result and related failure retained");
+            Check(behavior[9]["action_id"].ToString()!=behavior[10]["action_id"].ToString(),"repeat same action target remains separate action");
+            Check((double)behavior[1]["timestamp"]-(double)behavior[0]["timestamp"]>=0&&Array.IndexOf(names,"INFORMATION_OPEN")<Array.IndexOf(names,"ACTION"),"H1 information-first and viewing interval derivable");
+            Check(behavior.TakeWhile(e=>(string)e["event"]!="REPAIR").Where(e=>(string)e["event"]=="EXAMINE").Select(e=>(string)e["target"]).SequenceEqual(new[]{"fixture.A","fixture.B"}),"H2 distinct targets and switch before repair derivable");
+            Check((string)behavior[8]["event"]=="INFORMATION_OPEN"&&(string)behavior[7]["event"]=="FAIL","H4 first behavior after failure derivable");
+            Check(rows.Single(e=>(string)e["event"]=="OPTIONAL_FIELDS")["task_state"].Type==JTokenType.Null,"missing state is explicit null, never fabricated");
+            var metadata=JObject.Parse(File.ReadAllText(research.MetadataPath));
+            Check((string)metadata["content_version"]=="fixture.1"&&(string)metadata["phase"]=="LoggingFixture"&&!(bool)metadata["hardware_verified"],"generic metadata and simulator provenance preserved");
+            Console.WriteLine("RECONSTRUCTION_DIRECTORY="+research.DirectoryPath);
+            using(var next=new HandsLabLogger(root,"None","TestRuntime",phase:"LoggingFixture",taskId:"fixture",contentVersion:"fixture.1"))
+            {
+                next.Complete(source:"Tester");
+                var nextRows=File.ReadAllLines(next.EventsPath).Select(JObject.Parse).ToArray();
+                Check(next.DirectoryPath!=research.DirectoryPath&&nextRows.Length==2&&nextRows.All(e=>(string)e["run_id"]==next.RunId)&&rows.All(e=>(string)e["run_id"]==research.RunId),"new run cannot merge previous raw data");
+            }
+        }
+        using(var malformed=new HandsLabLogger(root,"None","TestRuntime"))
+        {
+            var cycle=new Dictionary<string,object>();cycle["self"]=cycle;
+            Check(!malformed.Record("INSPECT","fixture",null,cycle,null)&&malformed.State==HandsLabLogState.WriteError,"malformed cyclic snapshot fails deterministically");
+            malformed.Dispose();
+            Check(File.ReadAllLines(malformed.EventsPath).Select(JObject.Parse).Count()==1,"serialization failure leaves no partial JSON record");
+        }
             string firstDirectory;
             using(var log=new HandsLabLogger(root,"SimulatedController","TestRuntime",20,"Editor"))
             {

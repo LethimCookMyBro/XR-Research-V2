@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><DefineConstants>RESEARCH_BEHAVIOR_CHECKS</DefineConstants></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../HandsLabQuest3/Runtime/HandsLabLogger.cs"/>
+    <Compile Include="../Core/ResearchSessionFlow.cs"/>
+    <Compile Include="../Core/ResearchReferenceScheme.cs"/>
+    <Compile Include="../Runtime/ResearchTaskPort.cs"/>
+    <Compile Include="../UI/ResearchDemoManual.cs"/>
+    <Compile Include="../UI/ResearchStrings.cs"/>
+    <Compile Include="ResearchBehaviorChecks.cs"/>
+    <Reference Include="Newtonsoft.Json"><HintPath>../../../../Library/PackageCache/com.unity.nuget.newtonsoft-json@4dfd81071c64/Runtime/Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

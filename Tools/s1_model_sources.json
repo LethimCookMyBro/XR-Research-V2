@@ -1,0 +1,150 @@
+[
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Board\\MB_B760_DDR4.fbx",
+    "sha256": "b96d6ecb54da58c5e5c9abbf1e1495e92096d801de2ab3dfe1435dd10487fd26"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Board\\MB_B760_DDR4.fbx",
+    "sha256": "b96d6ecb54da58c5e5c9abbf1e1495e92096d801de2ab3dfe1435dd10487fd26"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Case\\CASE_ATX_MID.fbx",
+    "sha256": "270d2b348bbcff2c44ca10dbeb5d1cb807a6097b0528e6b0aca994312b461eac"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Case\\CASE_ATX_MID.fbx",
+    "sha256": "270d2b348bbcff2c44ca10dbeb5d1cb807a6097b0528e6b0aca994312b461eac"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Case\\CASE_SLED_25.fbx",
+    "sha256": "f81dada9ef36d66bab22a9fbe12a2c02b9ab6a8378ea46ebad33b81a130bf804"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Case\\CASE_SLED_25.fbx",
+    "sha256": "f81dada9ef36d66bab22a9fbe12a2c02b9ab6a8378ea46ebad33b81a130bf804"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Memory\\RAM_DDR4_UDIMM_BARE.fbx",
+    "sha256": "6f8fdf6521ba4f9585c921d0b3b2a3bb3ced3b783ee0fb2bed72b3e6dc0f479a"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Memory\\RAM_DDR4_UDIMM_BARE.fbx",
+    "sha256": "6f8fdf6521ba4f9585c921d0b3b2a3bb3ced3b783ee0fb2bed72b3e6dc0f479a"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_GPU\\GPU_GXB_8PIN.fbx",
+    "sha256": "4c68ec1f3574478298cd28e56ed54fdc4933df84950f3dc3a8a56697cb296717"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_GPU\\GPU_GXB_8PIN.fbx",
+    "sha256": "4c68ec1f3574478298cd28e56ed54fdc4933df84950f3dc3a8a56697cb296717"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_HEAD.fbx",
+    "sha256": "9d66332131c37c86fa94a7bacbf4b9b2f4ebb6e2eaa64f3157dcb7d802ac0bd7"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_HEAD.fbx",
+    "sha256": "9d66332131c37c86fa94a7bacbf4b9b2f4ebb6e2eaa64f3157dcb7d802ac0bd7"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_FRONT.fbx",
+    "sha256": "e307b6a56210a6287d07d9d142f571e5ac5c1ffa0312b567a17ec74ece4dd305"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_FRONT.fbx",
+    "sha256": "e307b6a56210a6287d07d9d142f571e5ac5c1ffa0312b567a17ec74ece4dd305"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_REAR.fbx",
+    "sha256": "674088bf30c1bc8ec8c14b1c26e4ec8908fc5de717e9732f5f35b1e6ec686853"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_REAR.fbx",
+    "sha256": "674088bf30c1bc8ec8c14b1c26e4ec8908fc5de717e9732f5f35b1e6ec686853"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_BLADE.fbx",
+    "sha256": "5ff6ce4a2f5fe7d60bf146f435ea0623c9ce1fbb90aaf9d3e23538b13b986691"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_BLADE.fbx",
+    "sha256": "5ff6ce4a2f5fe7d60bf146f435ea0623c9ce1fbb90aaf9d3e23538b13b986691"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_SPINNER.fbx",
+    "sha256": "26e30d7d74d6eb7802ac31946a35db0516967ae543b47aa14f6cfcead19ab111"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_SPINNER.fbx",
+    "sha256": "26e30d7d74d6eb7802ac31946a35db0516967ae543b47aa14f6cfcead19ab111"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_LOCK.fbx",
+    "sha256": "7d21e68c1e9d240d6e569d992c857bd6705214cedeef8443a040722ace8fc754"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_GUARD_LOCK.fbx",
+    "sha256": "7d21e68c1e9d240d6e569d992c857bd6705214cedeef8443a040722ace8fc754"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\ResearchFlow\\Meshes\\S1_GPU_GXB_8PIN.fbx",
+    "sha256": "b16283b3a151ebd04c2e8e231d3cef888b50aec7ad64ff999445de8da0bd17bb"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Board\\CPU_LGA1700.fbx",
+    "sha256": "49d51f76a40e98dc13e0029d7ec80d7de7a643eb50dfdc472f60be387f260fde"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Board\\CPU_LGA1700.fbx",
+    "sha256": "49d51f76a40e98dc13e0029d7ec80d7de7a643eb50dfdc472f60be387f260fde"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Cooling\\COOLER_LGA1700_STOCK.fbx",
+    "sha256": "0f2e8bdf960f6fd584c8cd6ee850770e7d5fc50d8070e841c96274850082b570"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Cooling\\COOLER_LGA1700_STOCK.fbx",
+    "sha256": "0f2e8bdf960f6fd584c8cd6ee850770e7d5fc50d8070e841c96274850082b570"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Power\\PSU_ATX_MX650.fbx",
+    "sha256": "88ce8558f0320dfb049f156f9a6c4c460ad7a6f216c657a2307ee8c5050c2218"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Power\\PSU_ATX_MX650.fbx",
+    "sha256": "88ce8558f0320dfb049f156f9a6c4c460ad7a6f216c657a2307ee8c5050c2218"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Storage\\SSD_SATA_25_7MM.fbx",
+    "sha256": "d91faa15843224fe6a654dc7bc856cec48c9a9ea8bbfe120bea85cf382240613"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Storage\\SSD_SATA_25_7MM.fbx",
+    "sha256": "d91faa15843224fe6a654dc7bc856cec48c9a9ea8bbfe120bea85cf382240613"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\PC_Memory\\RAM_DDR5_UDIMM_BARE.fbx",
+    "sha256": "b7c52e8473c2cfcf221f5767813ae0ee0f79d7ad6ab91848aea1fae8f31d0d32"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\PC_Memory\\RAM_DDR5_UDIMM_BARE.fbx",
+    "sha256": "b7c52e8473c2cfcf221f5767813ae0ee0f79d7ad6ab91848aea1fae8f31d0d32"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_BASE.fbx",
+    "sha256": "979cd9351152cc33f49a7a009c4126634d282e606d77cacbfb18e273f130c52d"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_BASE.fbx",
+    "sha256": "979cd9351152cc33f49a7a009c4126634d282e606d77cacbfb18e273f130c52d"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V3-Assets\\ModularMaintenanceLibrary_V2\\Export\\FBX\\Fan_Pedestal\\FAN_PED_STAND.fbx",
+    "sha256": "7c93ddeceddecc1c1d084ccc012c9fea8cd2ba286cc3b129fb6720c4790e1873"
+  },
+  {
+    "path": "D:\\VR_TMU\\XR-Research-V2\\Assets\\VRMaintenanceResearch\\AssetLibraryQA_V2\\FBX\\Fan_Pedestal\\FAN_PED_STAND.fbx",
+    "sha256": "7c93ddeceddecc1c1d084ccc012c9fea8cd2ba286cc3b129fb6720c4790e1873"
+  }
+]

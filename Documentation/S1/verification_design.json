@@ -1,0 +1,126 @@
+{
+  "scope": "Design arithmetic / options consistency only; no Unity, runtime, geometry, motion, or human data tested",
+  "checks_passed": 21,
+  "checks": [
+    {
+      "check": "single_valid_RAM_pair_excluding_slot_permutation",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "single_valid_SSD",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "single_valid_GPU",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "single_property_configuration",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "largest_RAM_alone_not_enough",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "largest_SSD_capacity_not_solution",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "largest_SSD_endurance_not_solution",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "largest_GPU_VRAM_not_solution",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "A_and_B_budgets_fit_420",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "ITDI_CS_five",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "Engineering_five",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "AB_BA_five_each",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "layout_P_Q_five_each",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "10_selectable_component_instances",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "B_fault_not_cleared_by_complete_initial_other_parts",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "no_reference_gate_in_either_task",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "sample_H1_clipped_interval_15_not30",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "VR_TaskSpec_S1_LOCKED_TH.md_balanced_code_fences",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "VR_TaskSpec_S1_LOCKED_TH.md_no_unintended_Chinese",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "PROMPT_Implement_TaskSpec_S1_TH.txt_balanced_code_fences",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    },
+    {
+      "check": "PROMPT_Implement_TaskSpec_S1_TH.txt_no_unintended_Chinese",
+      "passed": true,
+      "scope": "AUTHORED_DESIGN_LOGIC_ONLY"
+    }
+  ],
+  "unique_spec_solution": {
+    "ram": [
+      "M01",
+      "M02"
+    ],
+    "ssd": "S02",
+    "gpu": "G01"
+  },
+  "runtime_tested": false,
+  "human_results_generated": false,
+  "file_sha256": {
+    "VR_TaskSpec_S1_LOCKED_TH.md": "10ff5299d0b2d2951e32e6f099c8be0125ee14173a3d1218adc39d0e80834d39",
+    "content_contract.json": "f31508232c8b43c8d3808aabcaecf6f62ce1530770a0e6d7e78c7ded00878dd7",
+    "PROMPT_Implement_TaskSpec_S1_TH.txt": "120b307eff1f28ed20e5d380a2b84103c19c8b1ca58ec48e48ce2f8a7a41e9e0"
+  }
+}

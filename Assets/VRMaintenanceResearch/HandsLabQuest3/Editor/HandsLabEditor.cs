@@ -11,7 +11,7 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Editor {
 [InitializeOnLoad] public static partial class HandsLabEditor {
  public const string Root="Assets/VRMaintenanceResearch/HandsLabQuest3";
  public const string ScenePath="Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_HandsLab_Quest3.unity";
- public const string Out="D:/for_model_codex_vr_tmu/outputs/handslab_quest3_20260914_212949";
+ public static string Out => Directory.CreateDirectory(Path.GetFullPath(Path.Combine(Application.dataPath,"..","Logs","HandsLabEvidence"))).FullName;
  const string Request="D:/VR_TMU/XR-Research-V2/Temp/HandsLabCommand.json";
  static HandsLabEditor(){EditorApplication.update+=Poll;}
  public static void Write(string name,object value){File.WriteAllText(Out+"/"+name+".json",JsonConvert.SerializeObject(value,Formatting.Indented));}

@@ -1,0 +1,277 @@
+{
+  "schema": "vr.task-design-contract.1",
+  "task_content_version": "taskspec.s1.0.assembly-fan",
+  "date": "2026-10-10",
+  "status": "DESIGN_FROZEN_FOR_IMPLEMENTATION_NOT_EXECUTED",
+  "supersedes": "R1 Task A SSD replacement and subsequent draft task variants",
+  "values_are_fictional_stimulus_specifications": true,
+  "hardware_verified": false,
+  "wearer_verified": false,
+  "research_approval_established": false,
+  "design_intent": "Clear goal, non-answer-revealing presentation; optional self-selected reference use; property-based valid actions",
+  "timing": {
+    "target_typical_s": [
+      360,
+      420
+    ],
+    "active_limit_s": 420,
+    "smooth_path_budget_s": 300,
+    "revision_budget_s": 120,
+    "minimum_duration_s": 0,
+    "count_information_time": true,
+    "count_inspection_time": true,
+    "inspection_duration_s": 3,
+    "exclude_only_formal_pause_intervals_from_active_time": true,
+    "keep_wall_elapsed_time": true,
+    "time_limit_is_not_completion": true,
+    "proof_of_actual_completion_time": "PENDING"
+  },
+  "task_A": {
+    "id": "A",
+    "kind": "bounded_pc_assembly",
+    "station": "W2",
+    "goal": "test_ready_open_case_not_shipping_ready",
+    "base_preassembled": [
+      "case",
+      "motherboard_DDR4",
+      "CPU",
+      "cooler",
+      "PSU",
+      "ATX24",
+      "EPS",
+      "CPU_FAN",
+      "front_panel"
+    ],
+    "panel_closure_required": false,
+    "reference_open_required_for_pass": false,
+    "order_free": [
+      "ram",
+      "ssd",
+      "gpu"
+    ],
+    "requirement": {
+      "ram_type": "DDR4",
+      "ram_count": 2,
+      "ram_each_gb": 8,
+      "ram_total_gb": 16,
+      "ram_slots": [
+        "A2",
+        "B2"
+      ],
+      "ssd_count": 1,
+      "ssd_interface": "SATA",
+      "ssd_capacity_gb_min": 500,
+      "ssd_rated_endurance_tbw_min": 600,
+      "gpu_count": 1,
+      "gpu_vram_gb_min": 8,
+      "gpu_declared_board_power_w_max": 150,
+      "gpu_slot": "primary_CPU_connected"
+    },
+    "options": {
+      "ram": [
+        {
+          "id": "M01",
+          "type": "DDR4",
+          "capacity_gb": 8,
+          "kit": "K8"
+        },
+        {
+          "id": "M02",
+          "type": "DDR4",
+          "capacity_gb": 8,
+          "kit": "K8"
+        },
+        {
+          "id": "M03",
+          "type": "DDR4",
+          "capacity_gb": 16,
+          "kit": "K16"
+        },
+        {
+          "id": "M04",
+          "type": "DDR5",
+          "capacity_gb": 8,
+          "kit": "K5"
+        },
+        {
+          "id": "M05",
+          "type": "DDR5",
+          "capacity_gb": 8,
+          "kit": "K5"
+        }
+      ],
+      "ssd": [
+        {
+          "id": "S01",
+          "interface": "SATA",
+          "capacity_gb": 1000,
+          "rated_endurance_tbw": 300
+        },
+        {
+          "id": "S02",
+          "interface": "SATA",
+          "capacity_gb": 500,
+          "rated_endurance_tbw": 600
+        },
+        {
+          "id": "S03",
+          "interface": "SATA",
+          "capacity_gb": 250,
+          "rated_endurance_tbw": 800
+        }
+      ],
+      "gpu": [
+        {
+          "id": "G01",
+          "vram_gb": 8,
+          "declared_board_power_w": 120,
+          "aux_power": "PCIe_8pin"
+        },
+        {
+          "id": "G02",
+          "vram_gb": 12,
+          "declared_board_power_w": 200,
+          "aux_power": "PCIe_8pin"
+        }
+      ]
+    },
+    "correct_option_ids": {
+      "ram_unordered": [
+        "M01",
+        "M02"
+      ],
+      "ssd": "S02",
+      "gpu": "G01"
+    },
+    "required_physical_predicates": [
+      "base_intact",
+      "ram_seated_and_retained",
+      "ssd_tray_seated_and_secured",
+      "ssd_data_connected",
+      "ssd_power_connected",
+      "gpu_seated",
+      "gpu_bracket_secured",
+      "gpu_aux_power_connected"
+    ],
+    "case_access": "user_controlled_vertical_axis_service_rotation; preserve actual rear SSD mounts; log workpiece frame",
+    "board_latch_note": "Actual Q-DIMM reference has one movable latch; do not copy two-latch test coupon blindly",
+    "reject_as_task_requirement_not_physical_impossibility": [
+      "DDR4_16GB_single",
+      "correct_DDR4_in_non_W2_slots",
+      "S01",
+      "S03",
+      "G02",
+      "GPU_in_secondary_full_length_slot"
+    ],
+    "needs_runtime_validation": true
+  },
+  "task_B": {
+    "id": "B",
+    "kind": "fan_diagnosis_and_repair",
+    "station": "F2",
+    "job": "B-04",
+    "initial_fault": "rear_guard_lock_engaged_loose",
+    "fault_changes_mid_run": false,
+    "targets": [
+      "front_guard",
+      "blade_mount",
+      "rear_guard_mount"
+    ],
+    "initial": {
+      "power_isolated": true,
+      "base_stable": true,
+      "front_guard_aligned": true,
+      "front_guard_clipped": true,
+      "blade_correct": true,
+      "blade_seated": true,
+      "spinner_tight": true,
+      "rear_guard_aligned": true,
+      "rear_lock_engaged": true,
+      "rear_lock_tight": false
+    },
+    "required_pass": [
+      "base_stable",
+      "front_guard_aligned",
+      "front_guard_clipped",
+      "blade_correct",
+      "blade_seated",
+      "spinner_tight",
+      "rear_guard_aligned",
+      "rear_lock_engaged",
+      "rear_lock_tight",
+      "diagnostic_no_original_symptom"
+    ],
+    "examine_all_required": false,
+    "reference_open_required_for_pass": false,
+    "automatic_initial_inspect_failure": false,
+    "mechanisms": [
+      "guard_alignment_and_clip",
+      "keyed_blade_seating",
+      "separate_spindle_cap",
+      "rear_guard_threaded_lock"
+    ],
+    "forbidden_shortcuts": [
+      "access_removal_clears_fault",
+      "ring_presence_equals_tight",
+      "drop_near_shaft_aligns_blade_automatically",
+      "bypass_guard_during_motor_test"
+    ],
+    "needs_observation_and_runtime_validation": true
+  },
+  "metrics": {
+    "H1": "reference_before_first_physical_task_action; examine tracked separately",
+    "H2_A": "examine_before_first_assembly_attempt",
+    "H2_B": "examine_before_first_corrective_operation",
+    "H3": "full_state_at_inspection_and_true_action_adjacency",
+    "H4": "first_meaningful_user_event_after_visible_inspect_failure",
+    "raw_information_is": "visible_exposure_not_gaze_or_comprehension",
+    "analysis_unit": "participant_by_task_not_event",
+    "missing_opportunities": "explicit_NA_reason_not_zero",
+    "extra_fields": [
+      "action_type",
+      "section_id",
+      "feedback_visible_at",
+      "source",
+      "attempt_id",
+      "state_before",
+      "state_after",
+      "build_id",
+      "content_version"
+    ]
+  },
+  "sampling_plan": {
+    "Thai": {
+      "ITDI_CS": 5,
+      "Engineering": 5
+    },
+    "Japanese": {
+      "ITDI_CS": 5,
+      "Engineering": 5
+    },
+    "source_status": "previously_retrieved_change_message; protocol_amendment_not_established",
+    "assignment_per_country": {
+      "ITDI_CS": {
+        "AB_P": 1,
+        "AB_Q": 2,
+        "BA_P": 1,
+        "BA_Q": 1
+      },
+      "Engineering": {
+        "AB_P": 1,
+        "AB_Q": 1,
+        "BA_P": 2,
+        "BA_Q": 1
+      }
+    }
+  },
+  "do_not_infer": [
+    "nationality_causes_strategy",
+    "more_clicks_means_more_participants",
+    "pass_means_diagnosis_understood",
+    "no_manual_means_no_information_seeking",
+    "all_participants_will_finish_in_7_minutes",
+    "state_of_the_art_validated"
+  ],
+  "source_of_truth": "VR_TaskSpec_S1_LOCKED_TH.md",
+  "not_a_unity_importer_or_runtime": "This JSON is a design/content contract, not a tested game configuration loader."
+}

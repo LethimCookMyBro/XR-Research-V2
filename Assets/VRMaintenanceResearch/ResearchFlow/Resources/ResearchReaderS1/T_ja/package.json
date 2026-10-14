@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "content_id": "s1.reader.T.ja",
+ "version": "training-cd022e8dc521699c",
+ "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+ "source_pdf": "S1_Training_Reference_JA.pdf",
+ "source_pdf_resource": "ResearchReaderS1/T_ja/source_pdf",
+ "source_sha256": "5c81700c39af8cef0ad3b49dde6a6bd21441b0031e6e66eddb0bb5c49dca4e3a",
+ "pages": [
+  {
+   "page": 1,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p01",
+   "sha256": "f48ff618722ddbdca0eebbb2a831c0a122d8b4cf124ae399c05fc6e834183140"
+  },
+  {
+   "page": 2,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p02",
+   "sha256": "896e362934f1fc17a31df8ddb151064e914f534746cc76addaf0dbb7abeba90f"
+  },
+  {
+   "page": 3,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p03",
+   "sha256": "b6c15a29bf08347be159a9076b7e53bb0cf5ce1c2b35297b471cc2f8ca9d0627"
+  },
+  {
+   "page": 4,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p04",
+   "sha256": "39a2c4e5aa5cf844dba8ea73adc1707ba263ed302cc389ce05b5b9240a45910c"
+  },
+  {
+   "page": 5,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p05",
+   "sha256": "ffbbce99f3897c57af4336701c7f458e052fc2fb445e50e6fae950faf210b39f"
+  },
+  {
+   "page": 6,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p06",
+   "sha256": "8bf2856b3b01882e31c45ad5a1c249902faf4c0fd471dc8f5ac5774814bb7775"
+  },
+  {
+   "page": 7,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p07",
+   "sha256": "3f8ff318fed44d41ce543634da1675f9ce46fc7269335350771a000042226d5f"
+  },
+  {
+   "page": 8,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p08",
+   "sha256": "2a34870175231aa3dd6f452f4c28100918bc362774f4be1d19f1666d51adab0d"
+  },
+  {
+   "page": 9,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p09",
+   "sha256": "8a7642efbe2e93b98ebb962f765eb9ca727d683342fc15d51f42109162fc12dc"
+  },
+  {
+   "page": 10,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p10",
+   "sha256": "37b712b862c25c57fb9ccda1b77dac62ef65d04c44606f0912ac7720cd8966e8"
+  },
+  {
+   "page": 11,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p11",
+   "sha256": "87463dbcf9e95889e98a053c135ca29a990854033cea89edd126eedddeccf11b"
+  },
+  {
+   "page": 12,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p12",
+   "sha256": "ae36cf80174c27beaadbe16d00e4d0518275dd859000d665f05b4ec0a5092ece"
+  },
+  {
+   "page": 13,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_ja/pages/p13",
+   "sha256": "7a4b836031ee6a7d9b9d96ff5599c2be43a224e57a3f535ca7e8f6905fc182e3"
+  }
+ ],
+ "steps": [
+  {
+   "text_ja": "向き合わせあり: 切り欠きの角をスロットに合わせます。ラッチで固定します。\n\n誤った向きの練習: モジュールを逆向きに持ってスロットに押し込みます。\n途中で止まり、入りません。\n\n切り欠きの角をスロットに合わせ、奥まで押し込んでから離します。\n途中で離すと取り付けになりません。"
+  },
+  {
+   "text_ja": "ラッチを閉じてモジュールを固定します。\n置いただけでは固定されていません。\n\n先にラッチを開けてから、モジュールを引き抜きます。\nロック中は抜けません。"
+  },
+  {
+   "text_ja": "回転台のハンドルを持ち、台を回して背面のねじに手が届くようにします。\n\nねじの頭を持ち、止まるまで時計回りに回します。\n途中で離しても、その位置で止まります。\n\nねじを反時計回りに回して、完全に緩めます。"
+  },
+  {
+   "text_ja": "ケーブルのプラグの頭を持ち（ケーブル部分ではなく）、空いているソケットに差し込みます。\nもう一方の端はつながったままです。\n\nもう一度プラグの頭を持ち、意図してソケットから引き抜きます。"
+  },
+  {
+   "text_ja": "練習モジュールを指して「確認」を選びます。\n「確認」は情報を見るだけで、修理はしません。\n\n今「検査」を選び、「未完了」の結果の例を見ます。\n今はモジュールが外れ、ねじが緩んでいます。\n\n別の条件の練習: モジュールを入れてラッチを閉じ、ねじを締めてから「検査」を選び、「完了」の結果の例を見ます。"
+  }
+ ],
+ "images": [
+  {
+   "resource": "ResearchReaderS1/images/T.module",
+   "sha256": "79ae2defa1ac30f8f8644d4e58ba0c5887cb498eb9ce7fa0be9380a1e6443a72",
+   "caption_ja": "向き合わせあり: 切り欠きの角をスロットに合わせます。ラッチで固定します。\n\n誤った向きの練習: モジュールを逆向きに持ってスロットに押し込みます。\n途中で止まり、入りません。\n\n切り欠きの角をスロットに合わせ、奥まで押し込んでから離します。\n途中で離すと取り付けになりません。"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.latch",
+   "sha256": "0394161ac174c2947076b242b0b26a27dbe4915140cc3ab33c8900221abd1352",
+   "caption_ja": "ラッチを閉じてモジュールを固定します。\n置いただけでは固定されていません。\n\n先にラッチを開けてから、モジュールを引き抜きます。\nロック中は抜けません。"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.screw",
+   "sha256": "abb2c29bae956e7f4871e9ffddd754c32ea9869b17f9faf11d496d38a7524df6",
+   "caption_ja": "回転台のハンドルを持ち、台を回して背面のねじに手が届くようにします。\n\nねじの頭を持ち、止まるまで時計回りに回します。\n途中で離しても、その位置で止まります。\n\nねじを反時計回りに回して、完全に緩めます。"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.lead",
+   "sha256": "2adb31d65cbc6e0eb9f8ce95b6bc42c47407ad071404fffcedf609c3ddb8b9f8",
+   "caption_ja": "ケーブルのプラグの頭を持ち（ケーブル部分ではなく）、空いているソケットに差し込みます。\nもう一方の端はつながったままです。\n\nもう一度プラグの頭を持ち、意図してソケットから引き抜きます。"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.inspect",
+   "sha256": "e2be92bb9c6ba9560e2e5e96a6348c8b56eaea18437148bc564af374ca49aa9e",
+   "caption_ja": "練習モジュールを指して「確認」を選びます。\n「確認」は情報を見るだけで、修理はしません。\n\n今「検査」を選び、「未完了」の結果の例を見ます。\n今はモジュールが外れ、ねじが緩んでいます。\n\n別の条件の練習: モジュールを入れてラッチを閉じ、ねじを締めてから「検査」を選び、「完了」の結果の例を見ます。"
+  }
+ ],
+ "video": {
+  "streaming_path": "ResearchReaderS1/T_ja.mp4",
+  "sha256": "20bd160262869dacb0de7565c9e2e62afc5f39ec03b3edf8efd783fbf75a13ef"
+ }
+}

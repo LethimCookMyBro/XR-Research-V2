@@ -1,0 +1,6 @@
+{
+  "url": "http://127.0.0.1:58833/",
+  "image_count": 60,
+  "read_only": true,
+  "scope": "Loopback only; serves HTML and 60 explicitly selected PNGs; no directory listing"
+}

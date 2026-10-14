@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Grasp",
+    "source": "C:\\Users\\DMI\\.codex\\generated_images\\01a101a5-0a83-79e3-baeb-4897ef6c18d8\\exec-4d9aab6c-74c3-41a5-94e5-8391daa8e755.png",
+    "prompt": "Use case: precise-object-edit, transparent Unity tutorial sprite. The provided reference is concept 01. Extract ONLY the elegant outlined hand gripping an object from the RIGHT SIDE diagram; redraw its held object as a plain neutral light-grey ceramic practice mug without any logo, no liquid, fingers around the body with mug handle visible. Remove every other element, controller, text, UI, environment, background and border. Hand must have clean accurate anatomy five fingers, navy consistent outline, lightly shaded ivory/grey hand. Mug simple grey subtle shading; large readable silhouette, one object and one hand only, no additional labels, arrows or glow. Keep its original quiet educational line-art style, clean edges, centered composition with ample alpha padding. Genuinely transparent background. This represents the VIRTUAL hand and practice object, not real controller anatomy. Designed for a left instructional diagram on an ivory VR panel. Do not show a fault, repair step, weapon, tools, or success mark. No words at all."
+  },
+  {
+    "name": "Release",
+    "source": "C:\\Users\\DMI\\.codex\\generated_images\\01a101a5-0a83-79e3-baeb-4897ef6c18d8\\exec-9b86fbcb-89ae-40bb-aab9-f42ec12a199f.png",
+    "prompt": "Use case: precise-object-edit, transparent Unity tutorial sprite. The provided reference is concept01. Use ONLY the visual style of the right outlined hand/object instructional diagram. Generate one isolated educational RELEASE diagram: a plain light-grey ceramic practice mug upright resting on a short neutral grey horizontal tabletop line, and an anatomically correct FIVE-FINGER open relaxed hand beside and slightly above the mug with clear gap showing it has let go. Mug handle visible. Consistent navy outline, ivory/grey softly shaded hand, clean readable silhouette matching the reference. Keep hand and mug entire visible, centered with alpha padding. Remove environment, controller, all UI/text/background, arrows/glow, no extra tools or objects. Genuinely transparent background. This represents a VIRTUAL hand, not a real controller action. No words, numbers, labels, symbols or success mark. Mug near table is critical, not suspended in air."
+  }
+]

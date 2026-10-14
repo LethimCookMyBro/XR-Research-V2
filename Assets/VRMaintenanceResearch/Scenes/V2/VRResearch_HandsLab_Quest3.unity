@@ -4055,7 +4055,7 @@ MonoBehaviour:
   _maxGrabPoints: 1
   _rigidbody: {fileID: 954359921}
   _kinematicWhileSelected: 1
-  _throwWhenUnselected: 0
+  _throwWhenUnselected: 1
   _forceKinematicDisabled: 0
 --- !u!114 &954359923
 MonoBehaviour:
@@ -4064,7 +4064,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 954359919}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeb09e4f18fd0954796cd0b766d28fa4, type: 3}
   m_Name: 
@@ -4125,6 +4125,8 @@ MonoBehaviour:
   grabbable: {fileID: 954359922}
   session: {fileID: 0}
   rotationEventDegrees: 15
+  maxReleaseSampleSpeed: 12
+  maxReleaseSampleAngularSpeed: 35
 --- !u!1 &980356794
 GameObject:
   m_ObjectHideFlags: 0
@@ -9300,7 +9302,7 @@ MonoBehaviour:
   _maxGrabPoints: 1
   _rigidbody: {fileID: 2140665567}
   _kinematicWhileSelected: 1
-  _throwWhenUnselected: 0
+  _throwWhenUnselected: 1
   _forceKinematicDisabled: 0
 --- !u!114 &2140665569
 MonoBehaviour:
@@ -9309,7 +9311,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2140665565}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: eeb09e4f18fd0954796cd0b766d28fa4, type: 3}
   m_Name: 
@@ -9360,6 +9362,8 @@ MonoBehaviour:
   grabbable: {fileID: 2140665568}
   session: {fileID: 0}
   rotationEventDegrees: 15
+  maxReleaseSampleSpeed: 12
+  maxReleaseSampleAngularSpeed: 35
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

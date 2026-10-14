@@ -97,6 +97,32 @@ crashlytics-build.properties
 *.preformat.bak.meta
 
 
+# Private local data and generated caches (never publish in a source handoff)
+__pycache__/
+*.py[cod]
+/ProfilerCaptures/
+/ResearchData/
+/Recordings/
+/Transcripts/
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pfx
+
+# Local-only legacy demo fixtures: redistribution rights are not confirmed.
+/Assets/VRMaintenanceResearch/ResearchFlow/Editor/ReaderDemoFixtures/
+/Assets/VRMaintenanceResearch/ResearchFlow/Editor/ReaderDemoFixtures.meta
+/Assets/VRMaintenanceResearch/ResearchFlow/Editor/Resources/ResearchReaderDemo/
+/Assets/VRMaintenanceResearch/ResearchFlow/Editor/Resources/ResearchReaderDemo.meta
+# Raw font source is a local dependency; generated SDF assets remain in the project.
+/Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/NotoSansJP-Regular.otf
+/Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/NotoSansJP-Regular.otf.meta
+
 # Cross-PC sync: machine-local / generated
 /.claude/
 /.cursor/

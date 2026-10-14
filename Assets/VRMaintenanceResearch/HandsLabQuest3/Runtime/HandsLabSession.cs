@@ -61,6 +61,9 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
             panel.TestButton.onClick.AddListener(ClickedTest);panel.ResetButton.onClick.AddListener(ClickedReset);panel.NewRunButton.onClick.AddListener(ClickedNewRun);
             PointableCanvasModule.WhenSelected+=UiSelected;PointableCanvasModule.WhenUnselected+=UiUnselected;
             wired=true;RefreshPointers();BeginLogger();
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if(!GetComponent<HandsLabGrabProbe>())gameObject.AddComponent<HandsLabGrabProbe>().Initialize(this);
+#endif
             if(Logger.State==HandsLabLogState.Active){SystemChanging=false;foreach(var guard in guards)guard.Resume();}
         }
         void BeginLogger()
@@ -115,6 +118,12 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         static string Hand(HandsLabInputGuard guard)=>guard?guard.side.ToString():"None";
         static string EpisodeKey(HandsLabObject item,int pointer)=>item.stableId+":"+pointer;
 
+        internal bool IsSystemRelease(HandsLabObject item,PointerEvent evt)
+        {
+            var guard=GuardFor(evt.Identifier);
+            return evt.Type==PointerEventType.Cancel||SystemChanging||!string.IsNullOrEmpty(item.SystemReason)||(guard&&guard.SystemCancelling);
+        }
+
         public void ObjectPointer(HandsLabObject item,PointerEvent evt,object before,object after)
         {
             if(Logger==null)return;
@@ -131,7 +140,7 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
             if(!episodes.TryGetValue(key,out var held))return;
             episodes.Remove(key);guard=held.guard?held.guard:guard;
             if(guard)guard.UnregisterHeldBody(item.body);
-            bool system=evt.Type==PointerEventType.Cancel||SystemChanging||!string.IsNullOrEmpty(item.SystemReason)||(guard&&guard.SystemCancelling);
+            bool system=IsSystemRelease(item,evt);
             releases.TryGetValue(guard?guard.side:default,out var request);
             string reason=system?(item.SystemReason??request?.reason??"sdk_pointer_cancel"):"participant_unselect";
             string action=item.SystemActionId??(system?request?.actionId:null)??held.actionId;
@@ -168,10 +177,15 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         object Capabilities(HandSide side)
         {
             var node=side==HandSide.Left?XRNode.LeftHand:XRNode.RightHand;var device=InputDevices.GetDeviceAtXRNode(node);var simulated=SimulatedDevice(node);
+            var hands=new List<XRHandSubsystem>();SubsystemManager.GetSubsystems(hands);
             object Feature(InputFeatureUsage<bool> usage){bool available=device.isValid&&device.TryGetFeatureValue(usage,out _);bool value=false;if(available)device.TryGetFeatureValue(usage,out value);return new{available,value=available?(bool?)value:null};}
             object FloatFeature(string usageName){float value=0;bool available=device.isValid&&device.TryGetFeatureValue(new InputFeatureUsage<float>(usageName),out value);return new{available,value=available?(float?)value:null};}
             object Control(string name){var c=simulated?.TryGetChildControl<UnityEngine.InputSystem.Controls.ButtonControl>(name);return new{available=c!=null,value=c!=null?(bool?)c.isPressed:null};}
             return new {provider_device_valid=device.isValid,inputsystem_simulated_layout=simulated?.layout,
+                provider_name=device.isValid?device.name:null,provider_characteristics=device.isValid?device.characteristics.ToString():null,
+                isTracked=Feature(CommonUsages.isTracked),tracking_state=device.TryGetFeatureValue(CommonUsages.trackingState,out var trackingState)?trackingState.ToString():null,
+                grip=FloatFeature(CommonUsages.grip.name),trigger=FloatFeature(CommonUsages.trigger.name),
+                hand_subsystems=hands.Select(h=>new{id=h.subsystemDescriptor.id,h.running,left_tracked=h.leftHand.isTracked,right_tracked=h.rightHand.isTracked}).ToArray(),
                 primaryTouch=Feature(CommonUsages.primaryTouch),secondaryTouch=Feature(CommonUsages.secondaryTouch),thumbTouch=FloatFeature("ThumbTouch"),indexTouch=FloatFeature("IndexTouch"),
                 simulatedPrimaryTouched=Control("primaryTouched"),simulatedSecondaryTouched=Control("secondaryTouched"),simulatedThumbrestTouched=Control("thumbrestTouched"),simulatedTriggerTouched=Control("triggerTouched"),
                 default_visual_index_driver="analog_trigger",system_capsense_supported=false};

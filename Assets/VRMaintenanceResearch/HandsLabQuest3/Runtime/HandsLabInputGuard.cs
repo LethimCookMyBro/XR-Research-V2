@@ -22,6 +22,7 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         public GameObject[] controllerOnlyRoots = Array.Empty<GameObject>();
         public GameObject[] trackedHandOnlyRoots = Array.Empty<GameObject>();
         public Collider[] uiClearanceColliders = Array.Empty<Collider>();
+        public RayInteractable[] uiClearanceSurfaces = Array.Empty<RayInteractable>();
         [Min(.02f)] public float neutralSeconds = .15f;
         [Range(.01f,.3f)] public float analogReleaseThreshold = .1f;
         [Min(.01f)] public float uiClearanceMetres = .05f;
@@ -31,6 +32,10 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         public bool SystemCancelling { get; private set; }
         public bool InteractionsAllowed { get; private set; }
         public string LastReason { get; private set; } = "initial_neutral_gate";
+        public bool Suspended => suspended;
+        public string SuspensionReason { get; private set; }
+        public bool InputNeutral => started && TrackingValid &&
+            (Mode == InputMode.Controller ? ControllerNeutral() : HandNeutral());
         public event Action<Handedness, string> SystemRelease;
         public event Action<Handedness, string> StateChanged;
 
@@ -130,6 +135,13 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         void Awake()
         {
             if (interactionsRoot) interactionsRoot.SetActive(false);
+            // Raw UnityXR sends pose callbacks as well as our stationary-input Update tick.
+            // Sample controller-driven hands once per frame so the second notification cannot
+            // consume ControllerPinchInjector's Grip edge before the grab interactor sees it.
+            if (comprehensiveRigRoot)
+                comprehensiveRigRoot.Find("UnityXRControllerHands/UnityXRControllerDataSource" + side)
+                    .GetComponent<ControllerHandDataSource>()
+                    .InjectUpdateMode(DataSource<HandDataAsset>.UpdateModeFlags.UnityUpdate);
         }
 
         void Start()
@@ -175,8 +187,8 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
 
         public void RegisterHeldBody(Rigidbody body) { if (body) held.Add(body); }
         public void UnregisterHeldBody(Rigidbody body) { if (body) held.Remove(body); }
-        public void Suspend(string reason = "suspended") { suspended = true; if (started) Block(reason); }
-        public void Resume() { suspended = false; neutralSince = -1; WaitingForNeutral = true; LastReason = "resume_neutral_gate"; }
+        public void Suspend(string reason = "suspended") { suspended = true; SuspensionReason = reason; if (started) Block(reason); }
+        public void Resume() { suspended = false; SuspensionReason = null; neutralSince = -1; WaitingForNeutral = true; LastReason = "resume_neutral_gate"; }
 
         void Evaluate(bool mayRestore)
         {
@@ -248,6 +260,8 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
         {
             const ControllerButtonUsage buttons = ControllerButtonUsage.GripButton | ControllerButtonUsage.TriggerButton
                 | ControllerButtonUsage.PrimaryButton | ControllerButtonUsage.SecondaryButton;
+            // Controller data can be absent for a frame (device loss, simulator stop); unknown input is not neutral.
+            if (controllerReference == null || controller == null || !controllerReference.isActiveAndEnabled || !controller.IsConnected) return false;
             return ControllerIsNeutral(controller.ControllerInput.Grip, controller.ControllerInput.Trigger,
                 controller.IsButtonUsageAnyActive(buttons), analogReleaseThreshold);
         }
@@ -257,10 +271,24 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
             if (handGrab.HandPinchGrabbingFingers() != HandFingerFlags.None
                 || handGrab.HandPalmGrabbingFingers() != HandFingerFlags.None) return false;
             if (!rawHand.GetJointPose(HandJointId.HandIndexTip, out var fingertip)) return false;
+            return UIClear(fingertip.position);
+        }
+        bool UIClear(Vector3 fingertip)
+        {
             foreach (var collider in uiClearanceColliders)
                 if (collider && collider.enabled && collider.gameObject.activeInHierarchy
-                    && Vector3.Distance(collider.ClosestPoint(fingertip.position), fingertip.position) < uiClearanceMetres)
+                    && Vector3.Distance(collider.ClosestPoint(fingertip), fingertip) < uiClearanceMetres)
                     return false;
+            // Meta Canvas adapters use clipped ISurface geometry, not PhysicsCollider.
+            foreach (var surface in uiClearanceSurfaces)
+            {
+                if (!surface || !surface.isActiveAndEnabled || surface.Surface == null) continue;
+                var canvas = surface.GetComponent<PointableCanvas>()?.Canvas;
+                if (!canvas || !canvas.isActiveAndEnabled) continue;
+                if (surface.Surface.ClosestSurfacePoint(fingertip, out var hit, uiClearanceMetres)
+                    && hit.Distance < uiClearanceMetres)
+                    return false;
+            }
             return true;
         }
         int initializationFrame;

@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "content_id": "s1.reader.T.th",
+ "version": "training-5c5a353015d1ef5a",
+ "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+ "source_pdf": "S1_Training_Reference_TH.pdf",
+ "source_pdf_resource": "ResearchReaderS1/T_th/source_pdf",
+ "source_sha256": "a0d1945a688ad10763edd04c6635e1930d96c8afcd43bb7c531552b8d676d748",
+ "pages": [
+  {
+   "page": 1,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p01",
+   "sha256": "284fbafb3200e3b59d939afcf3ce4b2b7c298961850416a248adf2f2b460c95a"
+  },
+  {
+   "page": 2,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p02",
+   "sha256": "7f8b322eb6f39675f1c65ef809fedfcccc7c1fbf481ef7c6be2880d35c584d19"
+  },
+  {
+   "page": 3,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p03",
+   "sha256": "7d8d33392e4c9c25fcbbba5388637d3f484714db3e37b0263516da5feb567bd3"
+  },
+  {
+   "page": 4,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p04",
+   "sha256": "123d04e780e33b388ca171ce71e7bf88b69dbf1a9a1df5865c7b24379d7b2e38"
+  },
+  {
+   "page": 5,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p05",
+   "sha256": "4ef02e47ea150cd22115adcd0e35f1b0c84fda889bada67be8fbd2d1570ffe5e"
+  },
+  {
+   "page": 6,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p06",
+   "sha256": "18065c8545ee4005be59732a93ee75c4f9aeac5c7b6ec2ea73b50e1f2f57fc2a"
+  },
+  {
+   "page": 7,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p07",
+   "sha256": "49e66f009f75fcc7e3f01127a2b0d9e36f4e38cb848a6c2006cd82cd40bd6709"
+  },
+  {
+   "page": 8,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p08",
+   "sha256": "6b810fd7f75a661f43269d85c807a16aea46dea86457cf8b2c0d1202df2188be"
+  },
+  {
+   "page": 9,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p09",
+   "sha256": "14c18246fe8d7243e4d74d3c80eaccc12273c7797310ea53001a350ec468d08c"
+  },
+  {
+   "page": 10,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p10",
+   "sha256": "cfa5eba107f11b92d4ad8ba580a92e677b900905143568ab82fd606ee08ab2e5"
+  },
+  {
+   "page": 11,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p11",
+   "sha256": "ed15fd3902d47df9a3e1629e7aaf162f8d2684d34e4712c979cbba51eac5ae0d"
+  },
+  {
+   "page": 12,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p12",
+   "sha256": "7d13092e89300aad8b6821bf92200db2deb3de944ea7cdb1b767d7712c25b47e"
+  },
+  {
+   "page": 13,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_th/pages/p13",
+   "sha256": "8ccc3fa3a077c95afa0f7cdbbdfdffe9e80e82c7bbede8f532b5b96316eea490"
+  }
+ ],
+ "steps": [
+  {
+   "text_th": "มีบากกันใส่ผิดด้าน: มุมบากต้องตรงช่อง ยึดด้วยสลัก\n\nฝึกเงื่อนไขผิด: ถือโมดูลกลับด้านแล้วดันเข้าช่อง\nโมดูลจะติดกลางทาง ไม่เข้าที่\n\nหมุนโมดูลให้มุมบากตรงช่อง ดันจนสุดแล้วปล่อย\nปล่อยกลางทางไม่ถือว่าเข้าที่"
+  },
+  {
+   "text_th": "ปิดสลักเพื่อยึดโมดูล\nวางเข้าที่ยังไม่เท่ากับยึดแล้ว\n\nปลดสลักก่อน แล้วดึงโมดูลออก\nถ้ายังล็อกอยู่จะดึงไม่ออก"
+  },
+  {
+   "text_th": "จับมือจับแท่นหมุน แล้วหมุนแท่นเพื่อเข้าถึงสกรูด้านหลัง\n\nจับหัวสกรูแล้วหมุนตามเข็มนาฬิกาจนสุด\nปล่อยกลางทางได้ สกรูจะค้างตามที่หมุนไว้\n\nหมุนสกรูทวนเข็มนาฬิกาจนคลายสุด"
+  },
+  {
+   "text_th": "จับหัวปลั๊กสาย (ไม่จับตัวสาย) แล้วเสียบเข้าช่องที่ว่าง\nปลายอีกด้านยังต่ออยู่\n\nจับหัวปลั๊กอีกครั้งแล้วดึงออกจากช่องอย่างตั้งใจ"
+  },
+  {
+   "text_th": "ชี้ที่โมดูลฝึกแล้วเลือก “ตรวจดู”\n“ตรวจดู” ให้ข้อมูลเท่านั้น ไม่ซ่อมอะไร\n\nเลือก “ตรวจผล” ตอนนี้ เพื่อดูตัวอย่างผล ‘ยังไม่พร้อม’\nตอนนี้โมดูลถูกถอดและสกรูหลวมอยู่\n\nอีกเงื่อนไขหนึ่ง: ใส่โมดูล ปิดสลัก และขันสกรูให้แน่น แล้วเลือก “ตรวจผล” เพื่อดูตัวอย่างผล ‘พร้อม’"
+  }
+ ],
+ "images": [
+  {
+   "resource": "ResearchReaderS1/images/T.module",
+   "sha256": "79ae2defa1ac30f8f8644d4e58ba0c5887cb498eb9ce7fa0be9380a1e6443a72",
+   "caption_th": "มีบากกันใส่ผิดด้าน: มุมบากต้องตรงช่อง ยึดด้วยสลัก\n\nฝึกเงื่อนไขผิด: ถือโมดูลกลับด้านแล้วดันเข้าช่อง\nโมดูลจะติดกลางทาง ไม่เข้าที่\n\nหมุนโมดูลให้มุมบากตรงช่อง ดันจนสุดแล้วปล่อย\nปล่อยกลางทางไม่ถือว่าเข้าที่"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.latch",
+   "sha256": "0394161ac174c2947076b242b0b26a27dbe4915140cc3ab33c8900221abd1352",
+   "caption_th": "ปิดสลักเพื่อยึดโมดูล\nวางเข้าที่ยังไม่เท่ากับยึดแล้ว\n\nปลดสลักก่อน แล้วดึงโมดูลออก\nถ้ายังล็อกอยู่จะดึงไม่ออก"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.screw",
+   "sha256": "abb2c29bae956e7f4871e9ffddd754c32ea9869b17f9faf11d496d38a7524df6",
+   "caption_th": "จับมือจับแท่นหมุน แล้วหมุนแท่นเพื่อเข้าถึงสกรูด้านหลัง\n\nจับหัวสกรูแล้วหมุนตามเข็มนาฬิกาจนสุด\nปล่อยกลางทางได้ สกรูจะค้างตามที่หมุนไว้\n\nหมุนสกรูทวนเข็มนาฬิกาจนคลายสุด"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.lead",
+   "sha256": "2adb31d65cbc6e0eb9f8ce95b6bc42c47407ad071404fffcedf609c3ddb8b9f8",
+   "caption_th": "จับหัวปลั๊กสาย (ไม่จับตัวสาย) แล้วเสียบเข้าช่องที่ว่าง\nปลายอีกด้านยังต่ออยู่\n\nจับหัวปลั๊กอีกครั้งแล้วดึงออกจากช่องอย่างตั้งใจ"
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.inspect",
+   "sha256": "e2be92bb9c6ba9560e2e5e96a6348c8b56eaea18437148bc564af374ca49aa9e",
+   "caption_th": "ชี้ที่โมดูลฝึกแล้วเลือก “ตรวจดู”\n“ตรวจดู” ให้ข้อมูลเท่านั้น ไม่ซ่อมอะไร\n\nเลือก “ตรวจผล” ตอนนี้ เพื่อดูตัวอย่างผล ‘ยังไม่พร้อม’\nตอนนี้โมดูลถูกถอดและสกรูหลวมอยู่\n\nอีกเงื่อนไขหนึ่ง: ใส่โมดูล ปิดสลัก และขันสกรูให้แน่น แล้วเลือก “ตรวจผล” เพื่อดูตัวอย่างผล ‘พร้อม’"
+  }
+ ],
+ "video": {
+  "streaming_path": "ResearchReaderS1/T_th.mp4",
+  "sha256": "51fbc86c3ac618559f8f19f2f2e4a340f90cb81c5315108a631f004ac31954bd"
+ }
+}

@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "research.questionnaire-links.1",
+  "description": "External forms v1.0 18 June 2026: original responses only. No computed scores, imputation, direct identifiers or consent documents.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "participant_code",
+    "session_id",
+    "source_form_version",
+    "nasa_tlx",
+    "symptoms",
+    "interviews"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "research.questionnaire-links.1"
+    },
+    "participant_code": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "source_form_version": {
+      "type": "string"
+    },
+    "source_references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "reference_id": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "form_version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "nasa_tlx": {
+      "type": "object",
+      "properties": {
+        "A": {
+          "$ref": "#/$defs/assessment"
+        },
+        "B": {
+          "$ref": "#/$defs/assessment"
+        }
+      },
+      "additionalProperties": false
+    },
+    "symptoms": {
+      "type": "object",
+      "properties": {
+        "before": {
+          "$ref": "#/$defs/symptoms"
+        },
+        "between": {
+          "$ref": "#/$defs/symptoms"
+        },
+        "after": {
+          "$ref": "#/$defs/symptoms"
+        }
+      },
+      "additionalProperties": false
+    },
+    "interviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "reference_id",
+          "status"
+        ],
+        "properties": {
+          "reference_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "incomplete",
+              "missing",
+              "skipped",
+              "refused"
+            ]
+          },
+          "question_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 4
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "researcher": {
+      "type": "object",
+      "description": "External operator linkage only; never treat checkpoint acknowledgement as completed assessment.",
+      "properties": {
+        "reference_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task_order": {
+          "enum": [
+            "AB",
+            "BA",
+            null
+          ]
+        },
+        "task_status": {
+          "type": "object",
+          "properties": {
+            "A": {
+              "enum": [
+                "pass",
+                "time_limit",
+                "withdrawal",
+                "safety_stop",
+                "technical_failure",
+                "other",
+                "unknown",
+                "not_started",
+                "in_progress"
+              ]
+            },
+            "B": {
+              "enum": [
+                "pass",
+                "time_limit",
+                "withdrawal",
+                "safety_stop",
+                "technical_failure",
+                "other",
+                "unknown",
+                "not_started",
+                "in_progress"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "consent_status": {
+          "enum": [
+            "granted",
+            "refused",
+            "unknown"
+          ]
+        },
+        "screening_status": {
+          "enum": [
+            "passed",
+            "not_passed",
+            "reassessed",
+            "unknown"
+          ]
+        },
+        "training_status": {
+          "enum": [
+            "passed",
+            "not_passed",
+            "discontinued",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "response": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 20
+    },
+    "symptom": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 3
+    },
+    "assessment": {
+      "type": "object",
+      "required": [
+        "status",
+        "items"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "complete",
+            "incomplete",
+            "missing",
+            "skipped",
+            "refused"
+          ]
+        },
+        "source_reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "items": {
+          "type": "object",
+          "properties": {
+            "mental_demand": {
+              "$ref": "#/$defs/response"
+            },
+            "physical_demand": {
+              "$ref": "#/$defs/response"
+            },
+            "temporal_demand": {
+              "$ref": "#/$defs/response"
+            },
+            "performance": {
+              "$ref": "#/$defs/response",
+              "description": "0 good/very successful -> 20 poor/not successful; preserve direction"
+            },
+            "effort": {
+              "$ref": "#/$defs/response"
+            },
+            "frustration": {
+              "$ref": "#/$defs/response"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "symptoms": {
+      "type": "object",
+      "properties": {
+        "dizziness": {
+          "$ref": "#/$defs/symptom"
+        },
+        "nausea": {
+          "$ref": "#/$defs/symptom"
+        },
+        "headache": {
+          "$ref": "#/$defs/symptom"
+        },
+        "eye_discomfort": {
+          "$ref": "#/$defs/symptom"
+        },
+        "loss_of_balance": {
+          "$ref": "#/$defs/symptom"
+        },
+        "fatigue": {
+          "$ref": "#/$defs/symptom"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

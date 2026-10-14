@@ -1,0 +1,833 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using Newtonsoft.Json;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace VRMaintenanceResearch.ResearchFlow
+{
+    /// <summary>Existing operator setup. Quest access is technical and pre-session only.</summary>
+    public sealed class ResearcherSetupView : MonoBehaviour
+    {
+        public ResearchSessionFlowController controller;
+        [SerializeField] private TMP_FontAsset font;
+        [SerializeField] private TMP_Dropdown group, language, order, input;
+        [SerializeField] private ResearcherParticipantDropdown participant;
+        [SerializeField] private TMP_Text status, error, summary, startLabel, abortLabel;
+        [SerializeField] private Button start, resume, abort, export;
+        private IReadOnlyList<ParticipantRecord> records = Array.Empty<ParticipantRecord>();
+        private string recordSignature = "", localError = "";
+        private float nextRefresh;
+        private float nextOperatorPoll;
+        public string OperatorDirectoryOverride { get; set; }
+        public string OperatorDirectory => string.IsNullOrEmpty(OperatorDirectoryOverride)
+            ? Path.Combine(Application.persistentDataPath, "OperatorControl") : Path.GetFullPath(OperatorDirectoryOverride);
+        public string OperatorStatus { get; private set; } = "No operator authorization loaded";
+        private Canvas canvas;
+        private ResearchFlowView questOwner;
+        private Transform desktopParent;
+        private string selectedRecordId;
+        private Button back;
+        private TMP_Text lockedInputLabel;
+        private bool confirmAbort, confirmInvalid;
+        private UnityEngine.UI.Button invalid;
+        // One per researcher termination category; shown to pick the ending when aborting, and to amend it afterwards.
+        private readonly UnityEngine.UI.Button[] reasonButtons = new UnityEngine.UI.Button[4];
+        private TMP_Text reasonCaption;
+        static readonly string[] ReasonLabels = { "Withdrawal", "Safety stop", "Technical failure", "Other" };
+        private readonly ParticipantGroup[] groups = { ParticipantGroup.Dev, ParticipantGroup.Thai, ParticipantGroup.Japanese, ParticipantGroup.Test, ParticipantGroup.Pilot };
+
+        public static ResearcherSetupView Build(Transform parent, TMP_FontAsset font)
+        {
+            var root = new GameObject("Researcher Display 2", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            root.transform.SetParent(parent, false);
+            var canvas = root.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.targetDisplay = 1;
+            // No second monitor means no researcher canvas; the Editor console remains available.
+            canvas.enabled = Display.displays.Length > 1;
+            canvas.sortingOrder = 10;
+            var scaler = root.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1600, 1000);
+            scaler.matchWidthOrHeight = 1;
+            var view = root.AddComponent<ResearcherSetupView>();
+            view.font = font;
+            view.Construct();
+            view.ApplyVisualTheme();
+            view.Wire();
+            root.AddComponent<ResearcherDesktopPointer>().researcherCanvas = canvas;
+            return view;
+        }
+
+        private void Awake()
+        {
+            canvas = GetComponent<Canvas>();
+            if (canvas != null && !questOwner) { canvas.targetDisplay = 1; canvas.enabled = Display.displays.Length > 1; }
+            if (start != null) ApplyVisualTheme();
+        }
+
+        private void OnEnable() => Wire();
+        private void OnDisable() => Unwire();
+        private void Wire()
+        {
+            Unwire();
+            if (start == null) return; // Build assigns the serialized references after AddComponent.
+            start.onClick.AddListener(StartSelected);
+            resume.onClick.AddListener(ResumeSession);
+            abort.onClick.AddListener(AbortSelected);
+            export.onClick.AddListener(ExportSession);
+            group.onValueChanged.AddListener(GroupChanged);
+            participant.onValueChanged.AddListener(ParticipantSelected);
+        }
+
+        private void Unwire()
+        {
+            if (start == null) return;
+            start.onClick.RemoveListener(StartSelected);
+            resume.onClick.RemoveListener(ResumeSession);
+            abort.onClick.RemoveListener(AbortSelected);
+            export.onClick.RemoveListener(ExportSession);
+            group.onValueChanged.RemoveListener(GroupChanged);
+            participant.onValueChanged.RemoveListener(ParticipantSelected);
+        }
+
+        private void ResumeSession() => InvokeOperator("resume", controller?.Record, () => controller.ResearcherResume());
+        private void ExportSession() => InvokeOperator("export", controller?.Record, () => localError = "Export: " + controller.ExportSession());
+        private void GroupChanged(int index)
+        {
+            recordSignature = ""; confirmAbort = false;
+            language.SetValueWithoutNotify(groups[index] == ParticipantGroup.Japanese ? 1 : 0);
+            Refresh();
+        }
+
+        public bool ShowOnQuest(ResearchFlowView owner)
+        {
+            if (!owner || owner.controller != controller || !controller || !controller.TechnicalSelfSetup
+                || controller.Record != null || controller.Flow != null || !string.IsNullOrEmpty(controller.Error)) return false;
+            if (!canvas) canvas = GetComponent<Canvas>();
+            if (!questOwner) desktopParent = transform.parent;
+            questOwner = owner;
+            transform.SetParent(owner.mainPanel.transform, false);
+            var rect = (RectTransform)transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+            rect.sizeDelta = new Vector2(920, 620); rect.anchoredPosition = Vector2.zero;
+            rect.localScale = Vector3.one * .82f; rect.localRotation = Quaternion.identity;
+            canvas.renderMode = RenderMode.WorldSpace; canvas.targetDisplay = 0;
+            canvas.worldCamera = owner.mainPanel.GetComponent<Canvas>().worldCamera; canvas.enabled = true;
+            if (!back) back = Button(start.transform.parent, "Back", new Vector2(360, 260), new Vector2(100, 48), out _);
+            back.onClick.RemoveAllListeners(); back.onClick.AddListener(owner.CloseResearcherSetup);
+            back.gameObject.SetActive(true); ResearchUITheme.Button(back, ResearchButtonVariant.Secondary);
+            ApplyVisualTheme(); Refresh();
+            return true;
+        }
+
+        public void ReturnToDesktop()
+        {
+            questOwner = null;
+            transform.SetParent(desktopParent, false);
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.targetDisplay = 1;
+            canvas.enabled = Display.displays.Length > 1;
+            transform.localScale = Vector3.one;
+            if (back) back.gameObject.SetActive(false);
+            foreach (var dropdown in new[] { group, participant, language, order, input })
+                if (dropdown.template.GetComponent<Canvas>()) dropdown.template.GetComponent<Canvas>().targetDisplay = 1;
+        }
+
+        private void Construct()
+        {
+            var panel = Box(transform, "Setup", new Vector2(900, 950), Vector2.zero, new Color(.035f, .055f, .085f));
+            Text(panel, "Researcher Setup", new Vector2(820, 50), new Vector2(0, 420), 30);
+            Text(panel, "RESEARCHER DISPLAY  |  DEV / TEST / PILOT are test data", new Vector2(820, 36), new Vector2(0, 374), 17);
+            group = Dropdown(panel, "Participant Group", 314, new[] { "DEV - test data", "Thai", "Japanese", "TEST - test data", "PILOT - test data" });
+            participant = (ResearcherParticipantDropdown)Dropdown(panel, "Participant ID", 256, new[] { "Select participant", "Create next ID" }, true);
+            language = Dropdown(panel, "Language", 198, new[] { "Thai", "Japanese", "English" });
+            order = Dropdown(panel, "Task Order", 140, Cells);
+            input = Dropdown(panel, "Input Mode", 82, new[] { "Controller", "HandTracking", "TechnicalBoth - test only" });
+            status = Text(panel, "Waiting for controller", new Vector2(820, 60), new Vector2(0, 16), 19);
+            start = Button(panel, "Start Session", new Vector2(-215, -58), new Vector2(390, 48), out startLabel);
+            resume = Button(panel, "Researcher Resume", new Vector2(215, -58), new Vector2(390, 48), out _);
+            error = Text(panel, "", new Vector2(820, 52), new Vector2(0, -119), 17);
+            error.color = new Color(1, .65f, .45f);
+            summary = ScrollText(panel, new Vector2(820, 218), new Vector2(0, -264));
+            export = Button(panel, "Export Session Log", new Vector2(-215, -415), new Vector2(390, 46), out _);
+            abort = Button(panel, "Abort Session", new Vector2(215, -415), new Vector2(390, 46), out abortLabel);
+        }
+
+        private void Update()
+        {
+            // The fixed local file route also runs when Display 2 is hidden. No participant UI or ADB study unlock.
+            if (Time.unscaledTime >= nextOperatorPoll) { nextOperatorPoll = Time.unscaledTime + .5f; PollOperatorCommand(); }
+            // Hidden on Quest (no Display 2). Refresh re-reads the registry and re-parses the whole
+            // events.jsonl via SummaryText: a 50-150 ms main-thread hitch every 0.5 s, growing with
+            // the session (Perfetto 2026-09-24, perf-audit-20260924). Only a visible canvas needs it.
+            if (!canvas) canvas = GetComponent<Canvas>();
+            if (canvas && !canvas.enabled) return;
+            if (Time.unscaledTime < nextRefresh) return;
+            nextRefresh = Time.unscaledTime + .5f;
+            Refresh();
+        }
+
+        public void Refresh()
+        {
+            if (questOwner && (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null))
+                questOwner.CloseResearcherSetup();
+            if (controller == null || controller.Registry == null || participant == null) return;
+            try
+            {
+                var attachedRecord = controller.Record;
+                if (attachedRecord != null) group.SetValueWithoutNotify(Array.IndexOf(groups, attachedRecord.group));
+                var selectedId = attachedRecord?.participant_id ?? Selected?.participant_id;
+                var latest = controller.Registry.List(groups[group.value]);
+                var signature = string.Join("|", latest.Select(r => r.participant_id + ":" + r.session_state + ":" + r.revision));
+                if (signature != recordSignature || participant.options.Count != latest.Count + 2)
+                {
+                    records = latest;
+                    recordSignature = signature;
+                    participant.ClearOptions();
+                    participant.AddOptions(new[] { "Select participant" }.Concat(records.Select(r => r.participant_id + "    " + Status(r.session_state))).Concat(new[] { "Create next ID" }).ToList());
+                    participant.allowed = new[] { false }.Concat(records.Select(r => Selectable(r))).Concat(new[] { true }).ToArray();
+                    var index = records.ToList().FindIndex(r => r.participant_id == selectedId && (attachedRecord != null || Selectable(r)));
+                    if (index < 0) index = records.ToList().FindIndex(Selectable);
+                    participant.SetValueWithoutNotify(index >= 0 ? index + 1 : 0);
+                }
+                if (attachedRecord != null) participant.SetValueWithoutNotify(records.ToList().FindIndex(r => r.participant_id == attachedRecord.participant_id) + 1);
+                var record = attachedRecord ?? Selected;
+                if (record != null && record.participant_id != selectedRecordId)
+                {
+                    selectedRecordId = record.participant_id;
+                    order.SetValueWithoutNotify(CellIndex(record));
+                }
+                bool running = controller.Record != null && controller.Record.session_state == RegistryState.InProgress;
+                bool resuming = record != null && record.session_state == RegistryState.InProgress;
+                if (resuming || attachedRecord != null)
+                {
+                    language.SetValueWithoutNotify((int)record.language);
+                    input.SetValueWithoutNotify((int)record.input_mode);
+                    order.SetValueWithoutNotify(CellIndex(record));
+                }
+                bool technical = ResearchParticipantRegistry.IsTechnical(groups[group.value]);
+                group.interactable = attachedRecord == null;
+                participant.interactable = attachedRecord == null;
+                language.interactable = attachedRecord == null && !resuming && technical;
+                input.interactable = attachedRecord == null && !resuming && technical && !questOwner;
+                order.interactable = attachedRecord == null && !resuming;
+                if ((!technical || questOwner) && !resuming && attachedRecord == null) input.SetValueWithoutNotify(0);
+                start.interactable = !running && record != null && Selectable(record) && controller.DeviceReady && controller.LoggerReady
+                    && (!questOwner || (ExperimentInputMode)input.value == ExperimentInputMode.Controller);
+                startLabel.text = resuming ? "Resume Saved Session" : "Start Session";
+                var flow = controller.Flow;
+                resume.interactable = running && controller.ResearcherResumeBlocker() == null;
+                abort.interactable = running;
+                abortLabel.text = confirmAbort ? "Cancel" : "Abort Session";
+                export.interactable = controller.Record != null;
+                string Badge(string value, bool ready) => "<color=#" + ColorUtility.ToHtmlStringRGB(ready ? ResearchUITheme.Success : new Color(.48f, .27f, .06f)) + ">" + value + "</color>";
+                status.text = "Training  " + Badge(controller.Record?.training_status ?? "Pending", controller.Record?.training_status == "Passed")
+                    + "     Device  " + Badge(controller.DeviceReady ? "Ready" : "Not Ready", controller.DeviceReady)
+                    + "     Logger  " + Badge(controller.LoggerReady ? "Ready" : "Not Ready", controller.LoggerReady);
+                // Assignment goes above readiness; it must not replace the Device/Logger reasons Start depends on.
+                if (attachedRecord == null && record != null)
+                {
+                    var (previewOrder, previewLayout) = resuming ? (record.task_order, record.task_a_layout)
+                        : controller.Registry.PreviewAssignment(groups[group.value], CellOrder(order.value), CellLayout(order.value));
+                    status.text = record.participant_id + "  |  " + ((ParticipantLanguage)language.value) + "  |  " + previewOrder + "_" + previewLayout
+                        + (resuming ? " saved" : order.value == 0 ? " (Auto picks)" : "") + "  |  " + ((ExperimentInputMode)input.value)
+                        + "  |  " + (technical ? "TEST DATA" : "STUDY / authorization required") + "\n" + status.text;
+                }
+                else if (attachedRecord != null && attachedRecord.session_state == RegistryState.InProgress)
+                    status.text = attachedRecord.participant_id + "  |  " + attachedRecord.language + "  |  " + attachedRecord.task_order + "_" + attachedRecord.task_a_layout
+                        + "  |  " + (flow == null ? "" : flow.State + (flow.Paused ? " (paused)" : "")) + "\n" + status.text;
+                if (attachedRecord != null && attachedRecord.session_state == RegistryState.Completed)
+                    status.text = "Session  " + Badge("Completed", true) + "     Log  " + Badge(controller.Logger != null && controller.Logger.DataComplete ? "Saved" : "Review required", controller.Logger != null && controller.Logger.DataComplete);
+                string blocker = running ? (resume.interactable ? null : "Resume not available: " + controller.ResearcherResumeBlocker())
+                    : start.interactable ? null : "Start not available: " + (controller.ResearcherStartBlocker(record) ?? "Quest setup requires Controller mode.");
+                error.text = !string.IsNullOrEmpty(controller.Error) ? controller.Error : !string.IsNullOrEmpty(localError) ? localError : blocker ?? "";
+                summary.text = controller.Record == null ? "No session started. No participant results are present." : controller.SummaryText();
+                LayoutSession(controller.Record != null);
+                ResearchUITheme.Button(abort, ResearchButtonVariant.Ghost);
+            }
+            catch (Exception exception) { error.text = exception.Message; }
+        }
+
+        private ParticipantRecord Selected => participant && participant.value > 0 && participant.value <= records.Count ? records[participant.value - 1] : null;
+        private static bool Selectable(ParticipantRecord record) => record.session_state == RegistryState.Available || record.session_state == RegistryState.InProgress;
+        private static string Status(RegistryState state) => state == RegistryState.InProgress ? "In Progress / Resume" : state == RegistryState.Available ? "Available" : state + " / locked";
+
+        private void ParticipantSelected(int index)
+        {
+            if (controller == null || controller.Registry == null) return;
+            if (index == records.Count + 1)
+                Invoke(() => { var created = controller.Registry.CreateNext(groups[group.value]); recordSignature = ""; Refresh(); participant.SetValueWithoutNotify(records.ToList().FindIndex(r => r.participant_id == created.participant_id) + 1); });
+            else if (index > 0 && (index > records.Count || !Selectable(records[index - 1]))) { recordSignature = ""; Refresh(); }
+            Refresh();
+        }
+
+        // Sampling-plan cells: task order x Task A layout.
+        static readonly string[] Cells = { "Auto", "AB_P", "AB_Q", "BA_P", "BA_Q" };
+        static TaskOrder? CellOrder(int cell) => cell == 0 ? (TaskOrder?)null : cell <= 2 ? TaskOrder.AB : TaskOrder.BA;
+        static string CellLayout(int cell) => cell == 0 ? null : cell % 2 == 1 ? "P" : "Q";
+        static int CellIndex(ParticipantRecord record) => (record.task_order == TaskOrder.AB ? 1 : 3) + (record.task_a_layout == "Q" ? 1 : 0);
+
+        private void StartSelected()
+        {
+            var record = Selected;
+            if (controller == null || controller.Record != null || record == null || !Selectable(record)) return;
+            if (questOwner && (ExperimentInputMode)input.value != ExperimentInputMode.Controller)
+            { localError = "Quest setup requires Controller mode. Saved run mode is not changed."; Refresh(); return; }
+            InvokeOperator("start", record, () => controller.StartSession(record.participant_id, (ParticipantLanguage)language.value, (ExperimentInputMode)input.value, CellOrder(order.value), CellLayout(order.value)));
+        }
+
+        // First click shows the four ending categories; the category click itself ends the session (an emergency is
+        // "Abort Session" then "Safety stop", no extra step). A second click on the same button cancels.
+        private void AbortSelected()
+        {
+            confirmAbort = !confirmAbort;
+            Refresh();
+        }
+
+        private void ReasonSelected(int index)
+        {
+            var record = controller?.Record;
+            if (record == null) return;
+            string reason = ResearchParticipantRegistry.ResearcherTerminationReasons[index];
+            if (record.session_state == RegistryState.InProgress)
+            {
+                if (!confirmAbort) return;
+                confirmAbort = false;
+                InvokeOperator("abort", record, () => controller.ResearcherAbort(false, reason));
+            }
+            else if (record.session_state == RegistryState.Aborted || record.session_state == RegistryState.Invalid)
+            {
+                string failure = controller.AmendTermination(record.participant_id, reason, "ResearcherDisplay");
+                localError = failure ?? "Ending recorded as " + ReasonLabels[index] + "; export again so the PC copy carries it.";
+                Refresh();
+            }
+        }
+
+        static string CurrentReason(ParticipantRecord record) =>
+            record?.termination_amendments?.LastOrDefault()?.to_reason ?? record?.termination_reason ?? "other";
+
+        private void Invoke(Action action)
+        {
+            try { localError = ""; action(); }
+            catch (Exception exception) { localError = exception.Message; }
+            Refresh();
+        }
+
+        private void InvokeOperator(string command, ParticipantRecord record, Action action)
+        {
+            try { localError = ""; ExecuteGuarded(command, record, action); }
+            catch (Exception exception) { localError = exception.Message; OperatorStatus = "Blocked: " + exception.Message; }
+            Refresh();
+        }
+
+        private void ExecuteGuarded(string command, ParticipantRecord record, Action action)
+        {
+            var authorization = LoadAuthorization(record, out string hash);
+            string scope = ResearchOperatorGuard.Demand(command, record, authorization);
+            if (!ResearchOperatorGuard.IsTechnical(record) && (command == "start" || command == "resume"))
+            {
+                var hmd = UnityEngine.XR.InputDevices.GetDeviceAtXRNode(UnityEngine.XR.XRNode.Head);
+                bool nativeHead = hmd.isValid && hmd.TryGetFeatureValue(UnityEngine.XR.CommonUsages.isTracked, out bool tracked) && tracked;
+                bool absent = hmd.isValid && hmd.TryGetFeatureValue(UnityEngine.XR.CommonUsages.userPresence, out bool present) && !present;
+                bool synthetic = UnityEngine.InputSystem.InputSystem.devices.Any(d => d.layout.IndexOf("Simulated", StringComparison.OrdinalIgnoreCase) >= 0);
+                if (!nativeHead || absent || !controller.DeviceReady || synthetic)
+                    throw new InvalidOperationException("Production start/resume requires native headset/controller/floor readiness without simulated input.");
+            }
+            RecordOperatorAuthorization(command, record, authorization, hash, scope);
+            action();
+            if (command == "start" && controller.Record != null && string.IsNullOrEmpty(controller.Error))
+            {
+                if (controller.Logger?.State != VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogState.Active)
+                    throw new IOException("Started session has no active logger; operator outcome requires review.");
+                RecordOperatorAuthorization(command, controller.Record, authorization, hash, scope);
+            }
+            if (command == "start" && authorization?.link_status == "pre_session" && string.IsNullOrEmpty(controller.Error)
+                && controller.Record?.session_state == RegistryState.InProgress)
+            {
+                var link = new ResearchOperatorSessionLink { authorization_sha256 = hash, operator_id = authorization.operator_id,
+                    participant_id = controller.Record.participant_id, session_id = controller.Record.session_id, run_id = controller.Record.run_id,
+                    linked_at = DateTime.UtcNow.ToString("O") };
+                Directory.CreateDirectory(OperatorDirectory);
+                File.WriteAllText(Path.Combine(OperatorDirectory, "research-operator-session-link.json"), JsonConvert.SerializeObject(link, Formatting.Indented));
+            }
+            OperatorStatus = scope + ": " + command;
+        }
+
+        private void RecordOperatorAuthorization(string command, ParticipantRecord record, ResearchOperatorAuthorization authorization, string hash, string scope)
+        {
+            var provenance = new { actor_role = "Researcher", operator_id = authorization?.operator_id, authorization_sha256 = hash,
+                record.participant_id, record.session_id, record.run_id, record.revision, local_route = true,
+                test_data = ResearchOperatorGuard.IsTechnical(record), approvals_are_external_assertions = !ResearchOperatorGuard.IsTechnical(record) };
+            if (controller.Logger?.State == VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogState.Active)
+            {
+                if (!controller.Log("OPERATOR_COMMAND_AUTHORIZED", "operator." + command, scope, after: provenance, source: "System"))
+                    throw new IOException("Operator authorization could not be recorded; command was not executed.");
+                return;
+            }
+            if (command != "start" && command != "export")
+                throw new IOException("An active session logger is required for this operator command.");
+            // Start has no run writer yet; completed-export must preserve finalized raw files.
+            // Require durable, reopened authorization evidence in the separate operator journal first.
+            string directory = Path.Combine(OperatorDirectory, "journal"); Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".authorization.json");
+            byte[] bytes = new UTF8Encoding(false).GetBytes(JsonConvert.SerializeObject(new {
+                schema = "research.operator-journal.1", event_name = "OPERATOR_COMMAND_AUTHORIZED", command, scope, provenance,
+                utc = DateTime.UtcNow.ToString("O"), hardware_verified = false
+            }, Formatting.Indented));
+            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+            { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
+            if (!File.ReadAllBytes(path).SequenceEqual(bytes)) throw new IOException("Operator authorization journal verification failed; command was not executed.");
+        }
+
+        private ResearchOperatorAuthorization LoadAuthorization(ParticipantRecord record, out string hash)
+        {
+            hash = null;
+            if (ResearchOperatorGuard.IsTechnical(record)) return null;
+            string path = Path.Combine(OperatorDirectory, "research-operator-authorization.json");
+            if (!File.Exists(path)) return null;
+            string json = ReadBounded(path, out byte[] authorizationBytes);
+            using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(authorizationBytes)).Replace("-", "").ToLowerInvariant();
+            var authorization = ResearchOperatorGuard.ParseAuthorization(json);
+            string linkPath = Path.Combine(OperatorDirectory, "research-operator-session-link.json");
+            if (authorization?.link_status == "pre_session" && File.Exists(linkPath))
+            {
+                var link = JsonConvert.DeserializeObject<ResearchOperatorSessionLink>(ReadBounded(linkPath));
+                if (ResearchOperatorGuard.LinkMatches(link, authorization, hash, record))
+                { authorization.link_status = "linked"; authorization.session_id = link.session_id; }
+            }
+            return authorization;
+        }
+
+        static string ReadBounded(string path) => ReadBounded(path, out _);
+        static string ReadBounded(string path, out byte[] bytes)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (stream.Length > 16384) throw new InvalidOperationException("Local operator document exceeds 16 KiB.");
+                bytes = new byte[(int)stream.Length];
+                int offset = 0, count;
+                while (offset < bytes.Length && (count = stream.Read(bytes, offset, bytes.Length - offset)) > 0) offset += count;
+                if (offset != bytes.Length) throw new IOException("Local operator document changed while reading.");
+                return new UTF8Encoding(false, true).GetString(bytes).TrimStart('\uFEFF');
+            }
+        }
+
+        // Exact record identities, immutable per-request result files and no network listener.
+        public object ExecuteLocalOperatorCommand(ResearchOperatorCommand request)
+        {
+            if (!controller || controller.Registry == null) throw new InvalidOperationException("Research controller/registry is unavailable.");
+            var record = request?.command == "start" && controller.Record == null
+                ? Enum.GetValues(typeof(ParticipantGroup)).Cast<ParticipantGroup>().SelectMany(controller.Registry.List)
+                    .Single(p => p.participant_id == request.participant_id) : controller.Record;
+            ResearchOperatorGuard.DemandRequest(request, record);
+            string exportResult = null;
+            string beforeError = controller.Error, expectedRun = record.run_id;
+            long beforeRevision = record.revision;
+            var beforeRegistryState = record.session_state;
+            bool terminalCommand = request.command == "abort" || request.command == "invalidate";
+            var beforeState = controller.Flow?.State;
+            bool beforePaused = controller.Flow?.Paused == true;
+            ExecuteGuarded(request.command, record, () => {
+                switch (request.command)
+                {
+                    case "start": controller.StartSession(record.participant_id, request.language ?? record.language,
+                        request.input_mode ?? ExperimentInputMode.Controller, request.task_order, request.task_a_layout); break;
+                    case "resume": controller.ResearcherResume(); break;
+                    case "abort": controller.ResearcherAbort(false, request.termination_reason ?? "other"); break;
+                    case "invalidate": controller.ResearcherAbort(true, request.termination_reason ?? "other"); break;
+                    case "export": exportResult = controller.ExportSession(); break;
+                }
+            });
+            if (terminalCommand)
+            {
+                var expectedState = request.command == "invalidate" ? RegistryState.Invalid : RegistryState.Aborted;
+                var saved = controller.Registry.List(record.group).SingleOrDefault(p => p.participant_id == request.participant_id);
+                var current = controller.Record;
+                if (beforeRegistryState != RegistryState.InProgress || saved == null || current == null
+                    || saved.session_state != expectedState || current.session_state != expectedState
+                    || saved.session_id != request.session_id || current.session_id != request.session_id
+                    || saved.run_id != expectedRun || current.run_id != expectedRun || current.participant_id != request.participant_id
+                    || saved.revision <= beforeRevision || current.revision != saved.revision)
+                    throw new InvalidOperationException("Terminal operator outcome was not confirmed in the exact session registry.");
+                if (!string.IsNullOrEmpty(controller.Logger?.LastError))
+                    throw new IOException("Terminal operator log write failed: " + controller.Logger.LastError);
+            }
+            if (!string.IsNullOrEmpty(controller.Error)
+                && (controller.Error != beforeError || (!terminalCommand && request.command != "export")))
+                throw new InvalidOperationException(controller.Error);
+            if (request.command == "resume" && beforeState == controller.Flow?.State && beforePaused == (controller.Flow?.Paused == true))
+                throw new InvalidOperationException("No permitted resume transition was available.");
+            if (request.command == "export" && string.IsNullOrEmpty(exportResult))
+                throw new InvalidOperationException("Export failed: " + controller.ExportDeliveryError);
+            return new { schema = "research.operator-response.1", request_id = request.request_id, status = "Executed", utc = DateTime.UtcNow.ToString("O"),
+                command = request.command, participant_id = controller.Record?.participant_id, session_id = controller.Record?.session_id,
+                state = controller.Flow?.State.ToString(), registry_state = controller.Record?.session_state.ToString(),
+                run_id = controller.Record?.run_id, revision = controller.Record?.revision,
+                warnings = new[] { beforeError, controller.Error, controller.Logger?.LastError, controller.ExportDeliveryError }
+                    .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToArray(),
+                export_path = controller.LastExportPath, scope = OperatorStatus,
+                test_data = ResearchOperatorGuard.IsTechnical(controller.Record), hardware_verified = false };
+        }
+
+        private void PollOperatorCommand()
+        {
+            string path = Path.Combine(OperatorDirectory, "research-operator-command.json");
+            if (!File.Exists(path)) return;
+            string requestId = Guid.NewGuid().ToString("N");
+            object response;
+            string resultPath = null;
+            try
+            {
+                string results = Path.Combine(OperatorDirectory, "results"); Directory.CreateDirectory(results);
+                string claimed = Path.Combine(results, requestId + "." + DateTime.UtcNow.Ticks + ".request.json");
+                // Claim before parsing: malformed/oversized input is consumed once and preserved for review.
+                File.Move(path, claimed);
+                var request = JsonConvert.DeserializeObject<ResearchOperatorCommand>(ReadBounded(claimed), new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Error });
+                if (request != null && Guid.TryParseExact(request.request_id, "N", out _)) requestId = request.request_id;
+                string candidateResultPath = Path.Combine(results, requestId + ".response.json");
+                if (File.Exists(candidateResultPath))
+                    throw new InvalidOperationException("Local operator request ID was already consumed.");
+                resultPath = candidateResultPath;
+                // A crash after claim cannot replay an action whose outcome is unknown.
+                File.WriteAllText(resultPath, JsonConvert.SerializeObject(new { schema = "research.operator-response.1", request_id = requestId,
+                    status = "ClaimedOutcomePending", utc = DateTime.UtcNow.ToString("O"), hardware_verified = false }, Formatting.Indented));
+                response = ExecuteLocalOperatorCommand(request);
+            }
+            catch (Exception exception)
+            {
+                OperatorStatus = "Blocked: " + exception.Message;
+                response = new { schema = "research.operator-response.1", request_id = requestId, status = "Blocked", utc = DateTime.UtcNow.ToString("O"), error = exception.Message,
+                    participant_id = controller?.Record?.participant_id, session_id = controller?.Record?.session_id,
+                    run_id = controller?.Record?.run_id, registry_state = controller?.Record?.session_state.ToString(),
+                    state = controller?.Flow?.State.ToString(),
+                    warnings = new[] { controller?.Error, controller?.Logger?.LastError, controller?.ExportDeliveryError }
+                        .Where(value => !string.IsNullOrEmpty(value)).Distinct().ToArray(), hardware_verified = false };
+            }
+            if (resultPath != null) File.WriteAllText(resultPath, JsonConvert.SerializeObject(response, Formatting.Indented));
+            File.WriteAllText(Path.Combine(OperatorDirectory, "research-operator-response.json"), JsonConvert.SerializeObject(response, Formatting.Indented));
+        }
+
+        public void ApplyVisualTheme()
+        {
+            if (!start || !participant) return;
+            var panel = start.transform.parent.GetComponent<RectTransform>();
+            var surface = panel.GetComponent<Image>();
+            surface.color = ResearchUITheme.Glass; ResearchUITheme.Surface(surface, false, 24);
+            foreach (var label in GetComponentsInChildren<TMP_Text>(true)) label.color = ResearchUITheme.Ink;
+            ResearchUITheme.Button(start, ResearchButtonVariant.Primary);
+            ResearchUITheme.Button(resume, ResearchButtonVariant.Secondary);
+            ResearchUITheme.Button(export, ResearchButtonVariant.Primary);
+            ResearchUITheme.Button(abort, ResearchButtonVariant.Ghost);
+            foreach (var dropdown in new[] { group, participant, language, order, input })
+            {
+                ResearchUITheme.Button(dropdown, ResearchButtonVariant.Secondary);
+                dropdown.captionText.fontSize = 20;
+                var template = dropdown.template;
+                var canvas = template.GetComponent<Canvas>(); if (!canvas) canvas = template.gameObject.AddComponent<Canvas>();
+                canvas.targetDisplay = questOwner ? 0 : 1;
+                var image = template.GetComponent<Image>();
+                image.color = ResearchUITheme.Glass; ResearchUITheme.Surface(image, true, 16);
+                AddScrollbar(template.GetComponent<ScrollRect>());
+                var toggle = template.GetComponentInChildren<Toggle>(true);
+                if (toggle) ResearchUITheme.Button(toggle, ResearchButtonVariant.Ghost);
+                dropdown.itemText.fontSize = 19;
+            }
+            var summaryRoot = summary.transform.parent.GetComponent<Image>();
+            summaryRoot.color = Color.clear;
+            var summaryScroll = summaryRoot.GetComponent<ScrollRect>();
+            summaryScroll.enabled = true; summaryScroll.vertical = true; summaryScroll.horizontal = false;
+            AddScrollbar(summaryScroll);
+            var summaryFit = summary.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+            if (summaryFit) summaryFit.enabled = true;
+            status.fontSize = 18; status.alignment = TextAlignmentOptions.Center;
+            error.color = new Color(.48f, .27f, .06f); error.alignment = TextAlignmentOptions.Center;
+            EnsureChoices(language, new[] { "Thai", "Japanese", "English" });
+            EnsureChoices(order, Cells);
+            EnsureChoices(input, new[] { "Controller", "Hand Tracking", "Technical Both" });
+            if (!invalid) invalid = panel.Find("Mark Invalid")?.GetComponent<UnityEngine.UI.Button>();
+            if (!invalid) invalid = Button(panel, "Mark Invalid", Vector2.zero, new Vector2(240, 42), out _);
+            invalid.onClick.RemoveListener(InvalidateSelected);
+            invalid.onClick.AddListener(InvalidateSelected);
+            ResearchUITheme.Button(invalid, ResearchButtonVariant.Ghost);
+            for (int i = 0; i < reasonButtons.Length; i++)
+            {
+                int index = i;
+                var button = reasonButtons[i] ? reasonButtons[i] : panel.Find("End Reason " + i)?.GetComponent<UnityEngine.UI.Button>();
+                if (!button) { button = Button(panel, ReasonLabels[i], Vector2.zero, new Vector2(160, 42), out _); button.name = "End Reason " + i; }
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => ReasonSelected(index));
+                reasonButtons[i] = button;
+            }
+            if (!reasonCaption) reasonCaption = panel.Find("End Reason Caption")?.GetComponent<TMP_Text>();
+            if (!reasonCaption) { reasonCaption = Text(panel, "", new Vector2(140, 42), Vector2.zero, 17); reasonCaption.name = "End Reason Caption"; }
+            LayoutSession(controller && controller.Record != null);
+        }
+
+        private void InvalidateSelected()
+        {
+            if (!confirmInvalid) { confirmInvalid = true; invalid.GetComponentInChildren<TMP_Text>().text = "Confirm Invalid"; return; }
+            InvokeOperator("invalidate", controller?.Record, () => controller.ResearcherAbort(true));
+            confirmInvalid = false;
+        }
+
+        // Keep the existing serialized dropdown values and resume locks as the single source of truth.
+        private void EnsureChoices(TMP_Dropdown source, string[] labels)
+        {
+            var parent = source.transform.parent;
+            var row = parent.Find(source.name + " Choices") as RectTransform;
+            if (!row)
+            {
+                row = new GameObject(source.name + " Choices", typeof(RectTransform)).GetComponent<RectTransform>();
+                row.SetParent(parent, false);
+                row.sizeDelta = new Vector2(570, 48);
+            }
+            for (int i = 0; i < labels.Length; i++)
+            {
+                int value = i;
+                var button = row.Find(labels[i])?.GetComponent<UnityEngine.UI.Button>();
+                if (!button) button = Button(row, labels[i], Vector2.zero, new Vector2(180, 48), out _);
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => { if (source.interactable) { source.value = value; Refresh(); } });
+                button.transform.SetSiblingIndex(i);
+            }
+            // Scene-saved rows can hold buttons for retired labels; they would shift the value mapping.
+            foreach (Transform stale in row.Cast<Transform>().Where(t => !labels.Contains(t.name)).ToArray())
+                if (Application.isPlaying) Destroy(stale.gameObject); else DestroyImmediate(stale.gameObject);
+        }
+
+        private void LayoutSession(bool hasSession)
+        {
+            var panel = start.transform.parent.GetComponent<RectTransform>();
+            bool ended = hasSession && controller.Record.session_state != RegistryState.InProgress;
+            panel.sizeDelta = new Vector2(920, hasSession ? 680 : 620);
+            var headings = panel.GetComponentsInChildren<TMP_Text>(true).Where(t => t.transform.parent == panel).ToArray();
+            foreach (var heading in headings)
+            {
+                if (heading.text == "Researcher Setup" || heading.text == "Researcher Session" || heading.text == "Researcher Summary" || heading.text == "Session Summary" || heading.text == "RESEARCH SESSION")
+                {
+                    heading.text = ended ? "Session Summary" : hasSession ? "RESEARCH SESSION" : "Researcher Setup";
+                    heading.rectTransform.anchoredPosition = new Vector2(0, hasSession ? 285 : 260);
+                    heading.fontSize = 30;
+                }
+                if (heading.text.StartsWith("RESEARCHER DISPLAY") || heading.text.StartsWith("TECHNICAL OPERATOR"))
+                {
+                    heading.gameObject.SetActive(!hasSession);
+                    heading.text = questOwner ? "TECHNICAL OPERATOR  |  DEV / TEST / PILOT are test data" : "RESEARCHER DISPLAY  |  DEV / TEST / PILOT are test data";
+                    heading.rectTransform.anchoredPosition = new Vector2(0, 215);
+                    heading.fontSize = 15;
+                    heading.color = ResearchUITheme.Muted;
+                }
+            }
+            var labels = new[] { "Participant Group", "Participant ID", "Language", "Task Order", "Input Mode" };
+            var dropdowns = new TMP_Dropdown[] { group, participant, language, order, input };
+            for (int i = 0; i < dropdowns.Length; i++)
+            {
+                var source = dropdowns[i];
+                var label = headings.FirstOrDefault(t => t.text == labels[i]);
+                if (label)
+                {
+                    label.gameObject.SetActive(!hasSession);
+                    label.fontSize = 18;
+                    label.color = ResearchUITheme.Muted;
+                    label.rectTransform.anchoredPosition = i < 2 ? new Vector2(i == 0 ? -285 : 145, 181) : new Vector2(-285, 45 - (i - 2) * 65);
+                }
+                source.gameObject.SetActive(!hasSession && i < 2);
+                if (i < 2)
+                {
+                    var rect = source.GetComponent<RectTransform>();
+                    rect.anchoredPosition = new Vector2(i == 0 ? -215 : 215, 137);
+                    rect.sizeDelta = new Vector2(390, 48);
+                    source.captionText.rectTransform.sizeDelta = new Vector2(330, 42);
+                    var arrow = source.GetComponentsInChildren<TMP_Text>().FirstOrDefault(t => t.text == "v");
+                    if (arrow) arrow.rectTransform.anchoredPosition = new Vector2(170, 0);
+                    continue;
+                }
+                var row = panel.Find(source.name + " Choices") as RectTransform;
+                if (!row) continue;
+                row.gameObject.SetActive(!hasSession && (i != 4 || !questOwner));
+                row.anchoredPosition = new Vector2(130, 45 - (i - 2) * 65);
+                var buttons = row.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                bool technical = ResearchParticipantRegistry.IsTechnical(groups[group.value]);
+                int count = i == 3 ? Cells.Length : technical ? 3 : 2;
+                float width = 570f / count;
+                for (int j = 0; j < buttons.Length; j++)
+                {
+                    buttons[j].gameObject.SetActive(j < count);
+                    buttons[j].interactable = source.interactable;
+                    var rect = buttons[j].GetComponent<RectTransform>();
+                    rect.sizeDelta = new Vector2(width - 8, 48);
+                    rect.anchoredPosition = new Vector2(-285 + width * (j + .5f), 0);
+                    buttons[j].GetComponentInChildren<TMP_Text>().rectTransform.sizeDelta = new Vector2(width - 20, 42);
+                    ResearchUITheme.Button(buttons[j], j == source.value ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary);
+                }
+            }
+            if (!lockedInputLabel)
+            {
+                lockedInputLabel = Text(panel, "", new Vector2(570, 48), new Vector2(150, -85), 22);
+                lockedInputLabel.name = "QuestLockedInputMode";
+            }
+            lockedInputLabel.gameObject.SetActive(questOwner && !hasSession);
+            lockedInputLabel.color = ResearchUITheme.Ink;
+            lockedInputLabel.text = input.value == (int)ExperimentInputMode.Controller ? "Controller (locked)"
+                : "Saved run: " + (ExperimentInputMode)input.value + " / Quest requires Controller";
+            status.gameObject.SetActive(!ended);
+            status.rectTransform.anchoredPosition = new Vector2(0, hasSession ? 230 : -155);
+            start.gameObject.SetActive(!hasSession);
+            start.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -220);
+            start.GetComponent<RectTransform>().sizeDelta = new Vector2(820, 56);
+            startLabel.rectTransform.sizeDelta = new Vector2(796, 50);
+            // Shown disabled with its reason (error line) instead of disappearing while the participant waits.
+            resume.gameObject.SetActive(hasSession && !ended);
+            resume.GetComponent<RectTransform>().anchoredPosition = new Vector2(-215, -215);
+            error.rectTransform.anchoredPosition = new Vector2(0, hasSession ? -152 : -275);
+            summary.transform.parent.gameObject.SetActive(hasSession);
+            var summaryRect = summary.transform.parent.GetComponent<RectTransform>();
+            summaryRect.anchoredPosition = new Vector2(0, ended ? 55 : 30);
+            summaryRect.sizeDelta = new Vector2(820, 340);
+            // Top-anchored content sized by its ContentSizeFitter so the ScrollRect scrolls long summaries instead of clipping them.
+            summary.rectTransform.anchorMin = new Vector2(0, 1);
+            summary.rectTransform.anchorMax = Vector2.one;
+            summary.rectTransform.pivot = new Vector2(.5f, 1);
+            summary.rectTransform.anchoredPosition = new Vector2(0, -8);
+            summary.rectTransform.sizeDelta = new Vector2(-40, summary.preferredHeight);
+            summary.fontSize = 20;
+            summary.lineSpacing = 8;
+            export.gameObject.SetActive(hasSession);
+            export.GetComponent<RectTransform>().anchoredPosition = new Vector2(resume.gameObject.activeSelf ? 215 : 0, -215);
+            export.GetComponent<RectTransform>().sizeDelta = new Vector2(390, 48);
+            abort.gameObject.SetActive(hasSession && !ended);
+            abort.GetComponent<RectTransform>().anchoredPosition = new Vector2(-205, -282);
+            abort.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 42);
+            if (invalid)
+            {
+                invalid.gameObject.SetActive(hasSession && !ended && !confirmAbort);
+                invalid.interactable = hasSession && !ended;
+                invalid.GetComponent<RectTransform>().anchoredPosition = new Vector2(205, -282);
+            }
+            // Choosing: [Cancel][4 categories]. After an abort/invalid: [Ending:][4 categories], current one selected.
+            var record = hasSession ? controller.Record : null;
+            bool amendable = ended && (record.session_state == RegistryState.Aborted || record.session_state == RegistryState.Invalid);
+            bool choosing = hasSession && !ended && confirmAbort;
+            if (choosing)
+            {
+                abort.GetComponent<RectTransform>().anchoredPosition = new Vector2(-340, -282);
+                abort.GetComponent<RectTransform>().sizeDelta = new Vector2(140, 42);
+            }
+            if (reasonCaption)
+            {
+                reasonCaption.gameObject.SetActive(amendable);
+                reasonCaption.text = "Ending:";
+                reasonCaption.color = ResearchUITheme.Muted;
+                reasonCaption.rectTransform.anchoredPosition = new Vector2(-340, -282);
+            }
+            string current = amendable ? CurrentReason(record) : null;
+            for (int i = 0; i < reasonButtons.Length; i++)
+            {
+                var button = reasonButtons[i];
+                if (!button) continue;
+                button.gameObject.SetActive(choosing || amendable);
+                var rect = button.GetComponent<RectTransform>();
+                rect.anchoredPosition = new Vector2(-180 + 170 * i, -282);
+                rect.sizeDelta = new Vector2(160, 42);
+                bool selected = amendable && ResearchParticipantRegistry.ResearcherTerminationReasons[i] == current;
+                ResearchUITheme.Button(button, choosing ? ResearchButtonVariant.Destructive : selected ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary);
+            }
+        }
+
+        public bool SummaryContentVisible()
+        {
+            if (!summary || !summary.isActiveAndEnabled || string.IsNullOrWhiteSpace(summary.text) || summary.color.a <= 0) return false;
+            summary.ForceMeshUpdate();
+            var viewport = summary.transform.parent.GetComponent<RectTransform>();
+            var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, summary.rectTransform);
+            return summary.textInfo.characterCount > 0 && viewport.rect.Overlaps(new Rect(bounds.min, bounds.size))
+                && !summary.canvasRenderer.cull;
+        }
+
+        private void AddScrollbar(ScrollRect scroll)
+        {
+            if (!scroll || scroll.verticalScrollbar) return;
+            var track = Box(scroll.transform, "Vertical Scrollbar", new Vector2(12, 0), Vector2.zero, new Color(.65f, .8f, 1, .14f));
+            track.anchorMin = new Vector2(1, 0); track.anchorMax = Vector2.one;
+            track.pivot = new Vector2(1, .5f); track.offsetMin = new Vector2(-18, 12); track.offsetMax = new Vector2(-6, -12);
+            var handle = Box(track, "Handle", Vector2.zero, Vector2.zero, new Color(.65f, .82f, 1, .75f));
+            handle.anchorMin = Vector2.zero; handle.anchorMax = Vector2.one; handle.sizeDelta = Vector2.zero;
+            var bar = track.gameObject.AddComponent<Scrollbar>();
+            bar.handleRect = handle; bar.targetGraphic = handle.GetComponent<Image>(); bar.direction = Scrollbar.Direction.BottomToTop;
+            ResearchUITheme.Surface(handle.GetComponent<Image>(), false, 6);
+            scroll.verticalScrollbar = bar; scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+            if (scroll.viewport != scroll.transform) scroll.viewport.offsetMax = new Vector2(-28, scroll.viewport.offsetMax.y);
+            else scroll.content.sizeDelta = new Vector2(-42, scroll.content.sizeDelta.y);
+        }
+
+        private RectTransform Box(Transform parent, string name, Vector2 size, Vector2 position, Color color)
+        {
+            var rect = new GameObject(name, typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
+            rect.SetParent(parent, false); rect.sizeDelta = size; rect.anchoredPosition = position;
+            rect.GetComponent<Image>().color = color;
+            return rect;
+        }
+
+        private TMP_Text Text(Transform parent, string text, Vector2 size, Vector2 position, float fontSize)
+        {
+            var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+            label.transform.SetParent(parent, false); label.rectTransform.sizeDelta = size; label.rectTransform.anchoredPosition = position;
+            label.font = font; label.fontSize = fontSize; label.text = text; label.color = new Color(.9f, .94f, 1);
+            label.alignment = TextAlignmentOptions.MidlineLeft; label.raycastTarget = false;
+            return label;
+        }
+
+        private Button Button(Transform parent, string text, Vector2 position, Vector2 size, out TMP_Text label)
+        {
+            var rect = Box(parent, text, size, position, new Color(.11f, .28f, .44f));
+            var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = rect.GetComponent<Image>();
+            var colors = button.colors; colors.highlightedColor = new Color(.7f, .86f, 1); colors.pressedColor = new Color(.45f, .65f, .9f); colors.disabledColor = new Color(.35f, .35f, .35f); colors.fadeDuration = .1f; button.colors = colors;
+            label = Text(rect, text, size - new Vector2(24, 6), Vector2.zero, 19); label.alignment = TextAlignmentOptions.Center;
+            return button;
+        }
+
+        private TMP_Dropdown Dropdown(Transform parent, string label, float y, string[] options, bool lockItems = false)
+        {
+            Text(parent, label, new Vector2(250, 46), new Vector2(-285, y), 21);
+            var rect = Box(parent, label + " Dropdown", new Vector2(540, 46), new Vector2(140, y), new Color(.1f, .15f, .22f));
+            TMP_Dropdown dropdown = rect.gameObject.AddComponent<ResearcherParticipantDropdown>();
+            dropdown.targetGraphic = rect.GetComponent<Image>();
+            dropdown.captionText = Text(rect, "", new Vector2(480, 40), new Vector2(-10, 0), 20);
+            Text(rect, "v", new Vector2(24, 40), new Vector2(248, 0), 18);
+            var template = Box(rect, "Template", new Vector2(540, 240), new Vector2(0, -46), new Color(.07f, .1f, .16f));
+            template.anchorMin = template.anchorMax = new Vector2(.5f, 0); template.pivot = new Vector2(.5f, 1); template.anchoredPosition = Vector2.zero;
+            var viewport = Box(template, "Viewport", new Vector2(540, 240), Vector2.zero, Color.clear);
+            viewport.anchorMin = Vector2.zero; viewport.anchorMax = Vector2.one; viewport.sizeDelta = Vector2.zero;
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>(); content.SetParent(viewport, false);
+            content.anchorMin = new Vector2(0, 1); content.anchorMax = Vector2.one; content.pivot = new Vector2(.5f, 1); content.sizeDelta = new Vector2(0, 42);
+            var item = Box(content, "Item", new Vector2(0, 42), Vector2.zero, new Color(.13f, .2f, .3f));
+            item.anchorMin = new Vector2(0, .5f); item.anchorMax = new Vector2(1, .5f);
+            var toggle = item.gameObject.AddComponent<Toggle>(); toggle.targetGraphic = item.GetComponent<Image>();
+            var itemText = Text(item, "", new Vector2(480, 38), new Vector2(0, 0), 19);
+            dropdown.itemText = itemText;
+            var scroll = template.gameObject.AddComponent<ScrollRect>(); scroll.viewport = viewport; scroll.content = content; scroll.horizontal = false; scroll.movementType = ScrollRect.MovementType.Clamped; scroll.scrollSensitivity = 30;
+            dropdown.template = template; dropdown.AddOptions(options.ToList()); template.gameObject.SetActive(false);
+            return dropdown;
+        }
+
+        private TMP_Text ScrollText(Transform parent, Vector2 size, Vector2 position)
+        {
+            var root = Box(parent, "Session Summary", size, position, new Color(.06f, .09f, .14f));
+            root.gameObject.AddComponent<RectMask2D>();
+            var label = Text(root, "", new Vector2(size.x - 24, size.y), Vector2.zero, 18);
+            label.alignment = TextAlignmentOptions.TopLeft;
+            label.rectTransform.anchorMin = new Vector2(0, 1); label.rectTransform.anchorMax = new Vector2(1, 1); label.rectTransform.pivot = new Vector2(.5f, 1); label.rectTransform.anchoredPosition = Vector2.zero; label.rectTransform.sizeDelta = new Vector2(-24, size.y);
+            var fit = label.gameObject.AddComponent<ContentSizeFitter>(); fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            var scroll = root.gameObject.AddComponent<ScrollRect>(); scroll.content = label.rectTransform; scroll.viewport = root; scroll.horizontal = false; scroll.movementType = ScrollRect.MovementType.Clamped; scroll.scrollSensitivity = 30;
+            return label;
+        }
+    }
+
+}

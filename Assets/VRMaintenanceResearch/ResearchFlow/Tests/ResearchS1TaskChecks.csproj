@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>RESEARCH_S1_TASK_CHECKS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ResearchS1TaskChecks.cs" />
+    <Compile Include="../Core/ResearchS1TaskState.cs" Link="ResearchS1TaskState.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,150 @@
+{
+ "schema_version": 1,
+ "content_id": "s1.reader.T.en",
+ "version": "training-7a2e84a59b4bf244",
+ "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+ "source_pdf": "S1_Training_Reference_EN.pdf",
+ "source_pdf_resource": "ResearchReaderS1/T_en/source_pdf",
+ "source_sha256": "8c67cf51c99f594fcd4d555c76dc81b355ae8460c537cad122bd22a2ca9fd9d6",
+ "pages": [
+  {
+   "page": 1,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p01",
+   "sha256": "e25d51b8a2728e2e0a8aaaa075181366c11872ab01434cf853f383939b2154a9"
+  },
+  {
+   "page": 2,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p02",
+   "sha256": "2e0842912f55c039dba9c71c6b9280751694ece303c80682b5ce22fb9f748a29"
+  },
+  {
+   "page": 3,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p03",
+   "sha256": "53ec34901fe770fbdd4fa9765d7a7d3231fe6b95e957ce17f8766110ff02ae22"
+  },
+  {
+   "page": 4,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p04",
+   "sha256": "29d02c2208ea6197f7d81e7aebbe17eb67f0df1ec32ff22c8ab96a2c70849a97"
+  },
+  {
+   "page": 5,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p05",
+   "sha256": "1adbe07ad66dbe6db137e718e6106797e281e662f0d693b7bbc6b73f88f94de5"
+  },
+  {
+   "page": 6,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p06",
+   "sha256": "309aa425d7514436d5745e10a14c1f53856808f68e1007c73591793f272107d7"
+  },
+  {
+   "page": 7,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p07",
+   "sha256": "b92894f0f3b059ce96dc6589316c383add04675a1a2d605f6bf486abef6e6001"
+  },
+  {
+   "page": 8,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p08",
+   "sha256": "70884e8c73a6d55ca36c910a9956b021ac4976244f1a5c9d495dd571a3398d40"
+  },
+  {
+   "page": 9,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p09",
+   "sha256": "a0804574d8bdb58c427921dbff0ff5d03d4beab1a3e70d2f53003b21f6a5245c"
+  },
+  {
+   "page": 10,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p10",
+   "sha256": "b3d3cf275e9a8d3625b396064c6a3823f55e89988ea1118b1143452e5750f35e"
+  },
+  {
+   "page": 11,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p11",
+   "sha256": "334d2828457e214bf2d0e6b52e6a57a6f5451a6ffe49e5d8795d4e91e361ae01"
+  },
+  {
+   "page": 12,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p12",
+   "sha256": "53ab3b533c68bb5988c4e961585eed8173a8479eb5f51867485ec005c703bb9d"
+  },
+  {
+   "page": 13,
+   "width": 1280,
+   "height": 720,
+   "resource": "ResearchReaderS1/T_en/pages/p13",
+   "sha256": "24008e552829158a0be27dede9e3e047532fbdb8ce7e0b0dd04b917a8db46030"
+  }
+ ],
+ "steps": [
+  {
+   "text_en": "Keyed: the cut corner must match the slot. Held by a latch.\n\nPractice a wrong condition: hold the module the wrong way round and push it into the slot.\nIt stops part-way and does not go in.\n\nNow turn the module so the cut corner matches the slot, push it fully in, then release.\nLetting go part-way does not count as installed."
+  },
+  {
+   "text_en": "Close the latch to secure the module.\nPlaced is not the same as secured.\n\nOpen the latch first, then pull the module out.\nA locked module cannot be pulled."
+  },
+  {
+   "text_en": "Grab the turntable handle and turn the station to reach the screw at the back.\n\nGrab the screw head and turn it clockwise until it stops.\nYou can let go part-way; it stays where you left it.\n\nTurn the screw counter-clockwise until it is fully loose."
+  },
+  {
+   "text_en": "Hold the cable plug by its head (not the cable) and push it into the open socket.\nThe other end stays attached.\n\nHold the plug head again and pull it out of the socket on purpose."
+  },
+  {
+   "text_en": "Point at the training module and select Examine.\nExamine shows information only; it does not fix anything.\n\nSelect Inspect now to see an example of a ‘not ready’ result.\nThe module is out and the screw is loose.\n\nA different condition: put the module in, close the latch and tighten the screw, then select Inspect to see a ‘ready’ result."
+  }
+ ],
+ "images": [
+  {
+   "resource": "ResearchReaderS1/images/T.module",
+   "sha256": "79ae2defa1ac30f8f8644d4e58ba0c5887cb498eb9ce7fa0be9380a1e6443a72",
+   "caption_en": "Keyed: the cut corner must match the slot. Held by a latch.\n\nPractice a wrong condition: hold the module the wrong way round and push it into the slot.\nIt stops part-way and does not go in.\n\nNow turn the module so the cut corner matches the slot, push it fully in, then release.\nLetting go part-way does not count as installed."
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.latch",
+   "sha256": "0394161ac174c2947076b242b0b26a27dbe4915140cc3ab33c8900221abd1352",
+   "caption_en": "Close the latch to secure the module.\nPlaced is not the same as secured.\n\nOpen the latch first, then pull the module out.\nA locked module cannot be pulled."
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.screw",
+   "sha256": "abb2c29bae956e7f4871e9ffddd754c32ea9869b17f9faf11d496d38a7524df6",
+   "caption_en": "Grab the turntable handle and turn the station to reach the screw at the back.\n\nGrab the screw head and turn it clockwise until it stops.\nYou can let go part-way; it stays where you left it.\n\nTurn the screw counter-clockwise until it is fully loose."
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.lead",
+   "sha256": "2adb31d65cbc6e0eb9f8ce95b6bc42c47407ad071404fffcedf609c3ddb8b9f8",
+   "caption_en": "Hold the cable plug by its head (not the cable) and push it into the open socket.\nThe other end stays attached.\n\nHold the plug head again and pull it out of the socket on purpose."
+  },
+  {
+   "resource": "ResearchReaderS1/images/T.inspect",
+   "sha256": "e2be92bb9c6ba9560e2e5e96a6348c8b56eaea18437148bc564af374ca49aa9e",
+   "caption_en": "Point at the training module and select Examine.\nExamine shows information only; it does not fix anything.\n\nSelect Inspect now to see an example of a ‘not ready’ result.\nThe module is out and the screw is loose.\n\nA different condition: put the module in, close the latch and tighten the screw, then select Inspect to see a ‘ready’ result."
+  }
+ ],
+ "video": {
+  "streaming_path": "ResearchReaderS1/T_en.mp4",
+  "sha256": "7cbf104676de4e6195b48782cdf1cbd652069f66e6d05ce9e2683f6e78fcc787"
+ }
+}

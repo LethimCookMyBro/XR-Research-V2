@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><DefineConstants>RESEARCH_TASK_TIMING_CHECKS</DefineConstants></PropertyGroup>
+  <ItemGroup><Compile Include="ResearchTaskTimingChecks.cs"/><Compile Include="../Core/ResearchTaskTiming.cs"/><Compile Include="../Core/ResearchSessionFlow.cs"/></ItemGroup>
+</Project>
