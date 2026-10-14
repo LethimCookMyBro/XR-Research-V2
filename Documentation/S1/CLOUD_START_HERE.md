@@ -4,6 +4,12 @@ Updated 2026-10-14. **Use `main` as the single current working and delivery bran
 
 Do not create extra branches/worktrees by default. Use one writer per checkout, commit reviewed batches, and deliver them to `main` without force-push. If a host requires a temporary branch, integrate reviewed changes into `main` before reporting delivery complete. Never overwrite newer local/cloud edits.
 
+## Latest cloud session (14 Oct 2026 night)
+
+Read `Documentation/S1/HANDOFF_20261015_CLOUD_TH.md` first. It added the versioned fixed-position UI policy
+(`ResearchFlow/Core/ResearchUIPolicy.cs`), shorter Training presentation, Reader feedback/video/caption fixes and export
+protocol versions. Unity and Quest were NOT reachable from that session: nothing was built, installed or played.
+
 ## Read order
 
 1. `AGENTS.md`, `CLAUDE.md`, root `design_rule.md` v1.1.

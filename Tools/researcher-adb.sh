@@ -14,7 +14,7 @@
 #   ./researcher-adb.sh state
 #   ./researcher-adb.sh list   Dev
 #   ./researcher-adb.sh create Dev
-#   ./researcher-adb.sh start  DEV001 Thai Controller AB_P   (order AB|BA|AB_P|AB_Q|BA_P|BA_Q; omit = counterbalance)
+#   ./researcher-adb.sh start  DEV001 Thai Controller AB_P [fixed|legacy_movable]   (order AB|BA|AB_P|AB_Q|BA_P|BA_Q; omit = counterbalance; UI policy default fixed)
 #   ./researcher-adb.sh resume
 #   ./researcher-adb.sh demo   pass|fail
 #   ./researcher-adb.sh abort  [withdrawal|safety_stop|technical_failure|other] [invalid]   (no reason = other, never blocks a stop)
@@ -43,6 +43,8 @@ case "$cmd" in
     [ $# -ge 2 ] || { echo "usage: start <participant> [language] [input] [order]" >&2; exit 2; }
     body="{\"command\":\"start\",\"participant\":\"$2\",\"language\":\"${3:-Thai}\",\"input\":\"${4:-Controller}\""
     [ -n "${5:-}" ] && body="$body,\"order\":\"$5\""
+    # Participant UI policy: fixed (default) | legacy_movable (technical regression of the retired drag UI only)
+    if [ -n "${6:-}" ]; then case "$6" in fixed|legacy_movable) body="$body,\"ui_policy\":\"$6\"" ;; *) echo 'ui_policy must be fixed or legacy_movable' >&2; exit 2 ;; esac; fi
     body="$body}"
     ;;
   resume) body='{"command":"resume"}' ;;
