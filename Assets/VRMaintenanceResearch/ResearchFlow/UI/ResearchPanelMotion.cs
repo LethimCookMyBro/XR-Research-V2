@@ -203,9 +203,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             Vector3 position = default;
             Quaternion rotation = default;
             bool found = false;
+            // Fixed-UI policy: working slates go to their station anchor first (same clearance/view checks); head-relative
+            // candidates below remain only as a logged System fallback so a blocked anchor never hides the panel.
+            string anchorId = null, anchorFallback = null;
+            found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
             // A low eye pose or tall assembly can block the slate. Try bounded
             // height/distance alternatives before turning it farther out of view.
-            foreach (float angle in angles)
+            if (!found) foreach (float angle in angles)
             {
                 // The labeled recovery strip must not spawn through a resting hand and acquire a near poke.
                 foreach (float distance in panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f })
@@ -241,10 +245,39 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Recenter directly: interpolating can sweep the panel through equipment.
             transform.SetPositionAndRotation(position, rotation);
             faceHidden = false; deferredRetryUsed = true; SetPlacementBlocked(false);
-            if (moved)
-                view.controller?.Log("PANEL_PLACEMENT", panelId, "Recentered", before, Pose(), source: "System", inputSource: input, reason: pendingReason);
+            if (anchorId != null)
+                view.controller?.Log("PANEL_PLACEMENT", panelId, "Anchored", before, new { pose = Pose(), anchor = anchorId, moved },
+                    source: "System", inputSource: input, reason: pendingReason);
+            else if (moved || anchorFallback != null)
+                view.controller?.Log("PANEL_PLACEMENT", panelId, anchorFallback != null ? "AnchorFallbackRecentered" : "Recentered", before,
+                    anchorFallback != null ? (object)new { pose = Pose(), anchor_rejection = anchorFallback } : Pose(),
+                    source: "System", inputSource: input, reason: pendingReason);
             if (participant) view.controller?.Log("PANEL_RECENTER", panelId, "Recentered", before, Pose(), inputSource: input);
             if (participant && panelId == "reference") view.controller?.Evidence("recenter");
+        }
+
+        bool TryStationAnchor(out Vector3 position, out Quaternion rotation, out string anchorId, out string fallback)
+        {
+            position = default; rotation = default; anchorId = null; fallback = null;
+            var owner = view ? view.controller : null;
+            // Status modals (centered) and the recovery strip stay head-relative; only working slates are anchored.
+            if (!ResearchUIPolicy.StationAnchoredPanels || centered || !owner || !ResearchStationAnchors.Supports(owner.CurrentStationIndex, panelId)) return false;
+            if (!owner.TryStationFrame(out var station, out int index, out string layout, out double eye)) return false;
+            var stationPosition = station.position;
+            for (int candidate = 0; candidate < ResearchStationAnchors.CandidateCount; candidate++)
+            {
+                if (!ResearchStationAnchors.TryGet(index, layout, panelId, stationPosition.x, stationPosition.y, stationPosition.z,
+                    station.eulerAngles.y, eye, candidate, out var pose))
+                { fallback = "anchor_unavailable:" + ResearchStationAnchors.StationName(index) + ":layout=" + (layout ?? "none"); return false; }
+                var p = new Vector3((float)pose.X, (float)pose.Y, (float)pose.Z);
+                var r = Quaternion.Euler(0, (float)pose.YawDegrees, 0);
+                // A task anchor is a fixed world pose: it must face the head and be clear, but need not be inside the current gaze.
+                // Training keeps the in-view requirement because the trainee walks/teleports between practice instructions.
+                bool viewOk = owner.Flow != null && owner.Flow.IsTutorial ? FitsView(p, r) : ReadableFace(p, r);
+                if (viewOk && PlacementClear(p, r)) { position = p; rotation = r; anchorId = pose.Id; return true; }
+                fallback = pose.Id + ":" + LastRejection;
+            }
+            return false;
         }
 
         bool ReadableFace(Vector3 position, Quaternion rotation)

@@ -32,6 +32,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         public static bool ParticipantRecenterAllowed => Active == LegacyMovable;
         public static bool ReaderPoseFixedPerTask => Active == FixedDemo;
         public static bool TrainingIncludesPanelDrag => Active == LegacyMovable;
+        /// <summary>Working slates use station anchors (ResearchStationAnchors) before any head-relative fallback.</summary>
+        public static bool StationAnchoredPanels => Active == FixedDemo;
 
         public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable;
 

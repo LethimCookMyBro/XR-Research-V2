@@ -42,6 +42,42 @@ static class ResearchFlowChecks
         Check(f.OpenResearcherSummary() && f.State == ResearchFlowState.ResearcherSummary, order + " separate researcher summary");
         return f;
     }
+    // Station anchors from the authored canonical-scene stations (parsed from VRResearch_ResearchFlow_V2.unity: Computer at
+    // (0,0,5.35), Fan at (-9.7,0,4.85), Training at (9.72,0,4.95), all yaw -180). Pure geometry; not a Unity clearance/visibility test.
+    static void StationAnchorChecks()
+    {
+        const double Tol = 1e-6;
+        bool Near(double a, double b) => Math.Abs(a - b) < 1e-3;
+        Check(ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, 0, out var mainP)
+            && ResearchStationAnchors.TryGet(1, "Q", "task_information", 0, 0, 5.35, -180, 1.6, 0, out var mainQ)
+            && Math.Abs(mainP.X - mainQ.X) < Tol && Math.Abs(mainP.Y - mainQ.Y) < Tol && Math.Abs(mainP.Z - mainQ.Z) < Tol && mainP.Id != mainQ.Id,
+            "P and Q share one table footprint and anchor pose but keep distinct anchor ids");
+        Check(Near(mainP.X, -0.410) && Near(mainP.Y, 1.5) && Near(mainP.Z, 5.35 - 1.128),
+            "task brief anchors 20 deg to the participant's right (world -X at yaw -180), 1.2 m out, 0.1 m below the eye");
+        Check(ResearchStationAnchors.TryGet(1, "P", "reference", 0, 0, 5.35, -180, 1.6, 0, out var reader) && Near(reader.X, 0.410) && Near(reader.Z, mainP.Z),
+            "Reader anchors on the participant's left, mirrored");
+        double faceX = Math.Sin(mainP.YawDegrees * Math.PI / 180), faceZ = Math.Cos(mainP.YawDegrees * Math.PI / 180);
+        Check(faceX * (mainP.X - 0) + faceZ * (mainP.Z - 5.35) > 0, "anchored slate faces away from the station point (LookRotation convention)");
+        Check(!ResearchStationAnchors.TryGet(1, null, "task_information", 0, 0, 5.35, -180, 1.6, 0, out _)
+            && !ResearchStationAnchors.TryGet(1, "R", "task_information", 0, 0, 5.35, -180, 1.6, 0, out _),
+            "Computer station anchor requires an assigned P/Q layout (falls back and logs otherwise)");
+        Check(ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, 0, 4.85, -180, 1.6, 0, out var fan) && fan.Id.Contains(":fan:-:")
+            && ResearchStationAnchors.TryGet(0, null, "reference", 9.72, 0, 4.95, -180, 1.6, 0, out _), "Fan and Training anchors do not depend on Task A layout");
+        Check(!ResearchStationAnchors.Supports(1, "recovery") && !ResearchStationAnchors.Supports(3, "task_information") && !ResearchStationAnchors.Supports(-1, "reference"),
+            "recovery strip and unknown stations are never anchored");
+        Check(ResearchStationAnchors.ClampEyeHeight(double.NaN) == 1.6 && ResearchStationAnchors.ClampEyeHeight(0.4) == 1.0
+            && ResearchStationAnchors.ClampEyeHeight(2.4) == 1.95 && ResearchStationAnchors.ClampEyeHeight(1.22) == 1.22, "eye height is clamped to a plausible seated/standing range");
+        bool alternativesSafe = true;
+        for (int c = 0; c < ResearchStationAnchors.CandidateCount; c++)
+        {
+            ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, c, out var alt);
+            double distance = Math.Sqrt(alt.X * alt.X + (alt.Z - 5.35) * (alt.Z - 5.35));
+            alternativesSafe &= alt.X < 0 && distance >= 1.2 - Tol && alt.Y >= mainP.Y - Tol;
+        }
+        Check(alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, ResearchStationAnchors.CandidateCount, out _),
+            "clearance alternatives only raise or step back, never cross sides or approach the head");
+    }
+
     static int Main(string[] args)
     {
         try
@@ -112,6 +148,7 @@ static class ResearchFlowChecks
             Reject(() => ResearchUIPolicy.Parse("free"), "unknown operator policy alias rejected");
             Check(ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && !ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed
                 && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
+            StationAnchorChecks();
             var policyRegistry = JObject.Parse(File.ReadAllText(r.RegistryPath));
             Check(policyRegistry["participants"].Where(p => (string)p["session_state"] == "Available").All(p => p["ui_policy"] == null),
                 "available IDs carry no policy (fields are omitted, not null)");

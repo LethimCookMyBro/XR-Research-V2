@@ -157,6 +157,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "motion_trace": return MotionTrace(request);
                 case "view_probe": case "frame_timing": return ViewDiagnostic(command, request);
                 case "haptic_probe": return HapticProbe();
+                // Researcher eye-height calibration for station-anchored panels; only before task timing (Welcome / Task n Ready).
+                case "calibrate_anchor":
+                    if (!TechnicalSession(command, out string anchorRefusal)) return Fail(anchorRefusal);
+                    string anchorError = controller.CalibrateStationAnchor("Researcher");
+                    LogCommand(command, controller.Record?.participant_id, null, null, anchorError == null ? "Calibrated" : "Refused");
+                    return anchorError == null ? Ok(command, new { station = controller.CurrentStationIndex, eye_height = controller.StationEyeHeight,
+                        applied_eye_height = ResearchStationAnchors.ClampEyeHeight(controller.StationEyeHeight), anchors_version = ResearchStationAnchors.Version }) : Fail(anchorError);
                 // Blind drag A/B for the wear session; never changes the ray/controller pose, only the panel target filter.
                 case "drag_filter":
                     if (!TechnicalSession(command, out string filterRefusal)) return Fail(filterRefusal);
@@ -515,6 +522,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             ui_policy = ResearchUIPolicy.Active,
             panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed,
             layout_version = controller.Record?.layout_version,
+            station_anchor = new { station = controller.CurrentStationIndex, eye_height = controller.StationEyeHeight, source = controller.StationEyeSource,
+                version = ResearchStationAnchors.Version, enabled = ResearchUIPolicy.StationAnchoredPanels },
             held_objects = controller.trainingObjects.Where(o => o && o.TryGetComponent(out ResearchHeldObjectConstraint _))
                 .Select(o => o.GetComponent<ResearchHeldObjectConstraint>()).Select(c => new { target = c.name, holding = c.Holding,
                     desired_separation = c.DesiredSeparationMetres, max_desired_separation = c.MaxDesiredSeparationMetres, updates = c.Updates,

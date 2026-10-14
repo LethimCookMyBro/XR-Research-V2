@@ -1320,6 +1320,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Log("TELEPORT_COMPLETED", "station." + index, "SystemTransition", before, PoseState(), source: "System", actionId: action);
                 GetComponent<ResearchMovementSampler>()?.Boundary("station_teleport");
                 physicalHeadStart = origin.Camera.transform.localPosition;
+                CurrentStationIndex = index;
+                MeasureStationEye("System", "station_arrival");
             }
             ReferenceSection = Flow?.IsTutorial == true ? ResearchReferenceScheme.Active[0] : ""; view?.RecenterAll(false);
             if (view) yield return view.Fade(false);
@@ -1327,6 +1329,47 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         object PoseState() => origin ? new { position = V(origin.transform.position), yaw = origin.transform.eulerAngles.y } : null;
+
+        // ---- Fixed-UI station anchors (ResearchStationAnchors) --------------------------------------------------------------
+        public int CurrentStationIndex { get; private set; } = -1;
+        public double StationEyeHeight { get; private set; } = double.NaN;
+        public string StationEyeSource { get; private set; } = "";
+        /// <summary>Station frame for anchored panels; false when no station/session (callers fall back to head-relative placement).</summary>
+        internal bool TryStationFrame(out Transform station, out int index, out string layout, out double eyeHeight)
+        {
+            index = CurrentStationIndex; station = index >= 0 && index < stations.Length ? stations[index] : null;
+            layout = index == ResearchStationAnchors.ComputerStation ? Record?.task_a_layout : null;
+            eyeHeight = ResearchStationAnchors.ClampEyeHeight(StationEyeHeight);
+            return station && Flow != null && Record != null;
+        }
+        // Eye height above the station floor from the tracked head. Measured on arrival (System) and re-measurable by the researcher
+        // before task timing; never during an active task, so the anchored pose stays fixed within a task.
+        bool MeasureStationEye(string source, string reason)
+        {
+            if (!origin || !origin.Camera || CurrentStationIndex < 0 || CurrentStationIndex >= stations.Length || !stations[CurrentStationIndex]) return false;
+            double measured = origin.Camera.transform.position.y - stations[CurrentStationIndex].position.y;
+            double previous = StationEyeHeight;
+            StationEyeHeight = measured; StationEyeSource = source;
+            Log("STATION_ANCHOR_CALIBRATED", "station." + CurrentStationIndex, source == "Researcher" ? "ResearcherCalibrated" : "MeasuredOnArrival",
+                before: double.IsNaN(previous) ? null : (object)new { eye_height = previous },
+                after: new { anchors_version = ResearchStationAnchors.Version, station = ResearchStationAnchors.StationName(CurrentStationIndex),
+                    measured_eye_height = measured, applied_eye_height = ResearchStationAnchors.ClampEyeHeight(measured),
+                    clamped = ResearchStationAnchors.ClampEyeHeight(measured) != measured, task_a_layout = Record?.task_a_layout, ui_policy = ResearchUIPolicy.Active },
+                source: source, reason: reason);
+            return true;
+        }
+        /// <summary>Researcher re-calibration before task timing (Welcome/Ready states only). Re-anchors visible panels.</summary>
+        public string CalibrateStationAnchor(string source = "Researcher")
+        {
+            if (Flow == null || Record == null) return "No open session.";
+            if (Flow.Paused || Transitioning || !string.IsNullOrEmpty(Error)) return "Session is paused, transitioning or in error.";
+            if (Flow.State != ResearchFlowState.TutorialWelcome && Flow.State != ResearchFlowState.Task1Ready && Flow.State != ResearchFlowState.Task2Ready)
+                return "Calibration is allowed only before timing (Welcome, Task 1 Ready, Task 2 Ready); now " + Flow.State + ".";
+            if (!HeadsetReady) return "Headset is not tracked.";
+            if (!MeasureStationEye(source, "researcher_calibration_before_timing")) return "Station unavailable.";
+            view?.RecenterAll(false);
+            return null;
+        }
         static float[] V(Vector3 v) => new[] { v.x, v.y, v.z };
 
         // Researcher surfaces poll this twice a second; re-parsing the whole log each time drove full GC pauses (~1 s in the Editor).

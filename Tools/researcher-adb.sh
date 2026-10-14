@@ -16,6 +16,7 @@
 #   ./researcher-adb.sh create Dev
 #   ./researcher-adb.sh start  DEV001 Thai Controller AB_P [fixed|legacy_movable]   (order AB|BA|AB_P|AB_Q|BA_P|BA_Q; omit = counterbalance; UI policy default fixed)
 #   ./researcher-adb.sh resume
+#   ./researcher-adb.sh calibrate_anchor   (wearer standing/seated at the station; Welcome or Task n Ready only)
 #   ./researcher-adb.sh demo   pass|fail
 #   ./researcher-adb.sh abort  [withdrawal|safety_stop|technical_failure|other] [invalid]   (no reason = other, never blocks a stop)
 #   ./researcher-adb.sh amend_reason DEV001 withdrawal|safety_stop|technical_failure|other   (after abort; keeps first reason + history)
@@ -37,6 +38,7 @@ cmd="${1:-state}"
 case "$cmd" in
   state)  body='{"command":"state"}' ;;
   haptic_probe) body='{"command":"haptic_probe"}' ;;
+  calibrate_anchor) body='{"command":"calibrate_anchor"}' ;;
   list)   body="{\"command\":\"list\",\"group\":\"${2:-Dev}\"}" ;;
   create) body="{\"command\":\"create\",\"group\":\"${2:-Dev}\"}" ;;
   start)
