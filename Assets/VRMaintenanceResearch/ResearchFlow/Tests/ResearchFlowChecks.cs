@@ -108,6 +108,66 @@ static class ResearchFlowChecks
             "short or irregular captions are never split");
     }
 
+    // Mirror of ParticipantRecord/Document as compiled at a6a6cf8 (Q4/Q5 era): strict reader, unknown members are errors.
+    sealed class LegacyRecord
+    {
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public string participant_id, created_at, session_id = "", run_id = "";
+        public string started_at = "", ended_at = "";
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public string group, language, session_state, task_order, input_mode, flow_state;
+        public string training_status, completion_state; public bool test_data, task_order_overridden, language_overridden;
+        public string task_a_layout; public bool task_a_layout_overridden;
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public int tutorial_completed;
+        public bool paused; public bool? inspect_passed;
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public long revision;
+        public string termination_reason; public System.Collections.Generic.List<JObject> termination_amendments;
+    }
+    sealed class LegacyDocument { public int schema; public System.Collections.Generic.List<LegacyRecord> participants; }
+
+    static void RegistryCompatibilityChecks(ResearchParticipantRegistry r, string root, ParticipantRecord th)
+    {
+        string registryText = File.ReadAllText(r.RegistryPath);
+        Check(!registryText.Contains("ui_policy") && !registryText.Contains("protocol_version") && !registryText.Contains("training_version")
+            && !registryText.Contains("layout_version"), "registry.json keeps the pre-policy schema (versions live in the sidecar)");
+        var strict = new Newtonsoft.Json.JsonSerializerSettings { MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Error };
+        bool legacyReads = true;
+        try { legacyReads = Newtonsoft.Json.JsonConvert.DeserializeObject<LegacyDocument>(registryText, strict).participants.Count > 0; }
+        catch (Newtonsoft.Json.JsonException) { legacyReads = false; }
+        Check(legacyReads, "a Q4/Q5-era strict reader still opens the registry after new-build sessions (rollback stays possible)");
+        var sidecar = JObject.Parse(File.ReadAllText(r.ProtocolPath));
+        Check((string)sidecar["sessions"][th.session_id]["ui_policy"] == ResearchUIPolicy.FixedDemo
+            && new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.participant_id == th.participant_id).ui_policy == ResearchUIPolicy.FixedDemo,
+            "sidecar keyed by session_id restores the recorded policy on read");
+        Check(!((JObject)sidecar["sessions"]).Properties().Any(p => r.List(ParticipantGroup.Thai).Concat(r.List(ParticipantGroup.Japanese)).Any(x => x.session_id == p.Name && x.session_state == RegistryState.Available)),
+            "available IDs carry no policy");
+        string sidecarText = File.ReadAllText(r.ProtocolPath);
+        var tampered = (JObject)sidecar.DeepClone(); tampered["sessions"][th.session_id]["ui_policy"] = "S1_FREE_DRAG";
+        File.WriteAllText(r.ProtocolPath, tampered.ToString());
+        Reject(() => new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai), "unknown recorded UI policy in the sidecar fails closed");
+        File.WriteAllText(r.ProtocolPath, sidecarText);
+        var orphan = (JObject)sidecar.DeepClone(); orphan["sessions"][Guid.NewGuid().ToString("N")] = sidecar["sessions"][th.session_id].DeepClone();
+        File.WriteAllText(r.ProtocolPath, orphan.ToString());
+        Check(new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Count > 0, "crash residue (sidecar entry for an uncommitted session) is ignored");
+        File.WriteAllText(r.ProtocolPath, sidecarText);
+        // Intermediate builds (d2256f6..be6612a) wrote the fields into registry.json: still readable, moved to the sidecar on the next save.
+        var intermediate = JObject.Parse(registryText);
+        var row = (JObject)intermediate["participants"].First(p => (string)p["session_id"] == th.session_id);
+        row["ui_policy"] = ResearchUIPolicy.FixedDemo; row["protocol_version"] = ResearchUIPolicy.ProtocolFixedDemo;
+        row["training_version"] = "S1_TRAINING_FIXED_UI_20261014"; row["layout_version"] = ResearchUIPolicy.LayoutVersion;
+        File.WriteAllText(r.RegistryPath, intermediate.ToString()); File.Delete(r.ProtocolPath);
+        var reread = new ResearchParticipantRegistry(root);
+        Check(reread.List(ParticipantGroup.Thai).Single(p => p.session_id == th.session_id).training_version == "S1_TRAINING_FIXED_UI_20261014",
+            "registry written by an intermediate build keeps its recorded versions (not overwritten by current constants)");
+        reread.CreateNext(ParticipantGroup.Pilot);
+        Check(!File.ReadAllText(r.RegistryPath).Contains("ui_policy") && (string)JObject.Parse(File.ReadAllText(r.ProtocolPath))["sessions"][th.session_id]["training_version"] == "S1_TRAINING_FIXED_UI_20261014",
+            "next save moves intermediate-build fields to the sidecar unchanged");
+        File.WriteAllText(r.RegistryPath, registryText); File.WriteAllText(r.ProtocolPath, sidecarText);
+        // Sidecar lost: the record reads as unrecorded (runtime recovers from the session event log; export reports unknown).
+        File.Move(r.ProtocolPath, r.ProtocolPath + ".moved");
+        Check(new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.session_id == th.session_id).ui_policy == null,
+            "missing sidecar never invents a policy");
+        File.Move(r.ProtocolPath + ".moved", r.ProtocolPath);
+    }
+
     static int Main(string[] args)
     {
         try
@@ -180,15 +240,7 @@ static class ResearchFlowChecks
                 && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
             StationAnchorChecks();
             CaptionPartChecks();
-            var policyRegistry = JObject.Parse(File.ReadAllText(r.RegistryPath));
-            Check(policyRegistry["participants"].Where(p => (string)p["session_state"] == "Available").All(p => p["ui_policy"] == null),
-                "available IDs carry no policy (fields are omitted, not null)");
-            var tampered = (JObject)policyRegistry.DeepClone();
-            tampered["participants"].First(p => p["ui_policy"] != null)["ui_policy"] = "S1_FREE_DRAG";
-            string untampered = File.ReadAllText(r.RegistryPath);
-            File.WriteAllText(r.RegistryPath, tampered.ToString());
-            Reject(() => new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai), "unknown recorded UI policy fails closed");
-            File.WriteAllText(r.RegistryPath, untampered);
+            RegistryCompatibilityChecks(r, root, th);
             var f = new ResearchSessionFlow(th.task_order, th.flow_state);
             f.StartTutorial(); f.CompleteTutorialStep(TutorialStep.Movement); f.Pause();
             var stale = th; th = r.SaveProgress(th, f);

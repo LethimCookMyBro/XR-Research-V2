@@ -148,7 +148,7 @@ class ExportChecks(unittest.TestCase):
                 self.assertNotEqual(verify.returncode,0)
                 print(json.dumps(dict(fixture=order,expected_duration=12,actual_duration=a['duration']['elapsed_seconds'],expected_distance=.2,actual_distance=a['movement']['sources']['handslab.head']['distance_metres'],bundle=str(bundle))))
 
-    def test_ui_policy_versions_are_carried_and_legacy_is_attributed_not_pooled(self):
+    def test_ui_policy_versions_are_carried_and_absent_policy_stays_unknown(self):
         # ADVISOR_UI_AMENDMENT_20261014: fixed-panel sessions must stay distinguishable from earlier movable-panel sessions.
         for recorded in [None,'S1_FIXED_UI_DEMO_20261014']:
             with tempfile.TemporaryDirectory() as td:
@@ -162,13 +162,24 @@ class ExportChecks(unittest.TestCase):
                 bundle=Path(json.loads(p.stdout)['bundle_path'])
                 manifest=json.loads((bundle/'manifest.json').read_text());qc=json.loads((bundle/'qc/report.json').read_text())
                 summaries=json.loads((bundle/'task_summary.json').read_text())
-                expected=recorded or 'S1_BASELINE_MOVABLE_PANELS'
+                expected=recorded or 'unknown'
                 self.assertEqual(manifest['protocol_versions']['ui_policy'],expected)
+                self.assertEqual(manifest['protocol_versions']['ui_policy_source'],'recorded' if recorded else 'unknown')
                 self.assertEqual(manifest['protocol_versions']['ui_policy_recorded'],recorded is not None)
                 self.assertEqual(qc['protocol_versions'],manifest['protocol_versions'])
                 self.assertTrue(all(row['ui_policy']==expected for row in summaries))
                 if recorded:self.assertEqual(manifest['protocol_versions']['layout_version'],'S1_LAYOUT_ENV_V2_Q5_20261014')
                 else:self.assertIsNone(manifest['protocol_versions']['layout_version'])
+
+    def test_absent_policy_uses_only_session_evidence(self):
+        m=importlib.util.module_from_spec(importlib.util.spec_from_file_location('re',SCRIPT));importlib.util.spec_from_file_location('re',SCRIPT).loader.exec_module(m)
+        base=dict(participant_id='DEV900')
+        logged=[dict(event='SESSION_PROTOCOL_VERSIONS',seq=3,after=dict(recorded_ui_policy='S1_FIXED_UI_DEMO_20261014'))]
+        self.assertEqual(m.protocol_attribution(base,logged),dict(ui_policy='S1_FIXED_UI_DEMO_20261014',ui_policy_source='session_event_log'))
+        drag=[dict(event='PANEL_REPOSITION',seq=9,target='reference')]
+        self.assertEqual(m.protocol_attribution(base,drag)['ui_policy_source'],'observed_drag_events')
+        self.assertEqual(m.protocol_attribution(base,[dict(event='INFORMATION_OPEN',seq=1)])['ui_policy'],'unknown')
+        self.assertEqual(m.protocol_attribution(dict(base,ui_policy='S1_BASELINE_MOVABLE_PANELS'),logged)['ui_policy_source'],'recorded')
 
     def test_missing_movement_fails_qc_and_interrupted_outcome_is_preserved(self):
         with tempfile.TemporaryDirectory() as td:

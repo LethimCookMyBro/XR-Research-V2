@@ -358,6 +358,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 // A resumed record keeps the policy it started with (absent = earlier movable-panel build), so training facts,
                 // drag availability and analysis grouping never mix policies within one session.
                 ResearchUIPolicy.Apply(ResearchUIPolicy.ForRecord(Record.ui_policy));
+                policyAttribution = Record.ui_policy != null ? "recorded_at_session_start" : resume ? "unrecorded" : "unrecorded_new_session";
                 foreach (var task in FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsSortMode.None))
                     task.ApplyLayout(Record.task_a_layout ?? task.layout);
                 Flow = new ResearchSessionFlow(Record.task_order, Record.flow_state, Record.tutorial_completed, Record.paused, Record.inspect_passed);
@@ -370,6 +371,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                     runId: Record.run_id, resume: resume);
                 Logger.WriteFailed += LoggerFailed;
                 if (Logger.State != HandsLabLogState.Active) throw new IOException(Logger.LastError);
+                if (resume && Record.ui_policy == null)
+                {
+                    // Sidecar entry lost (e.g. a copied registry): the session's own log still states the policy it started with.
+                    string recovered = RecordedPolicyFromEvents();
+                    if (recovered != null) { ResearchUIPolicy.Apply(recovered); policyAttribution = "recovered_from_session_event_log"; }
+                    else policyAttribution = "unrecorded_runtime_keeps_movable_panels_for_continuity";
+                }
                 if (resume && !RestoreTutorialCredits()) return;
                 Log(resume ? "SESSION_RESUMED" : "SESSION_CONFIGURED", "session", "Ready", after: Record, source: "System");
                 Log("SESSION_PROTOCOL_VERSIONS", "session", ResearchUIPolicy.Active, after: new { ui_policy = ResearchUIPolicy.Active,
@@ -377,7 +385,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
                     layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
                     panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
-                    tutorial_facts = TutorialFacts }, source: "System", reason: Record.ui_policy == null ? "record_predates_ui_policy_field" : "recorded_at_session_start");
+                    tutorial_facts = TutorialFacts, attribution = policyAttribution }, source: "System", reason: policyAttribution);
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
                 Error = "";
                 if (resume && Flow.IsTaskActive)
@@ -1089,6 +1097,26 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Log("TUTORIAL_INSTRUCTION_INTERRUPTED", "training." + previous.fact, "RetainCompletedSkills",
                     after: new { instruction_epoch = previous.epoch, tutorial_group = Flow.TutorialCompleted,
                         retained_facts = TutorialFacts[Flow.TutorialCompleted].Where(tutorialEvidence.Contains).ToArray() }, source: "System", reason: reason);
+        }
+
+        string policyAttribution = "";
+        // First SESSION_PROTOCOL_VERSIONS row of this run that carried a recorded policy; null when the run predates the field.
+        string RecordedPolicyFromEvents()
+        {
+            try
+            {
+                using (var reader = new StreamReader(new FileStream(Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                    for (string line; (line = reader.ReadLine()) != null;)
+                    {
+                        if (line.IndexOf("SESSION_PROTOCOL_VERSIONS", StringComparison.Ordinal) < 0) continue;
+                        var row = JObject.Parse(line);
+                        if ((string)row["event"] != "SESSION_PROTOCOL_VERSIONS" || (string)row["run_id"] != Record.run_id) continue;
+                        string policy = (string)(row["after"] as JObject)?["recorded_ui_policy"];
+                        if (ResearchUIPolicy.IsKnown(policy)) return policy;
+                    }
+            }
+            catch (Exception ex) when (ex is IOException || ex is JsonException) { }
+            return null;
         }
 
         bool RestoreTutorialCredits()

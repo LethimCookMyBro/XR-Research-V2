@@ -207,6 +207,19 @@ def s1_meaningful(event):
         if after.get('selection_kind')!='automatic_default':return 'INFORMATION'
     return None
 
+MOVABLE_EVIDENCE={'PANEL_REPOSITION','PANEL_DRAG_METRICS'}
+def protocol_attribution(record,events):
+    """UI policy with its evidence: recorded in the session record, stated in the session's own log, or proven by panel-drag
+    events (only possible in the movable-panel UI). Anything else stays 'unknown' - a missing field is not proof of a build."""
+    if record.get('ui_policy'):return dict(ui_policy=record['ui_policy'],ui_policy_source='recorded')
+    for e in events:
+        if e.get('event')=='SESSION_PROTOCOL_VERSIONS':
+            policy=payload(e).get('recorded_ui_policy')
+            if policy:return dict(ui_policy=policy,ui_policy_source='session_event_log')
+    drag=[e for e in events if e.get('event') in MOVABLE_EVIDENCE or (e.get('event')=='TUTORIAL_SKILL_CREDIT' and e.get('target')=='training.reposition')]
+    if drag:return dict(ui_policy='S1_BASELINE_MOVABLE_PANELS',ui_policy_source='observed_drag_events',evidence_seq=[e.get('seq') for e in drag[:5]])
+    return dict(ui_policy='unknown',ui_policy_source='unknown')
+
 def interval_seconds(intervals,lo,hi,pauses):
     clipped=sorted((max(lo,a),min(hi,b)) for a,b in intervals if min(hi,b)>max(lo,a))
     merged=[]
@@ -642,11 +655,10 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     qc['s1_warnings']={t:task[t]['s1']['qc_warnings'] for t in 'AB'}
     qc['s1_analysis_complete']=not gaps and all(not task[t]['s1']['qc_warnings'] for t in order)
     identity=dict(run_id=record['run_id'],session_id=session,participant_code=participant,group=group,test_data=technical)
-    # ADVISOR_UI_AMENDMENT_20261014: never pool fixed-panel and movable-panel sessions silently. A record without the field
-    # predates the policy and ran the movable-panel UI; that attribution is stated, not imputed as unknown.
-    protocol_versions=dict(ui_policy=record.get('ui_policy') or 'S1_BASELINE_MOVABLE_PANELS',
-        ui_policy_recorded=record.get('ui_policy') is not None,protocol_version=record.get('protocol_version'),
-        training_version=record.get('training_version'),layout_version=record.get('layout_version'),task_a_layout=record.get('task_a_layout'))
+    # ADVISOR_UI_AMENDMENT_20261014: never pool fixed-panel and movable-panel sessions silently, and never guess.
+    protocol_versions=dict(protocol_attribution(record,events),ui_policy_recorded=record.get('ui_policy') is not None,
+        protocol_version=record.get('protocol_version'),training_version=record.get('training_version'),
+        layout_version=record.get('layout_version'),task_a_layout=record.get('task_a_layout'))
     qc['protocol_versions']=protocol_versions
     source_manifest=load(source/'manifest.json') if (source/'manifest.json').exists() else {}
     processor_sha=digest(Path(__file__).read_bytes())

@@ -38,7 +38,11 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable;
 
-        /// <summary>A record without a policy field predates the revision and ran the movable-panel UI.</summary>
+        /// <summary>
+        /// Runtime continuity only: a resumed session without a recorded policy keeps the movable-panel behaviour it most likely
+        /// started with, so the UI never changes mid-session. This is NOT an analysis attribution - exports report such sessions as
+        /// unknown unless the session log shows the policy or drag events (see Tools/research_export.py).
+        /// </summary>
         public static string ForRecord(string recordedPolicy) => string.IsNullOrEmpty(recordedPolicy) ? LegacyMovable : recordedPolicy;
 
         public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : ProtocolBaseline;
