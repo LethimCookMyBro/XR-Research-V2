@@ -148,6 +148,28 @@ class ExportChecks(unittest.TestCase):
                 self.assertNotEqual(verify.returncode,0)
                 print(json.dumps(dict(fixture=order,expected_duration=12,actual_duration=a['duration']['elapsed_seconds'],expected_distance=.2,actual_distance=a['movement']['sources']['handslab.head']['distance_metres'],bundle=str(bundle))))
 
+    def test_ui_policy_versions_are_carried_and_legacy_is_attributed_not_pooled(self):
+        # ADVISOR_UI_AMENDMENT_20261014: fixed-panel sessions must stay distinguishable from earlier movable-panel sessions.
+        for recorded in [None,'S1_FIXED_UI_DEMO_20261014']:
+            with tempfile.TemporaryDirectory() as td:
+                base=Path(td);record=fixture(base/'source','AB')
+                if recorded:
+                    record.update(ui_policy=recorded,protocol_version='S1_LOCKED_TH_BASELINE+ADVISOR_UI_AMENDMENT_20261014',
+                        training_version='S1_TRAINING_FIXED_UI_20261014',layout_version='S1_LAYOUT_ENV_V2_Q5_20261014',task_a_layout='P')
+                    (base/'source/research-session.json').write_text(json.dumps(record),encoding='utf-8')
+                p=self.run_cli(base/'source',base/'out',record)
+                self.assertEqual(p.returncode,0,p.stderr)
+                bundle=Path(json.loads(p.stdout)['bundle_path'])
+                manifest=json.loads((bundle/'manifest.json').read_text());qc=json.loads((bundle/'qc/report.json').read_text())
+                summaries=json.loads((bundle/'task_summary.json').read_text())
+                expected=recorded or 'S1_BASELINE_MOVABLE_PANELS'
+                self.assertEqual(manifest['protocol_versions']['ui_policy'],expected)
+                self.assertEqual(manifest['protocol_versions']['ui_policy_recorded'],recorded is not None)
+                self.assertEqual(qc['protocol_versions'],manifest['protocol_versions'])
+                self.assertTrue(all(row['ui_policy']==expected for row in summaries))
+                if recorded:self.assertEqual(manifest['protocol_versions']['layout_version'],'S1_LAYOUT_ENV_V2_Q5_20261014')
+                else:self.assertIsNone(manifest['protocol_versions']['layout_version'])
+
     def test_missing_movement_fails_qc_and_interrupted_outcome_is_preserved(self):
         with tempfile.TemporaryDirectory() as td:
             base=Path(td);r=fixture(base/'source',header_only=True,interrupted=True)

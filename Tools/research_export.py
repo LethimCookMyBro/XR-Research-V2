@@ -642,6 +642,12 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     qc['s1_warnings']={t:task[t]['s1']['qc_warnings'] for t in 'AB'}
     qc['s1_analysis_complete']=not gaps and all(not task[t]['s1']['qc_warnings'] for t in order)
     identity=dict(run_id=record['run_id'],session_id=session,participant_code=participant,group=group,test_data=technical)
+    # ADVISOR_UI_AMENDMENT_20261014: never pool fixed-panel and movable-panel sessions silently. A record without the field
+    # predates the policy and ran the movable-panel UI; that attribution is stated, not imputed as unknown.
+    protocol_versions=dict(ui_policy=record.get('ui_policy') or 'S1_BASELINE_MOVABLE_PANELS',
+        ui_policy_recorded=record.get('ui_policy') is not None,protocol_version=record.get('protocol_version'),
+        training_version=record.get('training_version'),layout_version=record.get('layout_version'),task_a_layout=record.get('task_a_layout'))
+    qc['protocol_versions']=protocol_versions
     source_manifest=load(source/'manifest.json') if (source/'manifest.json').exists() else {}
     processor_sha=digest(Path(__file__).read_bytes())
     external_inputs={name:digest(Path(path).read_bytes()) for name,path in [('questionnaire_import',questionnaire_path),('video_links_import',video_path),('operator_authorization',authorization),('operator_session_link',authorization_link)] if path}
@@ -687,7 +693,8 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     summaries=[];episodes=[]
     for t in 'AB':
         s1=task[t]['s1']
-        summaries.append(dict(identity,**{key:value for key,value in s1.items() if key not in {'timeline','failure_episodes'}}))
+        summaries.append(dict(identity,ui_policy=protocol_versions['ui_policy'],layout_version=protocol_versions['layout_version'],
+            **{key:value for key,value in s1.items() if key not in {'timeline','failure_episodes'}}))
         episodes.extend(dict(identity,task_id=t,analysis_version=S1_VERSION,**episode) for episode in s1['failure_episodes'])
     (stage/'task_summary.json').write_bytes(canonical(summaries))
     (stage/'failure_episodes.json').write_bytes(canonical(episodes))
@@ -703,7 +710,7 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     if source_manifest:(stage/'raw/device-export-manifest.json').write_bytes((source/'manifest.json').read_bytes());(stage/'raw/device-export-COMPLETE.json').write_bytes((source/'COMPLETE.json').read_bytes())
     if transport_binding:(stage/'raw/quest-profile-transport.json').write_bytes(canonical(transport_binding))
     files={p.relative_to(stage).as_posix():dict(bytes=p.stat().st_size,sha256=file_digest(p)) for p in stage.rglob('*') if p.is_file()}
-    manifest=dict(schema_version='researchflow.pc-bundle.1',bundle_id=bundle_id,definition_version=VERSION,processor_sha256=processor_sha,identity=identity,input_hashes=hashes,external_input_hashes=external_inputs,actual_task_order=order,configured_task_order=record.get('task_order'),software=dict(content_version=metadata.get('content_version'),event_schema=metadata.get('schema_version'),movement_schema='handslab.movement.legacy25',apk_sha256=source_manifest.get('provenance',{}).get('apk_sha256'),source_code_version=source_manifest.get('provenance',{}).get('source_code_version')),device_render_provenance=source_manifest.get('provenance',dict(device='unknown',render='unknown',simulated_presence='unknown')),transport_provenance=transport_binding,hardware_verified=metadata.get('hardware_verified',False),lifecycle=qc['lifecycle'],data_complete=qc['data_complete'],delivery_status='verified_local_bundle',files=files,unknown_policy='unknown values stay null/unknown; no imputation',source_authority='24 September 2026 slide7/8; forms v1.0 June18 2026; definition thresholds are exploratory processing choices, not newly approved hypotheses')
+    manifest=dict(schema_version='researchflow.pc-bundle.1',bundle_id=bundle_id,definition_version=VERSION,processor_sha256=processor_sha,identity=identity,input_hashes=hashes,external_input_hashes=external_inputs,actual_task_order=order,configured_task_order=record.get('task_order'),protocol_versions=protocol_versions,software=dict(content_version=metadata.get('content_version'),event_schema=metadata.get('schema_version'),movement_schema='handslab.movement.legacy25',apk_sha256=source_manifest.get('provenance',{}).get('apk_sha256'),source_code_version=source_manifest.get('provenance',{}).get('source_code_version')),device_render_provenance=source_manifest.get('provenance',dict(device='unknown',render='unknown',simulated_presence='unknown')),transport_provenance=transport_binding,hardware_verified=metadata.get('hardware_verified',False),lifecycle=qc['lifecycle'],data_complete=qc['data_complete'],delivery_status='verified_local_bundle',files=files,unknown_policy='unknown values stay null/unknown; no imputation',source_authority='24 September 2026 slide7/8; forms v1.0 June18 2026; definition thresholds are exploratory processing choices, not newly approved hypotheses')
     (stage/'manifest.json').write_bytes(canonical(manifest))
     (stage/'COMPLETE.json').write_bytes(canonical(dict(schema_version='researchflow.bundle-complete.1',bundle_id=bundle_id,manifest_sha256=digest((stage/'manifest.json').read_bytes()))))
     verify(stage)
