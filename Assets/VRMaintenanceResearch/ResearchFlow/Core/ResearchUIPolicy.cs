@@ -19,7 +19,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         public const string ProtocolBaseline = "S1_LOCKED_TH_BASELINE";
         public const string ProtocolFixedDemo = "S1_LOCKED_TH_BASELINE+ADVISOR_UI_AMENDMENT_20261014";
         public const string TrainingBaseline = "S1_TRAINING_BASELINE_DRAG_LESSON";
-        public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261014";
+        // 20261015: practice-station order builds toward 'ready' without repeated insert/latch/tighten (no session used 20261014).
+        public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261015";
         // Table/station/Task A P/Q geometry is unchanged from the Q5 source in this revision.
         public const string LayoutVersion = "S1_LAYOUT_ENV_V2_Q5_20261014";
 

@@ -154,7 +154,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             .Select(facts => facts.Where(fact => fact != "reposition").ToArray()).ToArray();
         // With the neutral Trainer_FX1 station the last group practises the S1 §4 mechanisms before the Inspect samples.
         static readonly string[][] TrainerTutorialFacts = WithTrainer(BasicTutorialFacts);
-        static readonly string[][] FixedTrainerTutorialFacts = WithTrainer(FixedBasicTutorialFacts);
+        static readonly string[][] FixedTrainerTutorialFacts = FixedBasicTutorialFacts.Take(4)
+            .Concat(new[] { ResearchTrainingStation.FixedSequence.ToArray() }).ToArray();
         static string[][] WithTrainer(string[][] basic) => basic.Take(4)
             .Concat(new[] { ResearchTrainingStation.Facts.Concat(new[] { "inspect" }).ToArray() }).ToArray();
         string[][] TutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
@@ -189,7 +190,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (fact == null) return "tutorial.complete.body";
                 if (TutorialNeedsGrab) return "tutorial.try.regrab" + (TutorialUsesHands ? ".hand" : ".controller");
                 if (fact == "restore") return "tutorial.try.restore";
-                if (fact == "inspect" && trainingStation) return "tutorial.try.inspect.trainer";
+                if (fact == "inspect" && trainingStation)
+                    return ResearchUIPolicy.TrainingIncludesPanelDrag ? "tutorial.try.inspect.trainer" : "tutorial.try.inspect.trainer_ready";
+                if (fact == "inspect_fail" && !ResearchUIPolicy.TrainingIncludesPanelDrag) return "tutorial.try.inspect_fail.start";
                 string key = "tutorial.try." + fact;
                 return fact == "teleport" || fact == "snap" || fact == "select" || fact == "grab" || fact == "release" || fact == "reposition"
                     ? key + (TutorialUsesHands ? ".hand" : ".controller") : key;
