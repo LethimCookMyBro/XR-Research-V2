@@ -650,10 +650,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(rows.Length == 5 && rows.All(r => !r.gameObject.activeInHierarchy), "Tutorial hides decorative progress dots");
             var progress = controller.view.GetComponentsInChildren<TMP_Text>(false).Single(t => t.name == "TutorialProgress");
             progress.ForceMeshUpdate();
-            Require(progress.text == string.Format(ResearchStrings.Get("tutorial.progress", requestedLanguage), 3)
+            Require(progress.text == string.Format(ResearchStrings.Get("tutorial.part_progress", requestedLanguage), 2, 4)
                 && progress.rectTransform.rect.height <= 52 && !progress.isTextOverflowing
                 && progress.preferredWidth <= progress.rectTransform.rect.width + 1 && progress.preferredHeight <= progress.rectTransform.rect.height + 1,
-                "Tutorial progress shows only the localized step fraction and fits its compact header area");
+                "Tutorial progress shows the localized part (2 of 4) and fits its compact header area");
             Require(controller.view.mainPanel.transform.Find("Expanded/Title").GetComponent<TMP_Text>().text == ResearchStrings.Get("tutorial.fact.grab", requestedLanguage),
                 "Tutorial heading is the current micro-action, not the broad step");
             Require(!controller.view.helperCanvas.transform.Find("Message").gameObject.activeSelf, "Helper message remains hidden until requested");

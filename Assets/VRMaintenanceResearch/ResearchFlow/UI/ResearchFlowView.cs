@@ -468,6 +468,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (fact != "inspect" && fact != "inspect_fail") trainerResultKey = null;
             successUntil = Time.unscaledTime + .25f;
+            factFeedbackUntil = Time.unscaledTime + FactFeedbackSeconds;
             confirmingFact = fact;
             ShowTutorialConfirmation();
             var group = tutorialSuccess.GetComponent<CanvasGroup>();
@@ -489,13 +490,18 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         string CompletedTutorialFact => controller && controller.TutorialCompletedFactCount > 0
             ? controller.TutorialLastCompletedFact ?? confirmingFact : null;
+        // ADVISOR_UI_AMENDMENT_20261014 / capture C06: "done" feedback is brief so it never competes with the next instruction.
+        // Practice Inspect results (trainerResultKey) explain an outcome and stay until the next action.
+        const float FactFeedbackSeconds = 3.5f;
+        float factFeedbackUntil = float.NegativeInfinity;
+        bool TutorialFeedbackVisible => trainerResultKey != null || (!string.IsNullOrEmpty(CompletedTutorialFact) && Time.unscaledTime < factFeedbackUntil);
 
         void ShowTutorialConfirmation()
         {
             // Completed-action feedback stays in its reserved secondary line; the next instruction remains visible.
             successLabel.font = Font; successLabel.fontSize = 25; successLabel.color = Positive;
             successLabel.text = CompletionText();
-            tutorialSuccess.gameObject.SetActive(!string.IsNullOrEmpty(CompletedTutorialFact) || trainerResultKey != null); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+            tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
             RecordTutorialFeedbackApplied();
         }
 
@@ -516,6 +522,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 inspectionVisibility = StartCoroutine(ObserveInspectionFeedback(controller.InspectionId));
             SyncReaderVisibility();
             RevalidateReferenceLayoutIfReady();
+            if (tutorialSuccess && tutorialSuccess.gameObject.activeSelf && !TutorialFeedbackVisible) tutorialSuccess.gameObject.SetActive(false);
             RevalidateMainLayoutIfReady();
             NotifyReferenceVisibility("render_visibility");
             RefreshRecoveryUtility();
@@ -1331,7 +1338,11 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         static bool Interrupting(string state) => state == "checking" || state == "fail" || state == "pause" || state == "tracking";
 
-        string TutorialProgress() => string.Format(Text("tutorial.progress"), controller.TutorialCompletedFactCount, controller.TutorialFactCount);
+        // Four presentation parts over the five recorded groups: 1 look/move/select, 2 handle an object, 3 Reader, 4 practice station
+        // + Inspect. Evidence is still credited per skill; only the participant-facing counter changes (no "8 / 24" wall).
+        internal const int TutorialParts = 4;
+        internal static int TutorialPart(int completedGroups) => completedGroups <= 1 ? 1 : Mathf.Min(TutorialParts, completedGroups);
+        string TutorialProgress() => string.Format(Text("tutorial.part_progress"), TutorialPart(controller.Flow?.TutorialCompleted ?? 0), TutorialParts);
 
         public bool OpenResearcherSetup()
         {
@@ -1563,7 +1574,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = new Vector2(inner, chipHeight);
                     successLabel.rectTransform.sizeDelta = new Vector2(inner - 72, chipHeight);
                 }
-                tutorialSuccess.gameObject.SetActive(!string.IsNullOrEmpty(CompletedTutorialFact) || trainerResultKey != null); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+                tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
             RecordTutorialFeedbackApplied();
                 retainedLabel.font = Font; retainedLabel.color = Muted;
                 retainedLabel.text = Text("tutorial.retained");
@@ -1733,9 +1744,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             referenceTutorialCue.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialCue.fontSize = 25;
             tutorialDemo.gameObject.SetActive(false);
             tutorialSuccess.SetParent(referenceExpanded.transform, false); tutorialSuccess.Find("Chip").gameObject.SetActive(false);
-            tutorialSuccess.anchoredPosition = new Vector2(-284, -354); tutorialSuccess.sizeDelta = new Vector2(512, 52);
-            tutorialSuccess.Find("Checkmark").GetComponent<RectTransform>().anchoredPosition = new Vector2(-244, 0);
-            successLabel.rectTransform.anchoredPosition = new Vector2(20, 0); successLabel.rectTransform.sizeDelta = new Vector2(450, 52);
+            // Capture C03: the former (-284,-354) 512x52 slot overlapped the video Play control and time label (viewer spans x>=-281,
+            // transport at its bottom edge). The sidebar column below the last format tab (bottom y=-275) is free in every format.
+            tutorialSuccess.anchoredPosition = new Vector2(-438, -338); tutorialSuccess.sizeDelta = new Vector2(240, 100);
+            tutorialSuccess.Find("Checkmark").GetComponent<RectTransform>().anchoredPosition = new Vector2(-96, 26);
+            successLabel.rectTransform.anchoredPosition = new Vector2(16, 0); successLabel.rectTransform.sizeDelta = new Vector2(188, 96);
+            successLabel.textWrappingMode = TextWrappingModes.Normal;
             if (!string.IsNullOrEmpty(CompletedTutorialFact)) ShowTutorialConfirmation(); else tutorialSuccess.gameObject.SetActive(false);
         }
 

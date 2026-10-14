@@ -195,6 +195,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "tutorial.control.pinch", "Pinch", "จีบนิ้ว", "つまむ" },
             new[] { "tutorial.control.head", "Head", "ศีรษะ", "頭" },
             new[] { "tutorial.progress", "Done {0} / {1}", "ผ่าน {0} / {1}", "達成 {0} / {1}" },
+            // Presentation grouping (ADVISOR_UI_AMENDMENT_20261014 §2): four meaningful parts instead of a count of micro-skills.
+            new[] { "tutorial.part_progress", "Part {0} of {1}", "ส่วนที่ {0} จาก {1}", "パート {0} / {1}" },
             new[] { "tutorial.compact.now", "Now: {0}", "ตอนนี้: {0}", "今：{0}" },
             new[] { "tutorial.compact.switch", "Select another available tab", "เลือกแท็บอื่นที่ใช้งานได้", "利用できる別のタブを選ぶ" },
             new[] { "tutorial.compact.drag", "Hold Trigger on the handle and move the panel", "กด Trigger ค้างที่แถบจับ แล้วลากแผง", "ハンドルでトリガーを押したままパネルを動かす" },
