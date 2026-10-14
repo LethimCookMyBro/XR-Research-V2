@@ -72,7 +72,6 @@ namespace VRMaintenanceResearch.ResearchFlow
         int generation, index = 1;
         // Capture C02: video loading must never sit at "Loading" with no way out. After StallSeconds the Retry control is offered
         // while loading continues; each phase is logged so Android prepare/first-frame stalls can be diagnosed per build.
-        const float VideoStallSeconds = 10f;
         float videoLoadStarted; string videoLoadPhase = ""; bool videoStallShown;
         // SHA256 of a StreamingAssets video is verified once per app run; re-reading ~20 MB on every format switch only added GC/IO.
         static readonly HashSet<string> verifiedVideos = new HashSet<string>(StringComparer.Ordinal);
@@ -269,7 +268,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             switch (command)
             {
                 case "reference_media.retry":
-                    if (state != MediaState.Error && !(state == MediaState.Loading && videoStallShown)) return false;
+                    if (!ResearchVideoLoadRules.RetryAllowed(state == MediaState.Error, state == MediaState.Loading, videoStallShown)) return false;
                     string retriedPhase = state == MediaState.Loading ? "stalled:" + videoLoadPhase : "error";
                     registries.Remove(registryResource);
                     string oldKey = key, oldFormat = format, oldFallback = fallback;
@@ -445,7 +444,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 {
                     request.timeout = 20;
                     yield return request.SendWebRequest();
-                    if (acquired != generation || !visible) { if (acquired == generation) prepare = null; yield break; }
+                    if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
                     if (request.result != UnityWebRequest.Result.Success) { Fail("Video read failed: " + request.error); prepare = null; yield break; }
                     if (!HashMatches(request.downloadHandler.data, package.video.sha256)) { Fail("Video SHA256 mismatch"); prepare = null; yield break; }
                 }
@@ -453,7 +452,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 LoadPhase("verified");
             }
             else LoadPhase("verified_cached");
-            if (acquired != generation || !visible) { if (acquired == generation) prepare = null; yield break; }
+            if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
             LoadPhase("preparing");
             var host = new GameObject("ReaderVideoPlayer"); host.transform.SetParent(content, false);
             player = host.AddComponent<VideoPlayer>(); videoAudio = host.AddComponent<AudioSource>();
@@ -674,7 +673,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (state == MediaState.PlayRequested && Time.realtimeSinceStartup - playStarted > 5) Fail("Video play timeout");
             if (state == MediaState.Seeking && Time.realtimeSinceStartup - seekStarted > 5) Fail("Video seek timeout");
             if (awaitingPreview && state == MediaState.Loading && Time.realtimeSinceStartup - previewStarted > 5) Fail("Native first decoded frame timeout");
-            if (format == "video" && visible && state == MediaState.Loading && !videoStallShown && Time.realtimeSinceStartup - videoLoadStarted > VideoStallSeconds)
+            if (ResearchVideoLoadRules.StallDue(format == "video", visible, state == MediaState.Loading, videoStallShown, Time.realtimeSinceStartup - videoLoadStarted))
             {
                 videoStallShown = true;
                 statusLabel.text = Local("วิดีโอยังโหลดไม่เสร็จ รอต่อได้ หรือเลือก “ลองอีกครั้ง”", "動画の読み込みに時間がかかっています。待つか「再試行」を選んでください。",

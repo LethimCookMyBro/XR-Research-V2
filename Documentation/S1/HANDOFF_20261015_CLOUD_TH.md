@@ -37,10 +37,10 @@
 
 | ชุดตรวจ | ผล |
 |---|---|
-| ResearchFlowChecks (registry/flow) | 85/85 ผ่าน (เดิม project คอมไพล์ไม่ได้เพราะ Core มีไฟล์พึ่ง Unity — แก้ csproj ให้ exclude แล้ว) |
+| ResearchFlowChecks (registry/flow/anchor/caption/video rules) | 112/112 ผ่าน (รอบแรก 85; เดิม project คอมไพล์ไม่ได้เพราะ Core มีไฟล์พึ่ง Unity — แก้ csproj ให้ exclude แล้ว) |
 | FloorPolicy 138, FanKinematics 24, FanObservation 10, TaskACatalog 80, TaskAInput 22, TaskAKinematics 27, S1Task 280, TaskSnapshot 52, TaskTiming 73 | ผ่านทั้งหมด (ไม่ได้แก้โค้ดส่วนนี้) |
 | BehaviorChecks / LoggerResumeChecks / S1BContextChecks | ไม่ได้รัน (ต้องการ argument โฟลเดอร์ fixture) |
-| Tools pytest | 88 passed (เดิม 87 + test ใหม่ 1) |
+| Tools pytest | 90 passed (เดิม 87 + test ใหม่ 3) |
 | Compile-regression diff ทุก commit | ไม่มี error ใหม่ |
 | Editor/PlayMode checks ใน Unity | **NOT RUN** |
 | `Tools/tests/quest-profile-guard-tests.sh` | FAIL ใน Linux เพราะต้องรันจาก Git Bash บน Windows (เดิมเป็นแบบนี้ ไม่เกี่ยวกับงานรอบนี้) |
@@ -51,15 +51,16 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
 - `d2256f6` — นโยบาย UI ตำแหน่งคงที่แบบมีเวอร์ชัน
 - `9d0382d` — Training สั้นลง + แก้ Reader (feedback/วิดีโอ/caption)
 - `91a68b8` — export ไป PC พกเวอร์ชันนโยบาย
-- commit ของเอกสารนี้
+- `02ca506` — รายงานฉบับแรก + ตัวเลือก ui_policy ใน ADB
+- รอบที่ 2: `d29c4b5` station anchor, `2714e53` ลำดับ Training, `be6612a` Illustrated หน้าย่อย,
+  `8331772` registry sidecar/attribution, และ commit ของ Reader rules + รายงานที่ปรับนี้
 
 ### 3.1 นโยบาย UI คงที่ `S1_FIXED_UI_DEMO_20261014` (C01, ADVISOR §1)
 - ไฟล์ใหม่ `ResearchFlow/Core/ResearchUIPolicy.cs` ค่าเริ่มต้นคือ fixed
   แบบเดิม `S1_BASELINE_MOVABLE_PANELS` ใช้ได้เฉพาะ technical regression ผ่าน ADB (`ui_policy=legacy_movable`) กับ ID DEV/TEST/PILOT
   ID ศึกษาจริง (TH/JP) ถูกปฏิเสธถ้าขอ policy อื่น
-- เริ่ม session ใหม่จะบันทึก `ui_policy`, `protocol_version`, `training_version`, `layout_version` ใน registry และ event `SESSION_PROTOCOL_VERSIONS`
-  session เก่าที่ไม่มีฟิลด์นี้จะถูกระบุว่าเป็น UI แบบลากได้ ไม่ปนกัน
-  **ข้อควรรู้:** APK รุ่นเก่า (Q4/Q5) จะอ่าน registry ที่มีฟิลด์ใหม่ไม่ได้ (fail-closed ไม่ลบข้อมูล) — อย่าย้อนติดตั้งรุ่นเก่าทับหลังใช้รุ่นใหม่
+- เริ่ม session ใหม่จะบันทึก `ui_policy`, `protocol_version`, `training_version`, `layout_version` และ event `SESSION_PROTOCOL_VERSIONS`
+  (รายละเอียดการเก็บและการย้อนรุ่นอยู่ข้อ 3.6)
 - ใน fixed policy: ปิด GameObject ของแถบลาก (ทั้งเส้น grip และพื้นที่กดล่องหน) และปุ่ม "กลับมาตรงหน้า" ของผู้เข้าร่วม
   คำสั่ง recenter ถูกปฏิเสธพร้อม log `RejectedByUIPolicy`; event ลากที่ค้างถูกกันใน `ResearchDragHandle`
   ยังมี Minimize/Close/Pause และเปิด Reader คืนได้; การกู้แผงผ่านหน้า Pause (`panel_recovery`) ยังอยู่และถูก log
@@ -68,10 +69,9 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
   Editor checks ที่ทดสอบบทลากแผงเดิมถูกห่อด้วย `LegacyRegressionScope()`
 - ADB: `researcher-adb.sh start DEV001 Thai Controller AB_P [fixed|legacy_movable]` และ `state` แสดง `ui_policy`
 
-**ยังไม่ได้ทำในข้อนี้:** anchor จาก "station pose ที่ออกแบบไว้ในฉาก" — ตอนนี้แผงงานวางครั้งแรกจากตำแหน่งศีรษะตอนเริ่ม Task
-(หลัง teleport ไปสถานี) แล้วคงที่ตลอด Task; ต้องตรวจในฉากจริงว่าพอดีทั้ง P/Q ก่อนตัดสินว่าต้องย้ายไป anchor ในฉาก
+**Station anchor (รอบที่ 2, `S1_STATION_ANCHORS_20261015`):** ดูข้อ 3.5
 
-### 3.2 Training (C05, C06, ADVISOR §2)
+### 3.2 Training (C05, C06, ADVISOR §2) — ตัวนับ/feedback/ภาพสอน (ลำดับกิจกรรมดูข้อ 3.7)
 - ตัวนับเปลี่ยนจาก "ผ่าน 8 / 24" เป็น "ส่วนที่ n จาก 4" (1 มอง/เคลื่อนที่/เลือก, 2 จับวัตถุ, 3 Reader, 4 แท่นฝึก+ตรวจผล)
   เครดิตยังนับรายทักษะจากเหตุการณ์จริงเหมือนเดิม ไม่เติมเครดิต
 - ข้อความ "ผ่านแล้ว: …" แสดง 3.5 วินาทีแล้วหายเอง จึงไม่ค้างทับคำสั่งใหม่; ผลตัวอย่างตรวจผลของแท่นฝึกยังค้างจนถึงขั้นถัดไป
@@ -85,11 +85,75 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
 - C02: วิดีโอโหลดเกิน 10 วินาที จะแสดงข้อความและปุ่ม "ลองอีกครั้ง" ระหว่างที่ยังโหลดต่อ; log ทุกช่วง (`REFERENCE_VIDEO_LOAD_PHASE`, `..._LOAD_STALLED`, retry พร้อมช่วงที่ค้าง)
   ตรวจ SHA256 ของไฟล์วิดีโอครั้งเดียวต่อการเปิดแอป (เดิมอ่าน ~20 MB ใหม่ทุกครั้งที่สลับไปวิดีโอ)
   **ยังไม่รู้สาเหตุจริงของ C02 บน Android** — ต้องดู log phase จากรอบ Quest
-- C04: ภาพประกอบเผื่อพื้นที่ caption ก่อนกำหนดขนาดภาพ (ขั้นต่ำ 55% ของความสูง แทน 75%)
-  **ข้อค้าง:** caption ของ A/B ยาว 250–740 ตัวอักษร ยังต้องเลื่อนอ่าน ซึ่งขัด design_rule §7 ("ภาพใหญ่ caption สั้น") — เป็นงานเนื้อหาที่ต้องอนุมัติ ไม่ได้แก้เอง
+- C04: ภาพประกอบเผื่อพื้นที่ caption ก่อนกำหนดขนาดภาพ (ขั้นต่ำ 55% ของความสูง แทน 75%) และรอบที่ 2 แบ่ง caption ยาวเป็นหน้าย่อย (ข้อ 3.8)
 
 ### 3.4 ข้อมูล/export
 - `Tools/research_export.py` ใส่ `protocol_versions` ใน manifest, QC report และ task_summary ทุกแถว
+
+### 3.5 Station anchor ตาม P/Q (รอบที่ 2)
+- `Core/ResearchStationAnchors.cs` (pure): ตำแหน่งแผงงานและ Reader คำนวณจาก transform ของสถานีในฉาก
+  (`ResearchFlow_Station_Training` (9.72, 0, 4.95), `_Computer` (0, 0, 5.35), `_Fan` (−9.7, 0, 4.85) ทุกสถานีหัน −Z — อ่านจากไฟล์ฉาก)
+  บวกความสูงตาที่วัดได้ (จำกัด 1.0–1.95 m) แผงงานอยู่ขวา Reader อยู่ซ้าย ที่ 20° / 1.2 m / ต่ำกว่าตา 0.1 m
+  (เท่ากับตำแหน่งแรกของแบบเดิม) ทางเลือกเมื่อชน: ยกขึ้น 0.3 m และ/หรือถอยออก 15% เท่านั้น ไม่สลับข้างและไม่เข้าใกล้หัว
+- P/Q: ใน `ApplyLayout` P/Q แค่สลับตำแหน่งตัวเลือกในที่นั่งชุดเดิม จึงใช้ footprint และ anchor เดียวกัน
+  แต่ anchor id ระบุ layout และสถานี Computer ต้องมี P/Q จริง ถ้าไม่มีจะ fallback แบบเดิมพร้อม log
+- ลำดับวาง: ลอง anchor ก่อนโดยใช้การตรวจชน/บังเดิม ถ้าไม่ผ่านใช้ตำแหน่งตามศีรษะแบบเดิม และ log `AnchorFallbackRecentered` (System)
+  หน้าสถานะ (พัก, checkpoint, ผล) และแถบ recovery ยังวางตามศีรษะเพื่ออ่านได้ทุกที่; การกู้ผ่าน Pause ยังใช้ได้
+- ใน Task ไม่บังคับว่า anchor ต้องอยู่ในสายตาขณะนั้น (เป็นตำแหน่งคงที่) แต่ใน Training ยังบังคับ เพราะผู้ฝึกเดิน/teleport
+- ความสูงตา: วัดเมื่อถึงสถานี (System) และผู้วิจัยวัดใหม่ได้ก่อนเริ่มจับเวลา: `researcher-adb.sh calibrate_anchor`
+  (เฉพาะ Welcome / Task n Ready) → log `STATION_ANCHOR_CALIBRATED`; `state` แสดงค่า
+- **ยังไม่ได้ตรวจ:** ระยะ มุม การบังโต๊ะ/เคส/สาย จากมุมผู้เล่นจริงทั้ง P/Q ยืน/นั่ง — ต้องดูใน Unity และบนแว่น (ข้อ 5.2)
+
+### 3.6 Registry/version: การย้ายข้อมูลและการย้อนรุ่น (รอบที่ 2)
+- เวอร์ชันย้ายไปเก็บในไฟล์ข้าง registry: `protocol-versions.json` (key = session_id, เขียนแบบ atomic ก่อน registry)
+  `registry.json` คงรูปแบบเดียวกับ a6a6cf8 ทุกตัวอักษรของ schema — ทดสอบด้วยตัวอ่านแบบ strict ที่เลียนคลาสรุ่นเก่า
+  จึง **ย้อนติดตั้ง Q4/Q5 แล้วยังเปิด registry ได้** (session ใหม่ที่ทำไว้จะดูเป็น session ธรรมดาในรุ่นเก่า)
+- registry ที่ build ช่วงกลาง (d2256f6..be6612a) เขียนฟิลด์ไว้ใน registry.json ยังอ่านได้ และย้ายไปไฟล์ข้างโดยไม่เปลี่ยนค่า
+  (ไม่มี build ช่วงนั้นที่ติดตั้งจริง แต่รองรับไว้)
+- ไม่เหมาว่า session ที่ไม่มีค่าเป็นแบบลากได้:
+  - ตอน resume ถ้าไม่มีค่า จะอ่านจาก event `SESSION_PROTOCOL_VERSIONS` ของ session นั้นเอง; ถ้าไม่มีอีก runtime คงแผงแบบลากได้
+    เพื่อไม่ให้ UI เปลี่ยนกลาง session และ log ว่า `unrecorded_runtime_keeps_movable_panels_for_continuity` (ไม่ใช่การระบุที่มา)
+  - export: `ui_policy_source` = recorded → session_event_log → observed_drag_events (มี PANEL_REPOSITION/DRAG/บทฝึกลาก) → `unknown`
+- ไม่เขียนทับ RAW, ไม่แก้ registry เดิมย้อนหลัง, ไม่ลบข้อมูลเก่า; ไฟล์ข้างที่เสียหายหรือ policy ไม่รู้จัก → หยุดอ่าน (fail-closed)
+- **ก่อนติดตั้งรุ่นใหม่บนแว่น** (ข้อ 5.3 เพิ่ม): export session ที่ยังค้างด้วยรุ่นเดิม, บันทึก `list Dev/Test/Pilot`, แล้วจึง `adb install -r`
+
+### 3.7 ลำดับกิจกรรม Training ก่อน–หลัง (รอบที่ 2)
+| ส่วน | เดิม (legacy/Q5) | ใหม่ (fixed, `S1_TRAINING_FIXED_UI_20261015`) |
+|---|---|---|
+| 1 มอง/เคลื่อนที่/เลือก | teleport → หมุนมุมมอง → ขยับศีรษะ → กดปุ่มฝึก | เหมือนเดิม (ทักษะต่างกันทุกข้อ) |
+| 2 จับวัตถุ | จับ → ยก → หมุน → ปล่อย (วัตถุชิ้นเดียว ต่อเนื่อง) | เหมือนเดิม; ปล่อยก่อนไม่ล้างเครดิต |
+| 3 Reader | เปิด → เปลี่ยนรูปแบบ → **ลากแผง** → ปิด | เปิด → เปลี่ยนรูปแบบ → ปิด |
+| 4 แท่นฝึก | ตรวจดู → ใส่ผิดด้าน → ใส่ → ปิดสลัก → ปลดสลัก+ดึงออก → หมุนแท่น → ขัน → คลาย → เสียบ → ถอด → ตรวจผล(ไม่พร้อม) → **ใส่+ปิดสลัก+ขันซ้ำโดยไม่ได้เครดิต** → ตรวจผล(พร้อม) | ตรวจดู → ตรวจผล(ไม่พร้อม: ยังไม่ได้ใส่) → ใส่ผิดด้าน → ใส่ → ปิดสลัก → หมุนแท่น → ขัน → เสียบ → ตรวจผล(พร้อม) → ถอดปลั๊ก → คลาย → ปลดสลัก+ดึงออก |
+| รวม | เครดิต 24, การกระทำทางกาย 16 ที่แท่นฝึก (ซ้ำ 3) | เครดิต 23, การกระทำทางกาย 13 ที่แท่นฝึก (ไม่ซ้ำ) |
+
+ทักษะ S1 §4 ยังครบทุกข้อและได้เครดิตครั้งเดียวจาก input จริง (ไม่มี auto-pass); legacy ยังใช้ลำดับเดิม
+จำนวนการกระทำมาจากการจำลองเงื่อนไขใน `ResearchTrainingStation.Update` (ไม่ใช่การจับเวลาจริง)
+ข้อความใหม่ 2 ข้อ (`tutorial.try.inspect_fail.start`, `tutorial.try.inspect.trainer_ready`) เป็นร่าง AI รอคนตรวจ TH/JA
+Editor checks ที่อาจผูกลำดับแท่นฝึกเดิม (เช่น TutorialAcceptance) ยังไม่ได้รัน
+
+### 3.8 Illustrated: หน้าย่อยจาก caption ยาว (รอบที่ 2)
+- caption ที่มี ≥4 ย่อหน้าแสดงเป็นหน้าย่อย: หัวข้อซ้ำทุกหน้า + 1 ย่อหน้าเดิมต่อหน้า (`S1_ILLUSTRATED_PARAGRAPH_PAGES_20261015`)
+- ข้อความไม่ถูกแก้คำ/ลำดับ/ตัวเลข: ตรวจ `Join(Split(x)) == x` ทุก caption 21 ภาพ TH/JA; จำนวนหน้าย่อย TH = JA ทุกภาพ
+  A/B 16 ภาพแบ่ง (ย่อหน้าไทยยาวสุด 234 ตัวอักษร จากเดิม 738 ต่อ caption); Training 5 ภาพสั้นไม่แบ่ง
+- ตารางเทียบเดิม–ใหม่: `Documentation/S1/ILLUSTRATED_CAPTION_SPLIT_TH_JA.md` (สร้างจาก package โดย `Tools/s1_caption_split_table.py`, มี test ตรวจว่าไม่ล้าสมัย)
+- log ยังใช้ `index` = เลขภาพเหมือนเดิม และเพิ่ม `caption_part`/`caption_parts`
+- **ยังไม่ได้ทำ:** ภาพย่อยแบบครอปเฉพาะส่วน — ทุกหน้าย่อยใช้ภาพเต็ม; การเลือกกรอบภาพต้องดูภาพจริงและระวังไม่ชี้ชิ้นที่ถูก
+- เนื้อหายังอยู่สถานะ `S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW`
+
+### 3.9 Reader loading (รอบที่ 2)
+- กฎของการโหลดแยกเป็น `Core/ResearchVideoLoadRules.cs` และมี pure tests: callback เก่า (generation ไม่ตรง) ถูกทิ้ง,
+  ปิด/ซ่อนแล้วไม่รับ callback, แจ้งค้างครั้งเดียวหลัง 10 วินาที, Retry ได้เฉพาะหลัง error หรือหลังแจ้งค้าง และกดซ้ำทันทีไม่ได้
+- **แก้ทางออกจาก Loading แล้ว แต่ root cause บน Android ยังเปิดอยู่**
+- กรณีที่ local ต้องตรวจใน Play Mode และบน Quest (ดู log `REFERENCE_VIDEO_LOAD_PHASE` ทุกกรณี):
+
+| กรณี | ทำอะไร | ผลที่ต้องเห็น |
+|---|---|---|
+| R1 โหลดปกติ | เปิดแท็บวิดีโอ A/B × TH/JA | phase reading→verified→preparing→prepared→first_frame; ครั้งที่ 2 ต้องเป็น verified_cached |
+| R2 stale callback | เปิดวิดีโอ แล้วสลับไป PDF ภายใน 1–2 วินาที แล้วกลับมา | ไม่มี first_frame ของรอบเก่าหลังสลับ; รอบใหม่เริ่ม phase ใหม่; ไม่มีเสียงหลุด |
+| R3 สลับสื่อระหว่างโหลด | สลับ วิดีโอ↔ภาพ↔ขั้นตอน เร็ว ๆ 5 ครั้ง | ไม่มีปุ่มวิดีโอค้างในสื่ออื่น; สุดท้ายวิดีโอโหลดจบหรือมี Retry |
+| R4 ค้าง | (Quest) ถ้าค้าง >10 วินาที | ข้อความ “ยังโหลดไม่เสร็จ” + ปุ่มลองอีกครั้งไม่ทับเวลา/timeline; log `REFERENCE_VIDEO_LOAD_STALLED` พร้อม phase |
+| R5 retry ซ้ำ | กดลองอีกครั้ง 2 ครั้งติด | ครั้งที่ 2 ไม่รับจนกว่าจะค้างอีก 10 วินาที; log `REFERENCE_VIEWER_RETRY` มี `retried_from` |
+| R6 ปิดหน้า | ปิด Reader ระหว่างโหลด / ย่อ / กด Pause / ถอดแว่น (focus loss) | ไม่มี error หลังปิด; เปิดใหม่เริ่มโหลดใหม่ถูกต้อง; ไม่มี player ค้าง |
 
 ## 4. ตาราง requirement / ข้อบกพร่อง
 
@@ -98,11 +162,13 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
 | ID | เรื่อง | สถานะ | หลักฐาน / ขั้นตรวจที่ต้องทำ |
 |---|---|---|---|
 | C01 | ลากแผงอิสระ + บทฝึกลาก | SOURCE | pure tests + compile diff; ต้องดูใน Play Mode ว่าไม่มีแถบลาก/hit area และ Training ไปถึงจบได้ |
-| C02 | วิดีโอค้าง Loading | SOURCE (ทางออก) / OPEN (สาเหตุ) | ต้องเปิดวิดีโอ A/B×TH/JA บน Quest แล้วอ่าน phase log |
+| Anchor | แผงผูกกับสถานี P/Q | SOURCE | pure geometry 9 checks; ระยะ/มุม/การบังยังต้องตรวจใน Unity (ข้อ 3.5) |
+| C02 | วิดีโอค้าง Loading | SOURCE (ทางออก + rules tests) / OPEN (สาเหตุ) | กรณี R1–R6 ข้อ 3.9 บน Editor และ Quest |
 | C03 | feedback ทับปุ่ม Play | SOURCE | ต้องจับภาพ Reader วิดีโอระหว่าง Training ทั้งสองภาษา |
-| C04 | caption ภาพถูกตัด | SOURCE บางส่วน | caption A/B ยังยาว ต้องตัดสินใจด้านเนื้อหา |
+| C04 | caption ภาพถูกตัด | SOURCE | หน้าย่อยจากย่อหน้าเดิม (ข้อ 3.8); ภาพยังไม่ครอป; ต้องดูใน Reader จริงทั้ง TH/JA |
 | C05 | ภาพสอนไม่ตรงการกระทำ | SOURCE | ดูภาพใน Canvas จริงทุกขั้น ทั้ง controller และมือ |
-| C06 | 24 ขั้น + feedback ค้าง | SOURCE | ต้องลอง Training ครบด้วย input จริงและจับเวลา |
+| C06 | 24 ขั้น + feedback ค้าง + บทซ้ำ | SOURCE | ลำดับใหม่ข้อ 3.7; ต้องลอง Training ครบด้วย input จริงและจับเวลา |
+| Registry | ย้อนรุ่น/ที่มาของ policy | SOURCE | ข้อ 3.6; 9 checks รวม strict old-reader; ยังไม่ได้ลองย้อนรุ่นบนแว่นจริง |
 | C07 | แถบดำ | OPEN / BLOCKED | ต้องดู hierarchy/canvas ของ build จริง ไม่ลบอะไรจากภาพเดียว |
 | C08 | หน้า Setup ภาษาอังกฤษเทคนิค | OPEN | หน้า DEV เท่านั้น ยังไม่แก้ |
 | C09 | โต๊ะดูว่าง | BLOCKED | ต้องตรวจฉากและมุมมองจริง P/Q |
@@ -134,6 +200,10 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
    - ระหว่าง Training ที่เปิด Reader แท็บวิดีโอ ข้อความผ่านอยู่ใต้ปุ่มสี่รูปแบบ ไม่ทับปุ่มเล่น
    - ภาพสอนของแท่นฝึกแต่ละขั้นต่างกันและตรงกับคำสั่ง
 3. ใน Task: เปิด/ปิด Reader แล้วเปิดซ้ำ → อยู่ตำแหน่งเดิม; หา Minimize/Pause ได้
+   - ดู log `PANEL_PLACEMENT` ต้องเป็น `Anchored` ที่ทั้ง Computer (P และ Q) และ Fan; ถ้าเป็น `AnchorFallbackRecentered` ให้จด `anchor_rejection`
+   - วัดด้วยสายตา/ภาพ Game View ว่าแผงไม่บังเคส สาย ถาด และเอื้อมชิ้นงานได้ ทั้งท่ายืนและนั่ง
+   - Illustrated: เลื่อนหน้าย่อย 1/5→5/5 แล้วข้ามไปภาพถัดไป; ข้อความครบ ไม่ถูกตัด
+   - Training แท่นฝึกตามลำดับใหม่ ข้อ 3.7 จบได้โดยไม่ต้องทำซ้ำ
 4. รัน Editor checks ที่ห่อ legacy (`CheckTutorialReferenceEarlyClose`, `RunTutorialLayoutChecks`, `RunTutorialAffordances`, VisualClarity) ดูว่ายังผ่าน
 5. Export รอบ DEV แล้วรัน `python Tools/research_export.py ingest ...` ตรวจว่า manifest มี `protocol_versions.ui_policy = S1_FIXED_UI_DEMO_20261014`
 
@@ -142,6 +212,7 @@ Commit (push เข้า `main` แบบ fast-forward ไม่มี force-pu
 2. ตรวจแว่น: แบตพอ ไม่ร้อน ไม่มีคนสวมระหว่างสั่งคำสั่งอัตโนมัติ
 3. ติดตั้งแบบแทนที่: `adb install -r <apk>` (**ห้าม** uninstall หรือล้าง app data)
 4. อ่าน hash กลับจากเครื่องตาม `Tools/quest_build_identity.py` แล้วบันทึกคู่กับ package/build
+   (ก่อนข้อ 3: `researcher-adb.sh list Dev` / `Test` / `Pilot` เก็บไว้ และ `export` session ที่ยังค้างด้วยรุ่นเดิม)
 5. `Tools/researcher-adb.sh state` → ต้องเห็น `ui_policy: S1_FIXED_UI_DEMO_20261014`, `panel_drag_allowed: false`
 
 ### 5.4 รอบสวมรับตรวจ (ต้องมีคนสวม)

@@ -168,6 +168,21 @@ static class ResearchFlowChecks
         File.Move(r.ProtocolPath + ".moved", r.ProtocolPath);
     }
 
+    // C02 loading lifecycle rules (pure). Device-side root cause of the Android stall is not covered.
+    static void VideoLoadRuleChecks()
+    {
+        Check(!ResearchVideoLoadRules.AcceptAsync(3, 4, true), "stale callback from a superseded load (format switch/retry/hide advanced generation) is ignored");
+        Check(!ResearchVideoLoadRules.AcceptAsync(4, 4, false) && ResearchVideoLoadRules.AcceptAsync(4, 4, true), "closed or hidden Reader ignores even its own callback");
+        Check(!ResearchVideoLoadRules.StallDue(true, true, true, false, 9.9f) && ResearchVideoLoadRules.StallDue(true, true, true, false, 10.1f),
+            "stall notice appears only after 10 s of visible loading");
+        Check(!ResearchVideoLoadRules.StallDue(true, true, true, true, 60f), "stall notice fires once per attempt");
+        Check(!ResearchVideoLoadRules.StallDue(false, true, true, false, 60f) && !ResearchVideoLoadRules.StallDue(true, false, true, false, 60f)
+            && !ResearchVideoLoadRules.StallDue(true, true, false, false, 60f), "no stall notice for other formats, hidden Reader or a ready video");
+        Check(ResearchVideoLoadRules.RetryAllowed(true, false, false) && ResearchVideoLoadRules.RetryAllowed(false, true, true)
+            && !ResearchVideoLoadRules.RetryAllowed(false, true, false) && !ResearchVideoLoadRules.RetryAllowed(false, false, true),
+            "Retry only after an error or a shown stall; an immediate second press on the fresh attempt is refused");
+    }
+
     static int Main(string[] args)
     {
         try
@@ -240,6 +255,7 @@ static class ResearchFlowChecks
                 && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
             StationAnchorChecks();
             CaptionPartChecks();
+            VideoLoadRuleChecks();
             RegistryCompatibilityChecks(r, root, th);
             var f = new ResearchSessionFlow(th.task_order, th.flow_state);
             f.StartTutorial(); f.CompleteTutorialStep(TutorialStep.Movement); f.Pause();
