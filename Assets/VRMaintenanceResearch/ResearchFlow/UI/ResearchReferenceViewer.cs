@@ -28,7 +28,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             public Page[] pages; public Step[] steps; public Picture[] images; public Movie video;
         }
         enum MediaState { Empty, Blocked, Loading, Ready, PlayRequested, Playing, Paused, Seeking, Ended, Error, AwaitingSelection }
-        sealed class Position { public int index = 1; public float normalized = 1; public double time; }
+        sealed class Position { public int index = 1, part = 1; public float normalized = 1; public double time; }
         sealed class Registry { public Package package; public string hash, error; }
 
         const string PackageResource = "ResearchReaderDemo/package";
@@ -84,8 +84,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string Status => state.ToString();
         public int PageIndex => index;
         public int PageCount => package == null ? 1 : format == "pdf" ? package.pages.Length : format == "steps" ? package.steps.Length : format == "images" ? package.images.Length : 1;
-        public bool CanPrevious => IsReady && index > 1 && format != "video";
-        public bool CanNext => IsReady && index < PageCount && format != "video";
+        public bool CanPrevious => IsReady && format != "video" && (index > 1 || (format == "images" && part > 1));
+        public bool CanNext => IsReady && format != "video" && (index < PageCount || (format == "images" && part < PartCount));
+        // Illustrated sub-pages (ResearchCaptionParts): image index keeps its meaning in logs; caption_part is reported separately.
+        int part = 1;
+        int PartCount => format == "images" && package != null && index >= 1 && index <= package.images.Length ? ResearchCaptionParts.Count(CaptionOf(index)) : 1;
+        string CaptionOf(int imageIndex) { var image = package.images[imageIndex - 1]; return Local(image.caption_th, image.caption_ja, image.caption_en); }
         public int CachedPageCount => pageCache.Count;
         public string BoundRegistryResource => registryResource;
         public string BoundSection => format == "pdf" ? "user_manual" : format == "steps" ? "step_by_step" : format == "images" ? "illustrated" : format;
@@ -103,16 +107,18 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string SemanticToken => generation + ":" + key + ":" + format + ":" + index + ":" + state;
         public string Title => state == MediaState.AwaitingSelection ? Local("เลือกรูปแบบสื่อ", "資料の形式を選択", "Choose a format") : format == "pdf" ? "PDF" : format == "steps" ? Local("ขั้นตอน", "手順", "Steps") : format == "images" ? Local("รูปภาพ", "画像", "Images") : "Video";
         public string DocumentName => package == null ? Title : System.Text.RegularExpressions.Regex.Replace(System.IO.Path.GetFileNameWithoutExtension(package.source_pdf).Replace('_', ' '), "([a-z])([A-Z])", "$1 $2");
-        public bool NavigationVisible => IsReady && (format == "pdf" || ((format == "steps" || format == "images") && PageCount > 1));
+        public bool NavigationVisible => IsReady && (format == "pdf" || ((format == "steps" || format == "images") && (PageCount > 1 || PartCount > 1)));
         public string NavigationLabel => format == "pdf" ? index + " / " + PageCount : format == "steps"
             ? Local("ขั้นที่ " + index + " จาก " + PageCount, "手順 " + index + " / " + PageCount, "Step " + index + " of " + PageCount)
-            : Local("ภาพ " + index + " / " + PageCount, "画像 " + index + " / " + PageCount, "Image " + index + " of " + PageCount);
+            : Local("ภาพ " + index + " / " + PageCount, "画像 " + index + " / " + PageCount, "Image " + index + " of " + PageCount)
+                + (PartCount > 1 ? " · " + part + "/" + PartCount : "");
         public object Metadata => new
         {
             event_schema = "viewer_v1", context = key, content_id = package?.content_id, version = package?.version,
             source_pdf = package?.source_pdf, source_sha256 = package?.source_sha256, registry_sha256 = packageHash,
             approval = package?.approval, media_type = format, page = format == "pdf" ? index : (int?)null,
-            index, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
+            index, caption_part = format == "images" ? part : (int?)null, caption_parts = format == "images" ? PartCount : (int?)null,
+            caption_layout = format == "images" ? ResearchCaptionParts.Version : null, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
             time_seconds = player && player.isPrepared ? player.time : Saved.time,
             seek_target_seconds = state == MediaState.Seeking ? seekTarget : (double?)null,
             status = Status, visible, active_reading = visible && IsReady, error,
@@ -232,6 +238,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Navigate(int delta, string input = "None")
         {
             if (!visible || !IsReady || format == "video" || delta == 0) return false;
+            if (format == "images")
+            {
+                int nextIndex = index, nextPart = part + Math.Sign(delta);
+                if (nextPart > PartCount) { nextIndex = index + 1; nextPart = 1; }
+                else if (nextPart < 1) { nextIndex = index - 1; nextPart = nextIndex >= 1 ? ResearchCaptionParts.Count(CaptionOf(nextIndex)) : 1; }
+                if (nextIndex < 1 || nextIndex > PageCount) return false;
+                index = nextIndex; part = nextPart; Saved.index = index; Saved.part = part; Saved.normalized = 1; ClearContent(); Render();
+                SavePosition();
+                Event("REFERENCE_VIEWER_NAVIGATE", Actor(input), input); view.RefreshPageControls(); return true;
+            }
             int next = Mathf.Clamp(index + delta, 1, PageCount);
             if (next == index) return false;
             if (format == "pdf")
@@ -356,7 +372,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             pageCache.Add(index, texture);
             float width = Mathf.Max(1, scroll.viewport.rect.width - 24), viewportHeight = scroll.viewport.rect.height;
             contentText = Text(content, "ImageCaption", 26);
-            contentText.text = Local(image.caption_th, image.caption_ja, image.caption_en);
+            var (heading, parts) = ResearchCaptionParts.Split(Local(image.caption_th, image.caption_ja, image.caption_en));
+            part = Mathf.Clamp(Saved.part, 1, parts.Length);
+            // Heading repeated as context on every sub-page; rich text only when the reviewed text has no markup characters.
+            contentText.text = heading == null ? parts[part - 1]
+                : (heading.IndexOf('<') < 0 ? "<b>" + heading + "</b>" : heading) + "\n" + parts[part - 1];
             float textHeight = Mathf.Max(48, contentText.GetPreferredValues(contentText.text, width, 10000).y + 12);
             // Capture C04: a fixed 75% image floor pushed 2-3 line captions below the viewport edge (looked clipped by the footer).
             // Reserve the measured caption first; only captions longer than ~45% of the viewport still need the scrollbar.
@@ -677,7 +697,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         void SavePosition()
         {
             if (key == null) return;
-            var position = Saved; position.index = index;
+            var position = Saved; position.index = index; if (format == "images") position.part = part;
             if (scroll) position.normalized = scroll.verticalNormalizedPosition;
             if (player && player.isPrepared && !double.IsNaN(player.time)) position.time = player.time;
         }

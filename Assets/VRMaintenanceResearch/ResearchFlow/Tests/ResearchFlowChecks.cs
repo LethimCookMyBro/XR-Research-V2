@@ -78,6 +78,36 @@ static class ResearchFlowChecks
             "clearance alternatives only raise or step back, never cross sides or approach the head");
     }
 
+    // Illustrated sub-pages over the committed S1 packages: exact text identity and TH/JA parity (presentation only).
+    static void CaptionPartChecks([System.Runtime.CompilerServices.CallerFilePath] string here = "")
+    {
+        string root = Path.Combine(Path.GetDirectoryName(here), "..", "Resources", "ResearchReaderS1");
+        int images = 0, split = 0, longest = 0;
+        bool identity = true, parity = true;
+        foreach (string task in new[] { "A", "B", "T" })
+        {
+            var th = JObject.Parse(File.ReadAllText(Path.Combine(root, task + "_th", "package.json")));
+            var ja = JObject.Parse(File.ReadAllText(Path.Combine(root, task + "_ja", "package.json")));
+            var thImages = (JArray)th["images"]; var jaImages = (JArray)ja["images"];
+            parity &= thImages.Count == jaImages.Count;
+            for (int i = 0; i < thImages.Count; i++)
+            {
+                string a = (string)thImages[i]["caption_th"], b = (string)jaImages[i]["caption_ja"];
+                var sa = ResearchCaptionParts.Split(a); var sb = ResearchCaptionParts.Split(b);
+                identity &= ResearchCaptionParts.Join(sa.heading, sa.parts) == a && ResearchCaptionParts.Join(sb.heading, sb.parts) == b;
+                parity &= sa.parts.Length == sb.parts.Length && (sa.heading == null) == (sb.heading == null);
+                images++; if (sa.parts.Length > 1) split++;
+                if (sa.parts.Length > 1) foreach (var part in sa.parts) longest = Math.Max(longest, part.Length);
+            }
+        }
+        Check(identity, "Illustrated sub-pages reproduce every reviewed caption byte-for-byte (no rewording, reordering or loss)");
+        Check(parity, "TH and JA get the same number of sub-pages and headings for every image");
+        Check(images == 21 && split == 16, "the 16 long A/B captions are split; the 5 short Training captions stay whole");
+        Check(longest <= 240, "longest Thai sub-page paragraph is at most 240 characters (was up to 738 as one caption; whole Training captions are at most 258)");
+        Check(ResearchCaptionParts.Split("one\n\ntwo\n\nthree").parts.Length == 1 && ResearchCaptionParts.Split("h\n\na\n\n\n\nb\n\nc").parts.Length == 1,
+            "short or irregular captions are never split");
+    }
+
     static int Main(string[] args)
     {
         try
@@ -149,6 +179,7 @@ static class ResearchFlowChecks
             Check(ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && !ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed
                 && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
             StationAnchorChecks();
+            CaptionPartChecks();
             var policyRegistry = JObject.Parse(File.ReadAllText(r.RegistryPath));
             Check(policyRegistry["participants"].Where(p => (string)p["session_state"] == "Available").All(p => p["ui_policy"] == null),
                 "available IDs carry no policy (fields are omitted, not null)");
