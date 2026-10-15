@@ -16,6 +16,7 @@ VrApi log, and at the end pulls the export bundle and runs the PC ingest.
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -26,7 +27,8 @@ HERE = Path(__file__).resolve().parent
 PACKAGE = 'th.ac.tmu.vr.researchflow.quest3.technical'
 SERIAL = os.environ.get('QUEST_SERIAL', '2G0YC5ZHBF00FJ')
 FILES = '/sdcard/Android/data/' + PACKAGE + '/files'
-BASH = os.environ.get('GIT_BASH', 'bash')
+# Plain 'bash' on Windows resolves to WSL (System32), which cannot see D:/ paths; use Git for Windows' bash.
+BASH = os.environ.get('GIT_BASH') or next((str(d / 'bin' / 'bash.exe') for d in Path(shutil.which('git') or '.').resolve().parents if (d / 'bin' / 'bash.exe').exists()), 'bash')
 
 
 def now():
@@ -42,7 +44,7 @@ def adb(*args, check=True, text=True):
 
 
 def researcher(*args):
-    p = subprocess.run([BASH, str(HERE / 'researcher-adb.sh'), *args], capture_output=True, text=True, encoding='utf-8', cwd=HERE, timeout=120)
+    p = subprocess.run([BASH, (HERE / 'researcher-adb.sh').as_posix(), *args], capture_output=True, text=True, encoding='utf-8', cwd=HERE, timeout=120)
     try:
         return json.loads(p.stdout)
     except json.JSONDecodeError:
