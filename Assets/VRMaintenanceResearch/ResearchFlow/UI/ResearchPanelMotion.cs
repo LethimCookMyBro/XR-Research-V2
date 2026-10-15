@@ -32,6 +32,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         Rect clearanceRect, clearancePeerRect;
         Vector3 clearanceScale, clearancePeerScale;
         bool deferredRetryUsed = true;
+        Pose? anchoredPose;
+        bool AtStationAnchor => anchoredPose.HasValue && ResearchUIPolicy.StationAnchoredPanels
+            && (transform.position - anchoredPose.Value.position).sqrMagnitude < 1e-8f && Quaternion.Angle(transform.rotation, anchoredPose.Value.rotation) < .01f;
         bool faceHidden;
         float faceTransitionSince = float.NegativeInfinity;
         Pose? pendingRestore;
@@ -122,6 +125,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var sight = transform.position - view.Head.position;
                 float facing = sight.sqrMagnitude > .0001f ? Vector3.Dot(transform.forward, sight.normalized) : -1;
                 bool clear = IdlePlacementClear();
+                // A station anchor is a fixed authored pose: a part the participant carries across the sight line must not move or hide it.
+                if (!clear && AtStationAnchor && LastRejection.StartsWith("occluded", System.StringComparison.Ordinal)) clear = true;
                 if (!clear) { faceHidden = false; SetPlacementBlocked(true); faceTransitionSince = float.NegativeInfinity; }
                 else
                 {
@@ -244,6 +249,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             LastPlacementHeadPosition = view.Head.position;
             // Recenter directly: interpolating can sweep the panel through equipment.
             transform.SetPositionAndRotation(position, rotation);
+            anchoredPose = anchorId != null ? new Pose(position, rotation) : (Pose?)null;
             faceHidden = false; deferredRetryUsed = true; SetPlacementBlocked(false);
             if (anchorId != null)
                 view.controller?.Log("PANEL_PLACEMENT", panelId, "Anchored", before, new { pose = Pose(), anchor = anchorId, moved },
