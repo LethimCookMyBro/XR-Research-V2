@@ -218,6 +218,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var saved = System.Linq.Enumerable.Single(registry.List(ParticipantGroup.Test), item => item.participant_id == record.participant_id);
                 bool recordAborted = controller.Record.session_state == RegistryState.Aborted && saved.session_state == RegistryState.Aborted;
                 bool incomplete = !logger.DataComplete && logger.State == VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogState.Incomplete;
+                controller.WaitForExports(60000);
                 string export = controller.LastExportPath;
                 bool exportOwned = !string.IsNullOrEmpty(export) && Path.GetFullPath(export).StartsWith(isolatedRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
                 var manifest = exportOwned && File.Exists(Path.Combine(export, "manifest.json")) ? Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(Path.Combine(export, "manifest.json"))) : null;

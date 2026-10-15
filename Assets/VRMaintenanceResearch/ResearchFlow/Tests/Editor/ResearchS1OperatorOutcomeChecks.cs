@@ -68,6 +68,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     string input = Path.Combine(view.OperatorDirectory, "research-operator-command.json");
                     File.WriteAllText(input, JsonConvert.SerializeObject(request));
                     Poll(view); registryLock?.Dispose(); registryLock = null;
+                    controller.WaitForExports(60000);
                     var response = JObject.Parse(File.ReadAllText(Path.Combine(view.OperatorDirectory, "research-operator-response.json")));
                     var saved = registry.List(ParticipantGroup.Test).Single();
                     bool executed = !new[] { "authorization_write_failure", "registry_write_failure", "terminal_write_failure", "export_failure", "terminal_noop" }.Contains(scenario);

@@ -163,8 +163,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 yield return new WaitForSecondsRealtime(1.5f);
             }
             Require(owner.Flow.State == ResearchFlowState.ParticipantComplete && owner.Logger.DataComplete, "finalized actual lifecycle");
-            Require(!string.IsNullOrEmpty(owner.ExportSession()), "export: " + owner.ExportDeliveryError);
+            Require(owner.ExportSession(), "export: " + owner.ExportDeliveryError);
             yield return Capture("complete");
+            yield return new WaitUntil(() => !owner.ExportPending);
+            Require(string.IsNullOrEmpty(owner.ExportDeliveryError), "export: " + owner.ExportDeliveryError);
         }
         // Reader video on the device decoder (HANDOFF R1-R3): load, play, then fast switches that must drop the stale load. The viewer
         // logs every REFERENCE_VIDEO_LOAD_PHASE; this records the outcome without failing the scenario, so a stall is evidence.

@@ -37,7 +37,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             try
             {
                 foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
-                foreach (string stage in new[] { "task_deadline", "seeded_final_checkpoint", "withdrawal_current_amend", "saved_amend" })
+                foreach (string stage in new[] { "task_deadline", "live_append_large", "seeded_final_checkpoint", "withdrawal_current_amend", "saved_amend" })
                 {
                     string label = language + "/" + stage;
                     object owned = null;
@@ -70,6 +70,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 check(c.TaskEndReason == "time_limit" && c.Flow.State == ResearchFlowState.PostTask1Checkpoint,label+"/actual task deadline transition",new { c.TaskEndReason, c.Flow.State });
                                 CheckBundle(c,c.Record,"task_A_time_limit","task_finalized",label,check,bundles);
                             }
+                            else if (stage == "live_append_large")
+                                LiveAppend(c,writer,label,check,bundles);
                             else
                             {
                                 c.ResearcherAbort(false,"withdrawal");
@@ -83,8 +85,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 var amended = c.Registry.List(ParticipantGroup.Test).Single(r=>r.participant_id==participant);
                                 check(amended.termination_reason == "withdrawal" && amended.termination_amendments.Count == 1 && amended.termination_amendments[0].to_reason == "safety_stop",label+"/original ending and amendment history",amended.termination_amendments);
                                 CheckBundle(c,amended,"termination_amended","partial",label,check,bundles);
+                                c.WaitForExports(60000);
                                 int jobsBefore=Directory.GetFiles(Path.Combine(c.Registry.DirectoryPath,"ExportQueue"),"*.json").Length;
                                 Require(c.AmendTermination(participant,"safety_stop","StoppedEditorLifecycleFixture") == null,"Repeated amendment failed");
+                                c.WaitForExports(60000);
                                 int jobsAfter=Directory.GetFiles(Path.Combine(c.Registry.DirectoryPath,"ExportQueue"),"*.json").Length;
                                 check(jobsAfter==jobsBefore && c.Registry.List(ParticipantGroup.Test).Single(r=>r.participant_id==participant).termination_amendments.Count==1,
                                     label+"/same-reason amendment adds no history or export",new { jobsBefore, jobsAfter });
@@ -111,6 +115,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
         static void CheckBundle(ResearchSessionFlowController c,ParticipantRecord record,string reason,string lifecycle,string label,Action<bool,string,object> check,List<object> bundles)
         {
+            check(c.WaitForExports(60000) && string.IsNullOrEmpty(c.ExportDeliveryError),label+"/"+reason+" background snapshot finished",c.ExportDeliveryError);
             string queue=Path.Combine(c.Registry.DirectoryPath,"ExportQueue");
             var jobs=Directory.GetFiles(queue,"*.json").Select(p=>JObject.Parse(File.ReadAllText(p))).Where(j=>(string)j["participant_code"]==record.participant_id && (string)j["session_id"]==record.session_id && (string)j["run_id"]==record.run_id && (string)j["reason"]==reason).ToArray();
             Require(jobs.Length==1,"Expected exactly one automatic queue job for "+reason);
@@ -127,6 +132,39 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             string status=(string)typeof(ResearchExportQueue).GetMethod("DeliveryStatus").Invoke(null,new object[]{c.Registry.DirectoryPath,record,null});
             check(status=="queued" && !Directory.Exists(Path.Combine(c.Registry.DirectoryPath,"ExportReceipts")),label+"/"+reason+" queued without fabricated ACK",status);
             bundles.Add(new { label, registry_root=c.Registry.DirectoryPath, reason, lifecycle, export_path=path, manifest_sha256=Hash(Path.Combine(path,"manifest.json")), participant=record.participant_id, session=record.session_id, run=record.run_id });
+        }
+        // A large live run keeps logging while the worker copies: the request must be cheap and the bundle exactly the frozen prefix.
+        static void LiveAppend(ResearchSessionFlowController c,HandsLabLogger writer,string label,Action<bool,string,object> check,List<object> bundles)
+        {
+            PoseSample Pose()=>new PoseSample{position=new[]{.1f,1.6f,-.2f},rotation=new[]{0f,0f,0f,1f},trackingValid=true,sampleTimestamp=writer.Timestamp,provider="fixture"};
+            HandsLabFrame Frame()=>new HandsLabFrame{taskState="Active",inputSource="None",head=Pose(),leftProvider=Pose(),rightProvider=Pose(),leftVisual=Pose(),rightVisual=Pose(),origin=Pose()};
+            while(new FileInfo(writer.MovementPath).Length<(48L<<20))Require(writer.Sample(Frame()),"Fixture movement write failed");
+            long events=new FileInfo(writer.EventsPath).Length,movement=new FileInfo(writer.MovementPath).Length;
+            string queue=Path.Combine(c.Registry.DirectoryPath,"ExportQueue");int jobs=Directory.Exists(queue)?Directory.GetFiles(queue,"*.json").Length:0;
+            var watch=System.Diagnostics.Stopwatch.StartNew();
+            bool requested=(bool)Call(c,"QueueExport","task_A_live_fixture","task_finalized");
+            double requestMs=watch.Elapsed.TotalMilliseconds;int appended=0;
+            while(Directory.GetFiles(queue,"*.json").Length==jobs&&watch.Elapsed.TotalSeconds<60)
+            {
+                Require(writer.Record("FIXTURE_LIVE_APPEND","fixture","Appended",null,"None",source:"Tester")&&writer.Sample(Frame()),"Fixture append failed");
+                appended++;
+            }
+            double workerMs=watch.Elapsed.TotalMilliseconds;
+            check(requested&&requestMs<100,label+"/main-thread snapshot request stays under one frame budget",new{requestMs,movement_bytes=movement,workerMs});
+            check(appended>0,label+"/logger kept appending while the worker copied",new{appended});
+            CheckBundle(c,c.Record,"task_A_live_fixture","task_finalized",label,check,bundles);
+            string bundle=c.LastExportPath;
+            bool Same(string live,string copy,long length)
+            {
+                byte[] exported=File.ReadAllBytes(copy);if(exported.LongLength!=length)return false;
+                var prefix=new byte[length];
+                using(var file=new FileStream(live,FileMode.Open,FileAccess.Read,FileShare.ReadWrite)){int at=0;while(at<length){int read=file.Read(prefix,at,(int)(length-at));if(read<=0)return false;at+=read;}}
+                return prefix.SequenceEqual(exported);
+            }
+            check(Same(writer.EventsPath,Path.Combine(bundle,"raw","events.jsonl"),events)&&Same(writer.MovementPath,Path.Combine(bundle,"raw","movement.csv"),movement)
+                &&new FileInfo(writer.EventsPath).Length>events&&new FileInfo(writer.MovementPath).Length>movement,
+                label+"/bundle is the exact frozen prefix and excludes rows written after the request",new{events,movement,live_events=new FileInfo(writer.EventsPath).Length,live_movement=new FileInfo(writer.MovementPath).Length});
+            check(File.ReadLines(Path.Combine(bundle,"raw","events.jsonl")).All(l=>{try{JObject.Parse(l);return true;}catch(JsonException){return false;}}),label+"/exported events end on a whole row",null);
         }
         static void Click(object owned,string command){var a=Call(owned,"Action",command,null);Call(owned,"Click",a,1);}
         static object Call(object target,string method,params object[] args)=>target.GetType().GetMethod(method,Instance).Invoke(target,args);

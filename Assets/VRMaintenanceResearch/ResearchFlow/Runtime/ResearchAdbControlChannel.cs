@@ -308,18 +308,17 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (controller.Record == null) return Fail("No session to export.");
             // Export exposes session data and the researcher summary, so it is gated too.
             if (!TechnicalSession("export", out string refusal)) return Fail(refusal);
-            string path = controller.ExportSession();
-            if (string.IsNullOrEmpty(path)) return Fail("Snapshot failed: " + controller.ExportDeliveryError);
-            LogCommand("export", controller.Record.participant_id, null, null, "SnapshotQueued");
-            return Ok("export", new { path, delivery = "queued_pc_verification_pending", summary = controller.SummaryText() });
+            if (!controller.ExportSession()) return Fail("Snapshot failed: " + controller.ExportDeliveryError);
+            LogCommand("export", controller.Record.participant_id, null, null, "SnapshotRequested");
+            return Ok("export", new { delivery = "snapshot_pending", note = "The bundle path appears in status export_path once the snapshot is queued.", summary = controller.SummaryText() });
         }
 
         object ExportSaved(JObject request)
         {
             if(controller.Registry==null)return Fail("Registry not ready.");
             string participant=(string)request["participant"],session=(string)request["session_id"],run=(string)request["run_id"];
-            string path=ResearchExportQueue.SnapshotSavedRun(controller.Registry,participant,session,run,controller.Logger?.RunId);
-            return Ok("export_saved",new{path,participant_code=participant,session_id=session,run_id=run,lifecycle="partial",delivery="queued_pc_verification_pending",historical_build_provenance="unknown_pre_upgrade"});
+            controller.TrackExport(ResearchExportQueue.SnapshotSavedRun(controller.Registry,participant,session,run,controller.Logger?.RunId),run);
+            return Ok("export_saved",new{participant_code=participant,session_id=session,run_id=run,lifecycle="partial",delivery="snapshot_pending",historical_build_provenance="unknown_pre_upgrade"});
         }
 
         // ---- helpers --------------------------------------------------------
@@ -513,6 +512,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             session_id = controller.Record?.session_id,
             export_path = controller.LastExportPath,
             export_delivery_error = controller.ExportDeliveryError,
+            export_pending = controller.ExportPending,
+            saved_run_export_error = controller.SavedRunExportError,
             technical_scenario = controller.GetComponent<ResearchTechnicalScenario>()?.State,
             supported_scenario_render_modes = new[] { "msaa", "resolution" },
             movement = controller.GetComponent<ResearchMovementSampler>() is ResearchMovementSampler sampler ?

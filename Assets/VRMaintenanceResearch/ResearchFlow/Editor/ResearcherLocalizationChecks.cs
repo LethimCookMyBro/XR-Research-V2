@@ -298,7 +298,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                     Call(owned,"Capture","delivery_"+(++deliveryCapture)+"_"+expected,panel,captures,rows);
                                 }
                                 Delivery("saved");
-                                string bundle=ResearchExportQueue.Snapshot(c.Registry.DirectoryPath,c.Logger,c.Record,"ui_fixture","partial");
+                                string bundle=ResearchExportQueue.Snapshot(c.Registry.DirectoryPath,c.Logger,c.Record,"ui_fixture","partial").Result;
                                 Delivery("queued");
                                 string Hash(string path) { using(var sha=System.Security.Cryptography.SHA256.Create()) return string.Concat(sha.ComputeHash(File.ReadAllBytes(path)).Select(x=>x.ToString("x2"))); }
                                 var receipt=Newtonsoft.Json.Linq.JObject.FromObject(new {
@@ -314,6 +314,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 Click(Get<UnityEngine.UI.Button>(researcher,"export"));
                                 Check(string.IsNullOrEmpty(Get<string>(researcher,"localError")) && !Get<TMP_Text>(researcher,"error").text.Contains("Export:"),
                                     stage+"/manual export success is not an error path",new {localError=Get<string>(researcher,"localError"),c.LastExportPath});
+                                Delivery("saved");
+                                Check(c.WaitForExports(60000),stage+"/background export finished",c.ExportDeliveryError);
                                 Delivery("queued");
                             }
                             foreach(var button in new[]{stopButton,Get<UnityEngine.UI.Button>(researcher,"resume"),Get<UnityEngine.UI.Button>(researcher,"export"),detailsButton})

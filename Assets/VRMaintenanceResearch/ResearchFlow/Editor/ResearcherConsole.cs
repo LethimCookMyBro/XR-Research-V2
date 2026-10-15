@@ -220,7 +220,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         Invoke(() => error = controller.AmendTermination(ended.participant_id, reasons[endReason], "ResearcherConsole") ?? "Ending recorded; export again so the PC copy carries it.");
             }
             using (new EditorGUI.DisabledScope(controller.Record == null))
-                if (GUILayout.Button("Export Session Log")) Invoke(() => error = "Export: " + controller.ExportSession());
+                if (GUILayout.Button("Export Session Log")) Invoke(() => error = controller.ExportSession() ? "Export snapshot requested; status shows when it is queued." : "Export: " + controller.ExportDeliveryError);
             var visibleError = string.IsNullOrEmpty(controller.Error) ? error : controller.Error;
             if (!string.IsNullOrEmpty(visibleError)) EditorGUILayout.HelpBox(visibleError, MessageType.Info);
 

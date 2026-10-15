@@ -813,8 +813,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(controller.Logger.DataComplete, "Existing logger completed the test run");
             string summary = controller.SummaryText();
             Require(summary.Contains("TEST / DEMO DATA") && summary.Contains(controller.Record.participant_id), "Researcher summary identifies actual DEV data");
-            string exported = controller.ExportSession();
-            CheckExportBundle(exported);
+            Require(controller.ExportSession(), "Operator export requested: " + controller.ExportDeliveryError);
+            for (float waited = 0; controller.ExportPending && waited < 60; waited += Time.unscaledDeltaTime) yield return null;
+            Require(!controller.ExportPending && string.IsNullOrEmpty(controller.ExportDeliveryError), "Background export finished without error: " + controller.ExportDeliveryError);
+            CheckExportBundle(controller.LastExportPath);
             if (technicalSetup) yield break; // No researcher-console selection exists in the headset-started path.
             researcherCanvas.enabled = true; SetDisplay(1); yield return Stable();
             Require(idDropdown.captionText != null && idDropdown.captionText.text.Contains(controller.Record.participant_id), "Completed researcher summary dropdown identifies the current session participant, not the prior selection");

@@ -102,6 +102,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             using (var reader = new StreamReader(new FileStream(eventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))) logged = reader.ReadToEnd().Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(JObject.Parse).ToArray();
                             Check(logged.Count(e => (string)e["event"] == "SESSION_ABORTED" && (string)e["reason"] == expectedReason) == 1 && logged.Any(e => (string)e["event"] == "TASK_TERMINATED" && (string)e["reason"] == expectedReason), name + "/actual terminal logger preserves chosen reason", eventsPath);
                             Check(c.taskPorts.All(p => !p.InteractionAllowed) && Field<ResearchTaskTiming>(c, "taskTiming").Ended, name + "/actual terminal timing and world gates", State(c));
+                            c.WaitForExports(60000);
                             Check(!string.IsNullOrEmpty(c.LastExportPath) && Path.GetFullPath(c.LastExportPath).StartsWith(Path.GetFullPath(owned) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(c.LastExportPath, "COMPLETE.json")), name + "/owned export completed", new { c.LastExportPath, c.ExportDeliveryError });
                         }
                         Check(identity == c.Record.participant_id + "/" + c.Record.session_id + "/" + c.Record.run_id && credits == c.Flow.TutorialCompleted && c.Registry.List(ParticipantGroup.Test).Count == 1, name + "/identity credits and single owned record retained", State(c));

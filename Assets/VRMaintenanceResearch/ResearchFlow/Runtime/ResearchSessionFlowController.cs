@@ -37,6 +37,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool TaskStartConfirmation { get; private set; }
         public string ExportDeliveryError { get; private set; } = "";
         public string LastExportPath { get; private set; } = "";
+        // Snapshots run on the export worker; results are applied here on the main thread, in request order.
+        readonly List<(System.Threading.Tasks.Task<string> task, string run)> pendingExports = new List<(System.Threading.Tasks.Task<string>, string)>();
+        public bool ExportPending => pendingExports.Count > 0;
         string exportStatusKey, exportStatusCache = "saved";
         double exportStatusCheckedAt = double.NegativeInfinity;
         public string ExportDeliveryStatus
@@ -44,6 +47,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             get
             {
                 if (!string.IsNullOrEmpty(ExportDeliveryError)) return "attention";
+                // Raw data is already on the device; the newest snapshot is not yet a queued bundle.
+                if (Record != null && pendingExports.Any(p => p.run == Record.run_id)) return "saved";
                 string key = Record == null ? "" : Record.participant_id + "/" + Record.session_id + "/" + Record.run_id + "/" + Record.revision + "/" + LastExportPath;
                 double now = Time.realtimeSinceStartupAsDouble;
                 if (key != exportStatusKey || now < exportStatusCheckedAt || now - exportStatusCheckedAt >= 1)
@@ -795,15 +800,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 {
                     if (current && Logger != null)
                     {
-                        if (string.IsNullOrEmpty(QueueExport("termination_amended", "partial")))
+                        if (!QueueExport("termination_amended", "partial"))
                             throw new IOException(string.IsNullOrEmpty(ExportDeliveryError) ? "No export snapshot created" : ExportDeliveryError);
                     }
                     else
-                    {
-                        string path = ResearchExportQueue.SnapshotSavedRun(Registry, amended.participant_id,
-                            amended.session_id, amended.run_id, Logger?.RunId, "termination_amended");
-                        if (current) { LastExportPath = path; ExportDeliveryError = ""; }
-                    }
+                        TrackExport(ResearchExportQueue.SnapshotSavedRun(Registry, amended.participant_id,
+                            amended.session_id, amended.run_id, Logger?.RunId, "termination_amended"), amended.run_id);
                     return null;
                 }
                 catch (Exception ex)
@@ -978,6 +980,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void Update()
         {
+            if (pendingExports.Count > 0 && pendingExports[0].task.IsCompleted) ApplyExports();
             RestoreSafetyUI();
             if (Flow?.IsTaskActive == true && (!HeadsetReady || !DeviceReady)) SuspendTaskForTracking("tracking_unavailable");
             AdvanceTaskTiming();
@@ -1565,26 +1568,54 @@ namespace VRMaintenanceResearch.ResearchFlow
             return result.ToString();
         }
 
-        public string ExportSession()
+        public bool ExportSession()
         {
             return QueueExport("operator_export", Logger?.DataComplete == true ? "finalized" : "partial");
         }
 
-        string QueueExport(string reason, string lifecycle)
+        // True when the snapshot is frozen and handed to the export worker; the bundle path arrives in LastExportPath.
+        bool QueueExport(string reason, string lifecycle)
         {
-            if (Logger == null || Record == null) return "";
+            if (Logger == null || Record == null) return false;
             try
             {
-                LastExportPath = ResearchExportQueue.Snapshot(DataRoot, Logger, Record, reason, lifecycle,
+                TrackExport(ResearchExportQueue.Snapshot(DataRoot, Logger, Record, reason, lifecycle,
                     JObject.FromObject(new { application = Application.identifier, software_version = Application.version,
                         execution_environment = Application.isEditor ? "Editor" : "QuestStandalone", render = ResearchRenderExperiment.CurrentSettings(),
                         test_data = Record.test_data, hardware_verified = false,
                         simulated_presence = GetComponent<ResearchTechnicalScenario>() ? (object)GetComponent<ResearchTechnicalScenario>().SimulatedPresence : "unknown",
-                        apk_sha256 = (string)null, content_version = "research.flow.1" }));
-                ExportDeliveryError = "";
-                return LastExportPath;
+                        apk_sha256 = (string)null, content_version = "research.flow.1" })), Record.run_id);
+                return true;
             }
-            catch (Exception ex) { ExportDeliveryError = ex.Message; return ""; }
+            catch (Exception ex) { ExportDeliveryError = ex.Message; return false; }
+        }
+
+        public string SavedRunExportError { get; private set; } = "";
+        public void TrackExport(System.Threading.Tasks.Task<string> task, string run) => pendingExports.Add((task, run));
+
+        void ApplyExports()
+        {
+            while (pendingExports.Count > 0 && pendingExports[0].task.IsCompleted)
+            {
+                var (task, run) = pendingExports[0];
+                pendingExports.RemoveAt(0);
+                string failure = task.IsCompletedSuccessfully ? null : (task.Exception?.GetBaseException().Message ?? "Export snapshot cancelled");
+                if (Record != null && run == Record.run_id)
+                {
+                    if (failure == null) { LastExportPath = task.Result; ExportDeliveryError = ""; }
+                    else ExportDeliveryError = failure;
+                }
+                else SavedRunExportError = failure == null ? "" : run + ": " + failure;
+                if (failure != null) Debug.LogError("[ResearchExport] " + run + ": " + failure);
+            }
+        }
+
+        /// <summary>Blocks until queued snapshots finish. For shutdown and stopped-Editor fixtures, never during a session frame.</summary>
+        public bool WaitForExports(int timeoutMilliseconds)
+        {
+            bool done = System.Threading.Tasks.Task.WaitAll(pendingExports.Select(p => (System.Threading.Tasks.Task)p.task).ToArray(), timeoutMilliseconds);
+            ApplyExports();
+            return done;
         }
 
         void OnApplicationPause(bool paused)
@@ -1615,6 +1646,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var guard in guards) if (guard) guard.StateChanged -= TutorialInputChanged;
             GetComponent<ResearchMovementSampler>()?.FlushAndStop("runtime_stopped");
             if (Logger != null) { Logger.WriteFailed -= LoggerFailed; Logger.Dispose(); }
+            // Let an in-flight snapshot reach its queue job; the frozen prefixes do not depend on the closed writer.
+            if (pendingExports.Count > 0 && !WaitForExports(15000)) Debug.LogError("[ResearchExport] Snapshot still running at shutdown; the run stays on device for a saved-run export.");
         }
     }
 }

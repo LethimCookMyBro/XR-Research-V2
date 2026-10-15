@@ -133,7 +133,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         private void ResumeSession() => InvokeOperator("resume", controller?.Record, () => controller.ResearcherResume());
-        private void ExportSession() => InvokeOperator("export", controller?.Record, () => localError = !string.IsNullOrEmpty(controller.ExportSession()) ? "" : !string.IsNullOrEmpty(controller.ExportDeliveryError) ? controller.ExportDeliveryError : R("delivery_attention"));
+        private void ExportSession() => InvokeOperator("export", controller?.Record, () => localError = controller.ExportSession() ? "" : !string.IsNullOrEmpty(controller.ExportDeliveryError) ? controller.ExportDeliveryError : R("delivery_attention"));
         private void GroupChanged(int index)
         {
             recordSignature = ""; ClearEndingRequest();
@@ -475,7 +475,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 ? Enum.GetValues(typeof(ParticipantGroup)).Cast<ParticipantGroup>().SelectMany(controller.Registry.List)
                     .Single(p => p.participant_id == request.participant_id) : controller.Record;
             ResearchOperatorGuard.DemandRequest(request, record);
-            string exportResult = null;
+            bool exportRequested = false;
             string beforeError = controller.Error, expectedRun = record.run_id;
             long beforeRevision = record.revision;
             var beforeRegistryState = record.session_state;
@@ -490,7 +490,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     case "resume": controller.ResearcherResume(); break;
                     case "abort": controller.ResearcherAbort(false, request.termination_reason ?? "other"); break;
                     case "invalidate": controller.ResearcherAbort(true, request.termination_reason ?? "other"); break;
-                    case "export": exportResult = controller.ExportSession(); break;
+                    case "export": exportRequested = controller.ExportSession(); break;
                 }
             });
             if (terminalCommand)
@@ -512,7 +512,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 throw new InvalidOperationException(controller.Error);
             if (request.command == "resume" && beforeState == controller.Flow?.State && beforePaused == (controller.Flow?.Paused == true))
                 throw new InvalidOperationException("No permitted resume transition was available.");
-            if (request.command == "export" && string.IsNullOrEmpty(exportResult))
+            if (request.command == "export" && !exportRequested)
                 throw new InvalidOperationException("Export failed: " + controller.ExportDeliveryError);
             return new { schema = "research.operator-response.1", request_id = request.request_id, status = "Executed", utc = DateTime.UtcNow.ToString("O"),
                 command = request.command, participant_id = controller.Record?.participant_id, session_id = controller.Record?.session_id,
