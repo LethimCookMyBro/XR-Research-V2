@@ -80,11 +80,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             yield return new WaitForSecondsRealtime(1.5f);
             yield return Capture("welcome");
             Require(owner.Command("tutorial_start", "SimulatedController"), "tutorial_start");
-            var facts = new[] { "teleport", "snap", "roomscale", "select", "grab", "move", "rotate", "release",
-                "reference", "switch", "reposition", "close", "inspect" };
-            // The drag lesson exists only in the legacy movable-panel policy.
-            foreach (var fact in Array.FindAll(facts, owner.TutorialRequires))
+            // Follow the controller's own fact order, so the scenario stays valid for both training versions and the trainer station.
+            while (owner.Flow.State != ResearchFlowState.TutorialComplete)
             {
+                string fact = owner.TutorialFact;
+                Require(fact != null, "Tutorial has no current fact before completion.");
                 Step = "tutorial." + fact;
                 yield return new WaitForSecondsRealtime(.4f);
                 double promptDeadline = Time.realtimeSinceStartupAsDouble + 5;
@@ -101,6 +101,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
                 if (fact == "release") ReleaseFixture();
                 if (fact == "reference") Require(owner.Command("reference", "SimulatedController"), "tutorial reference");
+                else if (fact == "restore") Require(owner.Command("reference_restore", "SimulatedController"), "tutorial restore");
                 else if (fact == "switch") Require(owner.Command("reference_tab.step_by_step", "SimulatedController"), "tutorial switch");
                 else if (fact == "close") Require(owner.Command("reference_close", "SimulatedController"), "tutorial close");
                 else owner.DemoTutorialEvidence(fact);
@@ -119,6 +120,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 yield return Capture(Step + ".choice");
                 Require(owner.Command("reference_tab.user_manual", "SimulatedController"), "deliberate manual choice");
                 yield return Capture(Step + ".reference");
+                yield return VideoProbe(Step);
                 if (task == 0 && !Application.isEditor)
                 {
                     var comparison = owner.GetComponent<ResearchRenderExperiment>() ?? owner.gameObject.AddComponent<ResearchRenderExperiment>();
@@ -161,6 +163,34 @@ namespace VRMaintenanceResearch.ResearchFlow
             Require(owner.Flow.State == ResearchFlowState.ParticipantComplete && owner.Logger.DataComplete, "finalized actual lifecycle");
             Require(!string.IsNullOrEmpty(owner.ExportSession()), "export: " + owner.ExportDeliveryError);
             yield return Capture("complete");
+        }
+        // Reader video on the device decoder (HANDOFF R1-R3): load, play, then fast switches that must drop the stale load. The viewer
+        // logs every REFERENCE_VIDEO_LOAD_PHASE; this records the outcome without failing the scenario, so a stall is evidence.
+        IEnumerator VideoProbe(string step)
+        {
+            var viewer = owner.view.ReferenceViewer;
+            IEnumerator Await(string label, double seconds)
+            {
+                double until = Time.realtimeSinceStartupAsDouble + seconds, started = Time.realtimeSinceStartupAsDouble;
+                while (!(viewer.IsReady && viewer.BoundSection == "video") && Time.realtimeSinceStartupAsDouble < until) yield return null;
+                owner.Log("TECHNICAL_VIDEO_PROBE", "reference.video", viewer.IsReady && viewer.BoundSection == "video" ? "Ready" : "NotReady",
+                    after: new { label, status = viewer.Status, waited_s = Math.Round(Time.realtimeSinceStartupAsDouble - started, 2) }, source: "Tester", inputSource: "SimulatedController");
+            }
+            Require(owner.Command("reference_tab.video", "SimulatedController"), "video tab");
+            yield return Await(step + ".video_first", 30);
+            yield return Capture(step + ".video");
+            if (viewer.IsReady && owner.Command("reference_media.play", "SimulatedController")) { yield return new WaitForSecondsRealtime(3f); yield return Capture(step + ".video_playing"); }
+            foreach (var away in new[] { "reference_tab.user_manual", "reference_tab.step_by_step", "reference_tab.illustrated" })
+            {
+                Require(owner.Command(away, "SimulatedController"), away);
+                yield return new WaitForSecondsRealtime(.3f);
+                Require(owner.Command("reference_tab.video", "SimulatedController"), "video tab again");
+                yield return new WaitForSecondsRealtime(.6f);
+            }
+            yield return Await(step + ".video_after_switches", 30);
+            yield return Capture(step + ".video_after_switches");
+            Require(owner.Command("reference_tab.user_manual", "SimulatedController"), "back to manual");
+            yield return new WaitForSecondsRealtime(.5f);
         }
         IEnumerator Capture(string label)
         {

@@ -24,7 +24,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly (string name, int station, string target)[] Presets = {
             ("sign", 0, "Training_Room_Sign"), ("window", 0, "Training_Window_Frame"), ("door", 0, "Training_Door_Frame"),
             ("floor", 0, null), ("trainer", 0, "ResearchFlow_TrainingStation"), ("ui", 0, "#canvas"),
-            ("task_a", 1, "ResearchFlow_TaskA_Port"), ("task_b", 2, "ResearchFlow_TaskB_Port") };
+            ("task_a", 1, "ResearchFlow_TaskA_Port"), ("task_b", 2, "ResearchFlow_TaskB_Port"),
+            ("board", 0, "Instruction_Board_0") };
 
         ResearchSessionFlowController owner;
         string directory, error;
