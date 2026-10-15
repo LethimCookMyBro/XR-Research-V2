@@ -143,6 +143,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     captures.Add(type.GetMethod("Capture").Invoke(fixture, new object[] { "pdf_fit_width", view.referencePanel }));
                     Check(!view.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "reference_media.pan_left" || a.command == "reference_media.pan_right"),
                         prefix + "/fit width hides unnecessary pan arrows", viewer.Metadata);
+                    var firstPage = (RectTransform)scroll.content.Find("PDFPage_1");
+                    float visible = scroll.viewport.rect.width - 24, trimmed = firstPage.rect.width * (1 - 2 * ResearchReferenceViewer.PortraitPageCrop);
+                    Check(Mathf.Abs(trimmed - visible) < 1 && Mathf.Abs(scroll.horizontalNormalizedPosition - .5f) < .01f && !scroll.horizontal,
+                        prefix + "/100 percent trims only the measured white page margin, centered", new { visible, page = firstPage.rect.width, trimmed, scroll.horizontalNormalizedPosition, viewport_height = scroll.viewport.rect.height });
                     Command("zoom_in"); Command("zoom_in"); Flush();
                     Check(Zoom() == 1.5f, prefix + "/150 percent reached", viewer.Metadata);
                     Check(view.GetComponentsInChildren<ResearchUIAction>(false).Count(a => a.command == "reference_media.pan_left" || a.command == "reference_media.pan_right") == 2,

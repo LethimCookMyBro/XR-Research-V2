@@ -187,7 +187,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 stage + ": fixed outer shell/header/sidebar/grip/world pose", new { before = frame, after = OuterFrame(view) });
                             C(Size(scroll.GetComponent<RectTransform>(), 840, 548), stage + ": expanded outer viewer", RectValues(scroll.GetComponent<RectTransform>()));
                             bool video = controller.ReferenceSection == "video";
-                            C(Size(scroll.viewport, 810, video ? 548 : 500) && Vector2.Distance(scroll.viewport.anchoredPosition, new Vector2(-12, video ? 0 : 24)) < .1f,
+                            // Outside Training the document also uses the 96-unit cue band under the header.
+                            float band = video || controller.Flow?.IsTutorial == true ? 0 : 96;
+                            C(Size(scroll.viewport, 810, (video ? 548 : 500) + band) && Vector2.Distance(scroll.viewport.anchoredPosition, new Vector2(-12, (video ? 0 : 24) + band / 2)) < .1f,
                                 stage + ": intentionally media-specific inner viewport", RectValues(scroll.viewport));
                             var footer = view.referencePanel.transform.Find("Expanded/ReaderFooter");
                             C(!footer || !footer.gameObject.activeInHierarchy, stage + ": redundant ReaderFooter inactive", footer ? (object)footer.gameObject.activeInHierarchy : "absent");

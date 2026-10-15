@@ -341,18 +341,23 @@ namespace VRMaintenanceResearch.ResearchFlow
             LayoutPdf(); state = MediaState.Ready;
         }
 
+        // Every portrait S1 task page keeps at least 8% white on each side (Tools/pdf_margins.py), so 100% trims 7%
+        // and the text column, not the paper edge, fills the viewer. Pages stay centered; nothing pans at 100%.
+        public const float PortraitPageCrop = .07f;
         void LayoutPdf()
         {
-            float width = Mathf.Max(1, scroll.viewport.rect.width - 24) * Saved.zoom, top = 12;
+            float fit = Mathf.Max(1, scroll.viewport.rect.width - 24), top = 12, widest = 0;
             pageTops.Clear();
             for (int i = 0; i < package.pages.Length; i++)
             {
-                float height = width * package.pages[i].height / package.pages[i].width;
+                var page = package.pages[i];
+                float width = fit * Saved.zoom / (page.height > page.width ? 1 - 2 * PortraitPageCrop : 1);
+                float height = width * page.height / page.width;
                 pageImages[i].rectTransform.sizeDelta = new Vector2(width, height);
                 pageImages[i].rectTransform.anchoredPosition = new Vector2(0, -top);
-                pageTops.Add(top); top += height + 16;
+                pageTops.Add(top); top += height + 16; widest = Mathf.Max(widest, width);
             }
-            content.sizeDelta = new Vector2(Mathf.Max(0, width + 24 - scroll.viewport.rect.width), Mathf.Max(scroll.viewport.rect.height, top));
+            content.sizeDelta = new Vector2(Mathf.Max(0, widest + 24 - scroll.viewport.rect.width), Mathf.Max(scroll.viewport.rect.height, top));
         }
 
         bool ChangePdfView(float zoomDelta, float panDelta, bool reset, string input)
@@ -880,7 +885,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!asset) { Fail("Missing PNG bytes: " + resource); return null; }
             byte[] bytes = asset.bytes; Resources.UnloadAsset(asset);
             if (!HashMatches(bytes, expected)) { Fail("PNG SHA256 mismatch: " + resource); return null; }
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false) { name = resource, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            // Pages and illustrations draw at roughly half their pixel size; without mips thin strokes shimmer in the headset.
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, true) { name = resource, filterMode = FilterMode.Trilinear, anisoLevel = 2, wrapMode = TextureWrapMode.Clamp };
             if (!ImageConversion.LoadImage(texture, bytes, true)) { ReleaseObject(texture); Fail("PNG decode failed: " + resource); return null; }
             return texture;
         }
