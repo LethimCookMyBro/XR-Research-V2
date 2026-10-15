@@ -14,7 +14,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>();
             var colliders = UnityEngine.Object.FindObjectsByType<MeshCollider>(FindObjectsSortMode.None);
             string[] benches = { "Computer_Main", "Fan_Main" };
-            string[] targets = { "Computer_TaskCase", "Fan_TaskFan" };
+            string[] targets = { "ResearchS1TaskA_Workspace", "ResearchS1TaskB" };
             for (int i = 0; i < benches.Length; i++)
             {
                 var station = controller.stations[i + 1];
