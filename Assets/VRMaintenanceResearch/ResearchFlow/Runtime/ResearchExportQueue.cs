@@ -34,7 +34,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if(ResearchParticipantRegistry.IsTechnical(record.group)!=record.test_data)throw new InvalidDataException("Export group/provenance mismatch");
             return SnapshotFiles(dataRoot,logger.DirectoryPath,record,reason,lifecycle,provenance,false,null);
         }
-        public static string SnapshotSavedRun(ResearchParticipantRegistry registry,string participant,string session,string run,string activeRun=null)
+        public static string SnapshotSavedRun(ResearchParticipantRegistry registry,string participant,string session,string run,string activeRun=null,string reason="operator_export_saved")
         {
             if(registry==null)throw new ArgumentNullException(nameof(registry));
             Token(participant);Token(session);Token(run);
@@ -47,8 +47,94 @@ namespace VRMaintenanceResearch.ResearchFlow
             Action verifyRecord=()=>{var fresh=resolve();if(fresh==null||!Json(fresh).SequenceEqual(savedRecord))throw new IOException("Saved registry record changed during snapshot");};
             var provenance=JObject.FromObject(new{device="unknown",render="unknown",simulated_presence="unknown",apk_sha256=(string)null,source_code_version=(string)null,hardware_verified=false,
                 saved_run=true,historical_build_provenance="unknown_pre_upgrade",validity="preserved_raw_pending_host_QC"});
-            return SnapshotFiles(registry.DirectoryPath,Path.Combine(registry.DirectoryPath,"Logs",run),record,"operator_export_saved","partial",provenance,true,verifyRecord);
+            return SnapshotFiles(registry.DirectoryPath,Path.Combine(registry.DirectoryPath,"Logs",run),record,reason,"partial",provenance,true,verifyRecord);
         }
+        public static string DeliveryStatus(string dataRoot,ParticipantRecord record,string lastExportPath=null)
+        {
+            if(record==null||string.IsNullOrEmpty(record.run_id))return "saved";
+            try
+            {
+                Token(record.participant_id);Token(record.session_id);Token(record.run_id);
+                string queue=Path.Combine(dataRoot,"ExportQueue");
+                JObject latest=null;DateTimeOffset latestTime=DateTimeOffset.MinValue;long latestRevision=-1;bool ambiguous=false;
+                if(Directory.Exists(queue))foreach(string path in Directory.EnumerateFiles(queue,"*.json"))
+                {
+                    JObject job;
+                    try{job=ReadObject(path);}catch(JsonException){continue;}
+                    if(!Identity(job,record))continue;
+                    if((string)job["schema_version"]!="researchflow.export_queue.1"||
+                        !Utc(job["created_utc"],out var created))return "attention";
+                    string id=Text(job["bundle_id"]);Token(id);
+                    if(Path.GetFileName(path)!=id+".json")return "attention";
+                    var savedRecord=ReadObject(Path.Combine(dataRoot,"Exports",id,"raw","research-session.json"));
+                    if(savedRecord["revision"]?.Type!=JTokenType.Integer||!long.TryParse(savedRecord["revision"].ToString(),out var revision)||revision<0)return "attention";
+                    if(latest==null||created>latestTime||(created==latestTime&&revision>latestRevision))
+                    {latest=job;latestTime=created;latestRevision=revision;ambiguous=false;}
+                    else if(created==latestTime&&revision==latestRevision&&id!=Text(latest["bundle_id"]))ambiguous=true;
+                }
+                if(latest==null)return string.IsNullOrEmpty(lastExportPath)?"saved":"attention";
+                if(ambiguous)return "attention";
+                string bundle=Text(latest["bundle_id"]);
+                string directory=Path.Combine(dataRoot,"Exports",bundle);
+                if(!string.Equals(Path.GetFullPath(Text(latest["export_path"])),Path.GetFullPath(directory),StringComparison.OrdinalIgnoreCase))return "attention";
+                byte[] manifestBytes=File.ReadAllBytes(Path.Combine(directory,"manifest.json"));
+                string manifestHash=Hash(manifestBytes);
+                var manifest=ReadObject(manifestBytes);
+                var complete=ReadObject(Path.Combine(directory,"COMPLETE.json"));
+                if((string)manifest["schema_version"]!="researchflow.device-bundle.1"||
+                    (string)manifest["bundle_id"]!=bundle||!Identity(manifest["identity"] as JObject,record)||
+                    (string)complete["schema_version"]!="researchflow.bundle-complete.1"||
+                    (string)complete["bundle_id"]!=bundle||(string)complete["manifest_sha256"]!=manifestHash)return "attention";
+                var recordHash=(string)manifest["files"]?["raw/research-session.json"]?["sha256"];
+                byte[] exportedBytes=File.ReadAllBytes(Path.Combine(directory,"raw","research-session.json"));
+                if(!Sha(manifest["files"]?["raw/research-session.json"]?["sha256"])||recordHash!=Hash(exportedBytes))return "attention";
+                var exported=ReadObject(exportedBytes);
+                if(Text(exported["participant_id"])!=record.participant_id||Text(exported["session_id"])!=record.session_id||Text(exported["run_id"])!=record.run_id)return "attention";
+                if(record.session_state==RegistryState.Aborted||record.session_state==RegistryState.Invalid||record.session_state==RegistryState.Completed)
+                {
+                    var current=JObject.FromObject(record);
+                    foreach(string field in new[]{"session_state","termination_reason","termination_amendments"})
+                        if(!JToken.DeepEquals(exported[field],current[field]))return "attention";
+                }
+                string receiptPath=Path.Combine(dataRoot,"ExportReceipts",bundle+".json");
+                if(!File.Exists(receiptPath))return "queued";
+                var receipt=ReadObject(receiptPath);
+                if((string)receipt["schema_version"]!="researchflow.pc-receipt.1"||
+                    (string)receipt["bundle_id"]!=bundle||!Identity(receipt,record)||
+                    (string)receipt["source_manifest_sha256"]!=manifestHash||
+                    !Sha(receipt["pc_manifest_sha256"])||!Sha(receipt["receipt_sha256"])||
+                    receipt["qc_data_complete"]?.Type!=JTokenType.Boolean||
+                    receipt["qc_failure_count"]?.Type!=JTokenType.Integer||
+                    !long.TryParse(receipt["qc_failure_count"].ToString(),NumberStyles.None,CultureInfo.InvariantCulture,out var failures)||
+                    !Utc(receipt["received_utc"],out var received))return "attention";
+                Token(Text(receipt["pc_bundle_id"]));
+                return failures==0?"received":"attention";
+            }
+            catch(Exception ex) when(ex is InvalidDataException||ex is IOException||ex is UnauthorizedAccessException||ex is JsonException||ex is ArgumentException||ex is InvalidOperationException||ex is FormatException||ex is OverflowException){return "attention";}
+        }
+        static JObject ReadObject(string path)=>ReadObject(File.ReadAllBytes(path));
+        static JObject ReadObject(byte[] bytes)
+        {
+            using(var reader=new JsonTextReader(new StringReader(Utf8.GetString(bytes))){DateParseHandling=DateParseHandling.None})
+            {
+                var value=JObject.Load(reader,new JsonLoadSettings{DuplicatePropertyNameHandling=DuplicatePropertyNameHandling.Error});
+                if(reader.Read())throw new JsonReaderException("Trailing JSON content");
+                return value;
+            }
+        }
+        static string Text(JToken value)=>value?.Type==JTokenType.String?(string)value:null;
+        static bool Identity(JObject value,ParticipantRecord record)=>value!=null&&
+            Text(value["participant_code"])==record.participant_id&&Text(value["session_id"])==record.session_id&&Text(value["run_id"])==record.run_id;
+        static bool Sha(JToken value)
+        {
+            string text=Text(value);return text!=null&&text.Length==64&&text.All(c=>c>='0'&&c<='9'||c>='a'&&c<='f');
+        }
+        static bool Utc(JToken value,out DateTimeOffset parsed)
+        {
+            string text=Text(value);
+            return DateTimeOffset.TryParseExact(text,new[]{"yyyy-MM-dd'T'HH:mm:ss'Z'","yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'","yyyy-MM-dd'T'HH:mm:sszzz","yyyy-MM-dd'T'HH:mm:ss.FFFFFFFzzz"},CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal,out parsed)&&parsed.Offset==TimeSpan.Zero;
+        }
+
         static string SnapshotFiles(string dataRoot,string sourceDirectory,ParticipantRecord record,string reason,string lifecycle,JObject provenance,bool saved,Action verifyRecord)
         {
             var sources=new Dictionary<string,FileStream>();

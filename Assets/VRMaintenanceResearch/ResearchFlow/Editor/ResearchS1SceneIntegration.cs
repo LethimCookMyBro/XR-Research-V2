@@ -41,6 +41,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     copy.name = from.name;
                     copy.SetLocalPositionAndRotation(from.localPosition, from.localRotation); copy.localScale = from.localScale;
                     report.Add(path + " rebound=" + Rebind(from, copy, canonical));
+                    if (copy.name == "ResearchS1TaskB") report.Add(SeatFanOnInspectionTray(copy, canonical));
                 }
                 // The S1 parts replace static environment props (e.g. Computer_TaskCase) that the TEST scene switched off.
                 var shared = source.GetRootGameObjects().First(g => g.name == "Environment_V2").transform;
@@ -62,6 +63,45 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             {
                 if (source.isLoaded) EditorSceneManager.CloseScene(source, true);
             }
+        }
+
+        static string SeatFanOnInspectionTray(Transform fan, Scene scene)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !fan || fan.gameObject.scene != scene)
+                throw new InvalidOperationException("Seat the authored fan only in its stopped Editor scene.");
+            var task = fan.GetComponent<ResearchS1TaskBMechanics>();
+            string before = ResearchS1TaskBBuilder.CheckAuthored(task);
+            var tray = Find(scene, "Environment_V2/Fan/Fan_InspectionTray")?.GetComponent<MeshCollider>();
+            var basis = fan.Find("FAN_PED_BASE");
+            var foot = basis ? basis.GetComponentsInChildren<BoxCollider>().SingleOrDefault(c => c.name == "COL_FAN_PED_BASE_Body") : null;
+            if (!tray || !tray.enabled || !tray.gameObject.activeInHierarchy || !foot || !foot.enabled || !foot.gameObject.activeInHierarchy)
+                throw new InvalidOperationException("Expected the active original tray surface and fan base collider.");
+            Physics.SyncTransforms();
+            var bounds = foot.bounds;
+            float support = float.NaN;
+            for (int x = -1; x <= 1; x++) for (int z = -1; z <= 1; z++)
+            {
+                var origin = new Vector3(bounds.center.x + x * bounds.extents.x * .75f,
+                    tray.bounds.max.y + .1f, bounds.center.z + z * bounds.extents.z * .75f);
+                if (!tray.Raycast(new Ray(origin, Vector3.down), out var hit, .3f) || Vector3.Dot(hit.normal, Vector3.up) < .999f)
+                    throw new InvalidOperationException("Fan footprint lacks a flat upward tray support surface.");
+                if (float.IsNaN(support)) support = hit.point.y;
+                else if (Mathf.Abs(support - hit.point.y) > .0005f)
+                    throw new InvalidOperationException("Fan tray support heights disagree.");
+            }
+            float lift = support - bounds.min.y;
+            if (lift < -.0001f || lift > .05f)
+                throw new InvalidOperationException("Fan support correction is outside the authored 0..50mm lift range.");
+            var original = fan.localPosition;
+            try
+            {
+                if (Mathf.Abs(lift) > .0001f) fan.position += Vector3.up * lift;
+                Physics.SyncTransforms();
+                if (Mathf.Abs(foot.bounds.min.y - support) > .0001f || ResearchS1TaskBBuilder.CheckAuthored(task) != before)
+                    throw new InvalidOperationException("Fan support or authored initial state changed unexpectedly.");
+                return "fan_support_lift_m=" + lift.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch { fan.localPosition = original; Physics.SyncTransforms(); throw; }
         }
 
         // Every object reference in the copy is set to what the source referenced: inside the subtree -> the copied twin,

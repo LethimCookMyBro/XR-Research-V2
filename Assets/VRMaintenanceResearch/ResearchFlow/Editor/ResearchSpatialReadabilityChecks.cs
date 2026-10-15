@@ -16,6 +16,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Unity.XR.CoreUtils;
+using VRMaintenanceResearch.HandsLabQuest3.Logging;
 
 namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
@@ -267,13 +268,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Case("Examine_right_off_view_tries_valid_left", () => ExamineRightAlternative(measurements));
             Case("Examine_both_invalid_hides_and_clears_press", () => ExamineBothInvalid(measurements));
             Case("Examine_info_growth_keeps_visible_full_rect_in_view", () => ExamineInfoGrowth(measurements));
-            Case("Actual_authored_TH_JP_near_far_measurements", () => AuthoredMeasurements(measurements));
+            Case("Actual_authored_TH_JP_near_far_measurements", () => AuthoredMeasurements(measurements, directory));
+            Case("Actual_owned_TEST_TH_JP_Stop_ownership", () => AuthoredMeasurements(measurements, directory, true));
             bool scenePreserved = sceneBefore.IsValid() && SceneManager.GetActiveScene() == sceneBefore && sceneBefore.isDirty == dirtyBefore;
             if (!scenePreserved) failures.Add("Caller active scene/dirty state changed.");
             File.WriteAllText(path, JsonConvert.SerializeObject(new
             {
                 utc = DateTime.UtcNow.ToString("o"), status = failures.Count == 0 ? "PASS" : "FAIL", cases, measurements, failures,
-                setup = "Isolated preview scenes; inactive technical ResearchSessionFlowController with Record=null/no logger, allowed by the existing offline technical guard; explicit actual ResearchExamineTarget.OnEnable/Update/OnPointerDown; disabled synthetic monoscopic Camera; active detached authored View with inactive controller and canonical font donor for TMP measurements.",
+                setup = "Isolated preview scenes; inactive technical ResearchSessionFlowController with Record=null/no logger, allowed by the existing offline technical guard, owned Task clock started; added Stop case uses external TEST registry and actual Active writer; explicit actual ResearchExamineTarget.OnEnable/Update/OnPointerDown; disabled synthetic monoscopic Camera; active detached authored View with inactive controller and canonical font donor for TMP measurements.",
                 scene_before = sceneBefore.path, dirty_before = dirtyBefore, scene_preserved = scenePreserved,
                 measurement_policy = "Reports glyph ink/angular/projected pixel height and physical/angular button targets. No readability threshold or controller rule is inferred from hand guidelines.",
                 synthetic_input = true, native_stereo_aggregate_exercised = false, hardware_verified = false
@@ -351,7 +353,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
         }
 
-        static void AuthoredMeasurements(List<object> measurements)
+        static void AuthoredMeasurements(List<object> measurements, string evidenceDirectory, bool ownedStopSession = false)
         {
             var donor = Resources.FindObjectsOfTypeAll<ResearchFlowView>().FirstOrDefault(v => v.thaiFont && v.japaneseFont && v.englishFont);
             Require(donor, "Load the canonical ResearchFlow scene with TH/JP/EN fonts before authored measurements.");
@@ -374,11 +376,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var camera = head.GetComponent<Camera>(); camera.enabled = false; camera.fieldOfView = 90; camera.aspect = 16f / 9;
                 camera.stereoTargetEye = StereoTargetEyeMask.None; camera.transform.position = new Vector3(100, 1.65f, 100);
                 view.Head = camera.transform;
+                ((ResearchTaskTiming)Field(controller, "taskTiming")).Start(0);
                 foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
                 {
-                    // A fake InProgress record without an Active writer is intentionally invalid.
-                    // Record=null is the existing isolated technical no-session path, not a weakened writer guard.
-                    Set(controller, "Record", null); Set(controller, "SetupLanguage", language);
+                    string ownedPath = Path.Combine(evidenceDirectory, "owned-stop-" + language);
+                    ResearchParticipantRegistry registry = null; ParticipantRecord record = null;
+                    if (ownedStopSession)
+                    {
+                        if (Directory.Exists(ownedPath)) throw new IOException("Fresh owned TEST registry required.");
+                        registry = new ResearchParticipantRegistry(Path.Combine(ownedPath, "registry"));
+                        var created = registry.CreateNext(ParticipantGroup.Test);
+                        record = registry.StartOrResume(created.participant_id, language, ExperimentInputMode.Controller, TaskOrder.AB);
+                    }
+                    using var writer = ownedStopSession ? new HandsLabLogger(Path.Combine(ownedPath, "writer"), "None", "Stopped Editor spatial Stop ownership",
+                        executionEnvironment: "Editor", technicalTest: true, testData: true, runId: record.run_id) : null;
+                    Set(controller, "Registry", registry); Set(controller, "Logger", writer);
+                    Set(controller, "Record", record); Set(controller, "SetupLanguage", language);
+                    Require(!ownedStopSession || writer.State == HandsLabLogState.Active, "Owned Stop fixture requires an actual Active TEST writer.");
                     Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
                     Set(controller, "ReferenceOpen", true); Set(controller, "ReferenceSection", "");
                     view.Refresh(); Canvas.ForceUpdateCanvases();
@@ -432,6 +446,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 measurements.Add(new { name = "examine_info_growth", stage = "before_click", canvas_enabled = fixture.Canvas.enabled,
                     size = new[] { rect.rect.width, rect.rect.height }, full_rect_fits = true, synthetic_input = true,
                     examine_emission_count = examineEmissions, input_source = fixture.Target.controller.InputSourceForPointer(-921177), button = MeasureButton(fixture.Button, fixture.Camera) });
+                Require(((ResearchTaskTiming)Field(fixture.Target.controller, "taskTiming")).CanManipulate,
+                    "Info-growth synthetic task must have started its own clock before acquiring input.");
                 fixture.Target.OnPointerDown(new PointerEventData(null) { pointerId = -921177 });
                 Require(fixture.PendingPresses == 1, "Info growth must start from a genuinely acquired synthetic pointer press.");
                 fixture.Target.OnPointerUp(new PointerEventData(null) { pointerId = -921177 });
@@ -496,21 +512,30 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             var panel = (RectTransform)view.referencePanel.transform;
             var visible = panel.GetComponentsInChildren<Button>(true).Where(b => AuthoredVisible(b.transform, panel)).ToArray();
-            var utilities = visible.Where(b => b.name == "Pause" || b.name == "Minimize" || b.name == "Close").ToArray();
+            var utilities = visible.Where(b => b.name == "Pause" || b.name == "Stop" || b.name == "Minimize" || b.name == "Close").ToArray();
             var tabs = visible.Where(b => b.name.StartsWith("Tab_", StringComparison.Ordinal)).ToArray();
             bool tutorial = context == "Tutorial_integrated_reader";
             Require(tutorial || context == "Task_neutral_choice" || context == "Task_selected_manual", "Unknown separation fixture context.");
-            var expectedUtilities = tutorial ? new[] { "Pause", "Minimize", "Close" } : new[] { "Minimize", "Close" };
+            bool expectStop = view.controller.Record != null;
+            Require(view.controller.ParticipantCanStop == expectStop, "Stop eligibility must match this explicit owned-session fixture.");
+            var expectedUtilities = expectStop ? new[] { "Stop", "Pause", "Minimize", "Close" } : new[] { "Pause", "Minimize", "Close" };
             Require(utilities.Length == expectedUtilities.Length && new HashSet<string>(utilities.Select(b => b.name)).SetEquals(expectedUtilities),
-                "Actual Reference utilities must match the single Pause owner: " + language + "/" + context);
+                "Actual open readable Reference utilities must own Pause and eligible Stop: " + language + "/" + context);
             Require(tabs.Length == 4 && new HashSet<string>(tabs.Select(b => b.GetComponent<ResearchUIAction>().command))
                 .SetEquals(ResearchReferenceScheme.Active.Select(section => "reference_tab." + section)),
                 "All four distinct format identities remain visible, including unavailable formats: " + language + "/" + context);
             var mainPanel = (RectTransform)view.mainPanel.transform;
             var mainPauses = mainPanel.GetComponentsInChildren<Button>(true).Where(b => AuthoredVisible(b.transform, mainPanel)
                 && b.GetComponent<ResearchUIAction>() && b.GetComponent<ResearchUIAction>().command == "pause").ToArray();
-            Require(mainPauses.Length == (tutorial ? 0 : 1) && utilities.Count(b => b.name == "Pause") == (tutorial ? 1 : 0),
+            Require(mainPauses.Length == 0 && utilities.Count(b => b.name == "Pause") == 1,
                 "Only the actual readable owner exposes Pause: " + language + "/" + context);
+            var mainStops = mainPanel.GetComponentsInChildren<Button>(true).Where(b => AuthoredVisible(b.transform, mainPanel)
+                && b.GetComponent<ResearchUIAction>() && b.GetComponent<ResearchUIAction>().command == "stop").ToArray();
+            Require(mainStops.Length == 0 && utilities.Count(b => b.name == "Stop") == (expectStop ? 1 : 0),
+                "Only the actual readable Reader owner exposes eligible Stop; no-session Stop stays absent: " + language + "/" + context);
+            measurements.Add(new { name = "utility_ownership", language = language.ToString(), context, owned_TEST_session = expectStop,
+                main_pause_count = mainPauses.Length, reference_pause_count = utilities.Count(b => b.name == "Pause"),
+                main_stop_count = mainStops.Length, reference_stop_count = utilities.Count(b => b.name == "Stop") });
             foreach (var utility in utilities.Concat(mainPauses))
             {
                 var buttonRect = (RectTransform)utility.transform;
@@ -523,11 +548,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     "Actual visible utility icon exceeds its button bounds: " + language + "/" + context + "/" + utility.name);
                 var caption = utility.transform.Find("Label")?.GetComponent<TMP_Text>();
                 bool pause = utility.GetComponent<ResearchUIAction>().command == "pause";
+                bool stop = utility.GetComponent<ResearchUIAction>().command == "stop";
                 Rect captionBounds = default;
-                if (pause)
+                if (pause || stop)
                 {
                     Require(caption && AuthoredVisible(caption.transform, ownerPanel)
-                        && caption.text == ResearchStrings.Get("action.pause_caption", language.ToString()),
+                        && caption.text == ResearchStrings.Get(stop ? "action.stop_short" : "action.pause_caption", language.ToString()),
                         "The single Pause owner keeps its visible localized caption: " + language + "/" + context);
                     caption.ForceMeshUpdate(true); captionBounds = BoundsInPanel(caption.rectTransform, buttonRect);
                     Require(captionBounds.xMin >= buttonRect.rect.xMin - .5f && captionBounds.xMax <= buttonRect.rect.xMax + .5f
@@ -538,7 +564,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 else Require(!caption || !AuthoredVisible(caption.transform, ownerPanel), "Icon utility retained an unintended active caption: " + utility.name);
                 measurements.Add(new { name = "active_utility_bounds", language = language.ToString(), context, utility = utility.name,
-                    owner_panel = ownerPanel.name, pause_caption = pause ? caption.text : null,
+                    owner_panel = ownerPanel.name, pause_caption = pause ? caption.text : null, stop_caption = stop ? caption.text : null,
                     icon_bounds = new[] { iconBounds.xMin, iconBounds.yMin, iconBounds.xMax, iconBounds.yMax },
                     caption_bounds = pause ? new[] { captionBounds.xMin, captionBounds.yMin, captionBounds.xMax, captionBounds.yMax } : null });
             }
@@ -667,6 +693,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var port = root.AddComponent<ResearchTaskPort>(); port.demoMode = true; port.taskId = "A"; port.SetInteractionAllowed(true);
                 Set(controller, "Record", null); // Existing isolated technical no-session path; no fictional Active writer.
                 Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
+                ((ResearchTaskTiming)Field(controller, "taskTiming")).Start(0);
                 chip = NewObject("ExamineLayoutChip", scene, typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup), typeof(Image), typeof(Button)); chip.SetActive(false);
                 Canvas = chip.GetComponent<Canvas>(); Canvas.renderMode = RenderMode.WorldSpace; Canvas.worldCamera = Camera;
                 chip.transform.localScale = Vector3.one * .001f; Group = chip.GetComponent<CanvasGroup>(); Button = chip.GetComponent<Button>(); Button.targetGraphic = chip.GetComponent<Image>();

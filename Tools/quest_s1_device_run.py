@@ -16,17 +16,20 @@ VrApi log, and at the end pulls the export bundle and runs the PC ingest.
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from quest_profile import Client, ProfileError
 
 HERE = Path(__file__).resolve().parent
 PACKAGE = 'th.ac.tmu.vr.researchflow.quest3.technical'
 SERIAL = os.environ.get('QUEST_SERIAL', '2G0YC5ZHBF00FJ')
 FILES = '/sdcard/Android/data/' + PACKAGE + '/files'
+AAPT = r'C:\Program Files\Unity\Hub\Editor\6000.3.20f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\build-tools\36.0.0\aapt.exe'
 # Plain 'bash' on Windows resolves to WSL (System32), which cannot see D:/ paths; use Git for Windows' bash.
 BASH = os.environ.get('GIT_BASH') or next((str(d / 'bin' / 'bash.exe') for d in Path(shutil.which('git') or '.').resolve().parents if (d / 'bin' / 'bash.exe').exists()), 'bash')
 
@@ -60,32 +63,97 @@ def log(run, event, **values):
     return row
 
 
-def registry_hashes():
-    out = adb('shell', 'cd ' + FILES + ' && find ResearchSessionRegistry -type f -not -path "*/Logs/*" -not -path "*/Exports/*" -not -path "*/ExportQueue/*" -exec sha256sum {} +', check=False)
-    return sorted(out.strip().splitlines())
+def registry_hashes(client):
+    out = client.run('shell', 'sh', '-c', 'cd ' + FILES + ' && find ResearchSessionRegistry -type f -not -path "*/Logs/*" -not -path "*/Exports/*" -not -path "*/ExportQueue/*" -exec sha256sum {} +')
+    rows = sorted(out.splitlines())
+    if not any(row.endswith('  ResearchSessionRegistry/registry.json') for row in rows) or any(not re.fullmatch(r'[a-f0-9]{64}  ResearchSessionRegistry/.+', row) for row in rows):
+        raise ProfileError('Valid registry hash snapshot including registry.json required')
+    return rows
+
+
+def apk_metadata(apk):
+    info = apk.stat()
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
 
 
 def install(apk, run):
     apk = Path(apk)
     expected = hashlib.sha256(apk.read_bytes()).hexdigest()
-    before = registry_hashes()
-    log(run, 'install_begin', apk=str(apk), sha256=expected, registry_files=len(before))
-    out = adb('install', '-r', str(apk))
-    path = adb('shell', 'pm path --user 0 ' + PACKAGE).strip().replace('package:', '')
-    installed = adb('shell', 'sha256sum ' + path).split()[0]
-    after = registry_hashes()
-    ok = installed == expected and before == after
-    log(run, 'install_readback', adb=out.strip()[-40:], installed_sha256=installed, matches=installed == expected, registry_unchanged=before == after)
-    if not ok:
-        raise SystemExit('Install readback failed; stop here.')
-    adb('shell', 'am start -W -n ' + PACKAGE + '/com.unity3d.player.UnityPlayerGameActivity')
-    for _ in range(40):
-        state = researcher('state')
-        if state.get('ok'):
-            log(run, 'launched', identity=state.get('transport_identity'), flow=state['state'].get('flow_state'))
-            return
-        time.sleep(3)
-    raise SystemExit('App did not answer state after launch: ' + str(state.get('error')))
+    source_stat = apk_metadata(apk)
+    try:
+        manifest = subprocess.run([AAPT, 'dump', 'badging', str(apk)], capture_output=True, text=True, timeout=60)
+        if manifest.returncode or re.findall(r"^package: name='([^']+)'", manifest.stdout, re.M) != [PACKAGE]:
+            raise ProfileError('Candidate APK must declare only the exact technical package')
+        client = Client(os.environ.get('ADB', 'adb'), SERIAL, runner=subprocess.run)
+        if client.bound['android_user'] != 0:
+            raise ProfileError('Legacy registry snapshot is User 0 only; no other-profile fallback')
+        users = client.run('shell', 'pm', 'list', 'users').splitlines()
+        user_ids = []
+        for row in users:
+            if row.strip() == 'Users:':
+                continue
+            match = re.fullmatch(r'\s*UserInfo\{(\d+):[^{}\r\n]*\}(?: running)?\s*', row)
+            if not match:
+                raise ProfileError('Android profile inventory unavailable or ambiguous')
+            user_ids.append(match[1])
+        if '0' not in user_ids or len(user_ids) != len(set(user_ids)):
+            raise ProfileError('Android profile inventory unavailable or ambiguous')
+        for user in user_ids:
+            if user != '0' and client.run('shell', 'sh', '-c', 'pm list packages --user ' + user + ' ' + PACKAGE + ' 2>&1'):
+                raise ProfileError('Technical package exists on another profile; its session is unknown, so shared APK replacement is refused')
+        for row in client.run('shell', 'ps', '-A', '-o', 'UID,PID,NAME').splitlines():
+            fields = row.split()
+            if fields and (fields[-1] == PACKAGE or fields[-1].startswith(PACKAGE + ':')) and (len(fields) != 3 or not fields[0].isdigit() or int(fields[0]) // 100000 != 0):
+                raise ProfileError('Technical process on another or unknown profile; shared APK replacement is refused')
+        before = registry_hashes(client)
+        log(run, 'install_begin', apk=str(apk), sha256=expected, registry_files=len(before), identity=client.bound)
+        if hashlib.sha256(apk.read_bytes()).hexdigest() != expected:
+            raise ProfileError('Candidate APK changed after source hash capture')
+        if apk_metadata(apk) != source_stat:
+            raise ProfileError('Candidate APK metadata changed after capture')
+        client.scope_check()
+        state = client.request(dict(command='state'))
+        st = state.get('state') or {}
+        if state.get('ok') is not True or (st.get('headset') or {}).get('user_present') is not False or st.get('flow_state') not in ('ResearcherSetup', 'ParticipantComplete', 'ResearcherSummary'):
+            raise ProfileError('Install refused while wearer presence/session is active or unknown')
+        if st.get('flow_state') == 'ResearcherSetup' and (st.get('session_id') or st.get('run_id')):
+            raise ProfileError('Install refused while a session remains bound at setup')
+        if apk_metadata(apk) != source_stat:
+            raise ProfileError('Candidate APK changed during final live checks')
+        installed_process = subprocess.run([client.adb, '-s', client.serial, 'install', '--user', '0', '-r', str(apk)],
+                                           capture_output=True, text=True, timeout=900)
+        if installed_process.returncode:
+            raise ProfileError('Install failed; no launch sent: ' + (installed_process.stderr or installed_process.stdout))
+        out = installed_process.stdout
+        if client.run('shell', 'am', 'get-current-user') != '0' or client.run('get-serialno') != client.bound['serial'] or client.run('get-state') != 'device' or client.run('shell', 'cat', '/proc/sys/kernel/random/boot_id') != client.bound['boot_id']:
+            raise ProfileError('Device/profile changed after install; no launch sent')
+        paths = client.run('shell', 'pm', 'path', '--user', '0', PACKAGE).splitlines()
+        if len(paths) != 1 or not re.fullmatch(r'package:/data/app/[A-Za-z0-9_~+=/.-]+\.apk', paths[0]):
+            raise ProfileError('Unambiguous installed base APK required; no launch sent')
+        installed = client.run('shell', 'sha256sum', paths[0][8:]).split()[0]
+        after = registry_hashes(client)
+        log(run, 'install_readback', adb=out.strip()[-40:], installed_sha256=installed, matches=installed == expected, registry_unchanged=before == after)
+        if installed != expected or before != after:
+            raise ProfileError('Install readback failed; no launch sent')
+        if client.run('shell', 'am', 'get-current-user') != '0':
+            raise ProfileError('User changed before launch; no launch sent')
+        client.run('shell', 'am', 'start', '--user', '0', '-W', '-n', PACKAGE + '/com.unity3d.player.UnityPlayerGameActivity')
+        last_error = 'No state response'
+        for _ in range(40):
+            try:
+                refreshed = Client(client.adb, SERIAL, runner=subprocess.run)
+                if any(refreshed.bound[key] != client.bound[key] for key in ('serial', 'android_user', 'package', 'uid', 'boot_id')) or refreshed.bound['build_sha256'] != expected:
+                    raise ProfileError('Launched device/profile/build differs from install binding')
+                state = refreshed.request(dict(command='state'))
+                if state.get('ok'):
+                    log(run, 'launched', identity=refreshed.bound, flow=state['state'].get('flow_state'))
+                    return
+            except ProfileError as error:
+                last_error = str(error)
+            time.sleep(3)
+        raise ProfileError('App did not answer bound state after launch: ' + last_error)
+    except (ProfileError, OSError, subprocess.TimeoutExpired) as error:
+        raise SystemExit('QUEST_PROFILE_GUARD: ' + str(error)) from error
 
 
 def render(run, expected_msaa=4):

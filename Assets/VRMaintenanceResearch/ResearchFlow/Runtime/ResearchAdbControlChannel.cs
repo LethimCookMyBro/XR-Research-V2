@@ -288,7 +288,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (error != null) return Fail(error);
             var saved = controller.Registry.List(record.group).Single(r => r.participant_id == id);
             return Ok("amend_reason", new { participant = id, saved.termination_reason, saved.termination_amendments,
-                note = "Re-export with export_saved so the PC copy carries the amended record." });
+                note = "The amended record is queued for the PC automatically." });
         }
 
         object Demo(JObject request)

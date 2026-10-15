@@ -20,6 +20,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 mesh.AddTriangle(i, i + 1, i + 2); mesh.AddTriangle(i, i + 2, i + 3);
             }
             if (kind == "pause") { Line(new Vector2(-6, -11), new Vector2(-6, 11)); Line(new Vector2(6, -11), new Vector2(6, 11)); }
+            else if (kind == "stop")
+            {
+                mesh.AddVert(new Vector2(-10, -10), color, Vector2.zero); mesh.AddVert(new Vector2(-10, 10), color, Vector2.zero);
+                mesh.AddVert(new Vector2(10, 10), color, Vector2.zero); mesh.AddVert(new Vector2(10, -10), color, Vector2.zero);
+                mesh.AddTriangle(0, 1, 2); mesh.AddTriangle(0, 2, 3);
+            }
             else if (kind == "play" || kind == "replay")
             {
                 Line(new Vector2(-7, -11), new Vector2(-7, 11)); Line(new Vector2(-7, 11), new Vector2(11, 0)); Line(new Vector2(11, 0), new Vector2(-7, -11));

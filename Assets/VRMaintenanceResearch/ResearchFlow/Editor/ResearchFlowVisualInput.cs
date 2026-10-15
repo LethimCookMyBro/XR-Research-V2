@@ -40,6 +40,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!Running) throw new InvalidOperationException("Start the visual fixture first.");
             headMotion = new Pose(trackingOffset, Quaternion.Euler(0, yawDegrees, 0)); nextTick = 0; Tick();
         }
+        public static void SetHeadFacing(Vector3 worldTarget)
+        {
+            if (!Running) throw new InvalidOperationException("Start the visual fixture first.");
+            RequireTechnical();
+            var direction = worldTarget - controller.origin.Camera.transform.position;
+            float lengthSquared = direction.sqrMagnitude;
+            if (float.IsNaN(lengthSquared) || float.IsInfinity(lengthSquared) || lengthSquared < 1e-8f)
+                throw new ArgumentException("Head target must define a finite nonzero direction.", nameof(worldTarget));
+            var localRotation = Quaternion.Inverse(trackingSpace.rotation) * Quaternion.LookRotation(direction, trackingSpace.up);
+            var baselineRotation = headLocalRotation * Quaternion.Euler(pose == "workstation" ? 12 : 0, 0, 0);
+            headMotion = new Pose(headMotion.position, localRotation * Quaternion.Inverse(baselineRotation));
+            nextTick = 0; Tick();
+        }
+
         static Pose headMotion = Pose.identity;
 
         public static object Begin(float? syntheticEyeHeight = null)
@@ -146,6 +160,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static void Tick()
         {
             if (!Running || !EditorApplication.isPlaying) return;
+            bool inputBlocked = !Application.isFocused || EditorApplication.isPaused;
+            if (inputBlocked || (controller && controller.Flow?.Paused == true && controller.PauseKind == "application"))
+            {
+                Array.Clear(grips, 0, grips.Length); Array.Clear(triggers, 0, triggers.Length);
+                Array.Clear(thumbsticks, 0, thumbsticks.Length);
+            }
+            if (inputBlocked) return;
             try
             {
                 RequireTechnical();

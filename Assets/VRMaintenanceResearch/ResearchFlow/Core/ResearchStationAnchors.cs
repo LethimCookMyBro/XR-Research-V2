@@ -16,16 +16,15 @@ namespace VRMaintenanceResearch.ResearchFlow
     ///
     /// Each station stands 0.30 m behind a bench that runs 1.40 m deep, so the earlier head-relative spot (±20°, 1.2 m) landed over the
     /// back of the bench, behind the case/fan; the scene sweep (batch3-merge-evidence/anchor_pair_sweep*.txt) found it rejected for
-    /// most eye heights. These base poses come from that sweep over eye heights 1.0-1.95 m: each pose (with its raise/step-back ladder)
-    /// clears the bench colliders, is not hidden by scene renderers, does not hide the work area, and the Task and Reader slates do
-    /// not overlap from the station point. The Computer Task slate has a second, wider pose because the case and its parked side panel
+    /// most eye heights. That nominal-size sweep does not prove clearance for every rendered UI state; runtime guards remain authoritative.
+    /// The Fan Reader uses the full 1180x896 shell fixture, with a 1.6 m elevation floor relative to the station to clear the bench. The Computer Task slate has a second, wider pose because the case and its parked side panel
     /// hide the 30° pose from eyes below ~1.6 m. Task brief stays right and the Reader left at every station.
     /// Task A P/Q only permute option parts among the same authored seats (ResearchS1TaskAMechanics.ApplyLayout), so both layouts share
     /// one table footprint and one anchor set; the layout is still part of the anchor id and must be P or Q at the Computer station.
     /// </summary>
     public static class ResearchStationAnchors
     {
-        public const string Version = "S1_STATION_ANCHORS_20261015_SCENE_FIT";
+        public const string Version = "S1_STATION_ANCHORS_20261015_FAN_TASK_FALLBACK";
         public const int TrainingStation = 0, ComputerStation = 1, FanStation = 2;
         public const double MinEyeHeight = 1.0, MaxEyeHeight = 1.95, DefaultEyeHeight = 1.6;
 
@@ -35,13 +34,14 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             new[] { new Base(20, 1.4, .1) },
             new[] { new Base(30, 1.8, .1), new Base(55, 1.8, .1) },
-            new[] { new Base(30, 1.4, 0) },
+            // Keep the calibrated poses first; the low-eye actual-shell sweep clears the Fan with the added .6 m base.
+            new[] { new Base(30, 1.4, 0), new Base(30, 1.4, .6) },
         };
         static readonly Base[][] ReaderBases =
         {
             new[] { new Base(-20, 1.8, 0) },
             new[] { new Base(-20, 1.5, .1) },
-            new[] { new Base(-35, 1.3, .1) },
+            new[] { new Base(-35, 1.9, 0) },
         };
         // Bounded clearance ladder per base: raise, then step back, then both. Never toward the head and never to the other side.
         static readonly (double up, double scale)[] Ladder = { (0, 1), (.3, 1), (0, 1.15), (.3, 1.15) };
@@ -71,7 +71,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             double right = Math.Sin(angle) * b.Distance * scale, forward = Math.Cos(angle) * b.Distance * scale;
             pose.X = stationX + rx * right + fx * forward;
             pose.Z = stationZ + rz * right + fz * forward;
-            pose.Y = stationY + eye + b.Up + up;
+            // Keep the full Fan Reader above the bench for seated calibration; never change the measured eye height.
+            double panelHeight = station == FanStation && panelId == "reference" ? Math.Max(eye, 1.6) : eye;
+            pose.Y = stationY + panelHeight + b.Up + up;
             // Upright slate facing away from the station point, matching ResearchPanelMotion's horizontal LookRotation(head -> panel).
             double dx = pose.X - stationX, dz = pose.Z - stationZ;
             pose.YawDegrees = Math.Atan2(dx, dz) * 180 / Math.PI;

@@ -16,6 +16,7 @@ AUTHORITY = PACKAGE + '.quest-profile'
 KEYS = ('serial', 'android_user', 'package', 'uid', 'pid', 'process_start_ticks', 'boot_id', 'build_sha256', 'apk_path', 'foreground_activity')
 NATIVE_KEYS = tuple(k for k in KEYS if k not in ('serial', 'foreground_activity'))
 EXPORT_FILES = ('manifest.json', 'COMPLETE.json', 'raw/events.jsonl', 'raw/movement.csv', 'raw/session_metadata.json', 'raw/research-session.json')
+RESPONSE_WAIT_SECONDS = 120
 
 
 class ProfileError(ConnectionError):
@@ -207,7 +208,8 @@ class Client:
                        deadline_elapsed_ms=identity['elapsed_ms'] + 15000)
         self.request_log.append(dict(method=body.get('command'), request_id=request['request_id'], binding=binding))
         self.call('dispatch', request)
-        until = time.monotonic() + 15
+        # The device accepts a request only within 15 s; the reply can take longer while a large export snapshot is written.
+        until = time.monotonic() + RESPONSE_WAIT_SECONDS
         while time.monotonic() < until:
             response = self.call('response', arg=request['request_id'])
             if response:

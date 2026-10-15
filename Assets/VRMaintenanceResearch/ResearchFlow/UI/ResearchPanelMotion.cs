@@ -233,7 +233,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (!found)
             {
-                if (!PlacementBlocked) view.controller?.Log("PANEL_PLACEMENT", panelId, "Blocked", source: "System", inputSource: input, reason: pendingReason + ":" + LastRejection);
+                if (!PlacementBlocked) view.controller?.Log("PANEL_PLACEMENT", panelId, "Blocked", after: anchorFallback != null ? new { anchor_rejection = anchorFallback } : null,
+                    source: "System", inputSource: input, reason: pendingReason + ":" + LastRejection);
                 nextBlockedRetry = Mathf.Max(nextBlockedRetry, Time.unscaledTime + .5f);
                 faceHidden = false; SetPlacementBlocked(true);
                 if (pendingOnlyIfNeeded && LastRejection.StartsWith("viewport:", System.StringComparison.Ordinal))

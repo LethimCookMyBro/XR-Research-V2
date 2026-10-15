@@ -143,6 +143,54 @@ public final class QuestProfileProvider extends ContentProvider {
         return job;
     }
 
+    private static void validateReceipt(JSONObject receipt, JSONObject job, String manifestHash) throws Exception {
+        String[] strings = {"schema_version", "bundle_id", "participant_code", "session_id", "run_id", "source_manifest_sha256", "pc_bundle_id", "pc_manifest_sha256", "receipt_sha256", "received_utc"};
+        if (receipt.length() != strings.length + 2) throw new SecurityException("Unexpected receipt fields");
+        for (String key : strings) if (!(receipt.get(key) instanceof String)) throw new SecurityException("Receipt string required: " + key);
+        if (!"researchflow.pc-receipt.1".equals(receipt.getString("schema_version"))) throw new SecurityException("Unsupported PC receipt");
+        for (String key : new String[]{"bundle_id", "participant_code", "session_id", "run_id"})
+            if (!job.getString(key).equals(receipt.getString(key))) throw new SecurityException("Receipt identity mismatch: " + key);
+        for (String key : new String[]{"source_manifest_sha256", "pc_manifest_sha256", "receipt_sha256"})
+            if (!receipt.getString(key).matches("[0-9a-f]{64}")) throw new SecurityException("Receipt SHA-256 required");
+        if (!manifestHash.equals(receipt.getString("source_manifest_sha256"))) throw new SecurityException("Receipt source manifest mismatch");
+        token(receipt.getString("pc_bundle_id"));
+        String received = receipt.getString("received_utc");
+        if (!received.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z")) throw new SecurityException("UTC receipt timestamp required");
+        java.time.Instant.parse(received);
+        Object count = receipt.get("qc_failure_count");
+        if (!(receipt.get("qc_data_complete") instanceof Boolean) || !(count instanceof Integer || count instanceof Long)
+            || ((Number)count).longValue() < 0 || ((Number)count).longValue() > Integer.MAX_VALUE)
+            throw new SecurityException("Typed QC outcome required");
+        if (receipt.getBoolean("qc_data_complete") && ((Number)count).longValue() != 0) throw new SecurityException("Contradictory QC outcome");
+    }
+
+    private JSONObject acknowledgeDelivery(JSONObject request) throws Exception {
+        String registry = request.getString("registry"), bundle = token(request.getString("bundle_id"));
+        JSONObject queued = job(registry, bundle), receipt = request.getJSONObject("receipt");
+        String manifestHash = hash(child(root(registry), "Exports/" + bundle + "/manifest.json"));
+        validateReceipt(receipt, queued, manifestHash);
+        File directory = child(root(registry), "ExportReceipts");
+        if (!directory.isDirectory() && !directory.mkdirs()) throw new SecurityException("Receipt directory unavailable");
+        File target = child(directory, bundle + ".json");
+        android.util.AtomicFile file = new android.util.AtomicFile(target);
+        if (target.isFile()) {
+            JSONObject previous = new JSONObject(text(target, 16384));
+            validateReceipt(previous, queued, manifestHash);
+            java.util.Iterator<String> keys = receipt.keys();
+            while (keys.hasNext()) { String key = keys.next(); if (!receipt.get(key).equals(previous.get(key))) throw new SecurityException("Conflicting immutable PC receipt"); }
+        } else {
+            FileOutputStream stream = null;
+            try {
+                stream = file.startWrite(); stream.write(receipt.toString().getBytes(StandardCharsets.UTF_8));
+                validate(request); file.finishWrite(stream); stream = null;
+            } finally { if (stream != null) file.failWrite(stream); }
+        }
+        JSONObject saved = new JSONObject(text(target, 16384));
+        validateReceipt(saved, queued, manifestHash);
+        if (!saved.getString("receipt_sha256").equals(receipt.getString("receipt_sha256"))) throw new SecurityException("Receipt readback mismatch");
+        return new JSONObject().put("status", "received_on_device").put("bundle_id", bundle).put("receipt_sha256", saved.getString("receipt_sha256"));
+    }
+
     @Override public synchronized Bundle call(String method, String arg, Bundle extras) {
         JSONObject result = new JSONObject();
         try {
@@ -190,6 +238,8 @@ public final class QuestProfileProvider extends ContentProvider {
                         jobs.put(job(registry, bundle));
                     }
                     data = jobs;
+                } else if ("delivery_ack".equals(method)) {
+                    data = acknowledgeDelivery(request);
                 } else if ("read_grant".equals(method)) {
                     String registry = request.getString("registry"), bundle = request.getString("bundle"), name = request.getString("name");
                     job(registry, bundle);

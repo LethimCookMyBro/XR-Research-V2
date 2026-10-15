@@ -240,6 +240,7 @@ class ExportChecks(unittest.TestCase):
                 def scoped(self,method,**params):
                     self.request_log.append(dict(method=method,request_id='fixture-queue-request',binding=dict(self.bound)))
                     if method=='queues':return [job]
+                    if method=='delivery_ack':return dict(status='received_on_device',bundle_id=params['bundle_id'],receipt_sha256=params['receipt']['receipt_sha256'])
                     raise AssertionError(method)
                 def read(self,registry,bundle,name,target):
                     self.request_log.append(dict(method='read_grant',request_id='fixture-'+name.replace('/','_'),binding=dict(self.bound)))
@@ -578,6 +579,7 @@ class PullResumeChecks(unittest.TestCase):
                 owner.scope_checks+=1
                 if owner.scope_checks==owner.fail_scope_at:raise ConnectionError('fixture scope lost')
             def scoped(self,method,**params):
+                if method=='delivery_ack':return dict(status='received_on_device',bundle_id=params['bundle_id'],receipt_sha256=params['receipt']['receipt_sha256'])
                 owner.assertEqual((method,params),('queues',dict(registry='main')))
                 self.request_log.append(dict(method=method,binding=dict(self.bound)))
                 return [owner.job]

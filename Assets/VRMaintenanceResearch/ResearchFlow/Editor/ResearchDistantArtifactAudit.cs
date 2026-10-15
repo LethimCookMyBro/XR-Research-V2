@@ -307,6 +307,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     {   // Control: the unjittered pose rendered again must match frame 0, otherwise "flicker" is renderer noise.
                         Pose(0); var again = Read(colorRt);
                         for (int p = 0; p < n; p++) if (Mathf.Abs((.2126f * again[p].r + .7152f * again[p].g + .0722f * again[p].b) / 255f - lum0[p]) > .02f) repeatDiff++;
+                        if (images)
+                        {
+                            var control = new Texture2D(w, h, TextureFormat.RGBA32, false);
+                            try
+                            {
+                                control.SetPixels32(again);
+                                File.WriteAllBytes(Path.Combine(Directory.CreateDirectory(Output).FullName, view + "_repeat_control.png"), control.EncodeToPNG());
+                            }
+                            finally { UnityEngine.Object.DestroyImmediate(control); }
+                        }
                     }
                     if (images && (f == 0 || temporalImages))
                     {
@@ -367,6 +377,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 throw new InvalidOperationException("Capture dirtied the scene; reload refused to preserve caller state.");
             string reload = scene.isDirty ? ResearchVisualQualityPass.ReloadActiveSceneFromDisk() : "scene stayed clean";
 
+            if (repeatDiff != 0)
+            {
+                string invalid = Write(view + "_invalid-repeat-control.json", new
+                {
+                    status = "INVALID_REPEAT_CONTROL", view, scale, msaa, shadows, frames,
+                    eye_size = new[] { w, h }, repeat_render_diff_px = repeatDiff, repeat_control_luma_threshold = .02f,
+                    reload, hardware_verified = false,
+                    reason = "Same unjittered pose differs from frame00; capture startup/render instability cannot be attributed to head-motion flicker.",
+                    repeat_control_image = images ? Path.GetFullPath(Path.Combine(Output, view + "_repeat_control.png")) : null,
+                    metrics_emitted = false
+                });
+                throw new InvalidOperationException("DISTANT_CAPTURE_INVALID_REPEAT_CONTROL " + invalid);
+            }
+
             // Per-pixel classification and per-renderer attribution.
             const float Threshold = .06f;
             var geometry = new int[renderers.Length + 1]; var surface = new int[renderers.Length + 1]; var thin = new int[renderers.Length + 1];
@@ -410,13 +434,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             object Row(int id) => new
             {
                 path = PathOf(renderers[id - 1].transform), material = renderers[id - 1].sharedMaterial ? renderers[id - 1].sharedMaterial.name : null,
-                mesh = renderers[id - 1].GetComponent<MeshFilter>()?.sharedMesh?.name, distance_m = (float)Math.Round(distance[id], 1), pixels = cov0[id],
+                mesh = renderers[id - 1] is SkinnedMeshRenderer skinned ? skinned.sharedMesh?.name : renderers[id - 1].GetComponent<MeshFilter>().sharedMesh?.name, distance_m = (float)Math.Round(distance[id], 1), pixels = cov0[id],
                 geometry_flicker_px = geometry[id], surface_flicker_px = surface[id], one_px_wide_fraction = cov0[id] == 0 ? 0 : (float)Math.Round((double)thin[id] / cov0[id], 3),
                 mask_iou = (float)Math.Round(iouSum[id] / (frames - 1), 3)
             };
             var visible = Enumerable.Range(1, renderers.Length).Where(id => cov0[id] > 0).ToArray();
             return Write(view + "_s" + scale.ToString("F2") + "_msaa" + msaa + (shadows ? "" : "_noshadow") + ".json", new
             {
+                status = "VALID_REPEAT_CONTROL", repeat_control_luma_threshold = .02f,
                 view, eye = F(eye), look = F(look * Vector3.forward), scale, eye_size = new[] { w, h }, msaa, shadows, frames, jitter_deg = jitter, jitter_mm = 1, threshold = Threshold,
                 quality = "Medium (Android default)", reload, hardware_verified = false,
                 totals = new { pixels = n, repeat_render_diff_px = repeatDiff, geometry_flicker_px = geometryTotal, surface_flicker_px = surfaceTotal, far_pixels = farPixels, far_geometry_flicker_px = farGeometry, far_surface_flicker_px = farSurface,

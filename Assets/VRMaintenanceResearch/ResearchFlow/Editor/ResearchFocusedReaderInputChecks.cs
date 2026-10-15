@@ -51,6 +51,165 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
         static bool Same(float[] before, float[] after) => before.Length == after.Length && before.Zip(after, (a, b) => Mathf.Abs(a - b)).All(d => d < .001f);
 
+        public static string RunProduction(string evidenceDirectory)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !ResearchFloorPolicy.EditorFixtureAllowed)
+                throw new InvalidOperationException("Stopped Editor without XR required.");
+            string dir = Path.GetFullPath(evidenceDirectory), project = Path.GetFullPath(Path.Combine(Application.dataPath, "..")).TrimEnd(Path.DirectorySeparatorChar);
+            if (!Path.IsPathRooted(evidenceDirectory) || Directory.Exists(dir) || File.Exists(dir) || dir.Equals(project, StringComparison.OrdinalIgnoreCase) || dir.StartsWith(project + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new IOException("Fresh absolute external evidence directory required.");
+            var donor = Resources.FindObjectsOfTypeAll<ResearchFlowView>().FirstOrDefault(v => v.thaiFont && v.japaneseFont && v.englishFont);
+            if (!donor) throw new InvalidOperationException("Authored TH/JA/EN font donor required.");
+            var ownedType = typeof(ResearchParticipantSafetyChecks).GetNestedType("Owned", BindingFlags.NonPublic);
+            const BindingFlags all = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            T Get<T>(object o, string n) => (T)o.GetType().GetField(n, all).GetValue(o);
+            object Call(object o, string n, params object[] args) => o.GetType().GetMethod(n, all).Invoke(o, args);
+            string Hash(byte[] bytes) { using (var sha = System.Security.Cryptography.SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant(); }
+            var caller = SceneManager.GetActiveScene(); bool dirty = caller.isDirty; int previews = EditorSceneManager.previewSceneCount;
+            var priorEvents = EventSystem.current;
+            var cursors = Resources.FindObjectsOfTypeAll<Oculus.Interaction.RayInteractorCursorVisual>().ToDictionary(c => c, c => c.HoverColor);
+            var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>(); var callbackErrors = new List<string>();
+            void Check(bool pass, string name, object data) { rows.Add(new { name, pass, data }); if (!pass) failures.Add(name); }
+            Application.LogCallback onLog = (message, stack, kind) => { if (kind == LogType.Error || kind == LogType.Exception) callbackErrors.Add(message + "\n" + stack); };
+            var frozenHashes = new Dictionary<string,string> {
+                { "ResearchReaderS1/A_th/package", "e283cffb1f68914981aed637b9657bfc9c9204bcb81b773a267aabfd2cb8616f" },
+                { "ResearchReaderS1/A_ja/package", "cee12b728350f4c0f24d7c9adf962ed440b9d8b3c9b3e2c43d24c8f5dcd0b70b" },
+                { "ResearchReaderS1/B_th/package", "347481af70e25cbbd31ba2d08f46bf5e10d2d47d15f4e559f460f421a4bb7ac6" },
+                { "ResearchReaderS1/B_ja/package", "b0c28cad2d4722f8d4f2486c17704f6ab6165f2d540c514ebb35c74d7960d313" }
+            };
+            Directory.CreateDirectory(dir); Application.logMessageReceived += onLog;
+            try
+            {
+                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
+                foreach (var task in new[] { "A", "B" })
+                {
+                    object owned = null; string prefix = language + "/" + task;
+                    try
+                    {
+                        owned = Activator.CreateInstance(ownedType, all, null, new object[] { Path.Combine(dir, language + "_" + task), donor, language }, null);
+                        var c = Get<ResearchSessionFlowController>(owned, "Controller"); var view = Get<ResearchFlowView>(owned, "View");
+                        if (task == "B") Call(owned, "Seed", ResearchFlowState.Task2Ready, 5, (bool?)null);
+                        void Click(string command) { Call(owned, "Click", (ResearchUIAction)Call(owned, "Action", command, null), 1); }
+                        Click("task_start"); Click("task_start_confirm");
+                        var timing = Get<ResearchTaskTiming>(c, "taskTiming");
+                        Check(c.Flow.CurrentTask == task && c.Flow.IsTaskActive && timing.Started && !timing.Ended && c.Logger.State == HandsLabQuest3.Logging.HandsLabLogState.Active,
+                            prefix + "/real start-confirm clock and owned active writer", new { c.Flow.CurrentTask, timing.Started, timing.Ended, c.Record.participant_id, c.Record.run_id });
+                        if (!timing.Started || timing.Ended || c.Flow.CurrentTask != task) throw new InvalidOperationException("Actual task start precondition failed.");
+                        string identity = c.Record.participant_id + ":" + c.Record.session_id + ":" + c.Record.run_id;
+                        Click("reference");
+                        var viewer = view.ReferenceViewer; var scroll = Field<ScrollRect>(view, "scroll");
+                        void Flush() { Call(owned, "Refresh"); Canvas.ForceUpdateCanvases(); ScrollLateUpdate(scroll); Call(viewer, "Update"); Canvas.ForceUpdateCanvases(); }
+                        Newtonsoft.Json.Linq.JObject Meta() => Newtonsoft.Json.Linq.JObject.FromObject(viewer.Metadata);
+                        Newtonsoft.Json.Linq.JObject[] Events()
+                        {
+                            using (var reader = new StreamReader(new FileStream(c.Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                                return reader.ReadToEnd().Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(Newtonsoft.Json.Linq.JObject.Parse).ToArray();
+                        }
+                        void CaptureStage(string stage) => Call(owned, "Capture", stage, view.referencePanel, captures, rows);
+                        Flush();
+                        var pose = view.referencePanel.transform.position; var rotation = view.referencePanel.transform.rotation; var frame = Frame(view);
+                        string resource = "ResearchReaderS1/" + task + "_" + (language == ParticipantLanguage.Thai ? "th" : "ja") + "/package";
+                        var asset = Resources.Load<TextAsset>(resource);
+                        if (!asset || !frozenHashes.TryGetValue(resource, out var expectedHash) || Hash(asset.bytes) != expectedHash) throw new InvalidOperationException("Current production package differs from frozen fixture: " + resource);
+                        var package = Newtonsoft.Json.Linq.JObject.Parse(asset.text);
+                        string expectedId = "s1.reader." + task + "." + (language == ParticipantLanguage.Thai ? "th" : "ja");
+                        Check(c.ReaderResource == resource && viewer.BoundRegistryResource == resource && (string)package["content_id"] == expectedId && (string)package["approval"] == "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+                            prefix + "/actual S1 package selected, no DEMO substitution", new { resource, expectedHash, expectedId, approval = (string)package["approval"] });
+                        Check(new[] { "user_manual", "step_by_step", "illustrated", "video" }.All(c.ReferenceAvailable), prefix + "/all four current formats available", resource);
+                        var pointer = new PointerEventData(Get<EventSystem>(owned, "eventSystem")) { pointerId = Owner, button = PointerEventData.InputButton.Left };
+                        var other = new PointerEventData(Get<EventSystem>(owned, "eventSystem")) { pointerId = Other, button = PointerEventData.InputButton.Left };
+                        float pdfOffset = 1, pdfHorizontal = .5f; int pdfPage = 1;
+                        foreach (string format in new[] { "user_manual", "step_by_step", "illustrated", "video" })
+                        {
+                            int before = Events().Length;
+                            Click("reference_tab." + format); Flush();
+                            var meta = Meta(); var events = Events().Skip(before).ToArray();
+                            Check(c.ReferenceOpen && c.ReferenceSection == format && viewer.BoundSection == format && viewer.BoundRegistryResource == resource && (string)meta["content_id"] == expectedId
+                                && (string)meta["version"] == (string)package["version"] && (string)meta["registry_sha256"] == expectedHash,
+                                prefix + "/" + format + "/real pointer selection binds exact package", meta);
+                            var selected = events.SingleOrDefault(e => (string)e["event"] == "INFORMATION_FORMAT_SELECTED");
+                            Check(selected != null && (string)selected["task_id"] == task && (string)selected["after"]?["language"] == language.ToString()
+                                && (bool?)selected["after"]?["deliberate"] == true && (bool?)selected["after"]?["incoming_binding_pending"] == true && selected["after"]?["viewer"] == null,
+                                prefix + "/" + format + "/selection logged as intent, not false incoming exposure", selected);
+                            Check(events.Any(e => (string)e["event"] == "REFERENCE_VIEWER_BOUND" && (string)e["after"]?["content_id"] == expectedId),
+                                prefix + "/" + format + "/materialized binding logged", events.Where(e => (string)e["event"] == "REFERENCE_VIEWER_BOUND").ToArray());
+                            if (format == "video")
+                            {
+                                string video = Path.Combine(Application.streamingAssetsPath, (string)package["video"]?["streaming_path"]);
+                                Check(File.Exists(video) && Hash(File.ReadAllBytes(video)) == (string)package["video"]?["sha256"], prefix + "/video/current source bytes verified", new { video, sha256 = (string)package["video"]?["sha256"] });
+                                Check(viewer.Status == "Loading" && !viewer.IsReady && viewer.DecodedFrameCount == 0 && !events.Any(e => (string)e["event"] == "INFORMATION_OPEN"),
+                                    prefix + "/video/stopped Editor does not claim decoded reading", meta);
+                                CaptureStage("video_loading_not_native_playback");
+                                continue;
+                            }
+                            int expectedCount = ((Newtonsoft.Json.Linq.JArray)package[format == "user_manual" ? "pages" : format == "step_by_step" ? "steps" : "images"]).Count;
+                            Check(viewer.IsReady && viewer.PageCount == expectedCount && events.Any(e => (string)e["event"] == "INFORMATION_OPEN" && (string)e["after"]?["viewer"]?["content_id"] == expectedId),
+                                prefix + "/" + format + "/actual current content count and exposure", new { viewer.PageCount, expectedCount, viewer.IsReady, events });
+                            CaptureStage(format + "_first");
+                            if (format == "user_manual")
+                            {
+                                var focus = view.referencePanel.GetComponent<ResearchSlateFocus>();
+                                scroll.verticalNormalizedPosition = 1; Flush(); float top = scroll.verticalNormalizedPosition;
+                                focus.Scroll(-1, .6f); Flush(); Check(Mathf.Abs(scroll.verticalNormalizedPosition - top) < .001f, prefix + "/PDF/unfocused consumer does not scroll", scroll.verticalNormalizedPosition);
+                                focus.OnPointerEnter(pointer); focus.OnPointerExit(other);
+                                foreach (var invalid in new[] { (.1f,.6f), (float.NaN,.6f), (float.PositiveInfinity,.6f), (-1f,0f), (-1f,float.NaN) }) focus.Scroll(invalid.Item1, invalid.Item2);
+                                Flush(); Check(focus.Focused && Mathf.Abs(scroll.verticalNormalizedPosition - top) < .001f, prefix + "/PDF/ownership deadzone invalid axis guards", scroll.verticalNormalizedPosition);
+                                focus.Scroll(-1, .6f); Flush(); Check(scroll.verticalNormalizedPosition < top - .001f, prefix + "/PDF/focused actual consumer scrolls", scroll.verticalNormalizedPosition);
+                                focus.OnPointerExit(pointer);
+                                float boundaryDelta = (scroll.content.rect.height / viewer.PageCount + scroll.viewport.rect.height) / Mathf.Max(.001f, scroll.scrollSensitivity);
+                                // Same-frame LateUpdate, as in the player loop; Flush's Refresh+canvas rebuild would otherwise reset the ScrollRect's previous position first.
+                                pointer.scrollDelta = new Vector2(0, -boundaryDelta); ExecuteEvents.Execute(scroll.gameObject, pointer, ExecuteEvents.scrollHandler); ScrollLateUpdate(scroll); Flush();
+                                Check(scroll.verticalNormalizedPosition < .999f && viewer.PageIndex > 1, prefix + "/PDF/actual ScrollRect callback changes page", Meta());
+                                int pageBeforeZoom = viewer.PageIndex; Click("reference_media.zoom_in"); Flush();
+                                Check(Mathf.Abs((float)Meta()["pdf_zoom"] - 1.25f) < .001f && viewer.PageIndex == pageBeforeZoom, prefix + "/PDF/actual zoom pointer grows while retaining page", Meta());
+                                Click("reference_media.pan_right"); Flush();
+                                pdfOffset = scroll.verticalNormalizedPosition; pdfHorizontal = scroll.horizontalNormalizedPosition; pdfPage = viewer.PageIndex;
+                                Check(Events().Any(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED" && (string)e["task_id"] == task), prefix + "/PDF/actual view change event", Events().Where(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED").ToArray());
+                                CaptureStage("PDF_scrolled_zoomed");
+                            }
+                            else
+                            {
+                                int steps = 0;
+                                while (viewer.CanNext && steps++ < 128) { Click("reference_next"); Flush(); }
+                                Check(!viewer.CanNext && viewer.PageIndex == expectedCount && steps < 128, prefix + "/" + format + "/all authored pages and caption parts reachable", Meta());
+                                Check(!view.LocalCommand("reference_next", "None"), prefix + "/" + format + "/end boundary rejects no-op", Meta());
+                                CaptureStage(format + "_last");
+                            }
+                            Check(Vector3.Distance(pose, view.referencePanel.transform.position) < .001f && Quaternion.Angle(rotation, view.referencePanel.transform.rotation) < .001f && Same(frame, Frame(view)),
+                                prefix + "/" + format + "/fixed shell and pose retained", new { before = frame, after = Frame(view) });
+                        }
+                        Click("reference_tab.user_manual"); Flush();
+                        Check(viewer.PageIndex == pdfPage && Mathf.Abs(scroll.verticalNormalizedPosition - pdfOffset) < .001f && Mathf.Abs(scroll.horizontalNormalizedPosition - pdfHorizontal) < .001f
+                            && Mathf.Abs((float)Meta()["pdf_zoom"] - 1.25f) < .001f, prefix + "/PDF/format return retains page scroll zoom pan", Meta());
+                        Click("reference_close"); Click("reference"); Flush();
+                        Check(c.ReferenceOpen && viewer.BoundSection == "user_manual" && viewer.PageIndex == pdfPage && Mathf.Abs(scroll.verticalNormalizedPosition - pdfOffset) < .001f
+                            && Mathf.Abs((float)Meta()["pdf_zoom"] - 1.25f) < .001f, prefix + "/PDF/close-reopen retains progress", Meta());
+                        Check(Vector3.Distance(pose, view.referencePanel.transform.position) < .001f && Quaternion.Angle(rotation, view.referencePanel.transform.rotation) < .001f,
+                            prefix + "/fixed panel close-reopen retains pose", view.referencePanel.Pose());
+                        Check(c.Command("pause", "None") && c.Flow.Paused, prefix + "/actual pause accepted", c.Flow.Paused);
+                        float paused = scroll.verticalNormalizedPosition; var slate = view.referencePanel.GetComponent<ResearchSlateFocus>(); slate.OnPointerEnter(pointer); slate.Scroll(-1, .6f);
+                        Check(!view.LocalCommand("reference_media.zoom_in", "None") && !view.LocalCommand("reference_next", "None") && Mathf.Abs(scroll.verticalNormalizedPosition - paused) < .001f,
+                            prefix + "/paused input guards preserve document", Meta());
+                        Check(identity == c.Record.participant_id + ":" + c.Record.session_id + ":" + c.Record.run_id && c.Registry.List(ParticipantGroup.Test).Count == 1
+                            && !timing.Ended && Events().Count(e => (string)e["event"] == "TASK_STARTED") == 1
+                            && !Events().Any(e => (string)e["event"] == "INSPECT_PASS" || (string)e["event"] == "TASK_COMPLETED"),
+                            prefix + "/single owned task no scoring or fabricated completion", new { identity, eventsPath = c.Logger.EventsPath });
+                        failures.AddRange(Get<List<string>>(owned, "TextOverflows").Select(v => prefix + "/" + v));
+                    }
+                    catch (Exception e) { Check(false, prefix + "/execution", (e is TargetInvocationException wrapped && wrapped.InnerException != null ? wrapped.InnerException : e).ToString()); }
+                    finally { (owned as IDisposable)?.Dispose(); }
+                }
+            }
+            finally { Application.logMessageReceived -= onLog; foreach (var cursor in cursors) if (cursor.Key) cursor.Key.HoverColor = cursor.Value; }
+            Check(callbackErrors.Count == 0, "no swallowed Unity callback exceptions", callbackErrors);
+            Check(SceneManager.GetActiveScene() == caller && caller.isDirty == dirty && EditorSceneManager.previewSceneCount == previews && EventSystem.current == priorEvents, "caller scene dirty previews EventSystem preserved", new { dirty, previews });
+            string report = Path.Combine(dir, "reader-production.json");
+            File.WriteAllText(report, JsonConvert.SerializeObject(new { rows, captures, failures, pass = failures.Count == 0, frozenHashes,
+                scope = "Current production-path S1 engineering-draft packages A/B TH/JA on existing Safety.Owned. Registry/clock/writer real in owned TEST fixture; Task2Ready and training credits seeded, actual start-confirm and media pointer callbacks. Actual mono pixels and existing TMP overflow checks. Consumer focus/ScrollRect callbacks not native SDK acquisition. Video source hash and loading only; decoded frames/audio/play/pause/seek/end require separately guarded native Play/Quest. No study/language/wearer approval, no whole workflow completion." }, Formatting.Indented));
+            if (failures.Count != 0) throw new InvalidOperationException("READER_PRODUCTION_FAIL " + report);
+            return "READER_PRODUCTION_PASS " + report;
+        }
+
         public static string Run(string evidenceDirectory)
         {
             if (EditorApplication.isPlaying || !ResearchFloorPolicy.EditorFixtureAllowed)

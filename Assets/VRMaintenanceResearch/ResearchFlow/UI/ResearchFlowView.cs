@@ -206,7 +206,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly Vector2 ReferencePillSize = new Vector2(300, 76);
         static readonly Vector2 RecoveryButtonSize = new Vector2(360, 80);
         TMP_Text sectionHeading, waitingLabel, arrivalLabel, pageLabel, safetyLabel, tutorialProgress;
-        Button helpUtility;
+        Button helpUtility, stopUtility;
         bool mainPauseEligible;
         // Tutorial coach: one current action, animated control demo, reserved success line, practice-object rings.
         RectTransform tutorialDemo, tutorialSuccess, illustratedInstruction;
@@ -234,7 +234,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         Button previousPage, nextPage;
         RectTransform technicalOptions, technicalRows;
         ResearcherSetupView questSetup;
-        Button operatorEntry;
+        Button operatorEntry, technicalDetails;
+        bool setupDetailsRequested, setupDetailsVisible;
         TMP_Text setupBrand;
         TrainingRoundedGraphic taskToolbarSurface;
         CanvasGroup arrivalGroup;
@@ -725,6 +726,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             helpUtility = mainContent.transform.Find("HelpUtility")?.GetComponent<UnityEngine.UI.Button>();
             if (!helpUtility) helpUtility = Button(mainContent.transform, "HelpUtility", Vector2.zero, new Vector2(64, 64), "?", "pause", false);
             UtilityIcon(helpUtility, "pause", "action.pause_short");
+            stopUtility = mainContent.transform.Find("StopUtility")?.GetComponent<UnityEngine.UI.Button>();
+            if (!stopUtility) stopUtility = Button(mainContent.transform, "StopUtility", Vector2.zero, new Vector2(80, 80), "", "stop", false);
+            UtilityIcon(stopUtility, "stop", "action.stop_short");
             // Existing kiosk becomes a small tabletop device, never a head-following card.
             helperCanvas.transform.localScale = Vector3.one * .0005f;
             foreach (var key in new[] { "Kiosk", "Face", "EyeLeft", "EyeRight" })
@@ -764,6 +768,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             operatorEntry = technicalOptions.Find("Operator Setup")?.GetComponent<UnityEngine.UI.Button>();
             if (!operatorEntry)
                 operatorEntry = Button(technicalOptions, "Operator Setup", Vector2.zero, new Vector2(360, 64), "", "", false);
+            technicalDetails = technicalOptions.Find("Details")?.GetComponent<UnityEngine.UI.Button>();
+            if (!technicalDetails) technicalDetails = Button(technicalOptions, "Details", Vector2.zero, new Vector2(660, 64), "", "technical_details", false);
             operatorEntry.GetComponent<ResearchUIAction>().enabled = false;
             operatorEntry.onClick.RemoveAllListeners(); operatorEntry.onClick.AddListener(() => OpenResearcherSetup());
             scroll.verticalScrollbar.gameObject.SetActive(false);
@@ -789,6 +795,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             setupBrand = mainContent.transform.Find("SetupBrand")?.GetComponent<TMP_Text>();
             if (!setupBrand) setupBrand = Label(mainContent.transform, "SetupBrand", Vector2.zero, new Vector2(700, 58), "VR Maintenance Research", 38);
             setupBrand.fontStyle = FontStyles.Bold; setupBrand.font = englishFont;
+            setupBrand.rectTransform.sizeDelta = new Vector2(700, 72);
             technicalRows = mainContent.transform.Find("TechnicalReadiness") as RectTransform;
             if (!technicalRows)
             {
@@ -1021,7 +1028,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!arrow) arrow = Rect(pager.transform, "NavigationIcon", Vector2.zero, new Vector2(28, 28)).gameObject.AddComponent<ResearchUtilityIcon>();
                 arrow.kind = pager == previousPage ? "previous" : "next"; arrow.color = Ink; arrow.raycastTarget = false; arrow.SetVerticesDirty();
             }
-            pageLabel.rectTransform.anchoredPosition = new Vector2(136, -350); pageLabel.rectTransform.sizeDelta = new Vector2(256, 36); pageLabel.font = Font; pageLabel.fontSize = 23;
+            pageLabel.rectTransform.anchoredPosition = new Vector2(136, -350); pageLabel.rectTransform.sizeDelta = new Vector2(256, 48); pageLabel.font = Font; pageLabel.fontSize = 23;
             LayoutReferenceTutorialCue(ReaderHeight);
         }
 
@@ -1234,13 +1241,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "setup":
                     if (controller && controller.TechnicalSelfSetup) { TechnicalSetup(); break; }
                     title.text = Text("setup.title"); body.text = Text("setup.wait"); break;
-                case "error": title.text = Text("error.title"); body.text = Text("error.body"); break;
+                case "error": title.text = Text("error.title"); body.text = Text("error.body") + (controller.PauseKind == "stop" ? "\n" + Text("stop.body") : ""); break;
                 case "ended": title.text = Text("session.ended.title"); body.text = Text("session.ended.body"); break;
                 case "tracking": title.text = Text("tracking.title"); body.text = Text("tracking.body"); break;
                 case "pause":
                     // Temporary pause: participant may continue (technical/tutorial). Study task pause: researcher resumes.
-                    title.text = Text(selfResume ? "pause.participant.title" : "pause.title");
-                    body.text = "<color=#" + ColorUtility.ToHtmlStringRGB(Ink) + ">" + Text(selfResume ? "pause.participant.body" : "pause.body")
+                    title.text = Text(controller.PauseKind == "stop" ? "stop.title" : selfResume ? "pause.participant.title" : "pause.title");
+                    body.text = "<color=#" + ColorUtility.ToHtmlStringRGB(Ink) + ">" + Text(controller.PauseKind == "stop" ? "stop.body" : selfResume ? "pause.participant.body" : "pause.body")
                         + (!selfResume && controller.HelpRequested ? "\n" + Text("pause.help_sent") : "")
                         + "\n<size=90%>" + Text("pause.safety") + "</size></color>";
                     if (selfResume) SetActions(("session_resume", "action.resume"));
@@ -1259,8 +1266,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 // Ready: Task 1 and Task 2 share one structure — where you are (task n of 2), the neutral goal, and one Start.
                 case "Task1Ready": case "Task2Ready":
                     title.text = string.Format(Text("task.progress"), state == "Task2Ready" ? 2 : 1);
-                    body.text = Text("task.ready.general");
-                    SetActions(("task_start", "action.start_task")); break;
+                    body.text = Text(controller.TaskStartConfirmation ? "task.start.confirm.body" : "task.ready.general");
+                    if (controller.TaskStartConfirmation) SetActions(("task_start_back", "action.back"), ("task_start_confirm", "task.start.confirm.action"));
+                    else SetActions(("task_start", "action.start_task"));
+                    break;
                 case "Task1Active": case "Task2Active": title.text = TaskTitle(flow); body.text = TaskBrief(flow.CurrentTask); SetActions(("reference", "action.reference"), ("inspect", "action.inspect")); break;
                 case "checking": title.text = Text("inspect.checking.title"); body.text = Text("inspect.checking.body"); break;
                 case "timeout": title.text = Text("task.timeout.title"); body.text = Text("task.timeout.body");
@@ -1369,26 +1378,32 @@ namespace VRMaintenanceResearch.ResearchFlow
         string TaskTitle(ResearchSessionFlow flow) => string.Format(Text("task.progress"), flow.State <= ResearchFlowState.PostTask1Checkpoint ? 1 : 2) + "\n"
             + System.Text.RegularExpressions.Regex.Replace(Text("task." + flow.CurrentTask + ".title"), @"[A-Z][0-9]*-[0-9]+\S*", "<nobr>$0</nobr>");
 
-        // design_rule D02: the S1 brief keeps every sentence; the goal leads and each condition is its own short item.
         string TaskBrief(string task)
         {
             var parts = Text("task." + task + ".body").Split('\n');
-            return parts[0] + (parts.Length > 1 ? "\n<size=45%>\n</size>" + string.Join("\n", System.Linq.Enumerable.Select(System.Linq.Enumerable.Skip(parts, 1), p => "\u2022<indent=1em>" + p + "</indent>")) : "");
+            if (parts.Length != 4) return string.Join("\n", parts);
+            return parts[0] + "\n<b>" + Text("task.conditions") + "</b>\n"
+                + "•<indent=1em>" + parts[1] + "</indent>\n•<indent=1em>" + parts[2] + "</indent>\n" + parts[3];
         }
 
         // Technical package only: readiness at a glance, one primary Start, options as small secondary buttons.
         void TechnicalSetup()
         {
             title.text = Text("technical.setup.title");
-            body.text = "";
+            body.text = Text("technical.ready_summary") + "\n" + Text("technical.option." + controller.SetupLanguage)
+                + " · " + Text("technical.option." + controller.SetupOrder);
             string[] keys = { "headset", "left", "right", "floor", "logger" };
             bool[] readiness = { controller.HeadsetReady, controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left), controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right), controller.FloorReady, controller.LoggerReady };
+            setupDetailsVisible = setupDetailsRequested || !controller.TechnicalReady || Array.Exists(readiness, ready => !ready);
+            technicalDetails.GetComponentInChildren<TMP_Text>().text = Text(setupDetailsVisible ? "technical.details_hide" : "technical.details_show");
+            technicalDetails.interactable = controller.TechnicalReady && !Array.Exists(readiness, ready => !ready);
             for (int i = 0; i < keys.Length; i++)
             {
                 var row = technicalRows.GetChild(i); var label = row.Find("Label").GetComponent<TMP_Text>();
                 label.text = Text("technical." + keys[i]); label.font = Font;
                 var status = row.Find("Status"); var statusLabel = status.Find("Label").GetComponent<TMP_Text>();
                 statusLabel.text = Text(readiness[i] ? "action.ready" : "technical.waiting"); statusLabel.font = Font;
+                statusLabel.rectTransform.sizeDelta = new Vector2(158, 48);
                 statusLabel.color = readiness[i] ? Positive : Muted;
                 status.GetComponent<TrainingRoundedGraphic>().color = ResearchUITheme.Glass;
                 status.Find("Checkmark").gameObject.SetActive(readiness[i]);
@@ -1413,8 +1428,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 actions[i].GetComponent<ResearchUIAction>().labelKey = "";
                 actions[i].transform.Find("UtilityIcon")?.gameObject.SetActive(false);
                 actionLabels[i].gameObject.SetActive(true);
-                actionLabels[i].rectTransform.anchoredPosition = Vector2.zero;
-                actionLabels[i].rectTransform.sizeDelta = new Vector2(itemWidth - 24, 72);
+                actionLabels[i].rectTransform.offsetMin = new Vector2(12, 5);
+                actionLabels[i].rectTransform.offsetMax = new Vector2(-12, -5);
                 // D03: 25 px thin Thai/Japanese strokes rendered washed out in the Game View; action labels read at body-adjacent size.
                 actionLabels[i].fontSize = 30;
                 var variant = buttons[i].command == "pause" ? ResearchButtonVariant.Ghost : compactTask ? ResearchButtonVariant.Secondary : i == 0 ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary;
@@ -1444,7 +1459,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (checkpoint) textHeight = LayoutCheckpointSteps(width);
             // Measure at the width the title really gets: narrower when the Pause utility shares its row (design_rule D08).
             bool pauseInTitleRow = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
-            float titleHeight = Mathf.Max(64, title.GetPreferredValues(title.text, pauseInTitleRow ? width - 180 : width - 88, 500).y + 8);
+            bool stopInTitleRow = controller && controller.ParticipantCanStop && !referenceCompact;
+            float titleReserve = pauseInTitleRow && stopInTitleRow ? 276 : pauseInTitleRow || stopInTitleRow ? 180 : 88;
+            float titleHeight = Mathf.Max(64, title.GetPreferredValues(title.text, width - titleReserve, 500).y + 8);
             // Stable coach size: the slate must not resize (and shove Reference) as instructions change,
             // so the action row is always reserved and content has a fixed minimum.
             bool tutorialAction = false;
@@ -1452,7 +1469,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (var action in actions) tutorialAction |= action.gameObject.activeSelf;
             float coachContent = Mathf.Max(coachDemo ? 324 : 170, textHeight + 8);
             // Coach: title 56, progress 36, rule, content, reserved success line, then the one action.
-            float height = technicalSetup ? 800 : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
+            float height = technicalSetup ? (setupDetailsVisible ? 900 : Mathf.Max(500, textHeight + 500)) : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
                 : tutorialChecklist ? 128 + coachContent + ResearchUITheme.SectionGap + 48 + (tutorialAction ? ResearchUITheme.ActionGap + 102 : 40)
                 : compactTask ? Mathf.Max(310, textHeight + titleHeight + 222) : Mathf.Max(360, textHeight + titleHeight + 210);
             float statusHeight = positiveIcon.activeSelf || negativeIcon.activeSelf ? 128 : 0;
@@ -1489,15 +1506,15 @@ namespace VRMaintenanceResearch.ResearchFlow
                 icon.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, height / 2 - 88);
                 foreach (var stroke in icon.GetComponentsInChildren<Graphic>(true)) stroke.color = icon == positiveIcon ? Positive : ResearchUITheme.Failure;
             }
-            body.gameObject.SetActive(!tutorialChecklist && !technicalSetup);
+            body.gameObject.SetActive(!tutorialChecklist && (!technicalSetup || !setupDetailsVisible));
             checkpointSteps.gameObject.SetActive(checkpoint);
             checkpointSteps.anchoredPosition = body.rectTransform.anchoredPosition;
             if (checkpoint) body.gameObject.SetActive(false);
             welcomeItems.gameObject.SetActive(false);
             setupBrand.gameObject.SetActive(technicalSetup);
-            technicalRows.gameObject.SetActive(technicalSetup);
+            technicalRows.gameObject.SetActive(technicalSetup && setupDetailsVisible);
             technicalOptions.gameObject.SetActive(technicalSetup);
-            foreach (Transform option in technicalOptions) option.gameObject.SetActive(technicalSetup && option == operatorEntry.transform);
+            foreach (Transform option in technicalOptions) option.gameObject.SetActive(technicalSetup && (option == operatorEntry.transform || option == technicalDetails.transform));
             checklist.gameObject.SetActive(false);
             tutorialProgress.gameObject.SetActive(tutorialChecklist && !referenceCompact);
             mainPauseEligible = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
@@ -1505,8 +1522,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             var chip = helpUtility.GetComponent<RectTransform>();
             chip.sizeDelta = new Vector2(80, 80); chip.anchoredPosition = new Vector2(width / 2 - 76, height / 2 - 56);
             UtilityIcon(helpUtility, "pause", "action.pause_short");
-            if (helpUtility.gameObject.activeSelf)
-            { title.rectTransform.sizeDelta = new Vector2(width - 180, titleHeight); title.rectTransform.anchoredPosition += new Vector2(-46, 0); }
+            stopUtility.gameObject.SetActive(stopInTitleRow);
+            var stopRect = stopUtility.GetComponent<RectTransform>();
+            stopRect.sizeDelta = new Vector2(80, 80); stopRect.anchoredPosition = new Vector2(width / 2 - (mainPauseEligible ? 172 : 76), height / 2 - 56);
+            UtilityIcon(stopUtility, "stop", "action.stop_short");
+            if (helpUtility.gameObject.activeSelf || stopUtility.gameObject.activeSelf)
+            { title.rectTransform.sizeDelta = new Vector2(width - titleReserve, titleHeight); title.rectTransform.anchoredPosition += new Vector2(mainPauseEligible && stopUtility.gameObject.activeSelf ? -94 : -46, 0); }
             tutorialDemo.gameObject.SetActive(coachDemo);
             highlightPractice = false;
             // Tutorial "move the panel": the Reference bar pulses; the coach card is the only written instruction. Never during Task A/B.
@@ -1621,13 +1642,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                     row.Find("Rule").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -pitch / 2);
                     row.Find("Rule").gameObject.SetActive(i < technicalRows.childCount - 1);
                 }
+                body.rectTransform.anchoredPosition = new Vector2(0, height / 2 - 174 - (textHeight + 14) / 2);
                 technicalOptions.anchoredPosition = new Vector2(0, -height / 2 + 160);
                 float optionWidth = width - 120;
                 for (int i = 0; i < technicalOptions.childCount; i++)
                 {
                     var option = (RectTransform)technicalOptions.GetChild(i);
                     if (!option.gameObject.activeSelf) continue;
-                    option.sizeDelta = new Vector2(optionWidth, 64); option.anchoredPosition = Vector2.zero;
+                    option.sizeDelta = new Vector2(optionWidth, 64); option.anchoredPosition = option == technicalDetails.transform ? new Vector2(0, 90) : Vector2.zero;
                     ResearchUITheme.Button(option.GetComponent<UnityEngine.UI.Button>(), ResearchButtonVariant.Secondary);
                     var label = option.GetComponentInChildren<TMP_Text>(); label.fontSize = 22; label.font = Font;
                 }
@@ -1704,14 +1726,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             // Shared ownership below exposes one global Pause across the readable surfaces.
             if (!referenceExpanded.transform.Find("Pause")) Button(referenceExpanded.transform, "Pause", Vector2.zero, new Vector2(128, 56), "", "pause", false);
-            string[] keys = { "Pause", "Minimize", "Close" };
+            if (!referenceExpanded.transform.Find("Stop")) Button(referenceExpanded.transform, "Stop", Vector2.zero, new Vector2(80, 80), "", "stop", false);
+            string[] keys = { "Stop", "Pause", "Minimize", "Close" };
             for (int i = 0; i < keys.Length; i++)
             {
                 var control = referenceExpanded.transform.Find(keys[i]) as RectTransform;
                 if (!control) continue;
                 control.sizeDelta = new Vector2(80, 80);
-                control.anchoredPosition = new Vector2(314 + i * 96, height / 2 - 56);
-                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), keys[i].ToLowerInvariant(), keys[i] == "Pause" ? "action.pause_short" : "action." + keys[i].ToLowerInvariant());
+                control.anchoredPosition = new Vector2(218 + i * 96, height / 2 - 56);
+                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), keys[i].ToLowerInvariant(), keys[i] == "Pause" ? "action.pause_short" : keys[i] == "Stop" ? "action.stop_short" : "action." + keys[i].ToLowerInvariant());
             }
         }
 
@@ -1738,8 +1761,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             PrepareTutorialReaderCue();
             if (!TutorialReader) return;
-            referenceTutorialProgress.rectTransform.anchoredPosition = new Vector2(128, 272);
-            referenceTutorialProgress.rectTransform.sizeDelta = new Vector2(820, 38); referenceTutorialProgress.fontSize = 24;
+            referenceTutorialProgress.rectTransform.anchoredPosition = new Vector2(128, 277);
+            referenceTutorialProgress.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialProgress.fontSize = 24;
             referenceTutorialCue.rectTransform.anchoredPosition = new Vector2(128, 224);
             referenceTutorialCue.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialCue.fontSize = 25;
             tutorialDemo.gameObject.SetActive(false);
@@ -1781,13 +1804,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool recovery = action && action.command == "panel_recovery";
             bool compactRecovery = recovery && button.GetComponent<RectTransform>().sizeDelta.x < 200;
             ResearchUITheme.Button(button, recovery ? ResearchButtonVariant.Secondary : ResearchButtonVariant.Icon);
-            bool pause = kind == "pause";
-            if (action) action.labelKey = pause ? "action.pause_caption" : recovery ? hintKey : "";
+            bool pause = kind == "pause", stop = kind == "stop";
+            if (action) action.labelKey = stop ? "action.stop_short" : pause ? "action.pause_caption" : recovery ? hintKey : "";
             var label = button.transform.Find("Label");
             if (label)
             {
-                label.gameObject.SetActive(pause || recovery);
-                if (pause || recovery)
+                label.gameObject.SetActive(pause || stop || recovery);
+                if (pause || stop || recovery)
                 {
                     var caption = label.GetComponent<TMP_Text>(); caption.text = Text(action.labelKey);
                     caption.font = Font; caption.fontSize = ResearchUITheme.Caption; caption.lineSpacing = 0;
@@ -1802,7 +1825,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!icon) icon = Rect(button.transform, "UtilityIcon", Vector2.zero, new Vector2(28, 28)).gameObject.AddComponent<ResearchUtilityIcon>();
             if (!icon.GetComponent<CanvasRenderer>()) icon.gameObject.AddComponent<CanvasRenderer>();
             icon.kind = kind; icon.color = Ink; icon.raycastTarget = false; icon.SetVerticesDirty();
-            icon.rectTransform.anchoredPosition = recovery && !compactRecovery ? new Vector2(-button.GetComponent<RectTransform>().sizeDelta.x / 2 + 32, 0) : new Vector2(0, pause || compactRecovery ? 17 : 0);
+            icon.rectTransform.anchoredPosition = recovery && !compactRecovery ? new Vector2(-button.GetComponent<RectTransform>().sizeDelta.x / 2 + 32, 0) : new Vector2(0, pause || stop || compactRecovery ? 17 : 0);
             var hint = button.GetComponent<ResearchControlHint>(); if (!hint) hint = button.gameObject.AddComponent<ResearchControlHint>();
             hint.enabled = true; hint.view = this; hint.key = hintKey;
             if (!hint.label) hint.label = Label(button.transform, "FocusLabel", new Vector2(-70, -66), new Vector2(260, 72), "", 24);
@@ -1830,12 +1853,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                 recoveryPanel = RecoveryCanvas.gameObject.AddComponent<ResearchPanelMotion>();
                 RecoveryCanvas.gameObject.SetActive(false);
             }
+            if (!RecoveryCanvas.transform.Find("Stop"))
+                Button(RecoveryCanvas.transform, "Stop", Vector2.zero, new Vector2(80, 80), "", "stop", false);
             // Serialized recovery controls use the same layout as newly built controls.
-            foreach (string key in new[] { "RecoverPanels", "Pause" })
+            foreach (string key in new[] { "RecoverPanels", "Pause", "Stop" })
             {
                 var control = RecoveryCanvas.transform.Find(key).GetComponent<UnityEngine.UI.Button>();
-                var rect = control.GetComponent<RectTransform>(); rect.sizeDelta = key == "Pause" ? new Vector2(80, 80) : RecoveryButtonSize;
-                UtilityIcon(control, key == "Pause" ? "pause" : "recenter", key == "Pause" ? "action.pause_short" : "action.recover_panels");
+                var rect = control.GetComponent<RectTransform>(); rect.sizeDelta = key == "RecoverPanels" ? RecoveryButtonSize : new Vector2(80, 80);
+                UtilityIcon(control, key == "Stop" ? "stop" : key == "Pause" ? "pause" : "recenter", key == "Stop" ? "action.stop_short" : key == "Pause" ? "action.pause_short" : "action.recover_panels");
             }
             recoveryPanel = RecoveryCanvas.GetComponent<ResearchPanelMotion>();
             recoveryPanel.view = this; recoveryPanel.panelId = "recovery"; recoveryPanel.centered = true; recoveryPanel.movable = false;
@@ -1844,20 +1869,24 @@ namespace VRMaintenanceResearch.ResearchFlow
             { var canvases = new List<Canvas>(ParticipantCanvases) { RecoveryCanvas }; ParticipantCanvases = canvases.ToArray(); }
         }
 
-        bool LayoutRecoveryUtility(bool fallbackPause, bool compact = false)
+        bool LayoutRecoveryUtility(bool fallbackPause, bool compact = false, bool fallbackStop = false)
         {
             var rect = (RectTransform)RecoveryCanvas.transform;
             var recoverSize = compact ? new Vector2(128, 80) : RecoveryButtonSize;
-            var size = recoverSize + new Vector2(fallbackPause ? 112 : 16, 16);
+            int safetyActions = (fallbackPause ? 1 : 0) + (fallbackStop ? 1 : 0);
+            var size = recoverSize + new Vector2(16 + 96 * safetyActions, 16);
             bool changed = rect.sizeDelta != size;
             rect.sizeDelta = size;
             RecoveryCanvas.transform.Find("Surface").GetComponent<RectTransform>().sizeDelta = size;
             var recover = RecoveryCanvas.transform.Find("RecoverPanels").GetComponent<RectTransform>();
             recover.sizeDelta = recoverSize;
-            recover.anchoredPosition = new Vector2(fallbackPause ? -48 : 0, 0);
+            recover.anchoredPosition = new Vector2(-48 * safetyActions, 0);
             var pause = RecoveryCanvas.transform.Find("Pause").GetComponent<RectTransform>();
-            pause.anchoredPosition = new Vector2(recoverSize.x / 2 + 8, 0);
+            pause.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1), 0);
             pause.gameObject.SetActive(fallbackPause);
+            var stop = RecoveryCanvas.transform.Find("Stop").GetComponent<RectTransform>();
+            stop.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1) + (fallbackPause ? 96 : 0), 0);
+            stop.gameObject.SetActive(fallbackStop);
             if (changed) UtilityIcon(recover.GetComponent<UnityEngine.UI.Button>(), "recenter", compact ? "action.recover_short" : "action.recover_panels");
             return changed;
         }
@@ -1879,12 +1908,21 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
             helpUtility.gameObject.SetActive(mainOwns && !referenceOwns);
             var referencePause = referenceExpanded.transform.Find("Pause"); if (referencePause) referencePause.gameObject.SetActive(referenceOwns);
-            bool layoutChanged = LayoutRecoveryUtility(false, compact: true);
+            bool stopAvailable = controller && controller.ParticipantCanStop;
+            bool referenceStopOwns = stopAvailable && controller.ReferenceOpen && !controller.ReferenceMinimized
+                && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
+                && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
+            bool mainStopOwns = stopAvailable && !referenceStopOwns && mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
+                && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts && !mainPanel.PlacementBlocked && mainPanel.IsReadableFromHead;
+            stopUtility.gameObject.SetActive(mainStopOwns);
+            var referenceStop = referenceExpanded.transform.Find("Stop"); if (referenceStop) referenceStop.gameObject.SetActive(referenceStopOwns);
+            bool fallbackStop = stopAvailable && !mainStopOwns && !referenceStopOwns;
+            bool layoutChanged = LayoutRecoveryUtility(false, compact: true, fallbackStop: fallbackStop);
             recoveryPanel.centered = true;
             bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant" && !controller.ParticipantMayResume
                 && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
-            bool needed = paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
-                || (recoveryWasNeeded && mainPanel.RecenterPending));
+            bool needed = fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
+                || (recoveryWasNeeded && mainPanel.RecenterPending)));
             if (!paused || mainPanel.PlacementBlocked || needed == recoveryWasNeeded)
                 recoveryTransitionSince = float.NegativeInfinity;
             else
@@ -1971,6 +2009,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 return allowed && ReferenceViewer && ReferenceViewer.Command(command, input);
             switch (command)
             {
+                case "technical_details":
+                    if (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null
+                        || controller.Transitioning || !string.IsNullOrEmpty(controller.Error) || !controller.TechnicalReady
+                        || !controller.FloorReady || !controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left)
+                        || !controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right)) return false;
+                    setupDetailsRequested = !setupDetailsRequested; Refresh(); accepted = true; break;
                 case "panel_recovery":
                     // Geometry recovery also works on a paused/error card; it never changes task state or resumes a study.
                     if (!controller || controller.Flow == null || !Head || controller.Transitioning) return false;

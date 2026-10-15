@@ -181,8 +181,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public static readonly string[] ResearcherTerminationReasons = { "withdrawal", "safety_stop", "technical_failure", "other" };
 
-        public ParticipantRecord AmendTermination(string participantId, string reason, string source)
+        public ParticipantRecord AmendTermination(string participantId, string reason, string source) => AmendTermination(participantId, reason, source, out _);
+
+        public ParticipantRecord AmendTermination(string participantId, string reason, string source, out bool changed)
         {
+            changed = false;
             if (Array.IndexOf(ResearcherTerminationReasons, reason) < 0) throw new ArgumentException("Termination reason must be one of " + string.Join(", ", ResearcherTerminationReasons));
             if (string.IsNullOrWhiteSpace(source)) throw new ArgumentException("Amendment source required");
             using (AcquireLock())
@@ -194,7 +197,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (current == reason) return record;
                 (record.termination_amendments = record.termination_amendments ?? new List<TerminationAmendment>()).Add(new TerminationAmendment
                     { amended_at = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), from_reason = current, to_reason = reason, source = source });
-                record.revision++; Save(doc); return record;
+                record.revision++; Save(doc); changed = true; return record;
             }
         }
 

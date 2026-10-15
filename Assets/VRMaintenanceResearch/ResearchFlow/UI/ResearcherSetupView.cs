@@ -34,7 +34,42 @@ namespace VRMaintenanceResearch.ResearchFlow
         private string selectedRecordId;
         private Button back;
         private TMP_Text lockedInputLabel;
+        [SerializeField] private TMP_Text setupHeading, setupScope;
+        [SerializeField] private TMP_Text[] setupFieldLabels = new TMP_Text[5];
+        private string R(string key) => ResearchStrings.Get("researcher." + key, controller ? controller.Language : "English");
         private bool confirmAbort, confirmInvalid;
+        private Button stop, details;
+        private TMP_Text delivery;
+        private bool detailsExpanded;
+        private ResearchSessionFlowController detailsController;
+        private string detailsIdentity;
+        private void ToggleDetails() { detailsExpanded = !detailsExpanded; Refresh(); }
+        private void StopSession() => Invoke(() => controller.ResearcherStop());
+        private string DeliveryCaption()
+        {
+            switch (controller.ExportDeliveryStatus)
+            {
+                case "saved": return R("delivery_saved");
+                case "queued": return R("delivery_queued");
+                case "received": return R("delivery_received");
+                default: return R("delivery_attention");
+            }
+        }
+        private ResearchSessionFlowController endingController;
+        private string endingIdentity;
+        private string EndingIdentity => controller?.Record == null || string.IsNullOrWhiteSpace(controller.Record.session_id) || string.IsNullOrWhiteSpace(controller.Record.run_id)
+            || string.IsNullOrWhiteSpace(controller.Record.participant_id) ? null : controller.Record.participant_id + "/" + controller.Record.session_id + "/" + controller.Record.run_id;
+        private bool EndingRequestMatches => endingIdentity != null && ReferenceEquals(controller, endingController) && EndingIdentity == endingIdentity && controller?.Record?.session_state == RegistryState.InProgress;
+
+        private void ClearEndingRequest() { confirmAbort = confirmInvalid = false; endingController = null; endingIdentity = null; }
+        private void ToggleEndingRequest(bool invalidate)
+        {
+            bool arm = !(invalidate ? confirmInvalid : confirmAbort);
+            ClearEndingRequest();
+            if (!arm || EndingIdentity == null || controller?.Record?.session_state != RegistryState.InProgress) return;
+            confirmInvalid = invalidate; confirmAbort = !invalidate;
+            endingController = controller; endingIdentity = EndingIdentity;
+        }
         private UnityEngine.UI.Button invalid;
         // One per researcher termination category; shown to pick the ending when aborting, and to amend it afterwards.
         private readonly UnityEngine.UI.Button[] reasonButtons = new UnityEngine.UI.Button[4];
@@ -98,10 +133,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         private void ResumeSession() => InvokeOperator("resume", controller?.Record, () => controller.ResearcherResume());
-        private void ExportSession() => InvokeOperator("export", controller?.Record, () => localError = "Export: " + controller.ExportSession());
+        private void ExportSession() => InvokeOperator("export", controller?.Record, () => localError = !string.IsNullOrEmpty(controller.ExportSession()) ? "" : !string.IsNullOrEmpty(controller.ExportDeliveryError) ? controller.ExportDeliveryError : R("delivery_attention"));
         private void GroupChanged(int index)
         {
-            recordSignature = ""; confirmAbort = false;
+            recordSignature = ""; ClearEndingRequest();
             language.SetValueWithoutNotify(groups[index] == ParticipantGroup.Japanese ? 1 : 0);
             Refresh();
         }
@@ -175,6 +210,11 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void Refresh()
         {
+            if ((confirmAbort || confirmInvalid) && !EndingRequestMatches) ClearEndingRequest();
+            if (!ReferenceEquals(detailsController, controller) || detailsIdentity != EndingIdentity)
+            {
+                detailsExpanded = false; detailsController = controller; detailsIdentity = EndingIdentity;
+            }
             if (questOwner && (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null))
                 questOwner.CloseResearcherSetup();
             if (controller == null || controller.Registry == null || participant == null) return;
@@ -184,13 +224,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (attachedRecord != null) group.SetValueWithoutNotify(Array.IndexOf(groups, attachedRecord.group));
                 var selectedId = attachedRecord?.participant_id ?? Selected?.participant_id;
                 var latest = controller.Registry.List(groups[group.value]);
-                var signature = string.Join("|", latest.Select(r => r.participant_id + ":" + r.session_state + ":" + r.revision));
+                var signature = controller.Language + "|" + string.Join("|", latest.Select(r => r.participant_id + ":" + r.session_state + ":" + r.revision));
                 if (signature != recordSignature || participant.options.Count != latest.Count + 2)
                 {
                     records = latest;
                     recordSignature = signature;
                     participant.ClearOptions();
-                    participant.AddOptions(new[] { "Select participant" }.Concat(records.Select(r => r.participant_id + "    " + Status(r.session_state))).Concat(new[] { "Create next ID" }).ToList());
+                    participant.AddOptions(new[] { R("select") }.Concat(records.Select(r => r.participant_id + "    " + Status(r.session_state))).Concat(new[] { R("create") }).ToList());
                     participant.allowed = new[] { false }.Concat(records.Select(r => Selectable(r))).Concat(new[] { true }).ToArray();
                     var index = records.ToList().FindIndex(r => r.participant_id == selectedId && (attachedRecord != null || Selectable(r)));
                     if (index < 0) index = records.ToList().FindIndex(Selectable);
@@ -220,34 +260,44 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if ((!technical || questOwner) && !resuming && attachedRecord == null) input.SetValueWithoutNotify(0);
                 start.interactable = !running && record != null && Selectable(record) && controller.DeviceReady && controller.LoggerReady
                     && (!questOwner || (ExperimentInputMode)input.value == ExperimentInputMode.Controller);
-                startLabel.text = resuming ? "Resume Saved Session" : "Start Session";
+                startLabel.text = resuming ? R("resume_saved") : R("start");
                 var flow = controller.Flow;
                 resume.interactable = running && controller.ResearcherResumeBlocker() == null;
                 abort.interactable = running;
-                abortLabel.text = confirmAbort ? "Cancel" : "Abort Session";
+                abortLabel.text = confirmAbort ? R("cancel") : R("abort");
                 export.interactable = controller.Record != null;
                 string Badge(string value, bool ready) => "<color=#" + ColorUtility.ToHtmlStringRGB(ready ? ResearchUITheme.Success : new Color(.48f, .27f, .06f)) + ">" + value + "</color>";
-                status.text = "Training  " + Badge(controller.Record?.training_status ?? "Pending", controller.Record?.training_status == "Passed")
-                    + "     Device  " + Badge(controller.DeviceReady ? "Ready" : "Not Ready", controller.DeviceReady)
-                    + "     Logger  " + Badge(controller.LoggerReady ? "Ready" : "Not Ready", controller.LoggerReady);
+                status.text = R("training") + "  " + Badge(controller.Record?.training_status == "Passed" ? R("passed") : controller.Record?.training_status == null || controller.Record.training_status == "Pending" ? R("pending") : controller.Record.training_status, controller.Record?.training_status == "Passed")
+                    + "     " + R("device") + "  " + Badge(controller.DeviceReady ? R("ready") : R("not_ready"), controller.DeviceReady)
+                    + "     " + R("logger") + "  " + Badge(controller.LoggerReady ? R("ready") : R("not_ready"), controller.LoggerReady);
                 // Assignment goes above readiness; it must not replace the Device/Logger reasons Start depends on.
                 if (attachedRecord == null && record != null)
                 {
                     var (previewOrder, previewLayout) = resuming ? (record.task_order, record.task_a_layout)
                         : controller.Registry.PreviewAssignment(groups[group.value], CellOrder(order.value), CellLayout(order.value));
                     status.text = record.participant_id + "  |  " + ((ParticipantLanguage)language.value) + "  |  " + previewOrder + "_" + previewLayout
-                        + (resuming ? " saved" : order.value == 0 ? " (Auto picks)" : "") + "  |  " + ((ExperimentInputMode)input.value)
-                        + "  |  " + (technical ? "TEST DATA" : "STUDY / authorization required") + "\n" + status.text;
+                        + (resuming ? " " + R("saved") : order.value == 0 ? " (" + R("auto_picks") + ")" : "") + "  |  " + ((ExperimentInputMode)input.value)
+                        + "  |  " + (technical ? R("test_data") : R("study")) + "\n" + status.text;
                 }
                 else if (attachedRecord != null && attachedRecord.session_state == RegistryState.InProgress)
                     status.text = attachedRecord.participant_id + "  |  " + attachedRecord.language + "  |  " + attachedRecord.task_order + "_" + attachedRecord.task_a_layout
-                        + "  |  " + (flow == null ? "" : flow.State + (flow.Paused ? " (paused)" : "")) + "\n" + status.text;
+                        + "  |  " + (flow == null ? "" : flow.State + (flow.Paused ? " (" + R("paused") + ")" : "")) + "\n" + status.text;
                 if (attachedRecord != null && attachedRecord.session_state == RegistryState.Completed)
-                    status.text = "Session  " + Badge("Completed", true) + "     Log  " + Badge(controller.Logger != null && controller.Logger.DataComplete ? "Saved" : "Review required", controller.Logger != null && controller.Logger.DataComplete);
-                string blocker = running ? (resume.interactable ? null : "Resume not available: " + controller.ResearcherResumeBlocker())
-                    : start.interactable ? null : "Start not available: " + (controller.ResearcherStartBlocker(record) ?? "Quest setup requires Controller mode.");
+                    status.text = R("session_label") + "  " + Badge(R("completed"), true) + "     " + R("log") + "  " + Badge(controller.Logger != null && controller.Logger.DataComplete ? R("saved") : R("review"), controller.Logger != null && controller.Logger.DataComplete);
+                string resumeBlocker = running ? controller.ResearcherResumeBlocker() : null;
+                bool activeWithoutResume = running && flow?.IsTaskActive == true && !flow.Paused
+                    && resumeBlocker == "Nothing to resume: participant is in " + flow.State + ".";
+                string blocker = attachedRecord != null && attachedRecord.session_state != RegistryState.InProgress ? null : running ? (resume.interactable || activeWithoutResume ? null : R("resume_unavailable") + LocalizeBlocker(resumeBlocker))
+                    : start.interactable ? null : R("start_unavailable") + LocalizeBlocker(controller.ResearcherStartBlocker(record) ?? "Quest setup requires Controller mode.");
                 error.text = !string.IsNullOrEmpty(controller.Error) ? controller.Error : !string.IsNullOrEmpty(localError) ? localError : blocker ?? "";
-                summary.text = controller.Record == null ? "No session started. No participant results are present." : controller.SummaryText();
+                summary.text = controller.Record == null ? R("empty") : detailsExpanded ? controller.SummaryText(controller.Language) : "";
+                if (attachedRecord != null)
+                {
+                    status.text = attachedRecord.participant_id + "  |  " + (running
+                        ? string.Format(R("live_task"), flow?.CurrentTask ?? "-", controller.TaskActiveElapsed.ToString("F1", System.Globalization.CultureInfo.InvariantCulture), flow?.Paused == true ? R("paused") : R("in_progress"))
+                        : R("state_" + attachedRecord.session_state.ToString().ToLowerInvariant()));
+                    delivery.text = DeliveryCaption();
+                }
                 LayoutSession(controller.Record != null);
                 ResearchUITheme.Button(abort, ResearchButtonVariant.Ghost);
             }
@@ -256,7 +306,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private ParticipantRecord Selected => participant && participant.value > 0 && participant.value <= records.Count ? records[participant.value - 1] : null;
         private static bool Selectable(ParticipantRecord record) => record.session_state == RegistryState.Available || record.session_state == RegistryState.InProgress;
-        private static string Status(RegistryState state) => state == RegistryState.InProgress ? "In Progress / Resume" : state == RegistryState.Available ? "Available" : state + " / locked";
+        private string Status(RegistryState state) => state == RegistryState.InProgress ? R("in_progress") : state == RegistryState.Available ? R("available") : state + " / " + R("locked");
 
         private void ParticipantSelected(int index)
         {
@@ -278,15 +328,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             var record = Selected;
             if (controller == null || controller.Record != null || record == null || !Selectable(record)) return;
             if (questOwner && (ExperimentInputMode)input.value != ExperimentInputMode.Controller)
-            { localError = "Quest setup requires Controller mode. Saved run mode is not changed."; Refresh(); return; }
+            { localError = R("quest_saved"); Refresh(); return; }
             InvokeOperator("start", record, () => controller.StartSession(record.participant_id, (ParticipantLanguage)language.value, (ExperimentInputMode)input.value, CellOrder(order.value), CellLayout(order.value)));
         }
 
-        // First click shows the four ending categories; the category click itself ends the session (an emergency is
-        // "Abort Session" then "Safety stop", no extra step). A second click on the same button cancels.
         private void AbortSelected()
         {
-            confirmAbort = !confirmAbort;
+            ToggleEndingRequest(false);
             Refresh();
         }
 
@@ -297,14 +345,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             string reason = ResearchParticipantRegistry.ResearcherTerminationReasons[index];
             if (record.session_state == RegistryState.InProgress)
             {
-                if (!confirmAbort) return;
-                confirmAbort = false;
-                InvokeOperator("abort", record, () => controller.ResearcherAbort(false, reason));
+                if ((!confirmAbort && !confirmInvalid) || !EndingRequestMatches) { ClearEndingRequest(); Refresh(); return; }
+                bool invalidate = confirmInvalid;
+                ClearEndingRequest();
+                InvokeOperator(invalidate ? "invalidate" : "abort", record, () => controller.ResearcherAbort(invalidate, reason));
             }
             else if (record.session_state == RegistryState.Aborted || record.session_state == RegistryState.Invalid)
             {
                 string failure = controller.AmendTermination(record.participant_id, reason, "ResearcherDisplay");
-                localError = failure ?? "Ending recorded as " + ReasonLabels[index] + "; export again so the PC copy carries it.";
+                localError = failure ?? "";
                 Refresh();
             }
         }
@@ -522,7 +571,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var label in GetComponentsInChildren<TMP_Text>(true)) label.color = ResearchUITheme.Ink;
             ResearchUITheme.Button(start, ResearchButtonVariant.Primary);
             ResearchUITheme.Button(resume, ResearchButtonVariant.Secondary);
-            ResearchUITheme.Button(export, ResearchButtonVariant.Primary);
+            ResearchUITheme.Button(export, ResearchButtonVariant.Secondary);
+            if (!stop) stop = Button(panel, "Researcher Stop", Vector2.zero, new Vector2(260, 48), out _);
+            stop.onClick.RemoveListener(StopSession); stop.onClick.AddListener(StopSession);
+            ResearchUITheme.Button(stop, ResearchButtonVariant.Destructive);
+            if (!stop.transform.Find("Stop Square"))
+            {
+                var square = Box(stop.transform, "Stop Square", new Vector2(12, 12), new Vector2(-108, 0), ResearchUITheme.Ink);
+                square.GetComponent<Image>().raycastTarget = false;
+            }
+            stop.transform.Find("Stop Square").GetComponent<Image>().color = stop.GetComponentInChildren<TMP_Text>(true).color;
+            if (!details) details = Button(panel, "Session Details", Vector2.zero, new Vector2(390, 48), out _);
+            details.onClick.RemoveListener(ToggleDetails); details.onClick.AddListener(ToggleDetails);
+            ResearchUITheme.Button(details, ResearchButtonVariant.Secondary);
+            if (!delivery) { delivery = Text(panel, "", new Vector2(820, 48), Vector2.zero, 20); delivery.name = "Export Delivery"; }
+            delivery.alignment = TextAlignmentOptions.Center;
             ResearchUITheme.Button(abort, ResearchButtonVariant.Ghost);
             foreach (var dropdown in new[] { group, participant, language, order, input })
             {
@@ -571,9 +634,8 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void InvalidateSelected()
         {
-            if (!confirmInvalid) { confirmInvalid = true; invalid.GetComponentInChildren<TMP_Text>().text = "Confirm Invalid"; return; }
-            InvokeOperator("invalidate", controller?.Record, () => controller.ResearcherAbort(true));
-            confirmInvalid = false;
+            ToggleEndingRequest(true);
+            Refresh();
         }
 
         // Keep the existing serialized dropdown values and resume locks as the single source of truth.
@@ -605,20 +667,22 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             var panel = start.transform.parent.GetComponent<RectTransform>();
             bool ended = hasSession && controller.Record.session_state != RegistryState.InProgress;
-            panel.sizeDelta = new Vector2(920, hasSession ? 680 : 620);
+            panel.sizeDelta = new Vector2(920, hasSession ? !ended && (confirmAbort || confirmInvalid) ? 760 : 680 : 620);
             var headings = panel.GetComponentsInChildren<TMP_Text>(true).Where(t => t.transform.parent == panel).ToArray();
+            if (!setupHeading) setupHeading = headings.FirstOrDefault(t => t.text == "Researcher Setup" || t.text == "Researcher Session" || t.text == "Researcher Summary" || t.text == "Session Summary" || t.text == "RESEARCH SESSION");
+            if (!setupScope) setupScope = headings.FirstOrDefault(t => t.text.StartsWith("RESEARCHER DISPLAY") || t.text.StartsWith("TECHNICAL OPERATOR"));
             foreach (var heading in headings)
             {
-                if (heading.text == "Researcher Setup" || heading.text == "Researcher Session" || heading.text == "Researcher Summary" || heading.text == "Session Summary" || heading.text == "RESEARCH SESSION")
+                if (heading == setupHeading)
                 {
-                    heading.text = ended ? "Session Summary" : hasSession ? "RESEARCH SESSION" : "Researcher Setup";
+                    heading.text = ended ? R("summary") : hasSession ? R("session") : R("setup");
                     heading.rectTransform.anchoredPosition = new Vector2(0, hasSession ? 285 : 260);
                     heading.fontSize = 30;
                 }
-                if (heading.text.StartsWith("RESEARCHER DISPLAY") || heading.text.StartsWith("TECHNICAL OPERATOR"))
+                if (heading == setupScope)
                 {
                     heading.gameObject.SetActive(!hasSession);
-                    heading.text = questOwner ? "TECHNICAL OPERATOR  |  DEV / TEST / PILOT are test data" : "RESEARCHER DISPLAY  |  DEV / TEST / PILOT are test data";
+                    heading.text = questOwner ? R("scope_quest") : R("scope_pc");
                     heading.rectTransform.anchoredPosition = new Vector2(0, 215);
                     heading.fontSize = 15;
                     heading.color = ResearchUITheme.Muted;
@@ -629,9 +693,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             for (int i = 0; i < dropdowns.Length; i++)
             {
                 var source = dropdowns[i];
-                var label = headings.FirstOrDefault(t => t.text == labels[i]);
+                if (!setupFieldLabels[i]) setupFieldLabels[i] = headings.FirstOrDefault(t => t.text == labels[i]);
+                var label = setupFieldLabels[i];
                 if (label)
                 {
+                    label.text = R(new[] { "group", "id", "language", "order", "input" }[i]);
                     label.gameObject.SetActive(!hasSession);
                     label.fontSize = 18;
                     label.color = ResearchUITheme.Muted;
@@ -674,9 +740,18 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             lockedInputLabel.gameObject.SetActive(questOwner && !hasSession);
             lockedInputLabel.color = ResearchUITheme.Ink;
-            lockedInputLabel.text = input.value == (int)ExperimentInputMode.Controller ? "Controller (locked)"
-                : "Saved run: " + (ExperimentInputMode)input.value + " / Quest requires Controller";
-            status.gameObject.SetActive(!ended);
+            lockedInputLabel.text = input.value == (int)ExperimentInputMode.Controller ? R("locked_controller")
+                : string.Format(R("saved_mode"), (ExperimentInputMode)input.value);
+            status.gameObject.SetActive(true);
+            delivery.gameObject.SetActive(hasSession);
+            delivery.rectTransform.anchoredPosition = new Vector2(0, 175);
+            delivery.color = !controller ? ResearchUITheme.Muted : controller.ExportDeliveryStatus == "received" ? ResearchUITheme.Success
+                : controller.ExportDeliveryStatus == "saved" || controller.ExportDeliveryStatus == "queued" ? ResearchUITheme.Muted : ResearchUITheme.Failure;
+            details.gameObject.SetActive(hasSession);
+            details.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 120);
+            stop.gameObject.SetActive(hasSession && !ended);
+            stop.interactable = controller && controller.ParticipantCanStop;
+            stop.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -215);
             status.rectTransform.anchoredPosition = new Vector2(0, hasSession ? 230 : -155);
             start.gameObject.SetActive(!hasSession);
             start.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -220);
@@ -684,12 +759,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             startLabel.rectTransform.sizeDelta = new Vector2(796, 50);
             // Shown disabled with its reason (error line) instead of disappearing while the participant waits.
             resume.gameObject.SetActive(hasSession && !ended);
-            resume.GetComponent<RectTransform>().anchoredPosition = new Vector2(-215, -215);
+            resume.GetComponent<RectTransform>().anchoredPosition = new Vector2(-280, -215);
             error.rectTransform.anchoredPosition = new Vector2(0, hasSession ? -152 : -275);
-            summary.transform.parent.gameObject.SetActive(hasSession);
+            summary.transform.parent.gameObject.SetActive(hasSession && detailsExpanded);
             var summaryRect = summary.transform.parent.GetComponent<RectTransform>();
-            summaryRect.anchoredPosition = new Vector2(0, ended ? 55 : 30);
-            summaryRect.sizeDelta = new Vector2(820, 340);
+            summaryRect.anchoredPosition = new Vector2(0, -15);
+            summaryRect.sizeDelta = new Vector2(820, 210);
             // Top-anchored content sized by its ContentSizeFitter so the ScrollRect scrolls long summaries instead of clipping them.
             summary.rectTransform.anchorMin = new Vector2(0, 1);
             summary.rectTransform.anchorMax = Vector2.one;
@@ -699,45 +774,104 @@ namespace VRMaintenanceResearch.ResearchFlow
             summary.fontSize = 20;
             summary.lineSpacing = 8;
             export.gameObject.SetActive(hasSession);
-            export.GetComponent<RectTransform>().anchoredPosition = new Vector2(resume.gameObject.activeSelf ? 215 : 0, -215);
-            export.GetComponent<RectTransform>().sizeDelta = new Vector2(390, 48);
+            export.GetComponent<RectTransform>().anchoredPosition = new Vector2(280, -215);
+            export.GetComponent<RectTransform>().sizeDelta = new Vector2(260, 48);
+            resume.GetComponent<RectTransform>().sizeDelta = new Vector2(260, 48);
+            foreach (var action in new[] { stop, resume, export })
+                action.GetComponentInChildren<TMP_Text>(true).rectTransform.sizeDelta = new Vector2(236, 42);
+            stop.GetComponentInChildren<TMP_Text>(true).rectTransform.sizeDelta = new Vector2(208, 42);
+            stop.GetComponentInChildren<TMP_Text>(true).rectTransform.anchoredPosition = new Vector2(12, 0);
             abort.gameObject.SetActive(hasSession && !ended);
             abort.GetComponent<RectTransform>().anchoredPosition = new Vector2(-205, -282);
             abort.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 42);
             if (invalid)
             {
-                invalid.gameObject.SetActive(hasSession && !ended && !confirmAbort);
+                invalid.gameObject.SetActive(hasSession && !ended);
+                invalid.GetComponentInChildren<TMP_Text>().text = confirmInvalid ? R("cancel_invalid") : R("invalid");
                 invalid.interactable = hasSession && !ended;
                 invalid.GetComponent<RectTransform>().anchoredPosition = new Vector2(205, -282);
             }
-            // Choosing: [Cancel][4 categories]. After an abort/invalid: [Ending:][4 categories], current one selected.
+            // The reason row stays separate from both request buttons so a repeated click cannot terminate a run.
             var record = hasSession ? controller.Record : null;
             bool amendable = ended && (record.session_state == RegistryState.Aborted || record.session_state == RegistryState.Invalid);
-            bool choosing = hasSession && !ended && confirmAbort;
-            if (choosing)
-            {
-                abort.GetComponent<RectTransform>().anchoredPosition = new Vector2(-340, -282);
-                abort.GetComponent<RectTransform>().sizeDelta = new Vector2(140, 42);
-            }
+            bool choosing = hasSession && !ended && (confirmAbort || confirmInvalid);
             if (reasonCaption)
             {
-                reasonCaption.gameObject.SetActive(amendable);
-                reasonCaption.text = "Ending:";
+                reasonCaption.gameObject.SetActive(choosing || amendable);
+                reasonCaption.text = R("ending");
                 reasonCaption.color = ResearchUITheme.Muted;
-                reasonCaption.rectTransform.anchoredPosition = new Vector2(-340, -282);
+                reasonCaption.rectTransform.anchoredPosition = new Vector2(-340, choosing ? -342 : -282);
             }
+            ApplyLocalizedCaptions(panel);
+            var stopLabel = stop.GetComponentInChildren<TMP_Text>(true);
+            ((RectTransform)stop.transform.Find("Stop Square")).anchoredPosition = new Vector2(-stopLabel.GetPreferredValues(stopLabel.text).x / 2 - 16, 0);
             string current = amendable ? CurrentReason(record) : null;
             for (int i = 0; i < reasonButtons.Length; i++)
             {
                 var button = reasonButtons[i];
                 if (!button) continue;
+                button.GetComponentInChildren<TMP_Text>(true).text = R("reason" + i);
                 button.gameObject.SetActive(choosing || amendable);
                 var rect = button.GetComponent<RectTransform>();
-                rect.anchoredPosition = new Vector2(-180 + 170 * i, -282);
+                rect.anchoredPosition = new Vector2(-180 + 170 * i, choosing ? -342 : -282);
                 rect.sizeDelta = new Vector2(160, 42);
                 bool selected = amendable && ResearchParticipantRegistry.ResearcherTerminationReasons[i] == current;
                 ResearchUITheme.Button(button, choosing ? ResearchButtonVariant.Destructive : selected ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary);
             }
+        }
+
+        private void ApplyLocalizedCaptions(RectTransform panel)
+        {
+            var selectedFont = controller && controller.view ? controller.view.Font : font;
+            if (selectedFont) foreach (var label in GetComponentsInChildren<TMP_Text>(true)) label.font = selectedFont;
+            resume.GetComponentInChildren<TMP_Text>(true).text = R("resume");
+            export.GetComponentInChildren<TMP_Text>(true).text = R("manual_export");
+            stop.GetComponentInChildren<TMP_Text>(true).text = R("stop");
+            details.GetComponentInChildren<TMP_Text>(true).text = R(detailsExpanded ? "hide_details" : "details");
+            if (back) back.GetComponentInChildren<TMP_Text>(true).text = R("back");
+            if (invalid) invalid.GetComponentInChildren<TMP_Text>(true).text = R(confirmInvalid ? "cancel_invalid" : "invalid");
+            var groupLabels = new[] { "DEV - " + R("test_data"), R("thai"), R("japanese"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
+            for (int i = 0; i < group.options.Count && i < groupLabels.Length; i++) group.options[i].text = groupLabels[i];
+            group.RefreshShownValue();
+            var sources = new[] { language, order, input };
+            var captions = new[] { new[] { R("thai"), R("japanese"), R("english") }, new[] { R("auto"), "AB_P", "AB_Q", "BA_P", "BA_Q" }, new[] { R("controller"), R("hands"), R("both") } };
+            for (int i = 0; i < sources.Length; i++)
+            {
+                var source = sources[i];
+                for (int j = 0; j < source.options.Count && j < captions[i].Length; j++) source.options[j].text = captions[i][j];
+                source.RefreshShownValue();
+                var row = panel.Find(source.name + " Choices");
+                if (!row) continue;
+                var buttons = row.GetComponentsInChildren<Button>(true);
+                for (int j = 0; j < buttons.Length && j < captions[i].Length; j++) buttons[j].GetComponentInChildren<TMP_Text>(true).text = captions[i][j];
+            }
+        }
+
+        private string LocalizeBlocker(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+            switch (value)
+            {
+                case "Select or create a participant ID.": return R("select_block");
+                case "Device not ready: floor/boundary is not confirmed.": return R("floor_block");
+                case "Device not ready: both controllers must be tracked.": return R("tracking_block");
+                case "Data logger not ready.": return R("logger_block");
+                case "No open session.": return R("no_session");
+                case "Station transition in progress.": return R("transition");
+                case "Participant app is not focused.": return R("focus");
+                case "Headset or controllers not tracked.": return R("tracking");
+                case "Quest setup requires Controller mode.": return R("quest_mode");
+            }
+            const string open = "A session is already open: ";
+            const string nothing = "Nothing to resume: participant is in ";
+            if (value.StartsWith(open, StringComparison.Ordinal)) return string.Format(R("open_session"), value.Substring(open.Length));
+            if (value.StartsWith(nothing, StringComparison.Ordinal) && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("nothing_resume"), value.Substring(nothing.Length, value.Length - nothing.Length - 1));
+            int locked = value.IndexOf(" is ", StringComparison.Ordinal);
+            if (locked > 0 && value.EndsWith(" and stays locked.", StringComparison.Ordinal)) return string.Format(R("state_locked"), value.Substring(0, locked), value.Substring(locked + 4, value.Length - locked - 4 - " and stays locked.".Length));
+            const string session = "Session is ";
+            int logger = value.IndexOf("; logger ", StringComparison.Ordinal);
+            if (value.StartsWith(session, StringComparison.Ordinal) && logger > session.Length && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("session_logger"), value.Substring(session.Length, logger - session.Length), value.Substring(logger + 9, value.Length - logger - 10));
+            return value;
         }
 
         public bool SummaryContentVisible()

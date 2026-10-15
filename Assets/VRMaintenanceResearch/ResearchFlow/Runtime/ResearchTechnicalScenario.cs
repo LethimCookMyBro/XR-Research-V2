@@ -115,6 +115,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 Step = "task." + owner.Flow.CurrentTask;
                 Require(owner.Command("task_start", "SimulatedController"), "task_start");
+                Require(!owner.Flow.IsTaskActive, "timer not started before confirmation");
+                Require(owner.Command("task_start_confirm", "SimulatedController"), "task_start_confirm");
                 yield return Capture(Step + ".active");
                 Require(owner.Command("reference", "SimulatedController"), "reference");
                 yield return Capture(Step + ".choice");

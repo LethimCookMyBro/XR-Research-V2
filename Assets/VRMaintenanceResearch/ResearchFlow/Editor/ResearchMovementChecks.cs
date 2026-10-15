@@ -73,7 +73,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             // Task progression is deliberately injected only into a fresh DEV fixture; no research approval or taught action is invented.
             Set("Flow", new ResearchSessionFlow(TaskOrder.AB, state, 5));
             active.Log("MOVEMENT_FIXTURE_STATE", "test.movement", "SyntheticTaskBoundary", after: new { state = state.ToString() }, source: "Tester");
-            if (!active.Command("task_start", "SimulatedController")) throw new InvalidOperationException("Real task_start did not accept isolated technical state.");
+            if (!active.Command("task_start", "SimulatedController") || !active.Command("task_start_confirm", "SimulatedController")) throw new InvalidOperationException("Real task_start did not accept isolated technical state.");
         }
         static void LifecycleTick()
         {

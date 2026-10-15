@@ -663,7 +663,8 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     source_manifest=load(source/'manifest.json') if (source/'manifest.json').exists() else {}
     processor_sha=digest(Path(__file__).read_bytes())
     external_inputs={name:digest(Path(path).read_bytes()) for name,path in [('questionnaire_import',questionnaire_path),('video_links_import',video_path),('operator_authorization',authorization),('operator_session_link',authorization_link)] if path}
-    identity_bytes=canonical(dict(transport_binding=transport_binding,raw=hashes,external_inputs=external_inputs,questionnaires=linked,video=video,definition_version=VERSION,processor_sha256=processor_sha,source_manifest_sha256=digest((source/'manifest.json').read_bytes()) if source_manifest else None))
+    transport_identity=None if transport_binding is None else dict(profile={key:transport_binding['binding'][key] for key in ('serial','android_user','package')},registry=transport_binding['registry'],export_identity=transport_binding['export_identity'])
+    identity_bytes=canonical(dict(transport_binding=transport_identity,raw=hashes,external_inputs=external_inputs,questionnaires=linked,video=video,definition_version=VERSION,processor_sha256=processor_sha,source_manifest_sha256=digest((source/'manifest.json').read_bytes()) if source_manifest else None))
     bundle_id='v1_'+digest(identity_bytes)[:24]
     parent=Path(destination)/('technical' if technical else 'study')
     if not technical:parent=parent/('TH' if group=='Thai' else 'JP')
@@ -758,12 +759,43 @@ def registry_name(value,user):
     if not match:raise ValueError('Registry selector outside exact technical package/profile')
     return match[1]
 
+def pc_delivery_receipt(path,job,queue_bytes,profile,result):
+    bundle=Path(result['bundle_path']);manifest=verify(bundle);qc=load(bundle/'qc/report.json')
+    fields=dict(schema_version='researchflow.pc-delivery-receipt.1',job_id=job['bundle_id'],queue_sha256=digest(queue_bytes),profile={k:profile[k] for k in ('serial','android_user','package')},identity={k:job[k] for k in ('participant_code','session_id','run_id')},source_manifest_sha256=file_digest(bundle/'raw/device-export-manifest.json'),pc_bundle_id=manifest['bundle_id'],pc_manifest_sha256=file_digest(bundle/'manifest.json'),qc_sha256=file_digest(bundle/'qc/report.json'),qc_data_complete=qc['data_complete'],qc_failure_count=len(qc['failures']),status='verified_on_pc')
+    if path.exists():
+        previous=load(path)
+        if previous.get('schema_version')==fields['schema_version']:
+            if any(previous.get(k)!=v for k,v in fields.items()):raise ValueError('Immutable PC receipt evidence changed')
+            if datetime.fromisoformat(previous['received_utc'].replace('Z','+00:00')).utcoffset()!=timezone.utc.utcoffset(None):raise ValueError('Invalid PC receipt UTC timestamp')
+            return previous
+        if previous.get('schema_version') is not None:raise ValueError('Unsupported PC receipt schema')
+    value=dict(result,**fields,received_utc=datetime.now(timezone.utc).isoformat(timespec='microseconds').replace('+00:00','Z'))
+    temporary=path.with_name(path.name+'.'+uuid.uuid4().hex+'.partial')
+    try:
+        temporary.write_bytes(canonical(value))
+        if load(temporary)!=value:raise ValueError('PC receipt readback mismatch')
+        temporary.replace(path)
+    finally:temporary.unlink(missing_ok=True)
+    if load(path)!=value:raise ValueError('Published PC receipt readback mismatch')
+    return value
+
+def acknowledge_delivery(client,registry,job,path,receipt):
+    ack=dict(schema_version='researchflow.pc-receipt.1',bundle_id=job['bundle_id'],**receipt['identity'],source_manifest_sha256=receipt['source_manifest_sha256'],pc_bundle_id=receipt['pc_bundle_id'],pc_manifest_sha256=receipt['pc_manifest_sha256'],receipt_sha256=file_digest(path),received_utc=receipt['received_utc'],qc_data_complete=receipt['qc_data_complete'],qc_failure_count=receipt['qc_failure_count'])
+    try:
+        response=client.scoped('delivery_ack',registry=registry,bundle_id=job['bundle_id'],receipt=ack)
+        expected=dict(status='received_on_device',bundle_id=job['bundle_id'],receipt_sha256=ack['receipt_sha256'])
+        if not isinstance(response,dict) or any(response.get(k)!=v for k,v in expected.items()):raise ValueError('Quest delivery acknowledgement readback mismatch')
+        return dict(ack_status='received_on_device',receipt_sha256=ack['receipt_sha256'])
+    except (OSError,ValueError,KeyError,TypeError,ConnectionError,subprocess.TimeoutExpired) as ex:
+        return dict(ack_status='ack_pending',ack_reason=str(ex),receipt_sha256=ack['receipt_sha256'])
+
+
 def pull_queue(adb,serial,destination,remote_registry=REMOTE_ROOT,client=None):
     try:
         client=client or profile_client(adb,serial)
         registry=registry_name(remote_registry,client.bound['android_user'])
         jobs=client.scoped('queues',registry=registry)
-    except (ConnectionError,OSError) as ex:return dict(status='queued_profile_unavailable',reason=str(ex),delivered=[])
+    except (ConnectionError,OSError,subprocess.TimeoutExpired) as ex:return dict(status='queued_profile_unavailable',reason=str(ex),delivered=[])
     profile=dict(client.bound)
     destination=Path(destination)/'quest'/token(serial)/('user-'+str(profile['android_user']))
     destination.mkdir(parents=True,exist_ok=True)
@@ -783,7 +815,8 @@ def pull_queue(adb,serial,destination,remote_registry=REMOTE_ROOT,client=None):
                 r=load(receipt);manifest=verify(r['bundle_path'])
                 expected_profile={k:profile[k] for k in ('serial','android_user','package')}
                 if r.get('queue_sha256')!=digest(queue_bytes) or r.get('profile')!=expected_profile or any(manifest['identity'].get(k)!=job.get(k) for k in ('participant_code','session_id','run_id')):raise ValueError('Immutable profile/queue/receipt identity changed')
-                delivered.append(dict(job_id=job_id,status='already_verified',bundle_path=r['bundle_path']));continue
+                r=pc_delivery_receipt(receipt,job,queue_bytes,profile,r)
+                delivered.append(dict(job_id=job_id,status='already_verified',bundle_path=r['bundle_path'],**acknowledge_delivery(client,registry,job,receipt,r)));continue
             source=temp/'device-bundle';source.mkdir(exist_ok=True)
             client.read(registry,job_id,'COMPLETE.json',source/'COMPLETE.json')
             marker=load(source/'COMPLETE.json')
@@ -808,9 +841,9 @@ def pull_queue(adb,serial,destination,remote_registry=REMOTE_ROOT,client=None):
             provenance=dict(schema_version='researchflow.profile-transport.1',binding=profile,requests=client.request_log[request_start:],cached_files=cached_files,registry=registry,export_identity={k:job[k] for k in ('participant_code','session_id','run_id')},transport_build_is_not_historical_session_build=True)
             result=ingest(source,destination,participant,session,transport_binding=provenance)
             client.scope_check()
-            receipt.write_bytes(canonical(dict(job_id=job_id,queue_sha256=digest(queue_bytes),profile={k:profile[k] for k in ('serial','android_user','package')},status='verified_on_pc',**result)))
-            delivered.append(dict(job_id=job_id,status='verified_on_pc',**result))
-        except (OSError,ValueError,KeyError,ConnectionError) as ex:failed.append(dict(job_id=job_id,status='queued_retryable',reason=str(ex)))
+            r=pc_delivery_receipt(receipt,job,queue_bytes,profile,result)
+            delivered.append(dict(job_id=job_id,status='verified_on_pc',**result,**acknowledge_delivery(client,registry,job,receipt,r)))
+        except (OSError,ValueError,KeyError,ConnectionError,subprocess.TimeoutExpired) as ex:failed.append(dict(job_id=job_id,status='queued_retryable',reason=str(ex)))
     return dict(status='partial' if failed else 'verified',profile=profile,delivered=delivered,queued_failures=failed)
 
 def pull_all_queues(adb,serial,destination,remote_registry,include_isolated):
@@ -818,7 +851,7 @@ def pull_all_queues(adb,serial,destination,remote_registry,include_isolated):
     try:
         client=profile_client(adb,serial)
         names=client.scoped('roots')
-    except (ConnectionError,OSError) as ex:return dict(status='queued_profile_unavailable',reason=str(ex),delivered=[])
+    except (ConnectionError,OSError,subprocess.TimeoutExpired) as ex:return dict(status='queued_profile_unavailable',reason=str(ex),delivered=[])
     base='/storage/emulated/'+str(client.bound['android_user'])+'/Android/data/th.ac.tmu.vr.researchflow.quest3.technical/files'
     roots=[remote_registry]+[base+'/TechnicalScenarios/'+token(name)+'/registry' for name in names if name!='main']
     results=[dict(registry_root=root,**pull_queue(adb,serial,destination,root,client)) for root in dict.fromkeys(roots)]

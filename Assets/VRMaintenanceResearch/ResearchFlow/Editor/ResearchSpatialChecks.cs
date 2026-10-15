@@ -116,6 +116,138 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // Inactive DEV controller; detached UI is activated only to initialize native TMP font/layout metrics.
+        public static string RunFanReaderPlacement(string evidenceDirectory)
+        {
+            var donor = UnityEngine.Object.FindFirstObjectByType<ResearchFlowView>();
+            var donorCamera = donor && donor.Head ? donor.Head.GetComponent<Camera>() : null;
+            if (UnityEditor.EditorApplication.isPlaying || !ResearchFloorPolicy.EditorFixtureAllowed || ResearchUIPolicy.Active != ResearchUIPolicy.FixedDemo || !donorCamera || !donor.controller
+                || donor.gameObject.scene.path != "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity"
+                || !donor.thaiFont || !donor.japaneseFont || !donor.englishFont || donor.controller.stations.Length < 3 || !donor.controller.stations[2])
+                throw new InvalidOperationException("Stopped canonical scene, fixed policy, fonts and Fan station are required; no live XR fixture.");
+            string directory = System.IO.Path.GetFullPath(evidenceDirectory);
+            string project = System.IO.Path.GetFullPath(System.IO.Path.GetDirectoryName(Application.dataPath)).TrimEnd(System.IO.Path.DirectorySeparatorChar);
+            if (!System.IO.Path.IsPathRooted(evidenceDirectory) || directory.TrimEnd(System.IO.Path.DirectorySeparatorChar).Equals(project, StringComparison.OrdinalIgnoreCase)
+                || directory.StartsWith(project + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Use an absolute evidence directory outside the Unity project.");
+            System.IO.Directory.CreateDirectory(directory);
+            string output = System.IO.Path.Combine(directory, "fan-reader-" + Guid.NewGuid().ToString("N") + ".json");
+            var rows = new System.Collections.Generic.List<object>();
+            var scene = donor.gameObject.scene; bool dirtyBefore = scene.isDirty;
+            var rootsBefore = scene.GetRootGameObjects().Select(g => g.GetInstanceID()).OrderBy(i => i).ToArray();
+            const System.Reflection.BindingFlags hidden = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            void Set(object target, string property, object value) => target.GetType().GetProperty(property).GetSetMethod(true).Invoke(target, new[] { value });
+            float[] V(Vector3 v) => new[] { v.x, v.y, v.z };
+            object Pointables(ResearchPanelMotion p) => p.GetComponentsInChildren<Behaviour>(true).Where(b => b && b.GetType().Name == "PointableCanvas")
+                .Select(b => new { b.name, type = b.GetType().FullName, b.enabled, active = b.gameObject.activeInHierarchy }).ToArray();
+            string error = null;
+            try
+            {
+                foreach (float eye in new[] { 1f, 1.3f, 1.65f, 1.95f })
+                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
+                    foreach (string layout in new[] { "P", "Q" })
+                    {
+                        var root = new GameObject("SyntheticFanReaderFixture") { hideFlags = HideFlags.HideAndDontSave }; root.SetActive(false);
+                        GameObject ui = null;
+                        try
+                        {
+                            SceneManager.MoveGameObjectToScene(root, scene);
+                            var fixture = root.AddComponent<ResearchSessionFlowController>();
+                            fixture.stations = donor.controller.stations; fixture.taskPorts = donor.controller.taskPorts;
+                            // Available is intentional: an InProgress record without a writer correctly renders the logger-error screen.
+                            Set(fixture, "Record", new ParticipantRecord { participant_id = "DEV_FAN_READER_FIXTURE", group = ParticipantGroup.Dev,
+                                test_data = true, language = language, task_order = TaskOrder.BA, task_a_layout = layout, session_state = RegistryState.Available });
+                            Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.BA, ResearchFlowState.Task1Active, 5));
+                            Set(fixture, "CurrentStationIndex", 2); Set(fixture, "StationEyeHeight", (double)eye);
+                            ((ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", hidden).GetValue(fixture)).Start(0);
+                            var view = ResearchFlowView.Build(root.transform, donor.thaiFont, donor.japaneseFont, donor.englishFont);
+                            fixture.view = view; view.controller = fixture; ui = view.gameObject; ui.SetActive(false); ui.hideFlags = HideFlags.HideAndDontSave;
+                            var head = new GameObject("SyntheticFanHead", typeof(Camera)); head.transform.SetParent(root.transform, false);
+                            var camera = head.GetComponent<Camera>(); camera.CopyFrom(donorCamera); camera.enabled = false;
+                            head.transform.SetPositionAndRotation(fixture.stations[2].position + Vector3.up * eye, fixture.stations[2].rotation);
+                            view.Head = head.transform; view.enabled = false; view.mainPanel.enabled = view.referencePanel.enabled = false;
+                            ui.transform.SetParent(null, false); SceneManager.MoveGameObjectToScene(ui, scene); ui.SetActive(true);
+                            view.Refresh(); Canvas.ForceUpdateCanvases(); view.Refresh(); view.mainPanel.Recenter(false, false);
+                            string mainRecenterRejection = view.mainPanel.PlacementBlocked ? view.mainPanel.LastRejection : null;
+                            foreach (string phase in new[] { "first_open_empty", "user_manual", "step_by_step", "illustrated", "video", "minimized", "restored", "stationary_callback", "reopen_manual" })
+                            {
+                                if (phase == "reopen_manual") { Set(fixture, "ReferenceOpen", false); view.RefreshReference(); }
+                                Set(fixture, "ReferenceOpen", true); Set(fixture, "ReferenceMinimized", phase == "minimized");
+                                Set(fixture, "ReferenceSection", phase == "first_open_empty" ? "" : new[] { "user_manual", "step_by_step", "illustrated", "video" }.Contains(phase) ? phase : "user_manual");
+                                view.RefreshReference(); Canvas.ForceUpdateCanvases();
+                                foreach (var text in ui.GetComponentsInChildren<TMPro.TMP_Text>(false)) text.ForceMeshUpdate(true);
+                                view.RefreshReference(); Canvas.ForceUpdateCanvases();
+                                var panel = view.referencePanel;
+                                if (phase == "stationary_callback") typeof(ResearchPanelMotion).GetMethod("LateUpdate", hidden).Invoke(panel, null);
+                                bool readable = panel.IsReadableFromHead; string viewRejection = readable ? null : panel.LastRejection;
+                                var facing = head.transform.rotation; head.transform.rotation = Quaternion.LookRotation(panel.transform.position - head.transform.position);
+                                bool readableFacingPanel = panel.IsReadableFromHead; head.transform.rotation = facing;
+                                bool clear = panel.PlacementClear(panel.transform.position, panel.transform.rotation); string clearRejection = clear ? null : panel.LastRejection;
+                                rows.Add(new { kind = "observed_pose", language, layout, phase, resource = fixture.ReaderResource, synthetic_eye = eye,
+                                    panel.PlacementBlocked, panel.RecenterPending, readable, readableFacingPanel, viewRejection, clear, clearRejection, position = V(panel.transform.position),
+                                    rect = new[] { ((RectTransform)panel.transform).rect.width, ((RectTransform)panel.transform).rect.height },
+                                    canvas = panel.GetComponent<Canvas>().enabled, raycaster = panel.GetComponent<UnityEngine.EventSystems.BaseRaycaster>().enabled,
+                                    reader_status = view.ReferenceViewer.Status, main_position = V(view.mainPanel.transform.position), main_blocked = view.mainPanel.PlacementBlocked,
+                                    mainRecenterRejection, main_rect = new[] { ((RectTransform)view.mainPanel.transform).rect.width, ((RectTransform)view.mainPanel.transform).rect.height },
+                                    main_canvas = view.mainPanel.GetComponent<Canvas>().enabled, main_raycaster = view.mainPanel.GetComponent<UnityEngine.EventSystems.BaseRaycaster>().enabled,
+                                    fixture_pointables = Pointables(panel), donor_pointables = Pointables(donor.referencePanel),
+                                    buttons = panel.GetComponentsInChildren<ResearchUIAction>(false).Select(a => new { a.command,
+                                        interactable = a.GetComponent<UnityEngine.UI.Button>().IsInteractable(), position = V(((RectTransform)a.transform).TransformPoint(((RectTransform)a.transform).rect.center)) }).ToArray() });
+                                if (layout == "P" && (eye == 1f || eye == 1.65f) && phase == "user_manual")
+                                {
+                                    string pixelsPath = System.IO.Path.Combine(directory, language + "_eye" + eye.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "_manual.png");
+                                    if (System.IO.File.Exists(pixelsPath)) throw new InvalidOperationException("Refusing capture overwrite: " + pixelsPath);
+                                    int width = 1600, height = Mathf.RoundToInt(width / camera.aspect);
+                                    var target = new RenderTexture(width, height, 24); var pixels = new Texture2D(width, height, TextureFormat.RGB24, false);
+                                    var previousTarget = camera.targetTexture; var previousActive = RenderTexture.active; var previousRotation = head.transform.rotation;
+                                    try
+                                    {
+                                        head.transform.rotation = Quaternion.LookRotation(panel.transform.position - head.transform.position);
+                                        camera.targetTexture = target; camera.Render(); RenderTexture.active = target;
+                                        pixels.ReadPixels(new Rect(0, 0, width, height), 0, 0); pixels.Apply(); System.IO.File.WriteAllBytes(pixelsPath, pixels.EncodeToPNG());
+                                        rows.Add(new { kind = "native_editor_pixels", language, eye, pixelsPath, width, height, camera.fieldOfView, camera.aspect,
+                                            scope = "Synthetic mono head turned toward actual Reader; no scaling, FOV adjustment, hidden peer panels or Quest/wearer proof." });
+                                    }
+                                    finally { camera.targetTexture = previousTarget; RenderTexture.active = previousActive; head.transform.rotation = previousRotation; UnityEngine.Object.DestroyImmediate(pixels); UnityEngine.Object.DestroyImmediate(target); }
+                                }
+                                foreach (string testedPanelId in new[] { "reference", "task_information" })
+                                for (int candidate = 0; candidate < ResearchStationAnchors.CandidateCount(2, testedPanelId); candidate++)
+                                {
+                                    var testedPanel = testedPanelId == "reference" ? panel : view.mainPanel;
+                                    var station = fixture.stations[2];
+                                    if (!ResearchStationAnchors.TryGet(2, layout, testedPanelId, station.position.x, station.position.y, station.position.z, station.eulerAngles.y, eye, candidate, out var pose))
+                                        throw new InvalidOperationException("Fan candidate missing: " + candidate);
+                                    var p = new Vector3((float)pose.X, (float)pose.Y, (float)pose.Z); var r = Quaternion.Euler(0, (float)pose.YawDegrees, 0);
+                                    bool face = (bool)typeof(ResearchPanelMotion).GetMethod("ReadableFace", hidden).Invoke(testedPanel, new object[] { p, r }); string faceRejection = face ? null : testedPanel.LastRejection;
+                                    bool candidateClear = testedPanel.PlacementClear(p, r); string candidateRejection = candidateClear ? null : testedPanel.LastRejection;
+                                    rows.Add(new { kind = testedPanelId == "reference" ? "candidate" : "main_candidate", language, layout, phase, eye, candidate, pose.Id, position = V(p), face, faceRejection, candidateClear, candidateRejection });
+                                    if (testedPanelId == "task_information" && eye == 1f)
+                                        foreach (float addedHeight in new[] { .3f, .6f, .9f })
+                                        {
+                                            var sweepPosition = p + Vector3.up * addedHeight;
+                                            bool sweepFace = (bool)typeof(ResearchPanelMotion).GetMethod("ReadableFace", hidden).Invoke(testedPanel, new object[] { sweepPosition, r });
+                                            string sweepFaceRejection = sweepFace ? null : testedPanel.LastRejection;
+                                            bool sweepClear = testedPanel.PlacementClear(sweepPosition, r);
+                                            string sweepRejection = sweepClear ? null : testedPanel.LastRejection;
+                                            rows.Add(new { kind = "main_height_sweep", language, layout, phase, eye, candidate, pose.Id, addedHeight,
+                                                position = V(sweepPosition), sweepFace, sweepFaceRejection, sweepClear, sweepRejection,
+                                                scope = "Candidate query after Reader opens; no transform change; first blocker per query, not all overlapping objects." });
+                                        }
+                                }
+                            }
+                            if (root.activeInHierarchy || fixture.Registry != null || fixture.Logger != null) throw new InvalidOperationException("Fixture activated a session owner.");
+                        }
+                        finally { if (ui) UnityEngine.Object.DestroyImmediate(ui); UnityEngine.Object.DestroyImmediate(root); }
+                    }
+            }
+            catch (Exception failure) { error = failure.ToString(); }
+            bool rootsPreserved = rootsBefore.SequenceEqual(scene.GetRootGameObjects().Select(g => g.GetInstanceID()).OrderBy(i => i));
+            System.IO.File.WriteAllText(output, Newtonsoft.Json.JsonConvert.SerializeObject(new { scope = "Synthetic stopped-Editor geometry only; Available DEV record, seeded task clock, no registry/logger/SDK input/Training or wearer proof. Stationary callback is not a temporal run.",
+                scene = scene.path, dirtyBefore, dirtyAfter = scene.isDirty, rootsPreserved, camera_fov = donorCamera.fieldOfView, camera_aspect = donorCamera.aspect,
+                anchors_version = ResearchStationAnchors.Version, ui_policy = ResearchUIPolicy.Active, layout_version = ResearchUIPolicy.LayoutVersion, rows, error }, Newtonsoft.Json.Formatting.Indented));
+            if (error != null || !rootsPreserved || scene.isDirty != dirtyBefore) throw new InvalidOperationException("Fan Reader diagnostic incomplete or scene state changed; evidence=" + output + "; " + error);
+            return "FAN_READER_GEOMETRY_RECORDED rows=" + rows.Count + "; evidence=" + output + "; synthetic only, not a pass";
+        }
+
         public static string RunModalPlacement()
         {
             var donor = UnityEngine.Object.FindFirstObjectByType<ResearchFlowView>();

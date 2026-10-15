@@ -22,7 +22,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         // 20261015: practice-station order builds toward 'ready' without repeated insert/latch/tighten (no session used 20261014).
         public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261015";
         // Table/station/Task A P/Q geometry is unchanged from the Q5 source in this revision.
-        public const string LayoutVersion = "S1_LAYOUT_ENV_V2_Q5_20261014";
+        public const string LayoutVersion = "S1_LAYOUT_ENV_V2_FAN_TASK_FALLBACK_20261015";
 
         public const string Default = FixedDemo;
 

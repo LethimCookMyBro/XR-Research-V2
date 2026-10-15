@@ -22,7 +22,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     {
         static readonly Stack<IEnumerator> routines = new Stack<IEnumerator>();
         static ResearchSessionFlowController controller;
-        static double deadline;
+        static double deadline, activeTime, clockTick, focusWait;
+        const double FocusWaitLimit = 120;
+        static bool clockBlocked, focusInterrupted;
+        static string blockedSession, blockedRun;
         public static string Status { get; private set; } = "Idle";
         public static string Detail { get; private set; } = "";
         public static readonly List<string> Steps = new List<string>();
@@ -41,7 +44,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             status = Status, detail = Detail, participant = controller.Record?.participant_id, session = controller.Record?.session_id,
             run = controller.Record?.run_id, layout = controller.Record?.task_a_layout, state = controller.Flow?.State.ToString(), task = controller.Flow?.CurrentTask,
             paused = controller.Flow?.Paused, inspect_passed = controller.Flow?.InspectPassed, error = controller.Error,
-            registry = controller.Record?.session_state.ToString(), export = controller.LastExportPath, steps = Steps.Count, last_step = Steps.LastOrDefault()
+            registry = controller.Record?.session_state.ToString(), export = controller.LastExportPath, steps = Steps.Count, last_step = Steps.LastOrDefault(),
+            active_seconds = activeTime, focus_wait_seconds = focusWait, focus_blocked = clockBlocked, focus_interrupted = focusInterrupted
         });
 
         public static string BeginToFirstTask(string language = "Thai", bool orderAB = true, string layout = null) =>
@@ -80,12 +84,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static string Start(IEnumerator routine, double seconds)
         {
-            if (Status == "Running") throw new InvalidOperationException("Driver already running.");
+            if (Status == "Running" || Status == "BLOCKED_FOCUS") throw new InvalidOperationException("Driver already running.");
             if (!EditorApplication.isPlaying || EditorApplication.isPaused) throw new InvalidOperationException("Enter unpaused Play Mode first.");
             controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>() ?? throw new InvalidOperationException("No flow controller.");
             FocusGame(); // the tester returns to the Game View before driving the participant
             routines.Clear(); routines.Push(routine);
-            deadline = EditorApplication.timeSinceStartup + seconds;
+            deadline = seconds; activeTime = focusWait = 0;
+            clockTick = EditorApplication.timeSinceStartup; clockBlocked = focusInterrupted = false;
+            blockedSession = blockedRun = null;
             Status = "Running"; Detail = "";
             EditorApplication.update -= Tick; EditorApplication.update += Tick;
             return Report();
@@ -95,14 +101,55 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             try
             {
-                if (!EditorApplication.isPlaying || EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("Play Mode ended or driver timeout at: " + Steps.LastOrDefault());
-                if (!Application.isFocused) return;
+                if (!EditorApplication.isPlaying) throw new TimeoutException("Play Mode ended at: " + Steps.LastOrDefault());
+                double now = EditorApplication.timeSinceStartup, elapsed = Math.Max(0, now - clockTick);
+                clockTick = now;
+                bool blocked = !Application.isFocused || EditorApplication.isPaused
+                    || (controller.Flow?.Paused == true && controller.PauseKind == "application");
+                if (blocked && !clockBlocked)
+                {
+                    blockedSession = controller.Record?.session_id; blockedRun = controller.Record?.run_id;
+                }
+                else if (!blocked && clockBlocked) Require(SameBlockedContext, "Focus wait context changed; old routine cannot continue in a replacement session.");
+                if (blocked || clockBlocked) focusWait += elapsed;
+                else activeTime += elapsed;
+                clockBlocked = blocked; focusInterrupted |= blocked;
+                if (focusWait >= FocusWaitLimit)
+                {
+                    EditorApplication.update -= Tick;
+                    Status = "BLOCKED_FOCUS"; Detail = "Focus/application-pause wait reached 120 seconds; same-session continuation retained.";
+                    Debug.Log("RESEARCH_S1_FLOW_DRIVER " + Report());
+                    return;
+                }
+                if (blocked) return;
+                if (activeTime > deadline) throw new TimeoutException("Driver active-time timeout at: " + Steps.LastOrDefault());
                 if (routines.Count == 0) { Stop("Done", null); return; }
                 var current = routines.Peek();
                 if (!current.MoveNext()) { routines.Pop(); return; }
                 if (current.Current is IEnumerator nested) routines.Push(nested);
             }
-            catch (Exception error) { Stop("Failed", error.ToString()); }
+            catch (Exception error) { Stop(focusInterrupted ? "INCONCLUSIVE_FOCUS_INTERRUPTED" : "Failed", error.ToString()); }
+        }
+
+        static bool SameBlockedContext => controller && controller == UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>()
+            && ((blockedSession == null && blockedRun == null && controller.Record == null)
+                || (!string.IsNullOrEmpty(blockedSession) && controller.Record?.session_state == RegistryState.InProgress
+                    && controller.Record.test_data && controller.Record.session_id == blockedSession && controller.Record.run_id == blockedRun));
+
+        public static string ResumeAfterFocus()
+        {
+            Require(Status == "BLOCKED_FOCUS" && routines.Count > 0, "No focus-blocked routine to continue.");
+            Require(EditorApplication.isPlaying && !EditorApplication.isPaused && Application.isFocused, "Focused, unpaused Play Mode required.");
+            Require(SameBlockedContext, "Continue only the same DEV session and run, or the same pre-session context.");
+            Require((controller.Record == null ? controller.Flow?.Paused != true : controller.Flow != null && !controller.Flow.Paused)
+                && string.IsNullOrEmpty(controller.Error)
+                && (controller.Record == null && !ResearchFlowVisualInput.Running
+                    || controller.guards.Where(g => g).Count() == 2 && controller.guards.Where(g => g).All(g => g.InputNeutral && g.TrackingValid)),
+                "Clear the application pause through the normal Console and restore neutral tracked controllers first.");
+            clockTick = EditorApplication.timeSinceStartup; focusWait = 0; clockBlocked = false;
+            Status = "Running"; Detail = "";
+            EditorApplication.update -= Tick; EditorApplication.update += Tick;
+            return Report();
         }
 
         static void Stop(string status, string detail)
@@ -227,10 +274,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             while (controller.Flow.IsTutorial && controller.Flow.State != ResearchFlowState.TutorialComplete)
             {
                 string fact = controller.TutorialFact;
-                double until = EditorApplication.timeSinceStartup + 8;
+                double until = activeTime + 8;
                 while (!controller.view.TutorialActionReady(fact) || controller.TutorialArmedFact != fact)
                 {
-                    Require(EditorApplication.timeSinceStartup < until, "Tutorial action never became armed: " + fact);
+                    Require(activeTime < until, "Tutorial action never became armed: " + fact);
                     yield return null;
                 }
                 int before = controller.TutorialCompletedFactCount;
@@ -264,10 +311,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     case "cable_disconnect": yield return MoveLead(false); break;
                     default: throw new InvalidOperationException("No native driver for tutorial fact " + fact);
                 }
-                until = EditorApplication.timeSinceStartup + 8;
+                until = activeTime + 8;
                 while (controller.TutorialCompletedFactCount == before && controller.Flow.State != ResearchFlowState.TutorialComplete)
                 {
-                    Require(EditorApplication.timeSinceStartup < until, "Tutorial fact did not complete from native input: " + fact);
+                    Require(activeTime < until, "Tutorial fact did not complete from native input: " + fact);
                     yield return null;
                 }
                 yield return Wait(.2); Capture("after_" + fact);
@@ -283,6 +330,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Wait(.3); Capture(controller.Flow.State.ToString());
             yield return RayClick("task_start");
             yield return Settle();
+            Require(controller.TaskStartConfirmation && !controller.Flow.IsTaskActive, "Task timer awaits deliberate confirmation.");
+            yield return RayClick("task_start_back");
+            Require(!controller.TaskStartConfirmation && controller.Flow.TutorialCompleted == 5 && !controller.Flow.IsTaskActive, "Back preserves completed Training and does not start Task.");
+            yield return RayClick("task_start");
+            yield return Settle();
+            yield return RayClick("task_start_confirm");
+            yield return Settle();
             Require(controller.Flow.IsTaskActive, "Task active after task_start.");
             ParkControllers();
             yield return Wait(.5); Capture(controller.Flow.State + "_" + controller.Flow.CurrentTask);
@@ -294,16 +348,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(controller.Flow.IsTaskActive, "Inspect needs an active task.");
             var state = controller.Flow.State;
             yield return RayClick("inspect");
-            double until = EditorApplication.timeSinceStartup + 8;
+            double until = activeTime + 8;
             while (controller.Flow.State == state && !controller.Flow.InspectPassed.HasValue)
             {
-                Require(EditorApplication.timeSinceStartup < until, "Inspect produced no result.");
+                Require(activeTime < until, "Inspect produced no result.");
                 yield return null;
             }
-            until = EditorApplication.timeSinceStartup + 8;
+            until = activeTime + 8;
             while (!controller.InspectionFeedbackVisible)
             {
-                Require(EditorApplication.timeSinceStartup < until, "Inspect feedback never became visible.");
+                Require(activeTime < until, "Inspect feedback never became visible.");
                 yield return null;
             }
             bool passed = controller.Flow.InspectPassed == true;
@@ -340,11 +394,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static IEnumerator Settle()
         {
-            double start = EditorApplication.timeSinceStartup;
+            double start = activeTime;
             int frame = Time.frameCount;
-            while (controller.Transitioning || EditorApplication.timeSinceStartup - start < .5 || Time.frameCount < frame + 3)
+            while (controller.Transitioning || activeTime - start < .5 || Time.frameCount < frame + 3)
             {
-                Require(EditorApplication.timeSinceStartup - start < 15, "Transition did not settle.");
+                Require(activeTime - start < 15, "Transition did not settle.");
                 yield return null;
             }
             Require(string.IsNullOrEmpty(controller.Error), "Controller error: " + controller.Error);
@@ -352,8 +406,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static IEnumerator Wait(double seconds)
         {
-            double until = EditorApplication.timeSinceStartup + seconds;
-            while (EditorApplication.timeSinceStartup < until) yield return null;
+            double until = activeTime + seconds;
+            while (activeTime < until) yield return null;
         }
 
         static HandsLabInputGuard Guard(int side) => controller.guards.Single(g => g && g.side == (side == 0 ? Handedness.Left : Handedness.Right));
@@ -385,17 +439,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Aim the right SDK controller ray until it hits the visible button, then press and release the trigger.
         static IEnumerator RayClick(string command)
         {
-            double until = EditorApplication.timeSinceStartup + 10;
+            double until = activeTime + 10;
             ResearchUIAction action;
             while (!(action = controller.view.GetComponentsInChildren<ResearchUIAction>(false).FirstOrDefault(a => a.command == command && a.GetComponent<Button>().IsInteractable())))
             {
-                Require(EditorApplication.timeSinceStartup < until, "No interactable button: " + command + " in " + controller.Flow?.State);
+                Require(activeTime < until, "No interactable button: " + command + " in " + controller.Flow?.State);
                 yield return null;
             }
             var ray = Ray(1);
             while (!ray.isActiveAndEnabled || ray.State == InteractorState.Disabled)
             {
-                Require(EditorApplication.timeSinceStartup < until, "Right controller ray enabled by its guard: " + JsonConvert.SerializeObject(ResearchFlowVisualInput.Audit()));
+                Require(activeTime < until, "Right controller ray enabled by its guard: " + JsonConvert.SerializeObject(ResearchFlowVisualInput.Audit()));
                 yield return null;
             }
             var rect = action.GetComponent<RectTransform>();
@@ -740,6 +794,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var meta = Newtonsoft.Json.Linq.JObject.FromObject(viewer.Metadata);
             var entry = new { label, status = viewer.Status, viewer.PageIndex, viewer.PageCount, viewer.BoundSection, content = (string)meta["content_id"],
                 approval = (string)meta["approval"], normalized = (float?)meta["normalized_offset"], time = (double?)meta["time_seconds"],
+                caption_part = (int?)meta["caption_part"], caption_parts = (int?)meta["caption_parts"], navigation = viewer.NavigationLabel,
+                readableFacing = controller.view.referencePanel.IsReadableFromHead, visible = (bool?)meta["visible"],
                 playing = viewer.NativeVideoPlayer && viewer.NativeVideoPlayer.isPlaying, error = (string)meta["status"] };
             ReaderLog.Add(entry); Step("reader " + label + " " + viewer.Status + " " + viewer.PageIndex + "/" + viewer.PageCount);
             return entry;
@@ -747,8 +803,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static IEnumerator AwaitViewer(Func<bool> ready, string what, double seconds = 12)
         {
-            double until = EditorApplication.timeSinceStartup + seconds;
-            while (!ready()) { Require(EditorApplication.timeSinceStartup < until, "Reader never reached: " + what + " (" + controller.view.ReferenceViewer.Status + ")"); yield return null; }
+            double until = activeTime + seconds;
+            while (!ready()) { Require(activeTime < until, "Reader never reached: " + what + " (" + controller.view.ReferenceViewer.Status + ")"); yield return null; }
         }
 
         static IEnumerator ReaderTourRoutine()
@@ -758,10 +814,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return RayClick("reference");
             yield return Settle();
             var viewer = controller.view.ReferenceViewer;
+            var panel = controller.view.referencePanel;
+            ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
+            yield return Settle();
+            var rect = (RectTransform)panel.transform;
+            ResearchFlowVisualInput.SetHeadFacing(rect.TransformPoint(rect.rect.center));
+            yield return AwaitViewer(() => panel.IsReadableFromHead, "reference readable facing");
             foreach (var section in ResearchReferenceScheme.Active)
             {
                 if (controller.ReferenceSection != section) yield return RayClick("reference_tab." + section);
-                yield return AwaitViewer(() => viewer.IsReady && viewer.BoundSection == section, section);
+                yield return AwaitViewer(() => viewer.IsReady && viewer.BoundSection == section && controller.view.IsReferenceActuallyVisible, section + " ready and visible");
                 yield return Wait(.6); ViewerState(section + "_open"); Capture("reader_" + section);
                 if (section == "video")
                 {
@@ -787,15 +849,25 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 if (viewer.CanNext)
                 {
-                    int page = viewer.PageIndex;
+                    int page = viewer.PageIndex, nextPage = page + 1;
+                    int? nextPart = null;
+                    if (section == "illustrated")
+                    {
+                        var meta = Newtonsoft.Json.Linq.JObject.FromObject(viewer.Metadata);
+                        int part = (int)meta["caption_part"], parts = (int)meta["caption_parts"];
+                        nextPart = part < parts ? part + 1 : 1;
+                        if (part < parts) nextPage = page;
+                    }
                     yield return RayClick("reference_next");
-                    yield return AwaitViewer(() => viewer.PageIndex == page + 1, section + " next page");
+                    yield return AwaitViewer(() => viewer.PageIndex == nextPage && (int?)Newtonsoft.Json.Linq.JObject.FromObject(viewer.Metadata)["caption_part"] == nextPart, section + " next page/caption");
                     yield return Wait(.4); ViewerState(section + "_next"); Capture("reader_" + section + "_next");
                 }
             }
             yield return RayClick("reference_close");
             yield return Settle();
             Require(!controller.ReferenceOpen, "Reference closed by ray.");
+            ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
+            yield return Settle();
             Detail = JsonConvert.SerializeObject(ReaderLog);
         }
 
@@ -832,8 +904,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static IEnumerator AwaitViewerless(Func<bool> condition, string what, double seconds)
         {
-            double until = EditorApplication.timeSinceStartup + seconds;
-            while (!condition()) { Require(EditorApplication.timeSinceStartup < until, "Never observed: " + what + " (" + controller.Flow.State + ", paused=" + controller.Flow.Paused + ")"); yield return null; }
+            double until = activeTime + seconds;
+            while (!condition()) { Require(activeTime < until, "Never observed: " + what + " (" + controller.Flow.State + ", paused=" + controller.Flow.Paused + ")"); yield return null; }
         }
 
         // Researcher ends the session from the Console: two real clicks (Abort, then Confirm). Data must still export.
@@ -845,9 +917,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return ConsoleClick(console, "abort");
             Require(controller.Record.session_state == RegistryState.InProgress, "First Abort click only asks for confirmation.");
             yield return ConsoleClick(console, "abort");
-            double until = EditorApplication.timeSinceStartup + 10;
+            double until = activeTime + 10;
             while (controller.Record.session_state == RegistryState.InProgress || string.IsNullOrEmpty(controller.LastExportPath))
-            { Require(EditorApplication.timeSinceStartup < until, "Console Abort closed the session and exported."); yield return null; }
+            { Require(activeTime < until, "Console Abort closed the session and exported."); yield return null; }
             yield return Wait(.5); Capture("after_console_abort");
             Detail = "aborted by console: " + controller.Record.session_state + " export=" + controller.LastExportPath;
         }
@@ -861,18 +933,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static IEnumerator ConsoleOpened(ResearcherConsole console)
         {
-            double until = EditorApplication.timeSinceStartup + 5;
-            while (!console.Bound) { Require(EditorApplication.timeSinceStartup < until, "Researcher Console bound to the flow controller."); console.Repaint(); yield return null; }
+            double until = activeTime + 5;
+            while (!console.Bound) { Require(activeTime < until, "Researcher Console bound to the flow controller."); console.Repaint(); yield return null; }
         }
 
         // Mouse down/up at the centre of the control the Console last drew (segment index for toolbars).
         static IEnumerator ConsoleClick(ResearcherConsole console, string id, int segment = 0, int segments = 1)
         {
-            double until = EditorApplication.timeSinceStartup + 5;
+            double until = activeTime + 5;
             console.ControlRects.Remove(id);
             while (!console.ControlRects.ContainsKey(id))
             {
-                Require(EditorApplication.timeSinceStartup < until, "Researcher Console never drew control " + id);
+                Require(activeTime < until, "Researcher Console never drew control " + id);
                 console.Repaint(); yield return null;
             }
             var rect = console.ControlRects[id];

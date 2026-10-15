@@ -16,6 +16,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private ExperimentInputMode input;
         private int cell;
         private string selectedId = "", error = "", summary = "", assignment = "", shownId = "", confirmEnd = "";
+        private ResearchSessionFlowController endingController;
+        private string endingIdentity;
+        private string EndingIdentity => controller?.Record == null || string.IsNullOrWhiteSpace(controller.Record.session_id) || string.IsNullOrWhiteSpace(controller.Record.run_id)
+            || string.IsNullOrWhiteSpace(controller.Record.participant_id) ? null : controller.Record.participant_id + "/" + controller.Record.session_id + "/" + controller.Record.run_id;
+        private bool EndingRequestMatches => endingIdentity != null && ReferenceEquals(controller, endingController) && EndingIdentity == endingIdentity && controller?.Record?.session_state == RegistryState.InProgress;
+        private void ClearEndingRequest() { confirmEnd = ""; endingController = null; endingIdentity = null; }
+        private void ToggleEndingRequest(string action)
+        {
+            bool arm = confirmEnd != action;
+            ClearEndingRequest();
+            if (!arm || EndingIdentity == null || controller?.Record?.session_state != RegistryState.InProgress) return;
+            confirmEnd = action; endingController = controller; endingIdentity = EndingIdentity;
+        }
         private int endReason = 3; // index into ResearcherTerminationReasons; "other" until the researcher picks
         static readonly string[] EndReasonLabels = { "Withdrawal", "Safety stop", "Technical failure", "Other" };
         private IReadOnlyList<ParticipantRecord> records = Array.Empty<ParticipantRecord>();
@@ -175,19 +188,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 if (GUILayout.Button("Demo evaluator: Pass")) Invoke(() => controller.SetDemoPass(true));
                 EditorGUILayout.EndHorizontal();
             }
+            if (confirmEnd != "" && !EndingRequestMatches) ClearEndingRequest();
             var reasons = ResearchParticipantRegistry.ResearcherTerminationReasons;
             using (new EditorGUI.DisabledScope(!running))
             {
-                // Emergency stop never waits for a category; record the real one below afterwards.
-                if (Button("emergency", "Emergency stop now (safety stop)")) { confirmEnd = ""; Invoke(() => controller.ResearcherAbort(false, "safety_stop")); }
+                // Stop keeps the session open; permanent endings require the separate confirmation below.
+                using (new EditorGUI.DisabledScope(!controller.ParticipantCanStop))
+                    if (Button("emergency", "Stop now (session stays open)")) { ClearEndingRequest(); Invoke(() => controller.ResearcherStop()); }
+                if (!controller.ParticipantCanStop) EditorGUILayout.LabelField("Stop unavailable: no active participant flow.");
                 endReason = GUILayout.Toolbar(endReason, EndReasonLabels);
                 EditorGUILayout.BeginHorizontal();
-                // Same two-step confirm as the Display 2 setup view; a modal dialog would freeze the participant view.
-                if (Button("abort", confirmEnd == "abort" ? "Confirm Abort: " + EndReasonLabels[endReason] + " (ID stays locked)" : "Abort Session"))
-                { if (confirmEnd == "abort") { confirmEnd = ""; Invoke(() => controller.ResearcherAbort(false, reasons[endReason])); } else confirmEnd = "abort"; }
-                if (Button("invalid", confirmEnd == "invalid" ? "Confirm Mark Invalid" : "Mark Invalid"))
-                { if (confirmEnd == "invalid") { confirmEnd = ""; Invoke(() => controller.ResearcherAbort(true, reasons[endReason])); } else confirmEnd = "invalid"; }
+                if (Button("abort", confirmEnd == "abort" ? "Cancel Abort" : "Abort Session"))
+                    ToggleEndingRequest("abort");
+                if (Button("invalid", confirmEnd == "invalid" ? "Cancel Invalid" : "Mark Invalid"))
+                    ToggleEndingRequest("invalid");
                 EditorGUILayout.EndHorizontal();
+                if (confirmEnd != "" && EndingRequestMatches && Button("confirm_end", "Confirm " + (confirmEnd == "invalid" ? "Invalid" : "Abort") + ": " + EndReasonLabels[endReason] + " (ID stays locked)"))
+                {
+                    bool invalidate = confirmEnd == "invalid"; ClearEndingRequest();
+                    Invoke(() => controller.ResearcherAbort(invalidate, reasons[endReason]));
+                }
             }
             var ended = controller.Record;
             if (ended != null && (ended.session_state == RegistryState.Aborted || ended.session_state == RegistryState.Invalid))

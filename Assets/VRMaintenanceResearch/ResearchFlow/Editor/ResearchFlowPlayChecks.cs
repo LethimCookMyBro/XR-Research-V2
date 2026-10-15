@@ -295,7 +295,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 using (var logger = new HandsLabLogger(evidenceFolder, "None", "Editor accepted-command fixture", technicalTest: true, testData: true))
                 {
                     Set(fixture, "Logger", logger); ui.Refresh();
-                    Check(ui.LocalCommand("task_start", "None") && fixture.Flow.IsTaskActive && !ui.LocalCommand("task_start", "None"), "Start accepts once and rejects a repeated state transition");
+                    Check(ui.LocalCommand("task_start", "None") && !fixture.Flow.IsTaskActive && fixture.TaskStartConfirmation, "Start requests confirmation without starting time");
+                    Check(ui.LocalCommand("task_start_back", "None") && !fixture.TaskStartConfirmation && fixture.Flow.TutorialCompleted == 5, "Back retains Training");
+                    Check(ui.LocalCommand("task_start", "None") && ui.LocalCommand("task_start_confirm", "None") && fixture.Flow.IsTaskActive && !ui.LocalCommand("task_start_confirm", "None"), "Confirmed Start accepts once and rejects a repeated state transition");
                     Check(fixture.Command("reference") && fixture.ReferenceOpen && !fixture.Command("reference"), "Reference accepts opening once and rejects reopening an open panel");
                     Check(!fixture.Command("reference_tab.video") && !fixture.Command("reference_tab." + fixture.ReferenceSection), "Unavailable/current formats are rejected without success feedback");
                     Check(fixture.Command("reference_minimize") && !fixture.Command("reference_minimize"), "Reference Minimize reports real state change only");
@@ -501,8 +503,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     Set(fixture, "Logger", logger);
                     Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Ready, 5));
-                    fixture.Command("task_start", "SimulatedController");
-                    Check(fixture.Flow.State == ResearchFlowState.Task1Ready, "Running render comparison blocks participant task advance");
+                    Check(!fixture.Command("task_start", "SimulatedController") && !fixture.TaskStartConfirmation && fixture.Flow.State == ResearchFlowState.Task1Ready, "Running render comparison blocks both task request and participant advance");
                     Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 1));
                     Field<HashSet<string>>(fixture, "tutorialEvidence").Clear();
                     typeof(ResearchSessionFlowController).GetMethod("Evidence", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(string), typeof(bool) }, null)
@@ -733,6 +734,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var expected = task == 0 ? requestedOrder == TaskOrder.AB ? "A" : "B" : requestedOrder == TaskOrder.AB ? "B" : "A";
                 Require(controller.Flow.CurrentTask == expected, "Task " + (task + 1) + " resolves to " + expected);
                 Click("task_start"); yield return Stable();
+                Click("task_start_confirm"); yield return Stable();
                 VerifyExperimentalUI();
                 if (stopAtFirstTask) yield break;
                 if (task == 0) yield return MeasureCanvasCost("task_static_ui", 90);

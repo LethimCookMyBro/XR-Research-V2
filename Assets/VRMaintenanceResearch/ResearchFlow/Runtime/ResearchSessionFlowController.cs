@@ -34,8 +34,26 @@ namespace VRMaintenanceResearch.ResearchFlow
         public ResearchSessionFlow Flow { get; private set; }
         public HandsLabLogger Logger { get; private set; }
         public string Error { get; private set; } = "";
+        public bool TaskStartConfirmation { get; private set; }
         public string ExportDeliveryError { get; private set; } = "";
         public string LastExportPath { get; private set; } = "";
+        string exportStatusKey, exportStatusCache = "saved";
+        double exportStatusCheckedAt = double.NegativeInfinity;
+        public string ExportDeliveryStatus
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(ExportDeliveryError)) return "attention";
+                string key = Record == null ? "" : Record.participant_id + "/" + Record.session_id + "/" + Record.run_id + "/" + Record.revision + "/" + LastExportPath;
+                double now = Time.realtimeSinceStartupAsDouble;
+                if (key != exportStatusKey || now < exportStatusCheckedAt || now - exportStatusCheckedAt >= 1)
+                {
+                    exportStatusKey = key; exportStatusCheckedAt = now;
+                    exportStatusCache = ResearchExportQueue.DeliveryStatus(DataRoot, Record, LastExportPath);
+                }
+                return exportStatusCache;
+            }
+        }
         public ResearchFloorPolicy FloorPolicy { get; private set; }
         // Inactive Editor callback fixtures have no Awake/native XR; standalone always requires the real policy.
         public bool FloorReady => FloorPolicy ? FloorPolicy.Ready : IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed;
@@ -115,8 +133,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         // participant continue; study tasks keep researcher-only resume (unchanged protocol).
         public string PauseKind { get; private set; } = "";
         public bool HelpRequested { get; private set; }
-        public bool ParticipantMayResume => Flow != null && Flow.Paused && string.IsNullOrEmpty(Error) &&
+        public bool ParticipantMayResume => Flow != null && Flow.Paused && PauseKind != "stop" && string.IsNullOrEmpty(Error) &&
             (IsTechnical || (Flow.IsTutorial && PauseKind == "participant"));
+        public bool ParticipantCanStop => Record?.session_state == RegistryState.InProgress && Flow != null
+            && Flow.State > ResearchFlowState.ResearcherSetup && Flow.State < ResearchFlowState.ParticipantComplete;
         double pauseStart = double.NaN;
         readonly Dictionary<HandsLabObject, Action<PointerEvent>> objectListeners = new Dictionary<HandsLabObject, Action<PointerEvent>>();
         readonly Dictionary<ResearchTaskPort, Action<string, string, object, object>> portListeners = new Dictionary<ResearchTaskPort, Action<string, string, object, object>>();
@@ -345,6 +365,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void StartSession(string id, ParticipantLanguage language, ExperimentInputMode input, TaskOrder? order = null, string layout = null, string uiPolicy = null)
         {
             if (Record != null) { Error = "A session is already open. End it before opening another."; return; }
+            TaskStartConfirmation = false;
             try
             {
                 if (Registry == null) throw new InvalidOperationException("Registry not ready");
@@ -440,6 +461,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Shared dispatch reports an accepted state change/request for UI feedback, never evaluator correctness.
         public bool Command(string command, string inputSource = "None")
         {
+            if (command == "stop") return Stop(inputSource, "User", "Paused", "participant_stop");
             if (Flow == null) return SetupCommand(command, inputSource);
             if (Record != null && (Record.session_state != RegistryState.InProgress || Logger?.State != HandsLabLogState.Active)) return false;
             if (Logger != null && !LoggerReady) return false;
@@ -471,8 +493,20 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (Flow.State == ResearchFlowState.TutorialComplete) CloseReference("tutorial_complete", "System");
                     changed = Flow.Continue(); if (changed) StartCoroutine(MoveToStation(Flow.CurrentTask == "A" ? 1 : 2)); break;
                 case "task_start":
+                case "task_start_confirm":
+                    if (Flow.State != ResearchFlowState.Task1Ready && Flow.State != ResearchFlowState.Task2Ready) break;
                     if (Logger?.State != HandsLabLogState.Active || applicationPaused || applicationUnfocused || !FloorReady || !HeadsetReady || !DeviceReady
                         || !CurrentPort || !CurrentPort.HasBoundMechanics) break;
+                    if (command == "task_start")
+                    {
+                        if (TaskStartConfirmation) break;
+                        TaskStartConfirmation = true;
+                        accepted = Log("TASK_START_REQUESTED", "task." + Flow.CurrentTask, "AwaitingConfirmation", inputSource: inputSource);
+                        if (!accepted) TaskStartConfirmation = false;
+                        view?.Refresh(); break;
+                    }
+                    if (!TaskStartConfirmation) break;
+                    TaskStartConfirmation = false;
                     changed = Flow.StartTask();
                     if (changed)
                     {
@@ -486,6 +520,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                             inputSource: inputSource, taskState: initial);
                     }
                     break;
+                case "task_start_back":
+                    if (!TaskStartConfirmation || (Flow.State != ResearchFlowState.Task1Ready && Flow.State != ResearchFlowState.Task2Ready)) break;
+                    TaskStartConfirmation = false;
+                    accepted = Log("TASK_START_CANCELLED", "task." + Flow.CurrentTask, "Ready", inputSource: inputSource);
+                    view?.Refresh(); break;
                 case "reference": if (LocalUICommandsAllowed && !ReferenceOpen) { OpenReference(inputSource); accepted = ReferenceOpen; } break;
                 case "reference_close": if (ReferenceOpen) { CloseReference("closed", "User", inputSource); accepted = !ReferenceOpen; } break;
                 case "reference_minimize": if (ReferenceOpen && !ReferenceMinimized) { MinimizeReference(inputSource); accepted = ReferenceMinimized; } break;
@@ -642,8 +681,43 @@ namespace VRMaintenanceResearch.ResearchFlow
             Refresh();
         }
 
+        // The researcher has no participant input device, so the actor lives in source/result/reason, as in ResearcherResume.
+        public bool ResearcherStop() => Stop("None", "System", "ResearcherStopped", "researcher_stop");
+
+        bool Stop(string inputSource, string source, string result, string reason)
+        {
+            if (!ParticipantCanStop) return false;
+            if (Flow.Paused && PauseKind == "stop") return true;
+            try { if (!Flow.Paused) Pause("stop"); }
+            catch (Exception ex)
+            {
+                Flow.Pause();
+                if (string.IsNullOrEmpty(Error)) Error = "Stop timing unavailable: " + ex.Message;
+            }
+            finally { PauseKind = "stop"; HelpRequested = false; Refresh(); }
+            try
+            {
+                CloseReference(reason, "System", inputSource);
+                bool recorded = Log("SESSION_PAUSED", "safety", result, after: PauseTiming(), source: source, inputSource: inputSource, reason: reason);
+                if (!recorded && string.IsNullOrEmpty(Error)) Error = "Stop applied; event logging unavailable.";
+                Save();
+            }
+            catch (Exception ex) { Error = (string.IsNullOrEmpty(Error) ? "" : Error + " | ") + "Stop record unavailable: " + ex.Message; }
+            finally { Refresh(); }
+            return Flow.Paused;
+        }
+
+        void RestoreSafetyUI()
+        {
+            if (!ParticipantCanStop || Transitioning || applicationPaused || applicationUnfocused || !HeadsetReady || !DeviceReady
+                || (string.IsNullOrEmpty(Error) && Logger?.State == HandsLabLogState.Active)) return;
+            foreach (var g in guards)
+                if (g && g.Suspended && g.TrackingValid && g.InputNeutral) g.Resume();
+        }
+
         bool Pause(string kind)
         {
+            TaskStartConfirmation = false;
             AdvanceTaskTiming();
             if (!Flow.Pause()) return false;
             pauseStart = Logger?.Timestamp ?? double.NaN;
@@ -712,9 +786,32 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             try
             {
-                var amended = Registry.AmendTermination(participantId, reason, source);
-                if (Record?.participant_id == participantId) Record = amended;
-                return null;
+                var amended = Registry.AmendTermination(participantId, reason, source, out bool changed);
+                if (!changed) return null;
+                bool current = Record?.participant_id == amended.participant_id &&
+                    Record.session_id == amended.session_id && Record.run_id == amended.run_id;
+                if (current) Record = amended;
+                try
+                {
+                    if (current && Logger != null)
+                    {
+                        if (string.IsNullOrEmpty(QueueExport("termination_amended", "partial")))
+                            throw new IOException(string.IsNullOrEmpty(ExportDeliveryError) ? "No export snapshot created" : ExportDeliveryError);
+                    }
+                    else
+                    {
+                        string path = ResearchExportQueue.SnapshotSavedRun(Registry, amended.participant_id,
+                            amended.session_id, amended.run_id, Logger?.RunId, "termination_amended");
+                        if (current) { LastExportPath = path; ExportDeliveryError = ""; }
+                    }
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    string failure = "Termination amendment saved; automatic export failed: " + ex.Message;
+                    if (current) ExportDeliveryError = failure;
+                    return failure;
+                }
             }
             catch (Exception ex) when (ex is ArgumentException || ex is InvalidOperationException || ex is IOException) { return ex.Message; }
         }
@@ -762,6 +859,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (uiAllowed && g.Suspended) g.Resume();
                 else if (!uiAllowed && !g.Suspended) g.Suspend(FloorReady ? "flow_gate" : "floor_reference_unconfirmed");
             }
+            RestoreSafetyUI();
             view?.Refresh();
         }
 
@@ -880,6 +978,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void Update()
         {
+            RestoreSafetyUI();
             if (Flow?.IsTaskActive == true && (!HeadsetReady || !DeviceReady)) SuspendTaskForTracking("tracking_unavailable");
             AdvanceTaskTiming();
             if (Flow?.IsTutorial == true && lastTutorialHands != TutorialUsesHands)
@@ -1405,27 +1504,28 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         // Researcher surfaces poll this twice a second; re-parsing the whole log each time drove full GC pauses (~1 s in the Editor).
         string summaryKey, summaryCache;
-        public string SummaryText()
+        public string SummaryText(string language = "English")
         {
-            if (Record == null) return "No session selected. No real participant results exist in this demo.";
-            string key = Record.session_id + ":" + Record.session_state + ":" + Record.revision + ":" + Flow?.State + ":" + Flow?.Paused
+            if (Record == null) return ResearchStrings.Get("summary.empty", language);
+            string key = language + ":" + Record.session_id + ":" + Record.session_state + ":" + Record.revision + ":" + Flow?.State + ":" + Flow?.Paused
                 + ":" + (Logger != null && File.Exists(Logger.EventsPath) ? new FileInfo(Logger.EventsPath).Length : -1);
             if (key == summaryKey) return summaryCache;
             summaryKey = key;
-            return summaryCache = BuildSummaryText();
+            return summaryCache = BuildSummaryText(language);
         }
 
-        string BuildSummaryText()
+        string BuildSummaryText(string language)
         {
+            string S(string key) => ResearchStrings.Get("summary." + key, language);
             var savedRows = new List<JObject>();
             if (Logger != null && File.Exists(Logger.EventsPath))
                 using (var reader = new StreamReader(new FileStream(Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                     for (string line; (line = reader.ReadLine()) != null;) savedRows.Add(JObject.Parse(line));
             var rows = savedRows.ToArray();
             var result = new System.Text.StringBuilder();
-            if (Record.test_data) result.AppendLine("TEST / DEMO DATA");
-            result.AppendLine("Participant: " + Record.participant_id + "    Order: " + (Record.task_order == TaskOrder.AB ? "A -> B" : "B -> A"));
-            result.AppendLine("Input: " + Record.input_mode + "    Session: " + Record.session_state);
+            if (Record.test_data) result.AppendLine(S("test"));
+            result.AppendLine(S("participant") + Record.participant_id + "    " + S("order") + (Record.task_order == TaskOrder.AB ? "A -> B" : "B -> A"));
+            result.AppendLine(S("input") + Record.input_mode + "    " + S("session") + Record.session_state);
             result.AppendLine();
             foreach (var task in new[] { "A", "B" })
             {
@@ -1455,13 +1555,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var elapsed = TimeSpan.FromSeconds(seconds.Value);
                     duration = ((int)elapsed.TotalMinutes).ToString("00") + ":" + elapsed.Seconds.ToString("00");
                 }
-                result.AppendLine("Task " + task + "    " + (completed ? "Completed" : ended != null ? "Incomplete (" + (endReason ?? "unknown") + ")" : start != null ? "In progress" : "Not started") + "    " + duration);
+                result.AppendLine(S("task") + task + "    " + (completed ? S("completed") : ended != null ? S("incomplete") + (endReason ?? "unknown") + ")" : start != null ? S("progress") : S("not_started")) + "    " + duration);
             }
             result.AppendLine();
-            result.AppendLine("Reference opens  " + rows.Count(r => (string)r["event"] == "INFORMATION_OPEN") + "    Examine  " + rows.Count(r => (string)r["event"] == "EXAMINE"));
-            result.AppendLine("Inspect attempts  " + rows.Count(r => (string)r["event"] == "INSPECT") + "    Fail  " + rows.Count(r => (string)r["event"] == "INSPECT_FAIL"));
-            result.AppendLine("NASA checkpoints  " + rows.Where(r => (string)r["event"] == "CHECKPOINT_COMPLETED").Select(r => (string)r["task_id"]).Distinct().Count() + " / 2");
-            result.AppendLine("Logger  " + (Logger != null && Logger.DataComplete ? "Saved" : Logger != null && Logger.State == HandsLabLogState.Active ? "Recording" : "Review required"));
+            result.AppendLine(S("reference") + rows.Count(r => (string)r["event"] == "INFORMATION_OPEN") + "    " + S("examine") + rows.Count(r => (string)r["event"] == "EXAMINE"));
+            result.AppendLine(S("inspect") + rows.Count(r => (string)r["event"] == "INSPECT") + "    " + S("fail") + rows.Count(r => (string)r["event"] == "INSPECT_FAIL"));
+            result.AppendLine(S("nasa") + rows.Where(r => (string)r["event"] == "CHECKPOINT_COMPLETED").Select(r => (string)r["task_id"]).Distinct().Count() + " / 2");
+            result.AppendLine(S("logger") + (Logger != null && Logger.DataComplete ? S("saved") : Logger != null && Logger.State == HandsLabLogState.Active ? S("recording") : S("review")));
             return result.ToString();
         }
 

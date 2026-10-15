@@ -76,6 +76,41 @@ static class ResearchFlowChecks
             "recovery strip and unknown stations are never anchored");
         Check(ResearchStationAnchors.ClampEyeHeight(double.NaN) == 1.6 && ResearchStationAnchors.ClampEyeHeight(0.4) == 1.0
             && ResearchStationAnchors.ClampEyeHeight(2.4) == 1.95 && ResearchStationAnchors.ClampEyeHeight(1.22) == 1.22, "eye height is clamped to a plausible seated/standing range");
+        foreach (double height in new[] { 1.0, 1.3, 1.599, 1.6, 1.601, 1.65, 1.95 })
+        {
+            Check(ResearchStationAnchors.TryGet(2, null, "reference", -9.7, 0, 4.85, -180, height, 0, out var fanReader)
+                && Near(fanReader.X, -8.610205) && Near(fanReader.Z, 3.293611)
+                && Near(fanReader.Y, Math.Max(height, 1.6)), "Fan Reader authored pose and elevation floor at calibrated eye=" + height);
+            ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, 0, 4.85, -180, height, 0, out var fanTask);
+            Check(Near(fanTask.Y, height), "Fan Reader elevation floor does not alter Task calibration=" + height);
+        }
+        Check(ResearchStationAnchors.TryGet(2, null, "reference", -9.7, .4, 4.85, -180, 1.0, 0, out var raisedFanReader)
+            && Near(raisedFanReader.Y, 2.0), "Fan Reader elevation floor is relative to station, not absolute world Y");
+        bool fallbackExists = ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, 0, 4.85, -180, 1.0, 4, out var fanFallback);
+        Check(fallbackExists && Near(fanFallback.X, -10.4) && Near(fanFallback.Y, 1.6) && Near(fanFallback.Z, 3.637564),
+            "Fan Task seated fallback candidate 4 expected (-10.4,1.6,3.637564); exists=" + fallbackExists + "; actual=(" + fanFallback.X + "," + fanFallback.Y + "," + fanFallback.Z + ")");
+        Check(ResearchStationAnchors.CandidateCount(2, "task_information") == 8 && ResearchStationAnchors.CandidateCount(2, "reference") == 4
+            && !ResearchStationAnchors.TryGet(2, null, "task_information", 0, 0, 0, 0, 1.0, 8, out _),
+            "Fan Task appends one bounded fallback base; Reader count and candidate rejection remain unchanged");
+        foreach (double height in new[] { 1.0, 1.3, 1.599, 1.6, 1.601, 1.65, 1.95 })
+            for (int candidate = 0; candidate < 4; candidate++)
+            {
+                double expectedX = new[] { -10.4, -10.4, -10.505, -10.505 }[candidate];
+                double expectedZ = new[] { 3.637564, 3.637564, 3.455699, 3.455699 }[candidate];
+                double expectedUp = new[] { 0, .3, 0, .3 }[candidate];
+                Check(ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, .4, 4.85, -180, height, candidate, out var priorFanTask)
+                    && Near(priorFanTask.X, expectedX) && Near(priorFanTask.Z, expectedZ) && Near(priorFanTask.Y, .4 + height + expectedUp),
+                    "original Fan Task pose preserves calibration and station offset: eye=" + height + "/candidate=" + candidate);
+            }
+        for (int candidate = 4; candidate < 8; candidate++)
+        {
+            double expectedX = new[] { -10.4, -10.4, -10.505, -10.505 }[candidate - 4];
+            double expectedZ = new[] { 3.637564, 3.637564, 3.455699, 3.455699 }[candidate - 4];
+            double expectedY = new[] { 1.6, 1.9, 1.6, 1.9 }[candidate - 4];
+            Check(ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, 0, 4.85, -180, 1.0, candidate, out var extraFanTask)
+                && Near(extraFanTask.X, expectedX) && Near(extraFanTask.Y, expectedY) && Near(extraFanTask.Z, expectedZ),
+                "Fan Task fallback retains native-swept low-eye pose candidate=" + candidate);
+        }
         bool alternativesSafe = true;
         int count = ResearchStationAnchors.CandidateCount(1, "task_information");
         for (int c = 0; c < count; c++)

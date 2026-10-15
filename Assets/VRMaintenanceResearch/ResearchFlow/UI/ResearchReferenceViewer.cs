@@ -28,7 +28,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             public Page[] pages; public Step[] steps; public Picture[] images; public Movie video;
         }
         enum MediaState { Empty, Blocked, Loading, Ready, PlayRequested, Playing, Paused, Seeking, Ended, Error, AwaitingSelection }
-        sealed class Position { public int index = 1, part = 1; public float normalized = 1; public double time; }
+        sealed class Position { public int index = 1, part = 1; public float normalized = 1, zoom = 1, horizontal = .5f; public double time; }
         sealed class Registry { public Package package; public string hash, error; }
 
         const string PackageResource = "ResearchReaderDemo/package";
@@ -57,7 +57,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         ScrollRect scroll;
         TMP_Text template, statusLabel, contentText, timeLabel;
         ResearchFlowView view;
-        RectTransform content, videoSurface;
+        RectTransform content, videoSurface, pdfControls;
+        UnityEngine.UI.Button[] pdfButtons;
         UnityEngine.UI.RawImage videoImage;
         ResearchReaderTimeline timeline;
         ResearchReaderScrollbar guardedScrollbar;
@@ -117,6 +118,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             source_pdf = package?.source_pdf, source_sha256 = package?.source_sha256, registry_sha256 = packageHash,
             approval = package?.approval, media_type = format, page = format == "pdf" ? index : (int?)null,
             index, caption_part = format == "images" ? part : (int?)null, caption_parts = format == "images" ? PartCount : (int?)null,
+            pdf_zoom = format == "pdf" ? Saved.zoom : (float?)null, pdf_horizontal = format == "pdf" && scroll ? scroll.horizontalNormalizedPosition : (float?)null,
             caption_layout = format == "images" ? ResearchCaptionParts.Version : null, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
             time_seconds = player && player.isPrepared ? player.time : Saved.time,
             seek_target_seconds = state == MediaState.Seeking ? seekTarget : (double?)null,
@@ -267,6 +269,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (TimelineHeld) return false;
             switch (command)
             {
+                case "reference_media.zoom_out": return ChangePdfView(-.25f, 0, false, input);
+                case "reference_media.zoom_in": return ChangePdfView(.25f, 0, false, input);
+                case "reference_media.zoom_reset": return ChangePdfView(0, 0, true, input);
+                case "reference_media.pan_left": return ChangePdfView(0, -.2f, false, input);
+                case "reference_media.pan_right": return ChangePdfView(0, .2f, false, input);
                 case "reference_media.retry":
                     if (!ResearchVideoLoadRules.RetryAllowed(state == MediaState.Error, state == MediaState.Loading, videoStallShown)) return false;
                     string retriedPhase = state == MediaState.Loading ? "stalled:" + videoLoadPhase : "error";
@@ -303,7 +310,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             scroll.StopMovement(); statusLabel.gameObject.SetActive(false);
             content.anchorMin = new Vector2(0, 1); content.anchorMax = new Vector2(1, 1); content.pivot = new Vector2(.5f, 1);
             content.anchoredPosition = Vector2.zero; content.sizeDelta = new Vector2(0, scroll.viewport.rect.height);
-            scroll.vertical = format != "video";
+            scroll.vertical = format != "video"; scroll.horizontal = false;
             if (format == "pdf") RenderPdf();
             else if (format == "steps")
             {
@@ -316,6 +323,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             else if (format == "video") RenderVideo();
             Canvas.ForceUpdateCanvases();
             scroll.verticalNormalizedPosition = Mathf.Clamp01(Saved.normalized);
+            scroll.horizontalNormalizedPosition = format == "pdf" ? Saved.horizontal : .5f;
             suppressScroll = false;
             if (format == "pdf" && state != MediaState.Error) UpdatePages();
             RefreshScrollbar(); BeginReading();
@@ -323,18 +331,77 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void RenderPdf()
         {
-            float width = Mathf.Max(1, scroll.viewport.rect.width - 24), top = 12;
             foreach (var page in package.pages)
             {
-                float height = width * page.height / page.width;
-                var image = Rect(content, "PDFPage_" + page.page, new Vector2(width, height)).gameObject.AddComponent<UnityEngine.UI.RawImage>();
+                var image = Rect(content, "PDFPage_" + page.page, Vector2.zero).gameObject.AddComponent<UnityEngine.UI.RawImage>();
                 image.raycastTarget = false; image.color = Color.white;
                 image.rectTransform.anchorMin = image.rectTransform.anchorMax = new Vector2(.5f, 1); image.rectTransform.pivot = new Vector2(.5f, 1);
-                image.rectTransform.anchoredPosition = new Vector2(0, -top);
-                pageTops.Add(top); pageImages.Add(image); top += height + 16;
+                pageImages.Add(image);
             }
-            content.sizeDelta = new Vector2(0, Mathf.Max(scroll.viewport.rect.height, top));
-            state = MediaState.Ready;
+            LayoutPdf(); state = MediaState.Ready;
+        }
+
+        void LayoutPdf()
+        {
+            float width = Mathf.Max(1, scroll.viewport.rect.width - 24) * Saved.zoom, top = 12;
+            pageTops.Clear();
+            for (int i = 0; i < package.pages.Length; i++)
+            {
+                float height = width * package.pages[i].height / package.pages[i].width;
+                pageImages[i].rectTransform.sizeDelta = new Vector2(width, height);
+                pageImages[i].rectTransform.anchoredPosition = new Vector2(0, -top);
+                pageTops.Add(top); top += height + 16;
+            }
+            content.sizeDelta = new Vector2(Mathf.Max(0, width + 24 - scroll.viewport.rect.width), Mathf.Max(scroll.viewport.rect.height, top));
+        }
+
+        bool ChangePdfView(float zoomDelta, float panDelta, bool reset, string input)
+        {
+            if (format != "pdf" || !IsReady || ScrollbarHeld || pageImages.Count == 0) return false;
+            float oldZoom = Saved.zoom, oldHorizontal = scroll.horizontalNormalizedPosition;
+            float zoom = reset ? 1 : Mathf.Clamp(oldZoom + zoomDelta, 1, 3);
+            float horizontal = zoom == 1 || reset ? .5f : Mathf.Clamp01(oldHorizontal + panDelta);
+            if (Mathf.Approximately(zoom, oldZoom) && (zoom == 1 || Mathf.Abs(horizontal - oldHorizontal) < .001f)) return false;
+            float offset = (1 - scroll.verticalNormalizedPosition) * Mathf.Max(0, content.rect.height - scroll.viewport.rect.height);
+            int page = 0;
+            for (int i = 1; i < pageTops.Count; i++) if (pageTops[i] <= offset + 16) page = i;
+            float fraction = (offset - pageTops[page]) / Mathf.Max(1, pageImages[page].rectTransform.rect.height);
+            scroll.StopMovement(); suppressScroll = true;
+            Saved.zoom = zoom; LayoutPdf(); Canvas.ForceUpdateCanvases();
+            float range = Mathf.Max(0, content.rect.height - scroll.viewport.rect.height);
+            float nextOffset = pageTops[page] + fraction * pageImages[page].rectTransform.rect.height;
+            scroll.verticalNormalizedPosition = range > 0 ? 1 - Mathf.Clamp01(nextOffset / range) : 1;
+            scroll.horizontalNormalizedPosition = horizontal;
+            suppressScroll = false; SavePosition(); UpdatePages(Actor(input), input); RefreshPdfControls();
+            Event("REFERENCE_PDF_VIEW_CHANGED", Actor(input), input); return true;
+        }
+
+        void RefreshPdfControls()
+        {
+            bool show = visible && format == "pdf" && IsReady;
+            if (!pdfControls && show)
+            {
+                pdfControls = Rect(scroll.transform.parent, "PdfViewControls", new Vector2(500, 48));
+                pdfControls.anchoredPosition = new Vector2(-280, -350);
+                string[] labels = { "-", "100%", "+", "<", ">" };
+                string[] commands = { "zoom_out", "zoom_reset", "zoom_in", "pan_left", "pan_right" };
+                pdfButtons = new UnityEngine.UI.Button[commands.Length];
+                for (int i = 0; i < commands.Length; i++)
+                {
+                    pdfButtons[i] = Control(pdfControls, "Pdf_" + commands[i], labels[i], "reference_media." + commands[i]);
+                    var rect = pdfButtons[i].GetComponent<RectTransform>();
+                    rect.sizeDelta = new Vector2(88, 48); rect.anchoredPosition = new Vector2((i - 2) * 100, 0);
+                    pdfButtons[i].GetComponentInChildren<TMP_Text>().margin = Vector4.zero;
+                }
+            }
+            if (!pdfControls) return;
+            pdfControls.gameObject.SetActive(show);
+            if (!show) return;
+            bool allowed = view && view.controller && view.controller.LocalUICommandsAllowed && !ScrollbarHeld;
+            bool[] enabled = { Saved.zoom > 1, Saved.zoom != 1,
+                Saved.zoom < 3, Saved.zoom > 1 && scroll.horizontalNormalizedPosition > .001f, Saved.zoom > 1 && scroll.horizontalNormalizedPosition < .999f };
+            for (int i = 0; i < pdfButtons.Length; i++) pdfButtons[i].interactable = allowed && enabled[i];
+            pdfButtons[1].GetComponentInChildren<TMP_Text>().text = Mathf.RoundToInt(Saved.zoom * 100) + "%";
         }
 
         void UpdatePages(string actor = "System", string input = "None")
@@ -406,7 +473,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             timeLabel = Text(content, "VideoTime", 24);
             timeLabel.alignment = TextAlignmentOptions.MidlineLeft; timeLabel.text = "--:-- / --:--";
             timeLabel.rectTransform.anchorMin = timeLabel.rectTransform.anchorMax = new Vector2(0, 0);
-            timeLabel.rectTransform.sizeDelta = new Vector2(180, 36); timeLabel.rectTransform.anchoredPosition = new Vector2(278, 32);
+            timeLabel.rectTransform.sizeDelta = new Vector2(180, 48); timeLabel.rectTransform.anchoredPosition = new Vector2(278, 32);
             CreateTimeline();
             var commands = new[] { "play", "seek_back", "seek_forward" };
             var labels = new[] { Local("เล่น", "再生", "Play"), "-10 s", "+10 s" };
@@ -649,6 +716,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void RefreshScrollbar()
         {
+            RefreshPdfControls();
             if (!guardedScrollbar) return;
             bool show = CanScrollDocument;
             bool wasVertical = scroll.vertical; scroll.vertical = show;
@@ -698,6 +766,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (key == null) return;
             var position = Saved; position.index = index; if (format == "images") position.part = part;
             if (scroll) position.normalized = scroll.verticalNormalizedPosition;
+            if (scroll && format == "pdf") position.horizontal = position.zoom == 1 ? .5f : scroll.horizontalNormalizedPosition;
             if (player && player.isPrepared && !double.IsNaN(player.time)) position.time = player.time;
         }
         void BeginReading()
@@ -719,9 +788,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             contentText = Text(content, "ReaderText", 30); contentText.text = text;
             float width = Mathf.Max(1, scroll.viewport.rect.width - 40);
-            float height = Mathf.Max(scroll.viewport.rect.height - 24, contentText.GetPreferredValues(text, width, 10000).y + 24);
             contentText.rectTransform.anchorMin = contentText.rectTransform.anchorMax = new Vector2(.5f, 1);
-            contentText.rectTransform.pivot = new Vector2(.5f, 1); contentText.rectTransform.sizeDelta = new Vector2(width, height);
+            contentText.rectTransform.pivot = new Vector2(.5f, 1); contentText.rectTransform.sizeDelta = new Vector2(width, 10000);
+            contentText.ForceMeshUpdate(true, true);
+            float height = Mathf.Max(scroll.viewport.rect.height - 24, contentText.preferredHeight + 24);
+            contentText.rectTransform.sizeDelta = new Vector2(width, height);
             contentText.rectTransform.anchoredPosition = new Vector2(0, -12); content.sizeDelta = new Vector2(0, height + 24);
         }
         void Fail(string message)
@@ -773,6 +844,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void ClearContent()
         {
+            if (pdfControls) pdfControls.gameObject.SetActive(false);
             foreach (var texture in pageCache.Values) ReleaseObject(texture);
             pageCache.Clear(); pageImages.Clear(); pageTops.Clear(); videoButtons.Clear();
             if (!content) return;
