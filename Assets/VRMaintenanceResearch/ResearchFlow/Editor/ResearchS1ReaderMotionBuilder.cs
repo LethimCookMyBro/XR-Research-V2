@@ -24,8 +24,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             ["A.slots"] = 4, ["A.ram"] = 3, ["A.ssd"] = 4, ["A.gpu"] = 4,
             ["B.symptom"] = 3, ["B.causes"] = 4, ["B.observations"] = 4, ["B.access"] = 4, ["B.correction"] = 4, ["B.reassembly"] = 1,
         };
+        // A caption that names small board details gets a close, neutral framing of every option it names (both long slots), never one choice.
+        // The DIMM cards keep the wide board view: the routed 24-pin bundle covers the DIMM silkscreen from every tested direction.
+        static readonly Dictionary<(string, int), (Vector3 from, string[] frame)> FactShots = new Dictionary<(string, int), (Vector3, string[])>
+        {
+            [("A.slots", 2)] = (new Vector3(0, .1f, 1), new[] { "PCIEX16_1", "PCIEX16_2" }),
+        };
 
-        public static string Build(string outputRoot)
+        // sections: render only these sections and merge them into an existing motion.json (null renders and rewrites everything).
+        public static string Build(string outputRoot, string[] sections = null)
         {
             if (EditorApplication.isPlaying) throw new InvalidOperationException("Edit Mode required.");
             var open = EditorSceneManager.GetActiveScene();
@@ -39,22 +46,31 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var camera = cameraGo.AddComponent<Camera>(); camera.fieldOfView = 45; camera.nearClipPlane = .01f; camera.farClipPlane = 50;
             camera.cullingMask = ~(1 << LayerMask.NameToLayer("UI")); camera.clearFlags = CameraClearFlags.Skybox;
             var fill = cameraGo.AddComponent<Light>(); fill.type = LightType.Spot; fill.spotAngle = 70; fill.range = 4; fill.shadows = LightShadows.None;
-            var manifest = new JObject();
+            string manifestPath = Path.Combine(outputRoot, "motion.json");
+            var manifest = sections != null && File.Exists(manifestPath) ? JObject.Parse(File.ReadAllText(manifestPath)) : new JObject();
             try
             {
-                foreach (var shot in ResearchS1ReaderMediaBuilder.Shots)
+                foreach (var shot in ResearchS1ReaderMediaBuilder.Shots.Where(s => sections == null || sections.Contains(s.Key)))
                 {
                     string section = shot.Key, dir = Path.Combine(outputRoot, section);
+                    if (sections != null && Directory.Exists(dir)) foreach (var old in Directory.GetFiles(dir, "*.png")) File.Delete(old);
                     Directory.CreateDirectory(dir);
-                    var bounds = ResearchS1ReaderMediaBuilder.Frame(targets, shot.Value.frame);
-                    float radius = Mathf.Max(bounds.extents.magnitude, .06f);
-                    float distance = Mathf.Clamp(radius / Mathf.Sin(camera.fieldOfView * .5f * Mathf.Deg2Rad) * 1.05f, .35f, 2.4f);
-                    Vector3 centre = bounds.center, direction = shot.Value.from.normalized;
-                    fill.intensity = Mathf.Clamp(1.6f * distance * distance / 1.4f, .25f, 1.6f);
+                    float distance = 0; Vector3 centre = default, direction = default;
+                    void Aim((Vector3 from, string[] frame) framing, float minimum)
+                    {
+                        var bounds = ResearchS1ReaderMediaBuilder.Frame(targets, framing.frame);
+                        float radius = Mathf.Max(bounds.extents.magnitude, .06f);
+                        distance = Mathf.Clamp(radius / Mathf.Sin(camera.fieldOfView * .5f * Mathf.Deg2Rad) * 1.05f, minimum, 2.4f);
+                        centre = bounds.center; direction = framing.from.normalized;
+                        fill.intensity = Mathf.Clamp(1.6f * distance * distance / 1.4f, .25f, 1.6f);
+                    }
+                    Aim(shot.Value, .35f);
                     if (section == "A.ssd") cables.Single(c => c.assetId == "CABLE_SATA_DATA_S_500").transform.localRotation *= Quaternion.Euler(0, 0, 180);
                     var frames = new JArray();
                     int facts = Facts.TryGetValue(section, out int f) ? f : 1, perFact = Facts.ContainsKey(section) ? FramesPerFact : StaticFrames, n = 0;
                     for (int fact = 0; fact < facts; fact++)
+                    {
+                        Aim(FactShots.TryGetValue((section, fact), out var close) ? close : shot.Value, FactShots.ContainsKey((section, fact)) ? .12f : .35f);
                         for (int k = 0; k < perFact; k++)
                         {
                             double time = (double)k / (perFact - 1);
@@ -68,13 +84,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             File.WriteAllBytes(Path.Combine(dir, file), ResearchS1ReaderMediaBuilder.Render(camera, null));
                             frames.Add(new JObject { ["file"] = file, ["fact"] = fact, ["time"] = Math.Round(time, 4), ["state"] = label });
                         }
+                    }
                     manifest[section] = new JObject { ["fps"] = 12, ["frames"] = frames, ["facts"] = facts };
                 }
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(cameraGo);
-                File.WriteAllText(Path.Combine(outputRoot, "motion.json"), manifest.ToString(Formatting.Indented));
+                File.WriteAllText(manifestPath, manifest.ToString(Formatting.Indented));
                 // Discard every pose change: reload the canonical scene from disk.
                 scene = EditorSceneManager.OpenScene(Scene, OpenSceneMode.Single);
             }
