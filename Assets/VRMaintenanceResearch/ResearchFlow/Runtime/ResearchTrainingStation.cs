@@ -13,6 +13,11 @@ namespace VRMaintenanceResearch.ResearchFlow
     {
         public static readonly string[] Facts = { "examine", "insert_wrong", "insert", "lock", "unlock", "rotate_access",
             "fasten", "loosen", "cable_connect", "cable_disconnect", "inspect_fail" };
+        // Fixed-UI training (S1_TRAINING_FIXED_UI_20261015): same skills, each credited once from real state changes, ordered so the
+        // trainee builds toward 'ready' instead of undoing and repeating it. The old order ended with module out / screw loose and
+        // then asked for an uncredited second insert + latch + tighten before the 'ready' Inspect. Inspect is placed in sequence.
+        public static readonly string[] FixedSequence = { "examine", "inspect_fail", "insert_wrong", "insert", "lock", "rotate_access",
+            "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
 
         public ResearchSessionFlowController controller;
         public Transform turntable;

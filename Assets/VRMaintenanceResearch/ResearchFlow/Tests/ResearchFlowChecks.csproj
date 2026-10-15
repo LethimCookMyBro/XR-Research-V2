@@ -5,7 +5,7 @@
     <DefineConstants>RESEARCH_FLOW_SELF_TEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../Core/*.cs" Exclude="../Core/ResearchMovementCollection.cs"/><Compile Include="ResearchFlowChecks.cs"/>
+    <Compile Include="../Core/*.cs" Exclude="../Core/ResearchMovementCollection.cs;../Core/ResearchS1CablePath.cs;../Core/ResearchS1FanObservations.cs"/><Compile Include="ResearchFlowChecks.cs"/>
     <Reference Include="Newtonsoft.Json"><HintPath>../../../../Library/PackageCache/com.unity.nuget.newtonsoft-json@4dfd81071c64/Runtime/Newtonsoft.Json.dll</HintPath></Reference>
   </ItemGroup>
 </Project>

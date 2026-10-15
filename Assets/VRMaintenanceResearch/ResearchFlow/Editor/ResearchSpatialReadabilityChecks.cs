@@ -27,6 +27,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static string RunTutorialAffordances(string evidenceDirectory)
         {
+            using var legacyPolicy = ResearchUIPolicy.LegacyRegressionScope(); // exercises the retired panel-drag lesson
             if (EditorApplication.isPlaying) throw new InvalidOperationException("Run Tutorial affordance fixtures outside Play Mode.");
             if (string.IsNullOrWhiteSpace(evidenceDirectory)) throw new ArgumentException("An explicit evidence directory is required.");
             string directory = Path.GetFullPath(evidenceDirectory);

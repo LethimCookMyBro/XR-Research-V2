@@ -42,6 +42,147 @@ static class ResearchFlowChecks
         Check(f.OpenResearcherSummary() && f.State == ResearchFlowState.ResearcherSummary, order + " separate researcher summary");
         return f;
     }
+    // Station anchors from the authored canonical-scene stations (parsed from VRResearch_ResearchFlow_V2.unity: Computer at
+    // (0,0,5.35), Fan at (-9.7,0,4.85), Training at (9.72,0,4.95), all yaw -180). Pure geometry; not a Unity clearance/visibility test.
+    static void StationAnchorChecks()
+    {
+        const double Tol = 1e-6;
+        bool Near(double a, double b) => Math.Abs(a - b) < 1e-3;
+        Check(ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, 0, out var mainP)
+            && ResearchStationAnchors.TryGet(1, "Q", "task_information", 0, 0, 5.35, -180, 1.6, 0, out var mainQ)
+            && Math.Abs(mainP.X - mainQ.X) < Tol && Math.Abs(mainP.Y - mainQ.Y) < Tol && Math.Abs(mainP.Z - mainQ.Z) < Tol && mainP.Id != mainQ.Id,
+            "P and Q share one table footprint and anchor pose but keep distinct anchor ids");
+        Check(Near(mainP.X, -0.410) && Near(mainP.Y, 1.5) && Near(mainP.Z, 5.35 - 1.128),
+            "task brief anchors 20 deg to the participant's right (world -X at yaw -180), 1.2 m out, 0.1 m below the eye");
+        Check(ResearchStationAnchors.TryGet(1, "P", "reference", 0, 0, 5.35, -180, 1.6, 0, out var reader) && Near(reader.X, 0.410) && Near(reader.Z, mainP.Z),
+            "Reader anchors on the participant's left, mirrored");
+        double faceX = Math.Sin(mainP.YawDegrees * Math.PI / 180), faceZ = Math.Cos(mainP.YawDegrees * Math.PI / 180);
+        Check(faceX * (mainP.X - 0) + faceZ * (mainP.Z - 5.35) > 0, "anchored slate faces away from the station point (LookRotation convention)");
+        Check(!ResearchStationAnchors.TryGet(1, null, "task_information", 0, 0, 5.35, -180, 1.6, 0, out _)
+            && !ResearchStationAnchors.TryGet(1, "R", "task_information", 0, 0, 5.35, -180, 1.6, 0, out _),
+            "Computer station anchor requires an assigned P/Q layout (falls back and logs otherwise)");
+        Check(ResearchStationAnchors.TryGet(2, null, "task_information", -9.7, 0, 4.85, -180, 1.6, 0, out var fan) && fan.Id.Contains(":fan:-:")
+            && ResearchStationAnchors.TryGet(0, null, "reference", 9.72, 0, 4.95, -180, 1.6, 0, out _), "Fan and Training anchors do not depend on Task A layout");
+        Check(!ResearchStationAnchors.Supports(1, "recovery") && !ResearchStationAnchors.Supports(3, "task_information") && !ResearchStationAnchors.Supports(-1, "reference"),
+            "recovery strip and unknown stations are never anchored");
+        Check(ResearchStationAnchors.ClampEyeHeight(double.NaN) == 1.6 && ResearchStationAnchors.ClampEyeHeight(0.4) == 1.0
+            && ResearchStationAnchors.ClampEyeHeight(2.4) == 1.95 && ResearchStationAnchors.ClampEyeHeight(1.22) == 1.22, "eye height is clamped to a plausible seated/standing range");
+        bool alternativesSafe = true;
+        for (int c = 0; c < ResearchStationAnchors.CandidateCount; c++)
+        {
+            ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, c, out var alt);
+            double distance = Math.Sqrt(alt.X * alt.X + (alt.Z - 5.35) * (alt.Z - 5.35));
+            alternativesSafe &= alt.X < 0 && distance >= 1.2 - Tol && alt.Y >= mainP.Y - Tol;
+        }
+        Check(alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, ResearchStationAnchors.CandidateCount, out _),
+            "clearance alternatives only raise or step back, never cross sides or approach the head");
+    }
+
+    // Illustrated sub-pages over the committed S1 packages: exact text identity and TH/JA parity (presentation only).
+    static void CaptionPartChecks([System.Runtime.CompilerServices.CallerFilePath] string here = "")
+    {
+        string root = Path.Combine(Path.GetDirectoryName(here), "..", "Resources", "ResearchReaderS1");
+        int images = 0, split = 0, longest = 0;
+        bool identity = true, parity = true;
+        foreach (string task in new[] { "A", "B", "T" })
+        {
+            var th = JObject.Parse(File.ReadAllText(Path.Combine(root, task + "_th", "package.json")));
+            var ja = JObject.Parse(File.ReadAllText(Path.Combine(root, task + "_ja", "package.json")));
+            var thImages = (JArray)th["images"]; var jaImages = (JArray)ja["images"];
+            parity &= thImages.Count == jaImages.Count;
+            for (int i = 0; i < thImages.Count; i++)
+            {
+                string a = (string)thImages[i]["caption_th"], b = (string)jaImages[i]["caption_ja"];
+                var sa = ResearchCaptionParts.Split(a); var sb = ResearchCaptionParts.Split(b);
+                identity &= ResearchCaptionParts.Join(sa.heading, sa.parts) == a && ResearchCaptionParts.Join(sb.heading, sb.parts) == b;
+                parity &= sa.parts.Length == sb.parts.Length && (sa.heading == null) == (sb.heading == null);
+                images++; if (sa.parts.Length > 1) split++;
+                if (sa.parts.Length > 1) foreach (var part in sa.parts) longest = Math.Max(longest, part.Length);
+            }
+        }
+        Check(identity, "Illustrated sub-pages reproduce every reviewed caption byte-for-byte (no rewording, reordering or loss)");
+        Check(parity, "TH and JA get the same number of sub-pages and headings for every image");
+        Check(images == 21 && split == 16, "the 16 long A/B captions are split; the 5 short Training captions stay whole");
+        Check(longest <= 240, "longest Thai sub-page paragraph is at most 240 characters (was up to 738 as one caption; whole Training captions are at most 258)");
+        Check(ResearchCaptionParts.Split("one\n\ntwo\n\nthree").parts.Length == 1 && ResearchCaptionParts.Split("h\n\na\n\n\n\nb\n\nc").parts.Length == 1,
+            "short or irregular captions are never split");
+    }
+
+    // Mirror of ParticipantRecord/Document as compiled at a6a6cf8 (Q4/Q5 era): strict reader, unknown members are errors.
+    sealed class LegacyRecord
+    {
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public string participant_id, created_at, session_id = "", run_id = "";
+        public string started_at = "", ended_at = "";
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public string group, language, session_state, task_order, input_mode, flow_state;
+        public string training_status, completion_state; public bool test_data, task_order_overridden, language_overridden;
+        public string task_a_layout; public bool task_a_layout_overridden;
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public int tutorial_completed;
+        public bool paused; public bool? inspect_passed;
+        [Newtonsoft.Json.JsonProperty(Required = Newtonsoft.Json.Required.Always)] public long revision;
+        public string termination_reason; public System.Collections.Generic.List<JObject> termination_amendments;
+    }
+    sealed class LegacyDocument { public int schema; public System.Collections.Generic.List<LegacyRecord> participants; }
+
+    static void RegistryCompatibilityChecks(ResearchParticipantRegistry r, string root, ParticipantRecord th)
+    {
+        string registryText = File.ReadAllText(r.RegistryPath);
+        Check(!registryText.Contains("ui_policy") && !registryText.Contains("protocol_version") && !registryText.Contains("training_version")
+            && !registryText.Contains("layout_version"), "registry.json keeps the pre-policy schema (versions live in the sidecar)");
+        var strict = new Newtonsoft.Json.JsonSerializerSettings { MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Error };
+        bool legacyReads = true;
+        try { legacyReads = Newtonsoft.Json.JsonConvert.DeserializeObject<LegacyDocument>(registryText, strict).participants.Count > 0; }
+        catch (Newtonsoft.Json.JsonException) { legacyReads = false; }
+        Check(legacyReads, "a Q4/Q5-era strict reader still opens the registry after new-build sessions (rollback stays possible)");
+        var sidecar = JObject.Parse(File.ReadAllText(r.ProtocolPath));
+        Check((string)sidecar["sessions"][th.session_id]["ui_policy"] == ResearchUIPolicy.FixedDemo
+            && new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.participant_id == th.participant_id).ui_policy == ResearchUIPolicy.FixedDemo,
+            "sidecar keyed by session_id restores the recorded policy on read");
+        Check(!((JObject)sidecar["sessions"]).Properties().Any(p => r.List(ParticipantGroup.Thai).Concat(r.List(ParticipantGroup.Japanese)).Any(x => x.session_id == p.Name && x.session_state == RegistryState.Available)),
+            "available IDs carry no policy");
+        string sidecarText = File.ReadAllText(r.ProtocolPath);
+        var tampered = (JObject)sidecar.DeepClone(); tampered["sessions"][th.session_id]["ui_policy"] = "S1_FREE_DRAG";
+        File.WriteAllText(r.ProtocolPath, tampered.ToString());
+        Reject(() => new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai), "unknown recorded UI policy in the sidecar fails closed");
+        File.WriteAllText(r.ProtocolPath, sidecarText);
+        var orphan = (JObject)sidecar.DeepClone(); orphan["sessions"][Guid.NewGuid().ToString("N")] = sidecar["sessions"][th.session_id].DeepClone();
+        File.WriteAllText(r.ProtocolPath, orphan.ToString());
+        Check(new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Count > 0, "crash residue (sidecar entry for an uncommitted session) is ignored");
+        File.WriteAllText(r.ProtocolPath, sidecarText);
+        // Intermediate builds (d2256f6..be6612a) wrote the fields into registry.json: still readable, moved to the sidecar on the next save.
+        var intermediate = JObject.Parse(registryText);
+        var row = (JObject)intermediate["participants"].First(p => (string)p["session_id"] == th.session_id);
+        row["ui_policy"] = ResearchUIPolicy.FixedDemo; row["protocol_version"] = ResearchUIPolicy.ProtocolFixedDemo;
+        row["training_version"] = "S1_TRAINING_FIXED_UI_20261014"; row["layout_version"] = ResearchUIPolicy.LayoutVersion;
+        File.WriteAllText(r.RegistryPath, intermediate.ToString()); File.Delete(r.ProtocolPath);
+        var reread = new ResearchParticipantRegistry(root);
+        Check(reread.List(ParticipantGroup.Thai).Single(p => p.session_id == th.session_id).training_version == "S1_TRAINING_FIXED_UI_20261014",
+            "registry written by an intermediate build keeps its recorded versions (not overwritten by current constants)");
+        reread.CreateNext(ParticipantGroup.Pilot);
+        Check(!File.ReadAllText(r.RegistryPath).Contains("ui_policy") && (string)JObject.Parse(File.ReadAllText(r.ProtocolPath))["sessions"][th.session_id]["training_version"] == "S1_TRAINING_FIXED_UI_20261014",
+            "next save moves intermediate-build fields to the sidecar unchanged");
+        File.WriteAllText(r.RegistryPath, registryText); File.WriteAllText(r.ProtocolPath, sidecarText);
+        // Sidecar lost: the record reads as unrecorded (runtime recovers from the session event log; export reports unknown).
+        File.Move(r.ProtocolPath, r.ProtocolPath + ".moved");
+        Check(new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.session_id == th.session_id).ui_policy == null,
+            "missing sidecar never invents a policy");
+        File.Move(r.ProtocolPath + ".moved", r.ProtocolPath);
+    }
+
+    // C02 loading lifecycle rules (pure). Device-side root cause of the Android stall is not covered.
+    static void VideoLoadRuleChecks()
+    {
+        Check(!ResearchVideoLoadRules.AcceptAsync(3, 4, true), "stale callback from a superseded load (format switch/retry/hide advanced generation) is ignored");
+        Check(!ResearchVideoLoadRules.AcceptAsync(4, 4, false) && ResearchVideoLoadRules.AcceptAsync(4, 4, true), "closed or hidden Reader ignores even its own callback");
+        Check(!ResearchVideoLoadRules.StallDue(true, true, true, false, 9.9f) && ResearchVideoLoadRules.StallDue(true, true, true, false, 10.1f),
+            "stall notice appears only after 10 s of visible loading");
+        Check(!ResearchVideoLoadRules.StallDue(true, true, true, true, 60f), "stall notice fires once per attempt");
+        Check(!ResearchVideoLoadRules.StallDue(false, true, true, false, 60f) && !ResearchVideoLoadRules.StallDue(true, false, true, false, 60f)
+            && !ResearchVideoLoadRules.StallDue(true, true, false, false, 60f), "no stall notice for other formats, hidden Reader or a ready video");
+        Check(ResearchVideoLoadRules.RetryAllowed(true, false, false) && ResearchVideoLoadRules.RetryAllowed(false, true, true)
+            && !ResearchVideoLoadRules.RetryAllowed(false, true, false) && !ResearchVideoLoadRules.RetryAllowed(false, false, true),
+            "Retry only after an error or a shown stall; an immediate second press on the fresh attempt is refused");
+    }
+
     static int Main(string[] args)
     {
         try
@@ -90,6 +231,32 @@ static class ResearchFlowChecks
             Check(r.List(ParticipantGroup.Thai).Single(p => p.participant_id == "TH05").session_state == RegistryState.Available, "invalid setup never consumes ID");
             var overrideLanguage = r.StartOrResume("TH05", ParticipantLanguage.Japanese, ExperimentInputMode.Controller, technicalOverride: true);
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
+            // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
+            Check(th.ui_policy == ResearchUIPolicy.FixedDemo && th.protocol_version == ResearchUIPolicy.ProtocolFixedDemo
+                && th.training_version == ResearchUIPolicy.TrainingFixedDemo && th.layout_version == ResearchUIPolicy.LayoutVersion,
+                "new study session records fixed UI policy, protocol, training and layout versions");
+            Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
+            var legacyDev = r.CreateNext(ParticipantGroup.Dev);
+            legacyDev = r.StartOrResume(legacyDev.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable);
+            Check(legacyDev.ui_policy == ResearchUIPolicy.LegacyMovable && legacyDev.training_version == ResearchUIPolicy.TrainingBaseline
+                && legacyDev.protocol_version == ResearchUIPolicy.ProtocolBaseline, "technical regression session may record the legacy movable policy explicitly");
+            var policyStudy = r.CreateNext(ParticipantGroup.Japanese);
+            string policyBefore = File.ReadAllText(r.RegistryPath);
+            Reject(() => r.StartOrResume(policyStudy.participant_id, ParticipantLanguage.Japanese, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable),
+                "study ID refuses a non-default UI policy");
+            Reject(() => r.StartOrResume(policyStudy.participant_id, ParticipantLanguage.Japanese, ExperimentInputMode.Controller, uiPolicy: "S1_FREE_DRAG"), "unknown UI policy rejected");
+            Check(File.ReadAllText(r.RegistryPath) == policyBefore, "rejected UI policy reserves nothing");
+            Check(ResearchUIPolicy.ForRecord(null) == ResearchUIPolicy.LegacyMovable && ResearchUIPolicy.ForRecord(ResearchUIPolicy.FixedDemo) == ResearchUIPolicy.FixedDemo,
+                "records predating the policy field are attributed to the movable-panel UI");
+            Check(ResearchUIPolicy.Parse(null) == ResearchUIPolicy.FixedDemo && ResearchUIPolicy.Parse("fixed") == ResearchUIPolicy.FixedDemo
+                && ResearchUIPolicy.Parse("legacy_movable") == ResearchUIPolicy.LegacyMovable, "operator policy aliases parse");
+            Reject(() => ResearchUIPolicy.Parse("free"), "unknown operator policy alias rejected");
+            Check(ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && !ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed
+                && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
+            StationAnchorChecks();
+            CaptionPartChecks();
+            VideoLoadRuleChecks();
+            RegistryCompatibilityChecks(r, root, th);
             var f = new ResearchSessionFlow(th.task_order, th.flow_state);
             f.StartTutorial(); f.CompleteTutorialStep(TutorialStep.Movement); f.Pause();
             var stale = th; th = r.SaveProgress(th, f);

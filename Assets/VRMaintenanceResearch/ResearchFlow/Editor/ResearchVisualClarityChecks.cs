@@ -308,6 +308,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static void Reference(Fixture fixture, Evidence evidence)
         {
+            using var legacyPolicy = ResearchUIPolicy.LegacyRegressionScope(); // exercises the retired panel-drag lesson
             fixture.ReleaseSeededHold();
             fixture.ChangeFlow(ResearchFlowState.TutorialReferenceInspect, 3);
             Set(fixture.Controller, "ReferenceOpen", true);

@@ -82,7 +82,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             Require(owner.Command("tutorial_start", "SimulatedController"), "tutorial_start");
             var facts = new[] { "teleport", "snap", "roomscale", "select", "grab", "move", "rotate", "release",
                 "reference", "switch", "reposition", "close", "inspect" };
-            foreach (var fact in facts)
+            // The drag lesson exists only in the legacy movable-panel policy.
+            foreach (var fact in Array.FindAll(facts, owner.TutorialRequires))
             {
                 Step = "tutorial." + fact;
                 yield return new WaitForSecondsRealtime(.4f);

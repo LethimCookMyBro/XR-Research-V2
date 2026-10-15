@@ -38,6 +38,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (stage > 0) { Ring(mesh, new Vector2(62, y + 3), 16, Pale); Arrow(mesh, new Vector2(112, y + 5), new Vector2(180, y + 5)); }
                     continue;
                 }
+                // Practice-station mechanisms show their own object and motion (capture C05: Examine previously reused the menu picture).
+                if (TrainerStep(mesh, action, stage, y)) continue;
                 bool grip = action == "grab" || action == "move" || action == "rotate" || action == "release" || GripFact(action);
                 Controller(mesh, new Vector2(50, y), action == "teleport" || action == "snap" ? "stick" : grip ? "grip" : "trigger", held);
                 if (action == "teleport")
@@ -77,6 +79,130 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (action == "reposition" && stage == 1) Arrow(mesh, new Vector2(153, y + 34), new Vector2(241, y + 34));
                 }
             }
+        }
+
+        public static bool HasTrainerDrawing(string action) => action == "examine" || action == "fasten" || action == "loosen"
+            || action == "cable_connect" || action == "cable_disconnect" || action == "insert" || action == "insert_wrong"
+            || action == "lock" || action == "unlock" || action == "rotate_access";
+
+        // Three rows read top to bottom: approach, act (button held), result. Grip for module/latch/turntable, Trigger (pinch) for
+        // screw and plug heads, Trigger ray for Examine - matching ResearchTrainingStation and the instruction text.
+        bool TrainerStep(VertexHelper mesh, string action, int stage, float y)
+        {
+            if (!HasTrainerDrawing(action)) return false;
+            bool trigger = action == "examine" || action == "fasten" || action == "loosen" || action == "cable_connect" || action == "cable_disconnect";
+            bool held = action == "examine" ? stage == 1 : action == "insert" ? stage == 1 : stage >= 1;
+            Controller(mesh, new Vector2(50, y), trigger ? "trigger" : "grip", held);
+            switch (action)
+            {
+                case "examine":
+                {
+                    Module(mesh, new Vector2(196, y - 4), false, stage >= 1);
+                    Line(mesh, new Vector2(80, y + 2), new Vector2(160, y - 2), stage == 1 ? Blue : Ink, 2);
+                    if (stage == 2)
+                    {
+                        // Information only: an "i" marker beside the unchanged module.
+                        var info = new Vector2(250, y + 22); Ring(mesh, info, 13, Blue);
+                        Box(mesh, info + new Vector2(0, -3), new Vector2(4, 11), Blue); Box(mesh, info + new Vector2(0, 6), new Vector2(4, 4), Blue);
+                    }
+                    break;
+                }
+                case "fasten": case "loosen":
+                {
+                    var center = new Vector2(196, y - 4); bool clockwise = action == "fasten";
+                    Ring(mesh, center, 20, Ink);
+                    float slot = stage == 2 ? (clockwise ? -50 : 50) : 0;
+                    var dir = new Vector2(Mathf.Cos(slot * Mathf.Deg2Rad), Mathf.Sin(slot * Mathf.Deg2Rad));
+                    Line(mesh, center - dir * 13, center + dir * 13, Ink, 4);
+                    Line(mesh, new Vector2(80, y + 2), center + new Vector2(-22, 6), stage >= 1 ? Blue : Ink, 2);
+                    if (stage >= 1) CircleArrow(mesh, center, 32, clockwise ? 120 : 60, clockwise ? 10 : 170);
+                    break;
+                }
+                case "cable_connect": case "cable_disconnect":
+                {
+                    bool connect = action == "cable_connect";
+                    bool seated = connect ? stage == 2 : stage == 0;
+                    var socket = new Vector2(244, y - 4);
+                    Line(mesh, socket + new Vector2(-14, 16), socket + new Vector2(14, 16), Ink, 3);
+                    Line(mesh, socket + new Vector2(-14, -16), socket + new Vector2(14, -16), Ink, 3);
+                    Line(mesh, socket + new Vector2(14, 16), socket + new Vector2(14, -16), Ink, 3);
+                    float plugX = seated ? 238 : 182;
+                    Box(mesh, new Vector2(plugX, y - 4), new Vector2(24, 18), Pale);
+                    Line(mesh, new Vector2(plugX - 12, y - 4), new Vector2(118, y - 26), Ink, 3); // cable stays attached at its far end
+                    Line(mesh, new Vector2(80, y + 2), new Vector2(plugX - 10, y + 4), stage >= 1 ? Blue : Ink, 2);
+                    if (stage == 1) Arrow(mesh, new Vector2(connect ? 200 : 226, y + 20), new Vector2(connect ? 232 : 192, y + 20));
+                    break;
+                }
+                case "insert": case "insert_wrong":
+                {
+                    bool wrong = action == "insert_wrong";
+                    Slot(mesh, new Vector2(200, y - 22));
+                    float moduleY = stage == 0 ? y + 14 : stage == 1 ? y + 6 : wrong ? y - 4 : y - 14;
+                    Module(mesh, new Vector2(200, moduleY), wrong, false);
+                    if (stage == 1) Arrow(mesh, new Vector2(246, y + 22), new Vector2(246, y - 8));
+                    if (wrong && stage == 2)
+                    {
+                        // Stops part-way: an X beside the blocked module.
+                        Line(mesh, new Vector2(240, y + 6), new Vector2(258, y - 12), Blue, 3);
+                        Line(mesh, new Vector2(240, y - 12), new Vector2(258, y + 6), Blue, 3);
+                    }
+                    if (stage < 2) Line(mesh, new Vector2(82, y - 1), new Vector2(170, moduleY), stage == 1 ? Blue : Ink, 2);
+                    break;
+                }
+                case "lock": case "unlock":
+                {
+                    bool closing = action == "lock";
+                    Slot(mesh, new Vector2(196, y - 22));
+                    bool pulled = !closing && stage == 2;
+                    Module(mesh, new Vector2(196, pulled ? y + 12 : y - 14), false, false);
+                    bool closed = closing ? stage == 2 : stage == 0;
+                    var hinge = new Vector2(232, y - 6);
+                    var tip = closed ? hinge + new Vector2(-30, 0) : hinge + new Vector2(-10, 28);
+                    Line(mesh, hinge, tip, Ink, 5); Ring(mesh, hinge, 4, Ink);
+                    if (stage == 1) CircleArrow(mesh, hinge, 22, closing ? 110 : 170, closing ? 170 : 110);
+                    if (pulled) Arrow(mesh, new Vector2(150, y - 10), new Vector2(150, y + 22));
+                    Line(mesh, new Vector2(82, y - 1), stage == 2 && pulled ? new Vector2(170, y + 12) : tip, stage >= 1 ? Blue : Ink, 2);
+                    break;
+                }
+                case "rotate_access":
+                {
+                    var center = new Vector2(196, y - 4);
+                    Ring(mesh, center, 30, Ink);
+                    float angle = stage == 2 ? 200 : 290;
+                    var handle = center + new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)) * 30;
+                    Ring(mesh, handle, 7, Blue);
+                    // Rear screw becomes reachable once turned.
+                    var screw = center + (stage == 2 ? new Vector2(-14, -14) : new Vector2(14, 14));
+                    Ring(mesh, screw, 6, stage == 2 ? Blue : Pale);
+                    Line(mesh, new Vector2(82, y - 1), handle, stage >= 1 ? Blue : Ink, 2);
+                    if (stage == 1) CircleArrow(mesh, center, 40, 300, 210);
+                    break;
+                }
+            }
+            return true;
+        }
+        void Module(VertexHelper mesh, Vector2 center, bool reversed, bool highlighted)
+        {
+            Box(mesh, center, new Vector2(56, 30), Pale);
+            Line(mesh, center + new Vector2(-28, 15), center + new Vector2(28, 15), highlighted ? Blue : Ink, highlighted ? 4 : 3);
+            // Keyed cut corner shows orientation; reversed for the wrong-way practice.
+            var corner = center + new Vector2(reversed ? 28 : -28, -15);
+            Line(mesh, corner + new Vector2(reversed ? -10 : 10, 0), corner + new Vector2(0, 10), Ink, 3);
+        }
+        void Slot(VertexHelper mesh, Vector2 bottom)
+        {
+            Line(mesh, bottom + new Vector2(-34, 0), bottom + new Vector2(34, 0), Ink, 3);
+            Line(mesh, bottom + new Vector2(-34, 0), bottom + new Vector2(-34, 26), Ink, 3);
+            Line(mesh, bottom + new Vector2(34, 0), bottom + new Vector2(34, 26), Ink, 3);
+        }
+        void CircleArrow(VertexHelper mesh, Vector2 center, float radius, float fromDegrees, float toDegrees)
+        {
+            Vector2 Point(float degrees) => center + new Vector2(Mathf.Cos(degrees * Mathf.Deg2Rad), Mathf.Sin(degrees * Mathf.Deg2Rad)) * radius;
+            Vector2 last = Point(fromDegrees), before = last;
+            for (int i = 1; i <= 12; i++) { var next = Point(Mathf.Lerp(fromDegrees, toDegrees, i / 12f)); Line(mesh, last, next, Blue, 3); before = last; last = next; }
+            var direction = (last - before).normalized; var side = new Vector2(-direction.y, direction.x);
+            Line(mesh, last, last - direction * 9 + side * 5, Blue, 3);
+            Line(mesh, last, last - direction * 9 - side * 5, Blue, 3);
         }
 
         void Controller(VertexHelper mesh, Vector2 p, string control, bool held)

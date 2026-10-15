@@ -28,7 +28,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             public Page[] pages; public Step[] steps; public Picture[] images; public Movie video;
         }
         enum MediaState { Empty, Blocked, Loading, Ready, PlayRequested, Playing, Paused, Seeking, Ended, Error, AwaitingSelection }
-        sealed class Position { public int index = 1; public float normalized = 1; public double time; }
+        sealed class Position { public int index = 1, part = 1; public float normalized = 1; public double time; }
         sealed class Registry { public Package package; public string hash, error; }
 
         const string PackageResource = "ResearchReaderDemo/package";
@@ -70,6 +70,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         string key, format, fallback, error, packageHash, pauseInput, registryResource = PackageResource;
         bool visible, demoAllowed, suppressScroll, resumeAfterSeek, appFocused = true, appPaused, awaitingPreview, seekCompletedSeen, seekFrameSeen;
         int generation, index = 1;
+        // Capture C02: video loading must never sit at "Loading" with no way out. After StallSeconds the Retry control is offered
+        // while loading continues; each phase is logged so Android prepare/first-frame stalls can be diagnosed per build.
+        float videoLoadStarted; string videoLoadPhase = ""; bool videoStallShown;
+        // SHA256 of a StreamingAssets video is verified once per app run; re-reading ~20 MB on every format switch only added GC/IO.
+        static readonly HashSet<string> verifiedVideos = new HashSet<string>(StringComparer.Ordinal);
         long decodedFrames, firstDecodedFrame = -1;
         double seekTarget;
         float seekStarted, playStarted, previewStarted, lastWidth, lastHeight, readingSince = -1;
@@ -78,8 +83,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string Status => state.ToString();
         public int PageIndex => index;
         public int PageCount => package == null ? 1 : format == "pdf" ? package.pages.Length : format == "steps" ? package.steps.Length : format == "images" ? package.images.Length : 1;
-        public bool CanPrevious => IsReady && index > 1 && format != "video";
-        public bool CanNext => IsReady && index < PageCount && format != "video";
+        public bool CanPrevious => IsReady && format != "video" && (index > 1 || (format == "images" && part > 1));
+        public bool CanNext => IsReady && format != "video" && (index < PageCount || (format == "images" && part < PartCount));
+        // Illustrated sub-pages (ResearchCaptionParts): image index keeps its meaning in logs; caption_part is reported separately.
+        int part = 1;
+        int PartCount => format == "images" && package != null && index >= 1 && index <= package.images.Length ? ResearchCaptionParts.Count(CaptionOf(index)) : 1;
+        string CaptionOf(int imageIndex) { var image = package.images[imageIndex - 1]; return Local(image.caption_th, image.caption_ja, image.caption_en); }
         public int CachedPageCount => pageCache.Count;
         public string BoundRegistryResource => registryResource;
         public string BoundSection => format == "pdf" ? "user_manual" : format == "steps" ? "step_by_step" : format == "images" ? "illustrated" : format;
@@ -97,16 +106,18 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string SemanticToken => generation + ":" + key + ":" + format + ":" + index + ":" + state;
         public string Title => state == MediaState.AwaitingSelection ? Local("เลือกรูปแบบสื่อ", "資料の形式を選択", "Choose a format") : format == "pdf" ? "PDF" : format == "steps" ? Local("ขั้นตอน", "手順", "Steps") : format == "images" ? Local("รูปภาพ", "画像", "Images") : "Video";
         public string DocumentName => package == null ? Title : System.Text.RegularExpressions.Regex.Replace(System.IO.Path.GetFileNameWithoutExtension(package.source_pdf).Replace('_', ' '), "([a-z])([A-Z])", "$1 $2");
-        public bool NavigationVisible => IsReady && (format == "pdf" || ((format == "steps" || format == "images") && PageCount > 1));
+        public bool NavigationVisible => IsReady && (format == "pdf" || ((format == "steps" || format == "images") && (PageCount > 1 || PartCount > 1)));
         public string NavigationLabel => format == "pdf" ? index + " / " + PageCount : format == "steps"
             ? Local("ขั้นที่ " + index + " จาก " + PageCount, "手順 " + index + " / " + PageCount, "Step " + index + " of " + PageCount)
-            : Local("ภาพ " + index + " / " + PageCount, "画像 " + index + " / " + PageCount, "Image " + index + " of " + PageCount);
+            : Local("ภาพ " + index + " / " + PageCount, "画像 " + index + " / " + PageCount, "Image " + index + " of " + PageCount)
+                + (PartCount > 1 ? " · " + part + "/" + PartCount : "");
         public object Metadata => new
         {
             event_schema = "viewer_v1", context = key, content_id = package?.content_id, version = package?.version,
             source_pdf = package?.source_pdf, source_sha256 = package?.source_sha256, registry_sha256 = packageHash,
             approval = package?.approval, media_type = format, page = format == "pdf" ? index : (int?)null,
-            index, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
+            index, caption_part = format == "images" ? part : (int?)null, caption_parts = format == "images" ? PartCount : (int?)null,
+            caption_layout = format == "images" ? ResearchCaptionParts.Version : null, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
             time_seconds = player && player.isPrepared ? player.time : Saved.time,
             seek_target_seconds = state == MediaState.Seeking ? seekTarget : (double?)null,
             status = Status, visible, active_reading = visible && IsReady, error,
@@ -226,6 +237,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Navigate(int delta, string input = "None")
         {
             if (!visible || !IsReady || format == "video" || delta == 0) return false;
+            if (format == "images")
+            {
+                int nextIndex = index, nextPart = part + Math.Sign(delta);
+                if (nextPart > PartCount) { nextIndex = index + 1; nextPart = 1; }
+                else if (nextPart < 1) { nextIndex = index - 1; nextPart = nextIndex >= 1 ? ResearchCaptionParts.Count(CaptionOf(nextIndex)) : 1; }
+                if (nextIndex < 1 || nextIndex > PageCount) return false;
+                index = nextIndex; part = nextPart; Saved.index = index; Saved.part = part; Saved.normalized = 1; ClearContent(); Render();
+                SavePosition();
+                Event("REFERENCE_VIEWER_NAVIGATE", Actor(input), input); view.RefreshPageControls(); return true;
+            }
             int next = Mathf.Clamp(index + delta, 1, PageCount);
             if (next == index) return false;
             if (format == "pdf")
@@ -247,12 +268,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             switch (command)
             {
                 case "reference_media.retry":
-                    if (state != MediaState.Error) return false;
+                    if (!ResearchVideoLoadRules.RetryAllowed(state == MediaState.Error, state == MediaState.Loading, videoStallShown)) return false;
+                    string retriedPhase = state == MediaState.Loading ? "stalled:" + videoLoadPhase : "error";
                     registries.Remove(registryResource);
                     string oldKey = key, oldFormat = format, oldFallback = fallback;
                     bool allowed = demoAllowed;
                     key = null; Bind(oldKey, oldFormat, allowed, oldFallback);
-                    Event("REFERENCE_VIEWER_RETRY", Actor(input), input); return state != MediaState.Error;
+                    view?.controller?.ReferenceMediaEvent("REFERENCE_VIEWER_RETRY", new { viewer = Metadata, retried_from = retriedPhase }, Actor(input), input, BoundSection);
+                    return state != MediaState.Error;
                 case "reference_media.play":
                     if (!player || !player.isPrepared || !IsReady || player.isPlaying) return false;
                     if (state == MediaState.Ended) return Seek(0, input, true);
@@ -348,9 +371,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             pageCache.Add(index, texture);
             float width = Mathf.Max(1, scroll.viewport.rect.width - 24), viewportHeight = scroll.viewport.rect.height;
             contentText = Text(content, "ImageCaption", 26);
-            contentText.text = Local(image.caption_th, image.caption_ja, image.caption_en);
+            var (heading, parts) = ResearchCaptionParts.Split(Local(image.caption_th, image.caption_ja, image.caption_en));
+            part = Mathf.Clamp(Saved.part, 1, parts.Length);
+            // Heading repeated as context on every sub-page; rich text only when the reviewed text has no markup characters.
+            contentText.text = heading == null ? parts[part - 1]
+                : (heading.IndexOf('<') < 0 ? "<b>" + heading + "</b>" : heading) + "\n" + parts[part - 1];
             float textHeight = Mathf.Max(48, contentText.GetPreferredValues(contentText.text, width, 10000).y + 12);
-            float availableHeight = Mathf.Max(viewportHeight * .75f, viewportHeight - textHeight - 48);
+            // Capture C04: a fixed 75% image floor pushed 2-3 line captions below the viewport edge (looked clipped by the footer).
+            // Reserve the measured caption first; only captions longer than ~45% of the viewport still need the scrollbar.
+            float availableHeight = Mathf.Max(viewportHeight * .55f, viewportHeight - textHeight - 48);
             float scale = Mathf.Min(width / texture.width, availableHeight / texture.height);
             float imageWidth = texture.width * scale, imageHeight = texture.height * scale;
             var graphic = Rect(content, "SourceImage_" + index, new Vector2(imageWidth, imageHeight)).gameObject.AddComponent<UnityEngine.UI.RawImage>();
@@ -369,6 +398,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             state = MediaState.Loading;
             decodedFrames = 0; firstDecodedFrame = -1; awaitingPreview = false;
             statusLabel.text = Local("กำลังโหลดวิดีโอ", "動画を読み込み中", "Loading video"); statusLabel.gameObject.SetActive(true);
+            videoLoadStarted = Time.realtimeSinceStartup; videoLoadPhase = "created"; videoStallShown = false;
             videoSurface = Rect(content, "VideoSurface", Vector2.zero);
             Stretch(videoSurface, new Vector2(12, 136), new Vector2(-12, -12));
             var frame = Rect(videoSurface, "VideoFrame", Vector2.zero); Stretch(frame, Vector2.zero, Vector2.zero);
@@ -406,15 +436,24 @@ namespace VRMaintenanceResearch.ResearchFlow
                 path = System.IO.Path.GetFullPath("Assets/VRMaintenanceResearch/ResearchFlow/Editor/ReaderDemoFixtures/" + package.video.streaming_path.Substring("ResearchReaderDemo/".Length));
 #endif
             string url = path.Contains("://") || path.StartsWith("jar:", StringComparison.Ordinal) ? path : new Uri(path).AbsoluteUri;
-            using (var request = UnityWebRequest.Get(url))
+            string verifiedKey = url + "|" + package.video.sha256;
+            if (!verifiedVideos.Contains(verifiedKey))
             {
-                request.timeout = 20;
-                yield return request.SendWebRequest();
-                if (acquired != generation || !visible) yield break;
-                if (request.result != UnityWebRequest.Result.Success) { Fail("Video read failed: " + request.error); yield break; }
-                if (!HashMatches(request.downloadHandler.data, package.video.sha256)) { Fail("Video SHA256 mismatch"); yield break; }
+                LoadPhase("reading");
+                using (var request = UnityWebRequest.Get(url))
+                {
+                    request.timeout = 20;
+                    yield return request.SendWebRequest();
+                    if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
+                    if (request.result != UnityWebRequest.Result.Success) { Fail("Video read failed: " + request.error); prepare = null; yield break; }
+                    if (!HashMatches(request.downloadHandler.data, package.video.sha256)) { Fail("Video SHA256 mismatch"); prepare = null; yield break; }
+                }
+                verifiedVideos.Add(verifiedKey);
+                LoadPhase("verified");
             }
-            if (acquired != generation || !visible) yield break;
+            else LoadPhase("verified_cached");
+            if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
+            LoadPhase("preparing");
             var host = new GameObject("ReaderVideoPlayer"); host.transform.SetParent(content, false);
             player = host.AddComponent<VideoPlayer>(); videoAudio = host.AddComponent<AudioSource>();
             videoAudio.playOnAwake = false; videoAudio.mute = true; videoAudio.spatialBlend = 0; videoAudio.volume = .5f;
@@ -439,6 +478,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (!source || !player || source != player || !visible || state != MediaState.Loading) return;
             source.Pause(); videoAudio.mute = true;
+            LoadPhase("prepared");
             timeline.maxValue = (float)Math.Max(.01, source.length);
             float ratio = source.height > 0 ? (float)source.width / source.height : 16f / 9;
             int width = Mathf.Max(2, Mathf.Min(1280, (int)source.width));
@@ -462,6 +502,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 awaitingPreview = false; source.Pause(); if (videoAudio) videoAudio.mute = true;
                 state = MediaState.Ready; statusLabel.gameObject.SetActive(false);
+                LoadPhase("first_frame");
+                var stalledRetry = scroll.viewport.Find("ViewerRetry"); if (stalledRetry) stalledRetry.gameObject.SetActive(false);
                 if (Saved.time > .05 && source.canSetTime) Seek(Saved.time, "None", false, "System");
                 Event("REFERENCE_VIDEO_FIRST_FRAME_DECODED", "System");
                 if (state == MediaState.Ready) { SavePosition(); BeginReading(); RefreshVideoControls(); view.RefreshPageControls(); }
@@ -631,6 +673,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (state == MediaState.PlayRequested && Time.realtimeSinceStartup - playStarted > 5) Fail("Video play timeout");
             if (state == MediaState.Seeking && Time.realtimeSinceStartup - seekStarted > 5) Fail("Video seek timeout");
             if (awaitingPreview && state == MediaState.Loading && Time.realtimeSinceStartup - previewStarted > 5) Fail("Native first decoded frame timeout");
+            if (ResearchVideoLoadRules.StallDue(format == "video", visible, state == MediaState.Loading, videoStallShown, Time.realtimeSinceStartup - videoLoadStarted))
+            {
+                videoStallShown = true;
+                statusLabel.text = Local("วิดีโอยังโหลดไม่เสร็จ รอต่อได้ หรือเลือก “ลองอีกครั้ง”", "動画の読み込みに時間がかかっています。待つか「再試行」を選んでください。",
+                    "The video is still loading. Wait, or choose Retry.");
+                // Above the timeline/time label, which stay visible while loading continues.
+                statusLabel.gameObject.SetActive(true); ShowRetry(196);
+                view?.controller?.ReferenceMediaEvent("REFERENCE_VIDEO_LOAD_STALLED", new { viewer = Metadata, phase = videoLoadPhase,
+                    elapsed_seconds = Time.realtimeSinceStartup - videoLoadStarted }, "System", boundSection: BoundSection);
+            }
             if (format == "video" && visible && state == MediaState.Loading && prepare == null && !player && isActiveAndEnabled && Application.isPlaying)
                 prepare = StartCoroutine(PrepareVideo(generation));
         }
@@ -644,7 +696,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         void SavePosition()
         {
             if (key == null) return;
-            var position = Saved; position.index = index;
+            var position = Saved; position.index = index; if (format == "images") position.part = part;
             if (scroll) position.normalized = scroll.verticalNormalizedPosition;
             if (player && player.isPrepared && !double.IsNaN(player.time)) position.time = player.time;
         }
@@ -679,11 +731,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             statusLabel.text = Local("อ่านสื่อไม่ได้: ", "メディアを読み込めません: ", "Media error: ") + error;
             statusLabel.gameObject.SetActive(true);
             RefreshVideoControls(); RefreshScrollbar(); Event("REFERENCE_VIEWER_ERROR", "System");
+            ShowRetry();
+        }
+        void LoadPhase(string phase)
+        {
+            videoLoadPhase = phase;
+            view?.controller?.ReferenceMediaEvent("REFERENCE_VIDEO_LOAD_PHASE", new { viewer = Metadata, phase,
+                elapsed_ms = Math.Round((Time.realtimeSinceStartup - videoLoadStarted) * 1000) }, "System", boundSection: BoundSection);
+        }
+        void ShowRetry(float bottom = 52)
+        {
             var existing = scroll.viewport.Find("ViewerRetry");
             if (!existing)
             {
                 var retry = Control(scroll.viewport, "ViewerRetry", Local("ลองอีกครั้ง", "再試行", "Retry"), "reference_media.retry");
-                var rect = retry.GetComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0); rect.anchoredPosition = new Vector2(0, 52); rect.sizeDelta = new Vector2(240, 72);
+                existing = retry.transform;
             }
             else
             {
@@ -691,6 +753,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 label.font = view.Font; label.text = Local("ลองอีกครั้ง", "再試行", "Retry");
                 existing.gameObject.SetActive(true);
             }
+            var rect = existing.GetComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0);
+            rect.anchoredPosition = new Vector2(0, bottom); rect.sizeDelta = new Vector2(240, 72);
         }
         void CancelVideo()
         {

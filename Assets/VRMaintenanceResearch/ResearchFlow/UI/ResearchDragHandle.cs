@@ -58,7 +58,8 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void OnPointerDown(PointerEventData data)
         {
-            if (!panel || !panel.movable || !panel.view.Head || dragging) return;
+            // Fixed-position UI policy: the handle object is deactivated by the view; this guard keeps any stale event inert.
+            if (!ResearchUIPolicy.PanelDragAllowed || !panel || !panel.movable || !panel.view.Head || dragging) return;
             rayInteractor = null;
             foreach (var ray in FindObjectsByType<RayInteractor>(FindObjectsSortMode.None))
                 if (ray.isActiveAndEnabled && ray.Identifier == data.pointerId) { rayInteractor = ray; break; }
@@ -101,7 +102,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (graphic) graphic.canvasRenderer.SetColor(dragging || hovers > 0 ? ResearchUITheme.Hover
                 : highlight ? Color.Lerp(ResearchUITheme.Ink, ResearchUITheme.Warning, .35f + .35f * ResearchMotion.Ease(Mathf.PingPong(Time.unscaledTime / .8f, 1)))
                 : ResearchUITheme.Muted);
-            if (dragging && (!panel || !panel.movable || !panel.view || !panel.view.Head)) { Finish(false, "panel_unavailable"); return; }
+            if (dragging && (!ResearchUIPolicy.PanelDragAllowed || !panel || !panel.movable || !panel.view || !panel.view.Head)) { Finish(false, "panel_unavailable"); return; }
             // Validation is deliberately outside the per-ray visual pose update.
             if (dragging && Time.unscaledTime >= nextClearanceCheck) RememberClearPose();
         }
@@ -127,7 +128,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void OnPointerExit(PointerEventData data) => hovers = Mathf.Max(0, hovers - 1);
         public void OnBeginDrag(PointerEventData data)
         {
-            if (dragging || !panel || !panel.movable || !panel.view.Head) return;
+            if (!ResearchUIPolicy.PanelDragAllowed || dragging || !panel || !panel.movable || !panel.view.Head) return;
             plane = new Plane(panel.transform.forward, panel.transform.position);
             if (!Point(data, out var point)) return;
             Begin(data, point);

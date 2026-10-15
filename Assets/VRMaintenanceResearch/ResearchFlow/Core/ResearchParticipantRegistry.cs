@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace VRMaintenanceResearch.ResearchFlow
 {
@@ -33,6 +34,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Written only once a session is ended by the researcher, so untouched registries stay readable by older builds.
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public string termination_reason;
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public List<TerminationAmendment> termination_amendments;
+        // Set when a session starts under a build that versions the participant UI (ResearchUIPolicy). Persisted in the sidecar
+        // protocol-versions.json, NOT in registry.json, so Q4/Q5-era builds (MissingMemberHandling.Error) can still open the registry
+        // after a rollback. Still serialized in exports/logs of the record. Absent = not recorded (attribution unknown, not assumed).
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)] public string protocol_version, ui_policy, training_version, layout_version;
     }
 
     /// <summary>A later researcher correction of the ending category; the original reason and every change stay on record.</summary>
@@ -53,8 +58,30 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly JsonSerializerSettings Json = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented, MissingMemberHandling = MissingMemberHandling.Error,
-            Converters = { new StringEnumConverter() }
+            Converters = { new StringEnumConverter() }, ContractResolver = new RegistryContract()
         };
+        // Protocol fields stay readable (an intermediate build wrote them into registry.json) but are never written there again.
+        internal static readonly string[] ProtocolFields = { "protocol_version", "ui_policy", "training_version", "layout_version" };
+        sealed class RegistryContract : DefaultContractResolver
+        {
+            protected override JsonProperty CreateProperty(System.Reflection.MemberInfo member, MemberSerialization serialization)
+            {
+                var property = base.CreateProperty(member, serialization);
+                if (member.DeclaringType == typeof(ParticipantRecord) && Array.IndexOf(ProtocolFields, property.PropertyName) >= 0) property.ShouldSerialize = _ => false;
+                return property;
+            }
+        }
+        sealed class ProtocolEntry
+        {
+            [JsonProperty(Required = Required.Always)] public string ui_policy, protocol_version, training_version, layout_version;
+        }
+        sealed class ProtocolDocument
+        {
+            [JsonProperty(Required = Required.Always)] public int schema = 1;
+            [JsonProperty(Required = Required.Always)] public Dictionary<string, ProtocolEntry> sessions = new Dictionary<string, ProtocolEntry>();
+        }
+        static readonly JsonSerializerSettings SidecarJson = new JsonSerializerSettings { Formatting = Formatting.Indented, MissingMemberHandling = MissingMemberHandling.Error };
+        public string ProtocolPath => Path.Combine(DirectoryPath, "protocol-versions.json");
         public string DirectoryPath { get; }
         public string RegistryPath => Path.Combine(DirectoryPath, "registry.json");
         public ResearchParticipantRegistry(string rootPath)
@@ -105,8 +132,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         public ParticipantRecord StartOrResume(string participantId, ParticipantLanguage language, ExperimentInputMode inputMode,
-            TaskOrder? orderOverride = null, bool technicalOverride = false, string layoutOverride = null)
+            TaskOrder? orderOverride = null, bool technicalOverride = false, string layoutOverride = null, string uiPolicy = null)
         {
+            uiPolicy = uiPolicy ?? ResearchUIPolicy.Default;
+            if (!ResearchUIPolicy.IsKnown(uiPolicy)) throw new ArgumentException("Invalid session settings");
             if (!Enum.IsDefined(typeof(ParticipantLanguage), language) || !Enum.IsDefined(typeof(ExperimentInputMode), inputMode)
                 || (orderOverride.HasValue && !Enum.IsDefined(typeof(TaskOrder), orderOverride.Value))
                 || (layoutOverride != null && layoutOverride != "P" && layoutOverride != "Q")) throw new ArgumentException("Invalid session settings");
@@ -121,6 +150,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (record.session_state != RegistryState.Available) throw new InvalidOperationException("Participant ID is locked: " + participantId);
                 var defaultLanguage = record.group == ParticipantGroup.Japanese ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai;
                 if (!technical && language != defaultLanguage && !technicalOverride) throw new InvalidOperationException("Study language override requires explicit technical override");
+                if (!technical && uiPolicy != ResearchUIPolicy.Default) throw new InvalidOperationException("Study sessions use the default participant UI policy");
                 (record.task_order, record.task_a_layout) = Balance(doc, record.group, orderOverride, layoutOverride);
                 record.task_order_overridden = orderOverride.HasValue;
                 record.task_a_layout_overridden = layoutOverride != null;
@@ -130,6 +160,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 record.session_id = Guid.NewGuid().ToString("N"); record.run_id = Guid.NewGuid().ToString("N");
                 record.started_at = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
                 record.session_state = RegistryState.InProgress; record.flow_state = ResearchFlowState.TutorialWelcome;
+                record.ui_policy = uiPolicy; record.protocol_version = ResearchUIPolicy.ProtocolFor(uiPolicy);
+                record.training_version = ResearchUIPolicy.TrainingFor(uiPolicy); record.layout_version = ResearchUIPolicy.LayoutVersion;
                 record.revision++; Save(doc); return record;
             }
         }
@@ -201,9 +233,32 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (File.Exists(RegistryPath + ".backup")) throw new InvalidDataException("Registry missing while backup exists; researcher recovery required");
                 return new Document();
             }
-            try { var doc = JsonConvert.DeserializeObject<Document>(File.ReadAllText(RegistryPath, Encoding.UTF8), Json); Validate(doc); return doc; }
+            Document doc;
+            try { doc = JsonConvert.DeserializeObject<Document>(File.ReadAllText(RegistryPath, Encoding.UTF8), Json); Validate(doc); }
             catch (Exception e) when (e is JsonException || e is ArgumentException || e is FormatException || e is OverflowException)
             { throw new InvalidDataException("Registry is corrupt; original data preserved", e); }
+            MergeProtocol(doc);
+            return doc;
+        }
+        void MergeProtocol(Document doc)
+        {
+            if (!File.Exists(ProtocolPath)) return;
+            ProtocolDocument sidecar;
+            try { sidecar = JsonConvert.DeserializeObject<ProtocolDocument>(File.ReadAllText(ProtocolPath, Encoding.UTF8), SidecarJson); }
+            catch (Exception e) when (e is JsonException || e is ArgumentException || e is FormatException)
+            { throw new InvalidDataException("Protocol version sidecar is corrupt; original data preserved", e); }
+            if (sidecar == null || sidecar.schema != 1 || sidecar.sessions == null) throw new InvalidDataException("Unsupported protocol version sidecar");
+            foreach (var pair in sidecar.sessions)
+            {
+                var entry = pair.Value;
+                if (!Guid.TryParseExact(pair.Key, "N", out _) || entry == null || !ResearchUIPolicy.IsKnown(entry.ui_policy))
+                    throw new InvalidDataException("Invalid protocol version sidecar entry");
+                var record = doc.participants.SingleOrDefault(p => p.session_id == pair.Key);
+                if (record == null) continue; // Crash between sidecar and registry writes: the reservation never committed.
+                if (record.ui_policy != null && record.ui_policy != entry.ui_policy) throw new InvalidDataException("Registry and protocol sidecar disagree on UI policy");
+                record.ui_policy = entry.ui_policy; record.protocol_version = entry.protocol_version;
+                record.training_version = entry.training_version; record.layout_version = entry.layout_version;
+            }
         }
         static void Validate(Document doc)
         {
@@ -216,7 +271,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     || !ids.Add(p.participant_id) || !Enum.IsDefined(typeof(RegistryState), p.session_state)
                     || !Enum.IsDefined(typeof(ParticipantLanguage), p.language) || !Enum.IsDefined(typeof(TaskOrder), p.task_order)
                     || !Enum.IsDefined(typeof(ExperimentInputMode), p.input_mode) || p.revision < 0
-                    || !DateTime.TryParse(p.created_at, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)) throw new InvalidDataException("Invalid participant record");
+                    || !DateTime.TryParse(p.created_at, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)
+                    || (p.ui_policy != null && !ResearchUIPolicy.IsKnown(p.ui_policy))) throw new InvalidDataException("Invalid participant record");
                 new ResearchSessionFlow(p.task_order, p.flow_state, p.tutorial_completed, p.paused, p.inspect_passed);
                 if (p.session_state == RegistryState.Available && (p.session_id != "" || p.run_id != "" || p.flow_state != ResearchFlowState.ResearcherSetup || p.revision != 0))
                     throw new InvalidDataException("Available participant contains session reservation data");
@@ -229,12 +285,22 @@ namespace VRMaintenanceResearch.ResearchFlow
         void Save(Document doc)
         {
             Validate(doc);
-            string temp = RegistryPath + ".pending-" + Guid.NewGuid().ToString("N");
-            byte[] bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(doc, Json));
+            // Sidecar first: a crash before the registry replace leaves an entry for an uncommitted session id, which Read ignores.
+            var sidecar = new ProtocolDocument();
+            foreach (var p in doc.participants.Where(p => p.ui_policy != null && p.session_id != ""))
+                sidecar.sessions[p.session_id] = new ProtocolEntry { ui_policy = p.ui_policy, protocol_version = p.protocol_version,
+                    training_version = p.training_version, layout_version = p.layout_version };
+            if (sidecar.sessions.Count > 0 || File.Exists(ProtocolPath))
+                Replace(ProtocolPath, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(sidecar, SidecarJson)));
+            Replace(RegistryPath, Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(doc, Json)));
+        }
+        static void Replace(string path, byte[] bytes)
+        {
+            string temp = path + ".pending-" + Guid.NewGuid().ToString("N");
             using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             { stream.Write(bytes, 0, bytes.Length); stream.Flush(true); }
-            if (File.Exists(RegistryPath)) File.Replace(temp, RegistryPath, RegistryPath + ".backup");
-            else File.Move(temp, RegistryPath);
+            if (File.Exists(path)) File.Replace(temp, path, path + ".backup");
+            else File.Move(temp, path);
         }
     }
 }

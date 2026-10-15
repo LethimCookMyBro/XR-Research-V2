@@ -148,10 +148,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "grab", "move", "rotate", "release" },
             new[] { "reference", "switch", "reposition", "close" }, new[] { "inspect" }
         };
+        // Fixed-position UI policy (ADVISOR_UI_AMENDMENT_20261014): panels cannot be dragged, so the drag lesson is
+        // removed together with the drag interaction; open/switch/close Reader practice is unchanged.
+        static readonly string[][] FixedBasicTutorialFacts = BasicTutorialFacts
+            .Select(facts => facts.Where(fact => fact != "reposition").ToArray()).ToArray();
         // With the neutral Trainer_FX1 station the last group practises the S1 §4 mechanisms before the Inspect samples.
-        static readonly string[][] TrainerTutorialFacts = BasicTutorialFacts.Take(4)
+        static readonly string[][] TrainerTutorialFacts = WithTrainer(BasicTutorialFacts);
+        static readonly string[][] FixedTrainerTutorialFacts = FixedBasicTutorialFacts.Take(4)
+            .Concat(new[] { ResearchTrainingStation.FixedSequence.ToArray() }).ToArray();
+        static string[][] WithTrainer(string[][] basic) => basic.Take(4)
             .Concat(new[] { ResearchTrainingStation.Facts.Concat(new[] { "inspect" }).ToArray() }).ToArray();
-        string[][] TutorialFacts => trainingStation ? TrainerTutorialFacts : BasicTutorialFacts;
+        string[][] TutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
+            ? (trainingStation ? TrainerTutorialFacts : BasicTutorialFacts)
+            : (trainingStation ? FixedTrainerTutorialFacts : FixedBasicTutorialFacts);
+        /// <summary>True when the current policy's training requires this practice fact (e.g. "reposition" only in the legacy policy).</summary>
+        public bool TutorialRequires(string fact) => TutorialFacts.Any(facts => facts.Contains(fact));
         public ResearchTrainingStation trainingStation;
         public bool TutorialUsesHands => Record?.input_mode == ExperimentInputMode.HandTracking ||
             (Record?.input_mode == ExperimentInputMode.TechnicalBoth && guards.Any(g => g && g.TrackingValid && g.Mode == HandsLabInputGuard.InputMode.TrackedHand));
@@ -179,7 +190,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (fact == null) return "tutorial.complete.body";
                 if (TutorialNeedsGrab) return "tutorial.try.regrab" + (TutorialUsesHands ? ".hand" : ".controller");
                 if (fact == "restore") return "tutorial.try.restore";
-                if (fact == "inspect" && trainingStation) return "tutorial.try.inspect.trainer";
+                if (fact == "inspect" && trainingStation)
+                    return ResearchUIPolicy.TrainingIncludesPanelDrag ? "tutorial.try.inspect.trainer" : "tutorial.try.inspect.trainer_ready";
+                if (fact == "inspect_fail" && !ResearchUIPolicy.TrainingIncludesPanelDrag) return "tutorial.try.inspect_fail.start";
                 string key = "tutorial.try." + fact;
                 return fact == "teleport" || fact == "snap" || fact == "select" || fact == "grab" || fact == "release" || fact == "reposition"
                     ? key + (TutorialUsesHands ? ".hand" : ".controller") : key;
@@ -329,7 +342,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             else view?.Refresh();
         }
 
-        public void StartSession(string id, ParticipantLanguage language, ExperimentInputMode input, TaskOrder? order = null, string layout = null)
+        public void StartSession(string id, ParticipantLanguage language, ExperimentInputMode input, TaskOrder? order = null, string layout = null, string uiPolicy = null)
         {
             if (Record != null) { Error = "A session is already open. End it before opening another."; return; }
             try
@@ -341,7 +354,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!technical && (!DeviceReady || !translationsReviewed || taskPorts.Length != 2 || taskPorts.Any(t => !t || !t.IsReadyForStudy)
                     || taskPorts.Select(t => t.taskId).Distinct().Count() != 2))
                     throw new InvalidOperationException("Study requires tracked device, bilingual review and two approved task adapters. Use DEV/TEST for the integration demo.");
-                Record = Registry.StartOrResume(id, language, input, order, layoutOverride: layout);
+                Record = Registry.StartOrResume(id, language, input, order, layoutOverride: layout, uiPolicy: uiPolicy);
+                // A resumed record keeps the policy it started with (absent = earlier movable-panel build), so training facts,
+                // drag availability and analysis grouping never mix policies within one session.
+                ResearchUIPolicy.Apply(ResearchUIPolicy.ForRecord(Record.ui_policy));
+                policyAttribution = Record.ui_policy != null ? "recorded_at_session_start" : resume ? "unrecorded" : "unrecorded_new_session";
                 foreach (var task in FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsSortMode.None))
                     task.ApplyLayout(Record.task_a_layout ?? task.layout);
                 Flow = new ResearchSessionFlow(Record.task_order, Record.flow_state, Record.tutorial_completed, Record.paused, Record.inspect_passed);
@@ -354,8 +371,21 @@ namespace VRMaintenanceResearch.ResearchFlow
                     runId: Record.run_id, resume: resume);
                 Logger.WriteFailed += LoggerFailed;
                 if (Logger.State != HandsLabLogState.Active) throw new IOException(Logger.LastError);
+                if (resume && Record.ui_policy == null)
+                {
+                    // Sidecar entry lost (e.g. a copied registry): the session's own log still states the policy it started with.
+                    string recovered = RecordedPolicyFromEvents();
+                    if (recovered != null) { ResearchUIPolicy.Apply(recovered); policyAttribution = "recovered_from_session_event_log"; }
+                    else policyAttribution = "unrecorded_runtime_keeps_movable_panels_for_continuity";
+                }
                 if (resume && !RestoreTutorialCredits()) return;
                 Log(resume ? "SESSION_RESUMED" : "SESSION_CONFIGURED", "session", "Ready", after: Record, source: "System");
+                Log("SESSION_PROTOCOL_VERSIONS", "session", ResearchUIPolicy.Active, after: new { ui_policy = ResearchUIPolicy.Active,
+                    recorded_ui_policy = Record.ui_policy, protocol_version = Record.protocol_version ?? ResearchUIPolicy.ProtocolFor(ResearchUIPolicy.Active),
+                    training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
+                    layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
+                    panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
+                    tutorial_facts = TutorialFacts, attribution = policyAttribution }, source: "System", reason: policyAttribution);
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
                 Error = "";
                 if (resume && Flow.IsTaskActive)
@@ -1069,6 +1099,26 @@ namespace VRMaintenanceResearch.ResearchFlow
                         retained_facts = TutorialFacts[Flow.TutorialCompleted].Where(tutorialEvidence.Contains).ToArray() }, source: "System", reason: reason);
         }
 
+        string policyAttribution = "";
+        // First SESSION_PROTOCOL_VERSIONS row of this run that carried a recorded policy; null when the run predates the field.
+        string RecordedPolicyFromEvents()
+        {
+            try
+            {
+                using (var reader = new StreamReader(new FileStream(Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+                    for (string line; (line = reader.ReadLine()) != null;)
+                    {
+                        if (line.IndexOf("SESSION_PROTOCOL_VERSIONS", StringComparison.Ordinal) < 0) continue;
+                        var row = JObject.Parse(line);
+                        if ((string)row["event"] != "SESSION_PROTOCOL_VERSIONS" || (string)row["run_id"] != Record.run_id) continue;
+                        string policy = (string)(row["after"] as JObject)?["recorded_ui_policy"];
+                        if (ResearchUIPolicy.IsKnown(policy)) return policy;
+                    }
+            }
+            catch (Exception ex) when (ex is IOException || ex is JsonException) { }
+            return null;
+        }
+
         bool RestoreTutorialCredits()
         {
             if (Flow?.IsTutorial != true || Flow.TutorialCompleted >= TutorialFacts.Length) return true;
@@ -1301,6 +1351,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Log("TELEPORT_COMPLETED", "station." + index, "SystemTransition", before, PoseState(), source: "System", actionId: action);
                 GetComponent<ResearchMovementSampler>()?.Boundary("station_teleport");
                 physicalHeadStart = origin.Camera.transform.localPosition;
+                CurrentStationIndex = index;
+                MeasureStationEye("System", "station_arrival");
             }
             ReferenceSection = Flow?.IsTutorial == true ? ResearchReferenceScheme.Active[0] : ""; view?.RecenterAll(false);
             if (view) yield return view.Fade(false);
@@ -1308,6 +1360,47 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         object PoseState() => origin ? new { position = V(origin.transform.position), yaw = origin.transform.eulerAngles.y } : null;
+
+        // ---- Fixed-UI station anchors (ResearchStationAnchors) --------------------------------------------------------------
+        public int CurrentStationIndex { get; private set; } = -1;
+        public double StationEyeHeight { get; private set; } = double.NaN;
+        public string StationEyeSource { get; private set; } = "";
+        /// <summary>Station frame for anchored panels; false when no station/session (callers fall back to head-relative placement).</summary>
+        internal bool TryStationFrame(out Transform station, out int index, out string layout, out double eyeHeight)
+        {
+            index = CurrentStationIndex; station = index >= 0 && index < stations.Length ? stations[index] : null;
+            layout = index == ResearchStationAnchors.ComputerStation ? Record?.task_a_layout : null;
+            eyeHeight = ResearchStationAnchors.ClampEyeHeight(StationEyeHeight);
+            return station && Flow != null && Record != null;
+        }
+        // Eye height above the station floor from the tracked head. Measured on arrival (System) and re-measurable by the researcher
+        // before task timing; never during an active task, so the anchored pose stays fixed within a task.
+        bool MeasureStationEye(string source, string reason)
+        {
+            if (!origin || !origin.Camera || CurrentStationIndex < 0 || CurrentStationIndex >= stations.Length || !stations[CurrentStationIndex]) return false;
+            double measured = origin.Camera.transform.position.y - stations[CurrentStationIndex].position.y;
+            double previous = StationEyeHeight;
+            StationEyeHeight = measured; StationEyeSource = source;
+            Log("STATION_ANCHOR_CALIBRATED", "station." + CurrentStationIndex, source == "Researcher" ? "ResearcherCalibrated" : "MeasuredOnArrival",
+                before: double.IsNaN(previous) ? null : (object)new { eye_height = previous },
+                after: new { anchors_version = ResearchStationAnchors.Version, station = ResearchStationAnchors.StationName(CurrentStationIndex),
+                    measured_eye_height = measured, applied_eye_height = ResearchStationAnchors.ClampEyeHeight(measured),
+                    clamped = ResearchStationAnchors.ClampEyeHeight(measured) != measured, task_a_layout = Record?.task_a_layout, ui_policy = ResearchUIPolicy.Active },
+                source: source, reason: reason);
+            return true;
+        }
+        /// <summary>Researcher re-calibration before task timing (Welcome/Ready states only). Re-anchors visible panels.</summary>
+        public string CalibrateStationAnchor(string source = "Researcher")
+        {
+            if (Flow == null || Record == null) return "No open session.";
+            if (Flow.Paused || Transitioning || !string.IsNullOrEmpty(Error)) return "Session is paused, transitioning or in error.";
+            if (Flow.State != ResearchFlowState.TutorialWelcome && Flow.State != ResearchFlowState.Task1Ready && Flow.State != ResearchFlowState.Task2Ready)
+                return "Calibration is allowed only before timing (Welcome, Task 1 Ready, Task 2 Ready); now " + Flow.State + ".";
+            if (!HeadsetReady) return "Headset is not tracked.";
+            if (!MeasureStationEye(source, "researcher_calibration_before_timing")) return "Station unavailable.";
+            view?.RecenterAll(false);
+            return null;
+        }
         static float[] V(Vector3 v) => new[] { v.x, v.y, v.z };
 
         // Researcher surfaces poll this twice a second; re-parsing the whole log each time drove full GC pauses (~1 s in the Editor).
