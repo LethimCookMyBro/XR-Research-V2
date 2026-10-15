@@ -14,27 +14,40 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// transform (ResearchFlow_Station_Training/Computer/Fan) plus a researcher-calibrated eye height, not from wherever the head
     /// happened to point. Status modals (pause, checkpoint, results) stay head-relative so they remain readable anywhere.
     ///
-    /// Offsets reproduce the first candidate of the earlier head-relative placement (20 degrees to the side at 1.2 m, 0.1 m below
-    /// the eye) so the nominal layout is unchanged; alternatives are bounded and still station-relative. Task A P/Q only permute
-    /// option parts among the same authored seats (ResearchS1TaskAMechanics.ApplyLayout), so both layouts share one table footprint
-    /// and one anchor set; the layout is still part of the anchor id and must be P or Q at the Computer station.
-    /// Scene distances/angles have NOT been verified in Unity by this code; see HANDOFF_20261015_CLOUD_TH.md.
+    /// Each station stands 0.30 m behind a bench that runs 1.40 m deep, so the earlier head-relative spot (±20°, 1.2 m) landed over the
+    /// back of the bench, behind the case/fan; the scene sweep (batch3-merge-evidence/anchor_pair_sweep*.txt) found it rejected for
+    /// most eye heights. These base poses come from that sweep over eye heights 1.0-1.95 m: each pose (with its raise/step-back ladder)
+    /// clears the bench colliders, is not hidden by scene renderers, does not hide the work area, and the Task and Reader slates do
+    /// not overlap from the station point. The Computer Task slate has a second, wider pose because the case and its parked side panel
+    /// hide the 30° pose from eyes below ~1.6 m. Task brief stays right and the Reader left at every station.
+    /// Task A P/Q only permute option parts among the same authored seats (ResearchS1TaskAMechanics.ApplyLayout), so both layouts share
+    /// one table footprint and one anchor set; the layout is still part of the anchor id and must be P or Q at the Computer station.
     /// </summary>
     public static class ResearchStationAnchors
     {
-        public const string Version = "S1_STATION_ANCHORS_20261015";
+        public const string Version = "S1_STATION_ANCHORS_20261015_SCENE_FIT";
         public const int TrainingStation = 0, ComputerStation = 1, FanStation = 2;
         public const double MinEyeHeight = 1.0, MaxEyeHeight = 1.95, DefaultEyeHeight = 1.6;
 
-        // Station-local offsets: right (+ = participant's right), up relative to the calibrated eye, forward from the station point.
-        struct Offset { public double Right, Up, Forward; public Offset(double r, double u, double f) { Right = r; Up = u; Forward = f; } }
-        static readonly double Side = 1.2 * Math.Sin(20 * Math.PI / 180), Ahead = 1.2 * Math.Cos(20 * Math.PI / 180);
-        // Task brief on the right, Reader on the left (as before); the parts trays at Computer/Fan sit low on the left (~0.94 m),
-        // well below a Reader centred near eye height.
-        static readonly Offset Main = new Offset(Side, -.1, Ahead), Reader = new Offset(-Side, -.1, Ahead);
-        // Bounded clearance alternatives: raise, then step back, then both. Never toward the head and never swapped to the other side.
-        static readonly (double up, double scale)[] Alternatives = { (0, 1), (.3, 1), (0, 1.15), (.3, 1.15) };
-        public static int CandidateCount => Alternatives.Length;
+        // Angle from the station's forward (+ = participant's right), horizontal distance from the station point, and height relative to the eye.
+        struct Base { public double Angle, Distance, Up; public Base(double a, double d, double u) { Angle = a; Distance = d; Up = u; } }
+        static readonly Base[][] TaskBases =
+        {
+            new[] { new Base(20, 1.4, .1) },
+            new[] { new Base(30, 1.8, .1), new Base(55, 1.8, .1) },
+            new[] { new Base(30, 1.4, 0) },
+        };
+        static readonly Base[][] ReaderBases =
+        {
+            new[] { new Base(-20, 1.8, 0) },
+            new[] { new Base(-20, 1.5, .1) },
+            new[] { new Base(-35, 1.3, .1) },
+        };
+        // Bounded clearance ladder per base: raise, then step back, then both. Never toward the head and never to the other side.
+        static readonly (double up, double scale)[] Ladder = { (0, 1), (.3, 1), (0, 1.15), (.3, 1.15) };
+
+        public static int CandidateCount(int station, string panelId) => Supports(station, panelId) ? Bases(station, panelId).Length * Ladder.Length : 0;
+        static Base[] Bases(int station, string panelId) => (panelId == "reference" ? ReaderBases : TaskBases)[station];
 
         public static double ClampEyeHeight(double measured) =>
             double.IsNaN(measured) || double.IsInfinity(measured) ? DefaultEyeHeight : Math.Max(MinEyeHeight, Math.Min(MaxEyeHeight, measured));
@@ -46,19 +59,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             double stationYawDegrees, double eyeHeight, int candidate, out ResearchAnchorPose pose)
         {
             pose = default;
-            if (!Supports(station, panelId) || candidate < 0 || candidate >= Alternatives.Length) return false;
+            if (candidate < 0 || candidate >= CandidateCount(station, panelId)) return false;
             if (station == ComputerStation && layout != "P" && layout != "Q") return false;
             if (double.IsNaN(stationX + stationY + stationZ + stationYawDegrees) || double.IsInfinity(stationX + stationY + stationZ + stationYawDegrees)) return false;
-            var offset = panelId == "reference" ? Reader : Main;
-            var (up, scale) = Alternatives[candidate];
+            var b = Bases(station, panelId)[candidate / Ladder.Length];
+            var (up, scale) = Ladder[candidate % Ladder.Length];
             double eye = ClampEyeHeight(eyeHeight);
-            double yaw = stationYawDegrees * Math.PI / 180;
+            double yaw = stationYawDegrees * Math.PI / 180, angle = b.Angle * Math.PI / 180;
             // Unity: forward = (sin yaw, 0, cos yaw), right = (cos yaw, 0, -sin yaw).
             double fx = Math.Sin(yaw), fz = Math.Cos(yaw), rx = Math.Cos(yaw), rz = -Math.Sin(yaw);
-            double right = offset.Right * scale, forward = offset.Forward * scale;
+            double right = Math.Sin(angle) * b.Distance * scale, forward = Math.Cos(angle) * b.Distance * scale;
             pose.X = stationX + rx * right + fx * forward;
             pose.Z = stationZ + rz * right + fz * forward;
-            pose.Y = stationY + eye + offset.Up + up;
+            pose.Y = stationY + eye + b.Up + up;
             // Upright slate facing away from the station point, matching ResearchPanelMotion's horizontal LookRotation(head -> panel).
             double dx = pose.X - stationX, dz = pose.Z - stationZ;
             pose.YawDegrees = Math.Atan2(dx, dz) * 180 / Math.PI;

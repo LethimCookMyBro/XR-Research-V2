@@ -52,10 +52,19 @@ static class ResearchFlowChecks
             && ResearchStationAnchors.TryGet(1, "Q", "task_information", 0, 0, 5.35, -180, 1.6, 0, out var mainQ)
             && Math.Abs(mainP.X - mainQ.X) < Tol && Math.Abs(mainP.Y - mainQ.Y) < Tol && Math.Abs(mainP.Z - mainQ.Z) < Tol && mainP.Id != mainQ.Id,
             "P and Q share one table footprint and anchor pose but keep distinct anchor ids");
-        Check(Near(mainP.X, -0.410) && Near(mainP.Y, 1.5) && Near(mainP.Z, 5.35 - 1.128),
-            "task brief anchors 20 deg to the participant's right (world -X at yaw -180), 1.2 m out, 0.1 m below the eye");
-        Check(ResearchStationAnchors.TryGet(1, "P", "reference", 0, 0, 5.35, -180, 1.6, 0, out var reader) && Near(reader.X, 0.410) && Near(reader.Z, mainP.Z),
-            "Reader anchors on the participant's left, mirrored");
+        Check(Near(mainP.X, -0.900) && Near(mainP.Y, 1.7) && Near(mainP.Z, 5.35 - 1.559),
+            "Computer task brief anchors 30 deg to the participant's right (world -X at yaw -180), 1.8 m out past the bench, 0.1 m above the eye");
+        Check(ResearchStationAnchors.TryGet(1, "P", "reference", 0, 0, 5.35, -180, 1.6, 0, out var reader) && Near(reader.X, 0.513) && Near(reader.Z, 5.35 - 1.410),
+            "Computer Reader anchors 20 deg to the participant's left at 1.5 m");
+        bool sidesKept = true;
+        for (int s = 0; s <= 2; s++)
+            foreach (var panel in new[] { "task_information", "reference" })
+                for (int c = 0; c < ResearchStationAnchors.CandidateCount(s, panel); c++)
+                {
+                    ResearchStationAnchors.TryGet(s, "P", panel, 0, 0, 0, -180, 1.6, c, out var any);
+                    sidesKept &= panel == "reference" ? any.X > 0 : any.X < 0;
+                }
+        Check(sidesKept, "every station keeps the task brief on the right and the Reader on the left for every candidate");
         double faceX = Math.Sin(mainP.YawDegrees * Math.PI / 180), faceZ = Math.Cos(mainP.YawDegrees * Math.PI / 180);
         Check(faceX * (mainP.X - 0) + faceZ * (mainP.Z - 5.35) > 0, "anchored slate faces away from the station point (LookRotation convention)");
         Check(!ResearchStationAnchors.TryGet(1, null, "task_information", 0, 0, 5.35, -180, 1.6, 0, out _)
@@ -68,14 +77,16 @@ static class ResearchFlowChecks
         Check(ResearchStationAnchors.ClampEyeHeight(double.NaN) == 1.6 && ResearchStationAnchors.ClampEyeHeight(0.4) == 1.0
             && ResearchStationAnchors.ClampEyeHeight(2.4) == 1.95 && ResearchStationAnchors.ClampEyeHeight(1.22) == 1.22, "eye height is clamped to a plausible seated/standing range");
         bool alternativesSafe = true;
-        for (int c = 0; c < ResearchStationAnchors.CandidateCount; c++)
+        int count = ResearchStationAnchors.CandidateCount(1, "task_information");
+        for (int c = 0; c < count; c++)
         {
             ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, c, out var alt);
             double distance = Math.Sqrt(alt.X * alt.X + (alt.Z - 5.35) * (alt.Z - 5.35));
-            alternativesSafe &= alt.X < 0 && distance >= 1.2 - Tol && alt.Y >= mainP.Y - Tol;
+            alternativesSafe &= alt.X < 0 && distance >= 1.8 - Tol && alt.Y >= mainP.Y - Tol;
         }
-        Check(alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, ResearchStationAnchors.CandidateCount, out _),
-            "clearance alternatives only raise or step back, never cross sides or approach the head");
+        Check(count == 8 && alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, count, out _)
+            && ResearchStationAnchors.CandidateCount(1, "recovery") == 0,
+            "clearance alternatives only raise, step back or widen on the same side, never approach the head");
     }
 
     // Illustrated sub-pages over the committed S1 packages: exact text identity and TH/JA parity (presentation only).

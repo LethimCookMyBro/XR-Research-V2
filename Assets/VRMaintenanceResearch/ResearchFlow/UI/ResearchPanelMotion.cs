@@ -264,7 +264,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!ResearchUIPolicy.StationAnchoredPanels || centered || !owner || !ResearchStationAnchors.Supports(owner.CurrentStationIndex, panelId)) return false;
             if (!owner.TryStationFrame(out var station, out int index, out string layout, out double eye)) return false;
             var stationPosition = station.position;
-            for (int candidate = 0; candidate < ResearchStationAnchors.CandidateCount; candidate++)
+            for (int candidate = 0; candidate < ResearchStationAnchors.CandidateCount(index, panelId); candidate++)
             {
                 if (!ResearchStationAnchors.TryGet(index, layout, panelId, stationPosition.x, stationPosition.y, stationPosition.z,
                     station.eulerAngles.y, eye, candidate, out var pose))
