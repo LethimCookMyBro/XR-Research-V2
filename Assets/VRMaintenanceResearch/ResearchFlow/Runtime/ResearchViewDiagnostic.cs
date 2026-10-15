@@ -76,6 +76,17 @@ namespace VRMaintenanceResearch.ResearchFlow
             return true;
         }
 
+        // Wear-round A/B: live URP scale/MSAA until the next render_set or app restart; the persisted asset is never written.
+        public static object SetRender(float scale, int msaa, out string refusal)
+        {
+            refusal = null;
+            var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (!pipeline) { refusal = "URP asset unavailable."; return null; }
+            if (scale < MinScale || scale > MaxScale || (msaa != 1 && msaa != 2 && msaa != 4)) { refusal = "scale " + MinScale + "-" + MaxScale + ", msaa 1|2|4."; return null; }
+            pipeline.renderScale = scale; pipeline.msaaSampleCount = msaa;
+            return new { requested = new { scale, msaa }, note = "readback is from the previous frame; call state after ~1 s for the applied eye size/MSAA" };
+        }
+
         public bool BeginTiming(ResearchSessionFlowController controller, int seconds, out string refusal)
         {
             owner = controller; refusal = null;

@@ -155,7 +155,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "benchmark": return Benchmark(request);
                 case "benchmark_cancel": return CancelBenchmark();
                 case "motion_trace": return MotionTrace(request);
-                case "view_probe": case "frame_timing": return ViewDiagnostic(command, request);
+                case "view_probe": case "frame_timing": case "render_set": return ViewDiagnostic(command, request);
                 case "haptic_probe": return HapticProbe();
                 // Blind drag A/B for the wear session; never changes the ray/controller pose, only the panel target filter.
                 case "drag_filter":
@@ -346,6 +346,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             var diagnostic = controller.GetComponent<ResearchViewDiagnostic>() ?? controller.gameObject.AddComponent<ResearchViewDiagnostic>();
             string error;
             bool started;
+            if (command == "render_set")
+            {
+                if (diagnostic.Running) return Fail("A diagnostic is running; set render after it ends.");
+                var applied = ResearchViewDiagnostic.SetRender((float?)request["scale"] ?? 0, (int?)request["msaa"] ?? 0, out error);
+                if (applied == null) return Fail(error);
+                if (controller.Record != null) LogCommand(command, controller.Record.participant_id, null, null, "RenderSet:" + request["scale"] + "/" + request["msaa"]);
+                return Ok(command, applied);
+            }
             if (command == "frame_timing") started = diagnostic.BeginTiming(controller, (int?)request["seconds"] ?? 20, out error);
             else if (request["plan"] is JObject plan) started = diagnostic.BeginProbe(controller, plan, out error);
             else { started = false; error = "'plan' object required."; }

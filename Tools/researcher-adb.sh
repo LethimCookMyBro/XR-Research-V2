@@ -26,6 +26,7 @@
 #   ./researcher-adb.sh drag_filter on|off     (technical drag A/B; resets to on at app launch)
 #   ./researcher-adb.sh motion_trace [seconds]  (DEV/TEST/PILOT technical only; 5-30 s in memory, one file afterwards)
 #   ./researcher-adb.sh frame_timing [seconds]  (technical dev build; 5-60 s FrameTimingManager main/render/GPU percentiles)
+#   ./researcher-adb.sh render_set 1.10 4        (technical dev build; live URP scale/MSAA for wear-round A/B, not persisted)
 #   ./researcher-adb.sh view_probe '<plan json>' (idle, UNWORN headset only; e.g. '{"presets":["sign"],"configs":[[1.1,2]],"frames":6,"yaw_step":0.02,"hold":8}')
 set -euo pipefail
 
@@ -95,6 +96,8 @@ case "$cmd" in
                 body="{\"command\":\"motion_trace\",\"seconds\":$secs}" ;;
   frame_timing) secs="${2:-20}"; [[ "$secs" =~ ^[0-9]+$ ]] || { echo "usage: frame_timing [seconds 5-60]" >&2; exit 2; }
                 body="{\"command\":\"frame_timing\",\"seconds\":$secs}" ;;
+  render_set) [[ "${2:-}" =~ ^[0-9]+(\.[0-9]+)?$ && "${3:-}" =~ ^[124]$ ]] || { echo "usage: render_set <scale 0.8-1.3> <msaa 1|2|4>" >&2; exit 2; }
+              body="{\"command\":\"render_set\",\"scale\":$2,\"msaa\":$3}" ;;
   view_probe) plan="${2:?usage: view_probe '<plan json>'}"
               printf '%s' "$plan" | python -c 'import json,sys; json.load(sys.stdin)' || { echo "plan must be JSON" >&2; exit 2; }
               body="{\"command\":\"view_probe\",\"plan\":$plan}" ;;
