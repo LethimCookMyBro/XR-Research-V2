@@ -17,7 +17,65 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void SetStep(string value, bool useHands)
         {
             if (fact == value && hands == useHands) return;
-            fact = value; hands = useHands; SetVerticesDirty();
+            fact = value; hands = useHands; SetVerticesDirty(); PlaceObjects();
+        }
+
+        // Rendered images of the real practice mug and Trainer_FX1 module (ResearchTutorialObjectCapture) stand where the
+        // strip used to draw an abstract box, so each row shows the object the participant actually handles.
+        RawImage[] objectImages;
+        static Texture2D mug, module;
+        static bool ShowsMug(string action) => action == "grab" || action == "move" || action == "rotate" || action == "release";
+        static bool ShowsModule(string action) => action == "examine" || action == "insert" || action == "insert_wrong" || action == "lock" || action == "unlock";
+        protected override void OnRectTransformDimensionsChange() { base.OnRectTransformDimensionsChange(); PlaceObjects(); }
+        protected override void OnEnable() { base.OnEnable(); PlaceObjects(); }
+        void PlaceObjects()
+        {
+            if (objectImages == null)
+            {
+                mug = mug ? mug : Resources.Load<Texture2D>("ResearchFlowTutorial/Objects/mug");
+                module = module ? module : Resources.Load<Texture2D>("ResearchFlowTutorial/Objects/module");
+                if (!mug || !module) return;
+                objectImages = new RawImage[3];
+                for (int i = 0; i < 3; i++)
+                {
+                    var child = new GameObject("RealObject_" + i, typeof(RectTransform), typeof(RawImage));
+                    child.transform.SetParent(transform, false);
+                    objectImages[i] = child.GetComponent<RawImage>(); objectImages[i].raycastTarget = false;
+                }
+                SetVerticesDirty();
+            }
+            string action = fact ?? "select";
+            var r = rectTransform.rect; var scale = new Vector2(r.width / 280, r.height / 270);
+            for (int stage = 0; stage < 3; stage++)
+            {
+                var image = objectImages[stage]; float y = 225 - stage * 90;
+                bool showMug = !hands && ShowsMug(action), showModule = !hands && ShowsModule(action);
+                image.gameObject.SetActive(showMug || showModule);
+                if (!showMug && !showModule) continue;
+                Vector2 center, size; float angle = 0; bool mirrored = false;
+                if (showMug)
+                {
+                    float lift = action == "move" && stage > 0 ? 26 : action == "release" && stage < 2 ? 26 : 0;
+                    center = new Vector2(stage == 2 && action == "release" ? 220 : 190, y - 2 + lift); size = new Vector2(74, 74);
+                    if (action == "rotate" && stage > 0) angle = 35;
+                }
+                else
+                {
+                    center = ModuleCenter(action, stage, y); size = new Vector2(80, 80);
+                    mirrored = action == "insert_wrong";
+                }
+                image.texture = showMug ? mug : module;
+                var rt = image.rectTransform; rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(.5f, .5f);
+                rt.anchoredPosition = r.min + Vector2.Scale(center, scale) - r.center;
+                rt.sizeDelta = Vector2.Scale(size, scale); rt.localEulerAngles = new Vector3(0, 0, angle);
+                rt.localScale = new Vector3(mirrored ? -1 : 1, 1, 1);
+            }
+        }
+        static Vector2 ModuleCenter(string action, int stage, float y)
+        {
+            if (action == "examine") return new Vector2(196, y - 4);
+            if (action == "lock" || action == "unlock") return new Vector2(196, !(action == "lock") && stage == 2 ? y + 12 : y - 14);
+            return new Vector2(200, stage == 0 ? y + 14 : stage == 1 ? y + 6 : action == "insert_wrong" ? y - 4 : y - 14);
         }
 
         protected override void OnPopulateMesh(VertexHelper mesh)
@@ -183,6 +241,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void Module(VertexHelper mesh, Vector2 center, bool reversed, bool highlighted)
         {
+            if (!hands && objectImages != null) return;
             Box(mesh, center, new Vector2(56, 30), Pale);
             Line(mesh, center + new Vector2(-28, 15), center + new Vector2(28, 15), highlighted ? Blue : Ink, highlighted ? 4 : 3);
             // Keyed cut corner shows orientation; reversed for the wrong-way practice.
@@ -205,6 +264,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             Line(mesh, last, last - direction * 9 - side * 5, Blue, 3);
         }
 
+        // Side view of a Touch controller: handle, head with thumbstick, trigger in front, grip on the handle.
+        // The control the step uses is always outlined blue so it is identifiable before the press; it fills blue while held.
         void Controller(VertexHelper mesh, Vector2 p, string control, bool held)
         {
             if (hands)
@@ -213,11 +274,25 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Ring(mesh, p + new Vector2(held ? 15 : 34, 15), 10, held ? Blue : Ink);
                 return;
             }
-            Box(mesh, p + new Vector2(0, -15), new Vector2(29, 46), Pale);
-            Ring(mesh, p + new Vector2(0, 12), 22, Ink);
-            Ring(mesh, p + new Vector2(-6, 17), 6, control == "stick" && held ? Blue : Pale);
-            Box(mesh, p + new Vector2(22, 4), new Vector2(8, 13), control == "trigger" && held ? Blue : Pale);
-            Box(mesh, p + new Vector2(16, -17), new Vector2(8, 22), control == "grip" && held ? Blue : Pale);
+            Outline(mesh, p + new Vector2(-2, -14), new Vector2(22, 44), Ink);
+            Outline(mesh, p + new Vector2(2, 14), new Vector2(40, 16), Ink);
+            Part(mesh, p + new Vector2(-4, 26), new Vector2(12, 8), control == "stick", held);
+            Part(mesh, p + new Vector2(25, 6), new Vector2(9, 14), control == "trigger", held);
+            Part(mesh, p + new Vector2(13, -16), new Vector2(7, 22), control == "grip", held);
+        }
+        void Part(VertexHelper mesh, Vector2 center, Vector2 size, bool active, bool held)
+        {
+            if (active && held) Box(mesh, center, size, Blue);
+            else if (active) { Box(mesh, center, size, Pale); Outline(mesh, center, size, Blue); }
+            else Outline(mesh, center, size, Ink);
+        }
+        void Outline(VertexHelper mesh, Vector2 center, Vector2 size, Color tint)
+        {
+            var r = new Rect(center - size / 2, size);
+            Line(mesh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), tint, 2);
+            Line(mesh, new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), tint, 2);
+            Line(mesh, new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax), tint, 2);
+            Line(mesh, new Vector2(r.xMin, r.yMax), new Vector2(r.xMin, r.yMin), tint, 2);
         }
         void Head(VertexHelper mesh, Vector2 p)
         {
@@ -227,6 +302,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void Cup(VertexHelper mesh, Vector2 p, bool rotated)
         {
+            if (!hands && objectImages != null) return;
             Box(mesh, p, new Vector2(28, 34), Pale);
             Line(mesh, p + new Vector2(-14, 17), p + new Vector2(14, 17), Ink, 3);
             Ring(mesh, p + new Vector2(rotated ? -20 : 20, 0), 9, Blue);
