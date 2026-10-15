@@ -400,7 +400,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool allowed = view && view.controller && view.controller.LocalUICommandsAllowed && !ScrollbarHeld;
             bool[] enabled = { Saved.zoom > 1, Saved.zoom != 1,
                 Saved.zoom < 3, Saved.zoom > 1 && scroll.horizontalNormalizedPosition > .001f, Saved.zoom > 1 && scroll.horizontalNormalizedPosition < .999f };
-            for (int i = 0; i < pdfButtons.Length; i++) pdfButtons[i].interactable = allowed && enabled[i];
+            for (int i = 0; i < pdfButtons.Length; i++)
+            {
+                // No horizontal pan at fit width. Hide inert arrows that resemble page navigation.
+                bool applicable = i < 3 || Saved.zoom > 1.001f;
+                pdfButtons[i].gameObject.SetActive(applicable);
+                pdfButtons[i].interactable = applicable && allowed && enabled[i];
+            }
             pdfButtons[1].GetComponentInChildren<TMP_Text>().text = Mathf.RoundToInt(Saved.zoom * 100) + "%";
         }
 

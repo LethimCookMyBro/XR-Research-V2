@@ -141,8 +141,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     int initialEvents = ViewEvents().Count;
                     Check(viewer.IsReady && Zoom() == 1, prefix + "/fit-width current S1 PDF ready", viewer.Metadata);
                     captures.Add(type.GetMethod("Capture").Invoke(fixture, new object[] { "pdf_fit_width", view.referencePanel }));
+                    Check(!view.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "reference_media.pan_left" || a.command == "reference_media.pan_right"),
+                        prefix + "/fit width hides unnecessary pan arrows", viewer.Metadata);
                     Command("zoom_in"); Command("zoom_in"); Flush();
                     Check(Zoom() == 1.5f, prefix + "/150 percent reached", viewer.Metadata);
+                    Check(view.GetComponentsInChildren<ResearchUIAction>(false).Count(a => a.command == "reference_media.pan_left" || a.command == "reference_media.pan_right") == 2,
+                        prefix + "/zoom restores horizontal pan controls", viewer.Metadata);
                     captures.Add(type.GetMethod("Capture").Invoke(fixture, new object[] { "pdf_150_percent", view.referencePanel }));
                     var expectedCommands = new[] { "zoom_out", "zoom_reset", "zoom_in", "pan_left", "pan_right" };
                     var expectedLabels = new[] { "-", "150%", "+", "<", ">" };
