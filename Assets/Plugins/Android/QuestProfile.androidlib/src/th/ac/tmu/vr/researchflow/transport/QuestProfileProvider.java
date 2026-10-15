@@ -33,7 +33,7 @@ import java.util.UUID;
 public final class QuestProfileProvider extends ContentProvider {
     private static final String PACKAGE = "th.ac.tmu.vr.researchflow.quest3.technical";
     private static final String[] BINDING = {"android_user", "package", "uid", "pid", "process_start_ticks", "boot_id", "build_sha256", "apk_path", "instance_id", "session_id", "run_id"};
-    private static final List<String> COMMANDS = Arrays.asList("state", "list", "create", "start", "resume", "abort", "demo", "export", "export_saved", "technical_scenario", "benchmark", "benchmark_cancel", "motion_trace", "haptic_probe", "drag_filter", "view_probe", "frame_timing", "amend_reason", "render_set");
+    private static final List<String> COMMANDS = Arrays.asList("state", "list", "create", "start", "resume", "abort", "demo", "export", "export_saved", "technical_scenario", "benchmark", "benchmark_cancel", "motion_trace", "haptic_probe", "drag_filter", "view_probe", "frame_timing", "amend_reason", "render_set", "calibrate_anchor");
     private static final List<String> FILES = Arrays.asList("manifest.json", "COMPLETE.json", "raw/events.jsonl", "raw/movement.csv", "raw/session_metadata.json", "raw/research-session.json");
     private static QuestProfileProvider live;
     private static volatile boolean focused, ready;
