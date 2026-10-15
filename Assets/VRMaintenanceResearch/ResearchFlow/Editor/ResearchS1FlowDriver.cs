@@ -632,7 +632,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var up = Matrix4x4.Translate(Vector3.up * .08f) * plug.LastFreePose;
             yield return Carry(1, () => plug.LastFreePose, up, false, 12);
             yield return Let(1); Lift(1);
-            Require(station.moduleSocket.Occupant == null, "Unlatched module pulled out of its seat.");
+            // In the fixed-UI order unlock is the last fact: completion resets the trainer, so the credit is the evidence of removal.
+            Require(station.moduleSocket.Occupant == null || controller.TutorialLastCompletedFact == "unlock", "Unlatched module pulled out of its seat.");
         }
 
         static IEnumerator TurnStation(float degrees)
