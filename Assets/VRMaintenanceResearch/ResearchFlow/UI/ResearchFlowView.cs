@@ -1286,7 +1286,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                         + (!selfResume && controller.HelpRequested ? "\n" + Text("pause.help_sent") : "")
                         + "\n<size=90%>" + Text("pause.safety") + "</size></color>";
                     if (selfResume) SetActions(("session_resume", "action.resume"));
-                    else if (testerResume) SetActions(("tester_resume", "action.resume"), ("panel_recovery", "action.recover_short"));
+                    else if (testerResume) SetActions(("tester_resume", "action.resume"));
                     else SetActions(("panel_recovery", "action.recover_short"));
                     break;
                 case "TutorialWelcome": title.text = Text("welcome.title"); body.text = Text("welcome.body") + "\n\n" + Text(controller.TutorialUsesHands ? "welcome.hand" : "welcome.controller"); SetActions(("tutorial_start", "tutorial.start")); break;
