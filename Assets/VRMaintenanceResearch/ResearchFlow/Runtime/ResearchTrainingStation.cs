@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using Oculus.Interaction;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using VRMaintenanceResearch.AssetLibraryQA;
 
 namespace VRMaintenanceResearch.ResearchFlow
@@ -63,6 +65,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void OnDestroy()
         {
+            if (latchGraph.IsValid()) latchGraph.Destroy();
             foreach (var grabbable in new[] { module ? module.grabbable : null, screw ? screw.grabbable : null, leadHead ? leadHead.grabbable : null, turnHandle ? turnHandle.GetComponent<Grabbable>() : null })
                 if (grabbable) grabbable.WhenPointerEventRaised -= Pointer;
             if (latchInteractable is IInteractableView view) view.WhenStateChanged -= LatchState;
@@ -94,10 +97,23 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!close && ModuleSeated) unlockedWhileSeated = true;
         }
 
+        // AnimationClip.SampleAnimation only works in the Editor for non-legacy clips; Quest logged an error and the latch never moved.
+        PlayableGraph latchGraph;
+        AnimationClipPlayable latchPlayable;
         void ApplyLatch(bool closed)
         {
             LatchClosed = closed;
-            if (latchOpenClip && latchAnimationRoot) latchOpenClip.SampleAnimation(latchAnimationRoot, closed ? 0 : latchOpenClip.length);
+            if (!latchOpenClip || !latchAnimationRoot) return;
+            if (!latchGraph.IsValid())
+            {
+                var animator = latchAnimationRoot.GetComponent<Animator>();
+                if (!animator) animator = latchAnimationRoot.AddComponent<Animator>();
+                latchPlayable = AnimationPlayableUtilities.PlayClip(animator, latchOpenClip, out latchGraph);
+                latchGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                latchPlayable.Pause();
+            }
+            latchPlayable.SetTime(closed ? 0 : latchOpenClip.length);
+            latchGraph.Evaluate();
         }
 
         void Update()
