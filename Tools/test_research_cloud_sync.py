@@ -1,0 +1,109 @@
+import json,shutil,sys,tempfile,unittest
+from datetime import timedelta
+from pathlib import Path
+from unittest.mock import patch
+TOOLS=Path(__file__).resolve().parent;sys.path.insert(0,str(TOOLS))
+import research_export as rx
+import research_cloud_sync as cs
+from test_research_export import fixture
+
+def study_authorization(path,record):
+    path.write_text(json.dumps(dict(schema='research.operator-authorization.1',participant_id=record['participant_id'],operator_id='OPERATOR_FIXTURE',
+        consent_approved=True,content_approved=True,language_approved=True,consent_approval_ref='fixture',content_approval_ref='fixture',
+        language_approval_ref='fixture',link_status='linked',session_id=record['session_id'])),encoding='utf-8')
+
+class CloudSyncChecks(unittest.TestCase):
+    def setUp(self):
+        self.td=tempfile.TemporaryDirectory();self.base=Path(self.td.name);self.data=self.base/'ResearchData';self.cloud=self.base/'OneDrive'/'S1';self.cloud.mkdir(parents=True)
+        record=fixture(self.base/'dev','AB')
+        self.dev=Path(rx.ingest(self.base/'dev',self.data,record['participant_id'],record['session_id'])['bundle_path'])
+
+    def tearDown(self):
+        # TemporaryDirectory cannot remove trees past 260 chars on Windows; remove via the extended-length prefix first.
+        shutil.rmtree(cs.target_root(dict(target_root=str(self.base))),ignore_errors=True);self.td.cleanup()
+
+    def config(self,**extra):
+        c=dict(schema=cs.CONFIG_SCHEMA,target_id='fixture_drive',site_code='TMU',target_root=str(self.cloud),enabled=True,allow_technical=True,**extra)
+        path=self.base/('config_'+str(len(list(self.base.glob('config_*'))))+'.json');path.write_text(json.dumps(c),encoding='utf-8');return path
+
+    def remote(self,result):return self.cloud/result['remote_path']
+
+    def study(self):
+        record=fixture(self.base/'study','BA');record.update(participant_id='TH001',group='Thai',test_data=False)
+        (self.base/'study'/'research-session.json').write_text(json.dumps(record),encoding='utf-8')
+        meta=json.loads((self.base/'study'/'session_metadata.json').read_text());meta.update(technical_test=False,test_data=False)
+        (self.base/'study'/'session_metadata.json').write_text(json.dumps(meta),encoding='utf-8')
+        auth=self.base/'auth.json';study_authorization(auth,record)
+        return Path(rx.ingest(self.base/'study',self.data,'TH001',record['session_id'],authorization=auth)['bundle_path'])
+
+    def test_without_config_nothing_leaves_the_pc(self):
+        r=cs.sync(self.data,None)
+        self.assertEqual([b['status'] for b in r['bundles']],['cloud_disabled']);self.assertEqual(list(self.cloud.iterdir()),[]);self.assertFalse((self.data/'.cloud-sync').exists())
+        self.assertEqual(cs.status(self.data,None)[0]['local'],'pc_verified')
+
+    def test_upload_reads_back_every_hash_and_repeat_is_idempotent(self):
+        c=self.config();r=cs.sync(self.data,c)['bundles'][0]
+        self.assertEqual(r['status'],'cloud_folder_verified')
+        self.assertTrue(r['remote_path'].startswith('research_s1/site_TMU/cohort_DEV/participant_DEV900/session_fixture_session_AB/run_fixture_run_AB/bundle_v1_'))
+        manifest=rx.verify(self.remote(r));self.assertEqual(manifest,rx.verify(self.dev))
+        receipt=json.loads((self.remote(r).parent/(self.remote(r).name+'.cloud_receipt.json')).read_text())
+        self.assertFalse(receipt['provider_upload_confirmed']);self.assertNotRegex(json.dumps(receipt),cs.SECRET_KEYS)
+        self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
+        self.assertEqual(cs.status(self.data,c)[0]['cloud'],'cloud_folder_verified')
+        self.assertEqual(list(self.cloud.rglob('*.partial')),[])
+
+    def test_long_synced_folder_path_still_copies(self):
+        self.cloud=self.base/('OneDrive - Tokyo Metropolitan University Research Data Workspace '+'x'*120)/'S1';self.cloud.mkdir(parents=True)
+        r=cs.sync(self.data,self.config())['bundles'][0]
+        self.assertEqual(r['status'],'cloud_folder_verified',r.get('reason'))
+        self.assertGreater(len(str(self.cloud/r['remote_path']/'task_A'/'movement.csv')),260)
+
+    def test_offline_target_queues_then_delivers(self):
+        self.cloud.rmdir();c=self.config();self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'cloud_queued_offline')
+        self.cloud.mkdir(parents=True);self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'cloud_folder_verified')
+
+    def test_partial_remote_file_is_replaced_not_trusted(self):
+        c=self.config();first=cs.sync(self.data,c)['bundles'][0]
+        broken=self.remote(first)/'raw'/'events.jsonl';broken.write_bytes(b'truncated')
+        again=cs.sync(self.data,c)['bundles'][0]
+        self.assertEqual(again['status'],'cloud_folder_verified');self.assertEqual(again['files_copied'],1);rx.verify(self.remote(again))
+
+    def test_failed_copy_backs_off_and_force_retries(self):
+        c=self.config();t=cs.now()
+        with patch.object(cs.shutil,'copyfile',side_effect=OSError('auth expired / server denied')):r=cs.sync(self.data,c,t=t)['bundles'][0]
+        self.assertEqual((r['status'],r['attempts']),('cloud_queued_retry',1))
+        self.assertEqual(cs.sync(self.data,c,t=t+timedelta(seconds=5))['bundles'][0]['status'],'cloud_queued_backoff')
+        self.assertEqual(cs.status(self.data,c)[0]['cloud'],'cloud_queued_retry')
+        self.assertEqual(cs.sync(self.data,c,force=True)['bundles'][0]['status'],'cloud_folder_verified')
+        self.assertFalse(list((self.data/'.cloud-sync').rglob('*.pending.json')))
+
+    def test_study_data_waits_for_complete_approval(self):
+        self.study()
+        r={b['participant']:b['status'] for b in cs.sync(self.data,self.config(allow_study=True))['bundles']}
+        self.assertEqual(r['TH001'],'cloud_pending_approval')
+        approval=dict(approved_by='PI',ethics_ref='TMU-EC-fixture',approved_utc='2026-10-16T00:00:00Z',region='JP',access_scope='research team',encryption_at_rest=True)
+        r={b['participant']:b for b in cs.sync(self.data,self.config(allow_study=True,approval=approval))['bundles']}
+        self.assertEqual(r['TH001']['status'],'cloud_folder_verified');self.assertIn('/cohort_TH/participant_TH001/',r['TH001']['remote_path'])
+
+    def test_credentials_in_config_are_refused(self):
+        with self.assertRaisesRegex(ValueError,'Credentials'):cs.sync(self.data,self.config(provider=dict(access_token='x')))
+
+    def test_tampered_local_bundle_is_not_uploaded(self):
+        (self.dev/'task_A'/'metrics.json').write_bytes(b'{}')
+        r=cs.sync(self.data,self.config())['bundles'][0]
+        self.assertEqual(r['status'],'local_invalid_not_uploaded');self.assertFalse(any(self.cloud.rglob('*.jsonl')) if self.cloud.exists() else False)
+
+    def test_withdrawal_dry_run_then_remote_removal_keeps_local(self):
+        c=self.config();first=cs.sync(self.data,c)['bundles'][0]
+        dry=cs.withdraw(self.data,c,'DEV900')
+        self.assertTrue(dry['targets'][0]['remote_exists']);self.assertTrue(self.remote(first).exists())
+        done=cs.withdraw(self.data,c,'DEV900',execute=True)
+        self.assertFalse(self.remote(first).exists());self.assertTrue(self.dev.exists());self.assertEqual(len(done['remote_removed']),1)
+        audit=(self.data/'.cloud-sync'/'fixture_drive'/'_audit.jsonl').read_text().splitlines();self.assertEqual(len(audit),2)
+        self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'cloud_folder_verified')
+
+    def test_retention_is_a_dry_run(self):
+        r=cs.retention(self.data,'2999-01-01');self.assertTrue(r['dry_run']);self.assertEqual(len(r['due']),1);self.assertTrue(self.dev.exists())
+        self.assertEqual(cs.retention(self.data,'2000-01-01')['due'],[])
+
+if __name__=='__main__':unittest.main()
