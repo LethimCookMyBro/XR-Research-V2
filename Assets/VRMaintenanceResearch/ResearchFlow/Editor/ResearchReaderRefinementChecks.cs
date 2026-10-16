@@ -159,7 +159,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 Check(Hash(ResourcePath(original.source_pdf_resource)) == original.source_sha256 && original.pages.All(page => Hash(ResourcePath(page.resource)) == page.sha256),
                     "original PDF/all mapped page bytes match stored provenance", new { original.source_pdf, original.source_sha256, pages = original.pages.Length, assetHashes });
-                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese, ParticipantLanguage.English })
+                // S1 content exists for Thai and Japanese only (content contract); English has no Reader package.
+                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
                 {
                     object fixture = null;
                     try
@@ -242,7 +243,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         }
                         string stepUnit = language == ParticipantLanguage.Thai ? "ขั้น" : language == ParticipantLanguage.Japanese ? "手順" : "Step";
                         string imageUnit = language == ParticipantLanguage.Thai ? "ภาพ" : language == ParticipantLanguage.Japanese ? "画像" : "Image";
-                        C(reader && reader.IsReady && reader.PageCount == original.pages.Length && controller.Record == null && controller.IsTechnical,
+                        // The view binds the current S1 package for this language/task, not the retired ResearchReaderDemo the fixture hashes.
+                        var bound = reader ? JsonUtility.FromJson<ResearchReferenceViewer.Package>(Resources.Load<TextAsset>(reader.BoundRegistryResource).text) : original;
+                        C(reader && reader.IsReady && reader.PageCount == bound.pages.Length && controller.Record == null && controller.IsTechnical,
                             "existing bytes render in TEST fixture without participant/consent", reader?.Metadata);
                         Stable("PDF"); Pager("PDF", true);
                         var pdfIndices = new List<int>();
@@ -252,7 +255,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             C(reader.IsReady && scroll.content.rect.height > scroll.viewport.rect.height && reader.CachedPageCount <= 3, "PDF " + sample.name + ": continuous bounded-cache original pages", reader.Metadata);
                             Capture("PDF_" + sample.name);
                         }
-                        C(pdfIndices[0] == 1 && pdfIndices[1] > 1 && pdfIndices[1] < original.pages.Length && pdfIndices[2] == original.pages.Length,
+                        C(pdfIndices[0] == 1 && pdfIndices[1] > 1 && pdfIndices[1] < bound.pages.Length && pdfIndices[2] == bound.pages.Length,
                             "PDF top/middle/end follows visible page boundary", pdfIndices);
                         scroll.verticalNormalizedPosition = .63f; Flush(view); float savedPdf = scroll.verticalNormalizedPosition;
                         Click(view, "reference_minimize", pointer); Capture("Minimized"); Click(view, "reference_restore", pointer);

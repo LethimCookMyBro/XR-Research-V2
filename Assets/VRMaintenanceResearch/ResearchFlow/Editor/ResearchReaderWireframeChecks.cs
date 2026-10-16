@@ -84,6 +84,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             using (var reader = new StreamReader(new FileStream(controller.Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 return reader.ReadToEnd().Split('\n').Where(line => !string.IsNullOrWhiteSpace(line)).Select(JObject.Parse).ToList();
         }
+        static int BoundPages(object reader) =>
+            JsonUtility.FromJson<ResearchReferenceViewer.Package>(Resources.Load<TextAsset>(Read(reader, "BoundRegistryResource").ToString()).text).pages.Length;
         static ResearchUIAction Action(ResearchFlowView view, string command)
         {
             var action = view.GetComponentsInChildren<ResearchUIAction>(true).First(a => a.command == command && a.gameObject.activeInHierarchy && a.GetComponent<Button>().IsInteractable());
@@ -241,7 +243,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var rows = new List<object>(); var captures = new List<object>(); int failures = 0;
             void Check(bool pass, string name, object observed) { rows.Add(new { name, pass, observed }); if (!pass) failures++; }
             donor = FontDonor(out ownedDonor);
-            foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese, ParticipantLanguage.English })
+            // S1 content exists for Thai and Japanese only (content contract); English has no Reader package.
+            foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
             {
                 object fixture = null;
                 try
@@ -253,7 +256,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     type.GetMethod("Refresh").Invoke(fixture, null); Flush(view);
                     view.referencePanel.GetComponent<Canvas>().worldCamera = camera;
                     var scroll = Field<ScrollRect>(view, "scroll"); var reader = Viewer(view);
-                    Check(reader != null && Flag(reader, "IsReady") && Number(reader, "PageCount") == 10, language + "/original PDF-derived 10 mapped pages are decoded", new { viewer_present = reader != null, ready = Flag(reader, "IsReady"), status = Read(reader, "Status"), pages = Number(reader, "PageCount"), metadata = Read(reader, "Metadata") });
+                    Check(reader != null && Flag(reader, "IsReady") && Number(reader, "PageCount") == BoundPages(reader), language + "/all mapped pages of the bound S1 package are decoded", new { viewer_present = reader != null, ready = Flag(reader, "IsReady"), status = Read(reader, "Status"), pages = Number(reader, "PageCount"), metadata = Read(reader, "Metadata") });
                     if (reader == null) continue;
                     var eventObject = new GameObject("ReaderOwnedEvents") { hideFlags = HideFlags.HideAndDontSave }; eventObject.SetActive(false);
                     SceneManager.MoveGameObjectToScene(eventObject, view.gameObject.scene); eventObject.transform.SetParent(view.transform, false);
@@ -581,7 +584,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             check((string)Read(reader, "Status") == "Blocked" && !Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible,
                 "DEMO package cannot be used as approved production content", Metadata(reader));
             view.Refresh(); Flush(view);
-            check(Flag(reader, "IsReady") && Number(reader, "PageCount") == 10, "valid original registry restores actual PDF rendering after error trials", Metadata(reader));
+            check(Flag(reader, "IsReady") && Number(reader, "PageCount") == BoundPages(reader), "valid original registry restores actual PDF rendering after error trials", Metadata(reader));
             captures.Add(Capture(fixture, "Error_recovered_valid_binding"));
         }
 
