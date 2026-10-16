@@ -469,8 +469,13 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         // Trainer Inspect samples show their result sentence in the feedback line instead of the generic completed-fact text.
         string trainerResultKey;
-        public void ShowTrainerResult(string key) { trainerResultKey = key; ShowTutorialConfirmation(); }
-        string CompletionText() => NoticeActive ? noticeText : trainerResultKey != null ? Text(trainerResultKey)
+        float trainerResultUntil = float.NegativeInfinity;
+        // Quest 16 Oct 18:02: the 'not ready' sample stayed under the next instruction (insert wrong way) for its whole 97 s.
+        // The result gets a reading window, then the line clears so it never reads as a verdict on the new step.
+        const float TrainerResultSeconds = 8f;
+        string TrainerResult => trainerResultKey != null && Time.unscaledTime < trainerResultUntil ? trainerResultKey : null;
+        public void ShowTrainerResult(string key) { trainerResultKey = key; trainerResultUntil = Time.unscaledTime + TrainerResultSeconds; ShowTutorialConfirmation(); }
+        string CompletionText() => NoticeActive ? noticeText : TrainerResult != null ? Text(TrainerResult)
             : string.Format(Text("tutorial.completed_fact"), Text("tutorial.fact." + CompletedTutorialFact));
 
         // Quest 16 Oct: rejections reached the log with no visible response, so a not-yet attempt at a skill of the current group
@@ -479,9 +484,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         const float NoticeSeconds = 3f;
         string noticeKey, noticeText;
         float noticeUntil = float.NegativeInfinity;
-        bool NoticeActive => noticeKey != null && trainerResultKey == null && Time.unscaledTime < noticeUntil;
+        bool NoticeActive => noticeKey != null && TrainerResult == null && Time.unscaledTime < noticeUntil;
         Color FeedbackColor => NoticeActive ? Ink : Positive;
-        bool FeedbackCheckmark => !NoticeActive && (trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+        bool FeedbackCheckmark => !NoticeActive && (TrainerResult == null || TrainerResult.EndsWith(".pass"));
 
         public void TutorialActionNotCounted(string fact, string reason)
         {
@@ -535,10 +540,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         string CompletedTutorialFact => controller && controller.TutorialCompletedFactCount > 0
             ? controller.TutorialLastCompletedFact ?? confirmingFact : null;
         // ADVISOR_UI_AMENDMENT_20261014 / capture C06: "done" feedback is brief so it never competes with the next instruction.
-        // Practice Inspect results (trainerResultKey) explain an outcome and stay until the next action.
         const float FactFeedbackSeconds = 3.5f;
         float factFeedbackUntil = float.NegativeInfinity;
-        bool TutorialFeedbackVisible => NoticeActive || trainerResultKey != null || (!string.IsNullOrEmpty(CompletedTutorialFact) && Time.unscaledTime < factFeedbackUntil);
+        bool TutorialFeedbackVisible => NoticeActive || TrainerResult != null || (!string.IsNullOrEmpty(CompletedTutorialFact) && Time.unscaledTime < factFeedbackUntil);
 
         void ShowTutorialConfirmation()
         {

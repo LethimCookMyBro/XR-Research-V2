@@ -32,6 +32,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Deliberately a technical identity. Never reuse a production/study package id.
         public const string TechnicalApplicationId = "th.ac.tmu.vr.researchflow.quest3.technical";
         const string ProfileManifest = "Assets/Plugins/Android/QuestProfile.androidlib/AndroidManifest.xml";
+        const string AppIcon = "Assets/VRMaintenanceResearch/ResearchFlow/UI/AppIcon/ResearchFlow_AppIcon.png";
 
         static string Out => Directory.CreateDirectory(
             Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "QuestFinalQA", "build"))).FullName;
@@ -78,6 +79,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var features = settings.GetFeatures<OpenXRFeature>();
             var savedFeatures = features.ToDictionary(f => f, f => f.enabled);
             byte[] oldProfileManifest = File.ReadAllBytes(ProfileManifest);
+            // The shared project default icon is the XRI Examples sample; the research app gets its own launcher icon.
+            var oldIcons = PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any);
+            var appIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIcon) ?? throw new Exception("Missing launcher icon " + AppIcon);
 
             string apk = Path.Combine(Out, "ResearchFlowQuest3_" +
                 DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".apk");
@@ -85,6 +89,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             try
             {
                 PlayerSettings.productName = "ResearchFlow Quest3 Technical";
+                PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { appIcon }, IconKind.Any);
                 PlayerSettings.SetApplicationIdentifier(target, TechnicalApplicationId);
                 PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
@@ -166,6 +171,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport);
                 // ---- restore ----------------------------------------------
                 PlayerSettings.productName = oldProduct;
+                PlayerSettings.SetIcons(NamedBuildTarget.Unknown, oldIcons, IconKind.Any);
                 PlayerSettings.SetApplicationIdentifier(target, oldId);
                 PlayerSettings.Android.targetSdkVersion = oldSdk;
                 PlayerSettings.Android.targetArchitectures = oldArch;
@@ -185,6 +191,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     productName = PlayerSettings.productName,
                     originalProductName = oldProduct,
                     productNameRestored = PlayerSettings.productName == oldProduct,
+                    iconsRestored = PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any).SequenceEqual(oldIcons),
                     targetSdk = PlayerSettings.Android.targetSdkVersion.ToString(),
                     targetSdkRestored = PlayerSettings.Android.targetSdkVersion == oldSdk,
                     architecture = PlayerSettings.Android.targetArchitectures.ToString(),
