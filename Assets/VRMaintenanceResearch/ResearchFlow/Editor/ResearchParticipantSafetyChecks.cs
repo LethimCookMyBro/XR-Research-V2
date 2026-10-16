@@ -38,7 +38,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Application.logMessageReceived += onLog;
             Action<bool,string,object> check = (pass, name, data) => { rows.Add(new { pass, name, data }); if (!pass) failures.Add(name); };
             foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
-            foreach (string stage in new[] { "confirmation", "task_B", "stop_main", "stop_reader", "stop_error", "stop_writer_fault", "checkpoint", "guard_tutorial_start", "guard_tutorial_continue", "guard_task_start", "guard_task_start_confirm", "guard_inspect", "guard_inspect_continue", "guard_technical_resume", "stop_tester_resume", "tutorial_not_counted" })
+            foreach (string stage in new[] { "confirmation", "task_B", "stop_main", "stop_reader", "stop_error", "stop_writer_fault", "checkpoint", "guard_tutorial_start", "guard_tutorial_continue", "guard_task_start", "guard_task_start_confirm", "guard_inspect", "guard_inspect_continue", "guard_technical_resume", "stop_tester_resume", "tutorial_not_counted", "pages" })
             {
                 try
                 {
@@ -71,6 +71,22 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             check(Count(raw, "TASK_STARTED") == 1 && Count(raw, "TASK_START_CANCELLED") == 2 && Count(raw, "INSPECT_PASS") == 0 && Count(raw, "INSPECT_FAIL") == 0,
                                 name + "/actual writer one start and no accidental inspect result", new { f.Writer.EventsPath, starts = Count(raw,"TASK_STARTED"), cancels = Count(raw,"TASK_START_CANCELLED") });
                             f.Capture("task_A", f.View.mainPanel, captures, rows);
+                        }
+                        else if (stage == "pages")
+                        {
+                            // Page audit (master §4): screens no other stage renders, read for text fit; no actions are pressed.
+                            f.Seed(ResearchFlowState.PostTask1Checkpoint); f.Capture("checkpoint_study", f.View.mainPanel, captures, rows);
+                            Set(c, "TechnicalSelfTest", true); f.Seed(ResearchFlowState.PostTask1Checkpoint); f.Capture("checkpoint_dev", f.View.mainPanel, captures, rows);
+                            Set(c, "TechnicalSelfTest", false);
+                            // An unconfigured floor policy reports not ready, which is the tracking/floor-lost card.
+                            f.Seed(ResearchFlowState.Task1Active); var lost = c.gameObject.AddComponent<ResearchFloorPolicy>(); var oldFloor = c.FloorPolicy;
+                            Set(c, "FloorPolicy", lost); check(!c.FloorReady, name + "/floor lost precondition", null);
+                            f.Capture("tracking_loss", f.View.mainPanel, captures, rows);
+                            Set(c, "FloorPolicy", oldFloor); UnityEngine.Object.DestroyImmediate(lost);
+                            // Render-only: saving ParticipantComplete would close the owned record this suite keeps open.
+                            Set(c, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.ParticipantComplete, 5)); f.Capture("completion", f.View.mainPanel, captures, rows);
+                            f.Seed(ResearchFlowState.Task1Ready);
+                            check(f.TextOverflows.Count == 0, name + "/no overflow on checkpoint, completion, tracking", f.TextOverflows);
                         }
                         else if (stage == "task_B")
                         {
