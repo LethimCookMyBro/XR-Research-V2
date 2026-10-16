@@ -295,7 +295,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     case "reference": yield return RayClick("reference"); break;
                     case "switch": yield return SwitchReference(); break;
                     case "reposition": yield return DragReference(); break;
-                    case "close": yield return RayClick("reference_close"); break;
+                    case "close": yield return ReaderDistance(); yield return RayClick("reference_close"); break;
                     case "inspect":
                         if (controller.trainingStation) yield return MakeTrainerReady();
                         yield return RayClick("inspect"); break;
@@ -434,6 +434,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var position = head.position + head.right * (side == 0 ? -.25f : .25f) - Vector3.up * .55f + head.forward * .15f;
                 Drive(side, new Pose(position, Quaternion.LookRotation(Vector3.down, head.forward)));
             }
+        }
+
+        // Reader distance preset (technical sessions): one ray press brings the Reader nearer, a second returns it to its anchor.
+        static IEnumerator ReaderDistance()
+        {
+            var panel = controller.view.referencePanel.transform; var head = controller.origin.Camera.transform;
+            Vector3 anchored = panel.position; float far = Vector3.Distance(head.position, anchored);
+            yield return RayClick("reference_distance"); yield return Wait(.3);
+            float near = Vector3.Distance(head.position, panel.position);
+            Step("reader distance " + far.ToString("F2") + " -> " + near.ToString("F2") + " m");
+            // The Editor preview camera is 60 deg mono, so only 1.3 m fits there; Quest's wider per-eye view admits 1.0-1.15 m.
+            Require(near < far - .05f && near >= .95f, "Reader moved nearer and stayed at least 1 m away: " + far + " -> " + near);
+            yield return RayClick("reference_distance"); yield return Wait(.3);
+            Require(Vector3.Distance(panel.position, anchored) < .005f, "Second press returned the Reader to its anchor");
         }
 
         // Aim the right SDK controller ray until it hits the visible button, then press and release the trigger.
@@ -656,28 +670,46 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Wait(.15);
         }
 
-        static Matrix4x4 SeatTarget(AssetLibraryQA.QASocket socket, AssetLibraryQA.QAPlug plug, float depthMm, float turnDeg) =>
+        static Matrix4x4 SeatTarget(AssetLibraryQA.QASocket socket, AssetLibraryQA.QAPlug plug, float depthMm, float turnDeg, float lateralMm = 0) =>
+            Matrix4x4.Translate(socket.seat.right * (lateralMm / 1000)) *
             AssetLibraryQA.SocketRules.RootPose(socket.seat.localToWorldMatrix, depthMm, turnDeg, plug.MateInRoot(plug.mates[0]));
+
+        static string TutorialNotice() => controller.view.transform.GetComponentsInChildren<RectTransform>(true)
+            .First(t => t.name == "TutorialSuccess").Find("Label").GetComponent<TMPro.TMP_Text>().text;
 
         static IEnumerator InsertModule(float turn, bool seat)
         {
             var station = Station; var plug = station.module; var socket = station.moduleSocket;
             if (!plug.IsHeld) yield return Acquire(1, plug, false, () => plug.IsHeld);
+            if (!seat)
+            {
+                // Quest 16 Oct 18:02: a hand rarely arrives on the slot axis. 30 mm off draws the measured hint and no credit;
+                // 10 mm off (refused by the old 6 mm window) must still stop at the reversed key.
+                yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 18, turn, 30), false, 10);
+                yield return Wait(.2);
+                Require(controller.TutorialArmedFact == "insert_wrong" && TutorialNotice() == ResearchStrings.Get("training.hint.module.off_center", controller.Language),
+                    "30 mm off the slot shows the off-centre hint without credit: " + TutorialNotice());
+                yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 18, turn, 10), false, 10);
+                yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, -2, turn, 10), false, 10);
+                Step("module offered 10 mm off at turn " + turn + ": socket " + socket.State + " stop=" + socket.Last.stop + " depth=" + socket.Last.depthMm.ToString("F1"));
+                yield return Wait(.3);
+                // Wrong way stays blocked; lift it back out while still holding it so the next attempt starts free.
+                yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 60, turn), false, 10);
+                yield break;
+            }
             yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 60, turn), false);
             yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 18, turn), false, 10);
             yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, -2, turn), false, 10);
             Step("module offered at turn " + turn + ": socket " + socket.State + " stop=" + socket.Last.stop + " depth=" + socket.Last.depthMm.ToString("F1"));
-            if (seat) { yield return Let(1); Lift(1); Require(station.ModuleSeated, "Released module is seated."); yield break; }
-            yield return Wait(.3);
-            // Wrong way stays blocked; lift it back out while still holding it so the next attempt starts free.
-            yield return Carry(1, () => plug.LastFreePose, SeatTarget(socket, plug, 60, turn), false, 10);
+            yield return Let(1); Lift(1); Require(station.ModuleSeated, "Released module is seated.");
         }
 
         static IEnumerator ToggleLatch(bool thenPull)
         {
             var station = Station; bool before = station.LatchClosed;
             var view = station.latchInteractable as IInteractableView;
-            yield return Acquire(0, station.latch, false, () => view.State == InteractableState.Select);
+            // The credited toggle retires the latch from the current step, which ends the SDK select; the toggle is the evidence.
+            yield return Acquire(0, station.latch, false, () => view.State == InteractableState.Select || station.LatchClosed != before);
             yield return Let(0); Lift(0);
             Require(station.LatchClosed != before, "Latch toggled by grip select: closed=" + station.LatchClosed);
             if (!thenPull) yield break;

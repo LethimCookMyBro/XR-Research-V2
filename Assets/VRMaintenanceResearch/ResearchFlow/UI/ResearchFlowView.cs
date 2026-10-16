@@ -252,6 +252,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         Vector3 readerAnchorPosition;
         Quaternion readerAnchorRotation;
         string readerAnchorKey;
+        // Reader distance preset (ResearchUIPolicy.ReaderDistanceVersion): closer toggles to a validated nearer pose; the
+        // anchored pose is kept so the same control always returns to it. Reset when a new anchor is established.
+        bool readerCloser;
+        Pose readerDefaultPose;
+        int readerDistanceChanges;
+        static float[] Floats(Vector3 v) => new[] { v.x, v.y, v.z };
+        bool ReaderDistanceControl => controller && ResearchUIPolicy.ReaderDistanceAllowed(controller.IsTechnical) && !controller.ReferenceMinimized;
         string ReaderAnchorKey => controller?.Flow == null ? null : controller.Flow.IsTaskActive ? "task:" + controller.Flow.CurrentTask
             : controller.Flow.IsTutorial ? "tutorial" : controller.Flow.State.ToString();
         Vector2 expandedMainSize = new Vector2(1000, 620);
@@ -466,9 +473,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         string CompletionText() => NoticeActive ? noticeText : trainerResultKey != null ? Text(trainerResultKey)
             : string.Format(Text("tutorial.completed_fact"), Text("tutorial.fact." + CompletedTutorialFact));
 
-        // Quest 16 Oct: 16 grab/release rejections and 17 duplicates reached the log with no visible response.
-        // The notice explains "not counted" without changing credit; locomotion and Reader browsing are normal use, not retries.
-        static readonly HashSet<string> SilentDuplicates = new HashSet<string> { "teleport", "snap", "roomscale", "switch", "reference", "close", "restore", "select" };
+        // Quest 16 Oct: rejections reached the log with no visible response, so a not-yet attempt at a skill of the current group
+        // gets a notice. Quest 16 Oct 18:02: grab/release are part of every later physical skill, and "already done, no need to
+        // repeat" during the module insert read as "do not grip". Duplicates and other groups' skills stay in the log only.
         const float NoticeSeconds = 3f;
         string noticeKey, noticeText;
         float noticeUntil = float.NegativeInfinity;
@@ -478,16 +485,25 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void TutorialActionNotCounted(string fact, string reason)
         {
-            if (reason == "safety_or_tracking_invalid" || !tutorialSuccess) return;
-            bool duplicate = reason == "already_credited";
-            if (duplicate ? SilentDuplicates.Contains(fact) : fact == "teleport" || fact == "snap" || fact == "roomscale") return;
-            string key = duplicate ? "tutorial.notice.already_done" : "tutorial.notice.not_yet";
+            if (reason == "safety_or_tracking_invalid" || reason == "already_credited" || !controller.TutorialGroupRequires(fact)
+                || fact == "teleport" || fact == "snap" || fact == "roomscale") return;
+            ShowNotice("tutorial.notice.not_yet", "TUTORIAL_NOT_COUNTED_FEEDBACK", fact, reason);
+        }
+
+        // A neutral mechanical hint for the armed trainer skill, measured from the part's pose; never a credit.
+        public void TrainingHint(string key, string fact) => ShowNotice(key, "TRAINING_HINT_FEEDBACK", fact, key);
+
+        void ShowNotice(string key, string evt, string fact, string reason)
+        {
+            if (!tutorialSuccess) return;
+            // The Inspect sample result belongs to the previous step; left in place it hid every notice for the next one.
+            trainerResultKey = null;
             if (key == noticeKey && Time.unscaledTime < noticeUntil) { noticeUntil = Time.unscaledTime + NoticeSeconds; return; }
             noticeKey = key; noticeUntil = Time.unscaledTime + NoticeSeconds;
-            noticeText = duplicate ? string.Format(Text(key), Text("tutorial.fact." + fact)) : Text(key);
+            noticeText = Text(key);
             successLabel.font = Font; successLabel.color = FeedbackColor; successLabel.text = noticeText;
             tutorialSuccess.gameObject.SetActive(true); tutorialSuccess.Find("Checkmark").gameObject.SetActive(false);
-            controller.Log("TUTORIAL_NOT_COUNTED_FEEDBACK", "training." + fact, "RendererTextApplied",
+            controller.Log(evt, "training." + fact, "RendererTextApplied",
                 after: new { fact, reason, text = noticeText, frame = Time.frameCount, human_seen = (bool?)null }, source: "System");
         }
 
@@ -687,7 +703,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var hint = control.GetComponent<ResearchControlHint>();
                 if (hint) { hint.label.gameObject.SetActive(false); hint.enabled = false; }
             }
-            referenceToolbar.Find("Recenter")?.gameObject.SetActive(false);
+            var distance = referenceToolbar.Find("Recenter");
+            if (distance) { distance.GetComponent<ResearchUIAction>().command = "reference_distance"; distance.gameObject.SetActive(ReaderDistanceControl); }
             referenceExpanded.GetComponent<RectTransform>().sizeDelta = new Vector2(840, 630);
             referenceExpanded.transform.Find("Surface").GetComponent<RectTransform>().sizeDelta = new Vector2(840, 630);
             var content = referenceExpanded.transform.Find("ContentSurface").GetComponent<RectTransform>();
@@ -1377,7 +1394,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var handle = toolbar.Find("DragHandle");
                 if (handle && handle.gameObject.activeSelf != ResearchUIPolicy.PanelDragAllowed) handle.gameObject.SetActive(ResearchUIPolicy.PanelDragAllowed);
                 var recenter = toolbar.Find("Recenter");
-                if (recenter && !ResearchUIPolicy.ParticipantRecenterAllowed && recenter.gameObject.activeSelf) recenter.gameObject.SetActive(false);
+                bool show = recenter && recenter.GetComponent<ResearchUIAction>().command == "reference_distance" ? ReaderDistanceControl : ResearchUIPolicy.ParticipantRecenterAllowed;
+                if (recenter && !show && recenter.gameObject.activeSelf) recenter.gameObject.SetActive(false);
+                else if (recenter && show && ResearchUIPolicy.ReaderPoseFixedPerTask && !recenter.gameObject.activeSelf) recenter.gameObject.SetActive(true);
             }
         }
 
@@ -1860,7 +1879,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var rt = control.GetComponent<RectTransform>();
                 rt.anchoredPosition = new Vector2(key == "Minimize" ? -224 : key == "Recenter" ? 224 : 320, 0);
                 rt.sizeDelta = new Vector2(80, 80);
-                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), key.ToLowerInvariant(), "action." + key.ToLowerInvariant());
+                bool distance = control.GetComponent<ResearchUIAction>()?.command == "reference_distance";
+                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), distance ? (readerCloser ? "farther" : "closer") : key.ToLowerInvariant(),
+                    distance ? (readerCloser ? "action.reader_default" : "action.reader_closer") : "action." + key.ToLowerInvariant());
             }
         }
 
@@ -2069,7 +2090,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 // falls back to a logged System placement); legacy policy keeps the original head-relative placement.
                 if (ResearchUIPolicy.ReaderPoseFixedPerTask && readerAnchorKey != null && readerAnchorKey == ReaderAnchorKey)
                     referencePanel.RestorePose(readerAnchorPosition, readerAnchorRotation);
-                else referencePanel.Recenter(false, false, reason: ResearchUIPolicy.ReaderPoseFixedPerTask ? "fixed_reader_anchor_established" : "recenter");
+                else { readerCloser = false; referencePanel.Recenter(false, false, reason: ResearchUIPolicy.ReaderPoseFixedPerTask ? "fixed_reader_anchor_established" : "recenter"); }
             }
             bool showTask = controller.Flow.IsTaskActive;
             mainGroup.interactable = showTask; mainGroup.blocksRaycasts = showTask; mainGroup.alpha = 1;
@@ -2118,6 +2139,30 @@ namespace VRMaintenanceResearch.ResearchFlow
                     { controller?.Log("PANEL_RECENTER", "task_information", "RejectedByUIPolicy", source: "User", inputSource: input, reason: ResearchUIPolicy.Active); return false; }
                     if (!allowed || !Head || !mainPanel.movable) return false;
                     mainPanel.Recenter(true, true, input); accepted = true; break;
+                case "reference_distance":
+                {
+                    if (!ResearchUIPolicy.ReaderDistanceAllowed(controller && controller.IsTechnical))
+                    { controller?.Log("READER_DISTANCE", "reference", "RejectedByUIPolicy", source: "User", inputSource: input, reason: ResearchUIPolicy.Active); return false; }
+                    if (!allowed || !Head || !controller.ReferenceOpen || controller.ReferenceMinimized || referencePanel.PlacementBlocked || referencePanel.RecenterPending) return false;
+                    var from = new Pose(referencePanel.transform.position, referencePanel.transform.rotation);
+                    Pose to;
+                    if (readerCloser) to = readerDefaultPose;
+                    else if (referencePanel.TryCloserPose(out to)) readerDefaultPose = from;
+                    else
+                    {
+                        controller.Log("READER_DISTANCE", "reference", "NoClearCloserPose", after: new { pose = referencePanel.Pose(), head = Floats(Head.position) }, source: "User", inputSource: input,
+                            reason: referencePanel.LastRejection);
+                        return false;
+                    }
+                    var fromLog = referencePanel.Pose();
+                    referencePanel.RestorePose(to.position, to.rotation);
+                    readerCloser = !readerCloser; readerDistanceChanges++;
+                    controller.Log("READER_DISTANCE", "reference", readerCloser ? "Closer" : "Default", before: fromLog,
+                        after: new { position = Floats(to.position), yaw = to.rotation.eulerAngles.y, head = Floats(Head.position), head_distance_m = Vector3.Distance(Head.position, to.position), changes = readerDistanceChanges,
+                            policy = ResearchUIPolicy.ReaderDistanceVersion }, source: "User", inputSource: input);
+                    LayoutToolbar(referenceExpanded.transform.Find("Toolbar"), ReaderWidth);
+                    accepted = true; break;
+                }
                 case "reference_recenter":
                     if (!ResearchUIPolicy.ParticipantRecenterAllowed)
                     { controller?.Log("PANEL_RECENTER", "reference", "RejectedByUIPolicy", source: "User", inputSource: input, reason: ResearchUIPolicy.Active); return false; }

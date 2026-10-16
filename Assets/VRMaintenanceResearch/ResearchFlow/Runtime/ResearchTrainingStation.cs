@@ -71,6 +71,25 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (latchInteractable is IInteractableView view) view.WhenStateChanged -= LatchState;
         }
 
+        // Quest 16 Oct 18:02: the lead and screw sit within reach of the module and took 9 grabs meant for it. Only the current
+        // step's parts are grabbable; TutorialFact stays on the next uncredited step, so a held part never drops between credits.
+        bool StepUses(GameObject root, string step)
+        {
+            var part = root.transform.parent;
+            bool Module() => part == module.transform;
+            bool Handle() => part == turnHandle.transform;
+            switch (step)
+            {
+                case "insert_wrong": case "insert": return Module();
+                case "lock": return root == latchInteractable.gameObject;
+                case "unlock": return root == latchInteractable.gameObject || Module();
+                case "rotate_access": return Handle();
+                case "fasten": case "loosen": return part == screw.transform || Handle();
+                case "cable_connect": case "cable_disconnect": return part == leadHead.transform;
+                default: return false;
+            }
+        }
+
         // A latched module cannot leave its seat; any held pose other than the seated one is refused.
         bool ModulePoseAllowed(Matrix4x4 pose)
         {
@@ -119,7 +138,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         void Update()
         {
             bool active = Active;
-            foreach (var root in interactables) if (root && root.activeSelf != active) root.SetActive(active);
+            string step = active ? controller.TutorialFact : null;
+            foreach (var root in interactables)
+            {
+                bool on = active && StepUses(root, step);
+                if (root && root.activeSelf != on) root.SetActive(on);
+            }
             turnHandle.Allowed = screw.Allowed = active;
             if (!active) return;
 
@@ -147,8 +171,54 @@ namespace VRMaintenanceResearch.ResearchFlow
             Recover();
         }
 
+        // Quest 16 Oct 18:02: 97 s of module handling left no trace and no response. Each hold now logs grab, the first
+        // measured reason it is not entering the slot, and the release outcome; the reason is shown as a neutral hint.
+        // Runs after QAPlug.LateUpdate (order 10000) so a release reads the socket's settled state.
+        const float NearSlotMm = 60;
+        bool wasModuleHeld;
+        string moduleHint;
+
+        void ModuleAttempt()
+        {
+            string fact = controller.TutorialArmedFact;
+            bool held = module.IsHeld;
+            if (held && !wasModuleHeld) Log("TRAINING_MODULE", "Grabbed");
+            if (held && (fact == "insert_wrong" || fact == "insert"))
+            {
+                string hint = ModuleHint(fact, out var measure);
+                if (hint != null && hint != moduleHint)
+                {
+                    moduleHint = hint;
+                    Log("TRAINING_MODULE", "Attempt", hint, measure);
+                    controller.view?.TrainingHint("training.hint.module." + hint, fact);
+                }
+            }
+            if (!held && wasModuleHeld)
+            {
+                bool inSlot = moduleSocket.Occupant == module;
+                Log("TRAINING_MODULE", "Released", inSlot ? moduleSocket.State.ToString() : moduleHint ?? "away_from_slot");
+                if (fact == "insert" && inSlot && moduleSocket.State == SocketState.Partial)
+                    controller.view?.TrainingHint("training.hint.module.push", fact);
+                moduleHint = null;
+            }
+            wasModuleHeld = held;
+        }
+
+        string ModuleHint(string fact, out MatePose hand)
+        {
+            hand = SocketRules.Measure(moduleSocket.seat.localToWorldMatrix, module.LastFreePose * module.MateInRoot(module.mates[0]));
+            if (moduleSocket.Occupant == module && moduleSocket.Last.captured)
+                return moduleSocket.Last.stop == Stop.Entrance ? "turned"
+                    : moduleSocket.Last.stop == Stop.Seat ? (fact == "insert_wrong" ? "right_way" : null)
+                    : fact == "insert" ? "wrong_way" : null;
+            if (hand.lateralMm > NearSlotMm || Mathf.Abs(hand.depthMm) > NearSlotMm) return null;
+            if (hand.tiltDeg > moduleSocket.spec.angTolDeg) return "tilted";
+            return hand.lateralMm > moduleSocket.spec.posTolMm ? "off_center" : null;
+        }
+
         void LateUpdate()
         {
+            if (Active) ModuleAttempt();
             if (leadBones.Length == 0 || !leadAnchor) return;
             // Bones between the fixed end and the held plug follow a sagging curve; the lead has no physics of its own.
             Vector3 a = leadAnchor.position, b = leadHead.transform.position;
@@ -182,9 +252,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         void Credit(string fact) =>
             controller.TutorialActionCommitted(fact, controller.TutorialActionEpoch(fact), controller.Logger?.NewActionId(), lastInput);
 
-        void Log(string evt, string result, string reason = null) =>
+        void Log(string evt, string result, string reason = null, MatePose? measure = null) =>
             controller.Log(evt, "training.trainer", result, after: new { module_seated = ModuleSeated, latch_closed = LatchClosed, screw_degrees = screw.Progress,
-                lead_connected = LeadConnected, turntable_yaw = turntable.localEulerAngles.y }, inputSource: lastInput, reason: reason);
+                lead_connected = LeadConnected, turntable_yaw = turntable.localEulerAngles.y, module_socket = moduleSocket.State.ToString(),
+                module_stop = moduleSocket.Occupant == module ? moduleSocket.Last.stop.ToString() : null,
+                module_slot_mm_deg = measure is MatePose m ? new[] { m.depthMm, m.lateralMm, m.tiltDeg, m.turnDeg } : null },
+                inputSource: lastInput, reason: reason);
 
         // Tutorial Inspect on the trainer: which sample fact the press can credit, and the shown result key.
         public string InspectFact => Ready ? "inspect" : "inspect_fail";

@@ -347,6 +347,24 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!RecenterPending) Recenter(false, false);
         }
 
+        // Nearer Reader pose on the current head-to-panel line, with the same stereo view and clearance checks as every placement.
+        static readonly float[] CloserDistances = { 1.0f, 1.15f, 1.3f };
+        public bool TryCloserPose(out Pose pose)
+        {
+            pose = default;
+            if (!view || !view.Head) return false;
+            var head = view.Head.position; var line = transform.position - head;
+            foreach (float distance in CloserDistances)
+            {
+                if (line.magnitude <= distance + .05f) continue;
+                var position = head + line.normalized * distance;
+                var flat = Vector3.ProjectOnPlane(position - head, Vector3.up);
+                var rotation = flat.sqrMagnitude > .0001f ? Quaternion.LookRotation(flat, Vector3.up) : transform.rotation;
+                if (FitsView(position, rotation) && PlacementClear(position, rotation)) { pose = new Pose(position, rotation); return true; }
+            }
+            return false;
+        }
+
         public void RestorePose(Vector3 position, Quaternion rotation)
         {
             if (!view || !view.Head) return;

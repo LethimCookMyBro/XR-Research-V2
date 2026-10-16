@@ -88,7 +88,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         }
                         else if (stage == "tutorial_not_counted")
                         {
-                            f.Seed(ResearchFlowState.TutorialInteractions, 0);
+                            f.Seed(ResearchFlowState.TutorialInteractions, (int)TutorialStep.GrabRotateRelease);
                             int Notices() => Count(Read(f.Writer.EventsPath), "TUTORIAL_NOT_COUNTED_FEEDBACK");
                             var success = f.View.transform.GetComponentsInChildren<RectTransform>(true).First(t => t.name == "TutorialSuccess");
                             string Shown() => success.Find("Label").GetComponent<TMP_Text>().text;
@@ -102,14 +102,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             f.Capture("not_counted", f.View.mainPanel, captures, rows);
                             f.View.TutorialActionNotCounted("grab", "instruction_not_armed_at_attempt");
                             check(Notices() == 1, name + "/repeat within the notice window does not re-log", null);
-                            f.View.TutorialActionNotCounted("release", "already_credited");
-                            check(Notices() == 2 && Shown() == string.Format(ResearchStrings.Get("tutorial.notice.already_done", language.ToString()), ResearchStrings.Get("tutorial.fact.release", language.ToString())),
-                                name + "/duplicate release names the completed skill", Shown());
-                            f.Capture("already_done", f.View.mainPanel, captures, rows);
-                            foreach (var silent in new[] { ("teleport", "instruction_not_armed_at_attempt"), ("snap", "already_credited"), ("switch", "already_credited"), ("grab", "safety_or_tracking_invalid") })
+                            // Quest 16 Oct 18:02: grab/release duplicates while inserting the module read as "do not grip".
+                            foreach (var silent in new[] { ("release", "already_credited"), ("grab", "already_credited"), ("inspect", "instruction_not_armed_at_attempt"),
+                                ("teleport", "instruction_not_armed_at_attempt"), ("snap", "already_credited"), ("switch", "already_credited"), ("grab", "safety_or_tracking_invalid") })
                                 f.View.TutorialActionNotCounted(silent.Item1, silent.Item2);
-                            check(Notices() == 2, name + "/locomotion, Reader browsing and tracking rejections stay silent", null);
-                            check(Count(Read(f.Writer.EventsPath), "TUTORIAL_SKILL_CREDIT") == 0 && c.Flow.TutorialCompleted == 0, name + "/notices grant no credit", State(c));
+                            check(Notices() == 1, name + "/duplicates, other groups' skills, locomotion and tracking rejections stay silent", null);
+                            check(Count(Read(f.Writer.EventsPath), "TUTORIAL_SKILL_CREDIT") == 0 && c.Flow.TutorialCompleted == (int)TutorialStep.GrabRotateRelease, name + "/notices grant no credit", State(c));
                             credits = c.Flow.TutorialCompleted;
                         }
                         else

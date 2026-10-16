@@ -40,11 +40,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             else if (kind == "close") { Line(new Vector2(-9, -9), new Vector2(9, 9)); Line(new Vector2(-9, 9), new Vector2(9, -9)); }
             else
             {
+                // Frame corners: recenter / Reader closer (plus) / Reader back to default distance (minus).
                 Line(new Vector2(-11, -5), new Vector2(-11, -11)); Line(new Vector2(-11, -11), new Vector2(-5, -11));
                 Line(new Vector2(11, -5), new Vector2(11, -11)); Line(new Vector2(11, -11), new Vector2(5, -11));
                 Line(new Vector2(-11, 5), new Vector2(-11, 11)); Line(new Vector2(-11, 11), new Vector2(-5, 11));
                 Line(new Vector2(11, 5), new Vector2(11, 11)); Line(new Vector2(11, 11), new Vector2(5, 11));
-                Line(new Vector2(-5, 0), new Vector2(5, 0)); Line(new Vector2(0, -5), new Vector2(0, 5));
+                Line(new Vector2(-5, 0), new Vector2(5, 0));
+                if (kind != "farther") Line(new Vector2(0, -5), new Vector2(0, 5));
             }
         }
     }

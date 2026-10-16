@@ -46,7 +46,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var moduleSocket = fixture.AddComponent<QASocket>();
             moduleSocket.fixtureId = "training.trainer"; moduleSocket.seatName = "Module";
             moduleSocket.seat = Node(fixture, "SEAT_TRAINER_FX1_BASE_Module");
-            moduleSocket.spec = new SeatSpec { approachMm = 25, posTolMm = 6, angTolDeg = 15, hysteresisMm = 2, hysteresisDeg = 4, seatedDepthTolMm = .5f };
+            // The pocket is ~65 x 42 mm for a 60 x 40 mm module and the base collider is one box over it, so nothing guides the held
+            // (kinematic) module in. A 6 mm window gave 97 s of no response on Quest; 15 mm captures once the module visibly covers the
+            // pocket. Turn still decides keyed vs reversed (0/180 deg, +-15).
+            moduleSocket.spec = new SeatSpec { approachMm = 25, posTolMm = 15, angTolDeg = 15, hysteresisMm = 2, hysteresisDeg = 4, seatedDepthTolMm = .5f };
             // Chamfered key: the right way seats, the reversed module stops at the entrance chamfer.
             moduleSocket.rules = new List<PairRule>
             {

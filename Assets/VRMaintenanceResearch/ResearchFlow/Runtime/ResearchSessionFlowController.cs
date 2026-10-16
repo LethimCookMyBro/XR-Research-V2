@@ -192,6 +192,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             : (trainingStation ? FixedTrainerTutorialFacts : FixedBasicTutorialFacts);
         /// <summary>True when the current policy's training requires this practice fact (e.g. "reposition" only in the legacy policy).</summary>
         public bool TutorialRequires(string fact) => TutorialFacts.Any(facts => facts.Contains(fact));
+        public bool TutorialGroupRequires(string fact) => Flow?.IsTutorial == true && Flow.TutorialCompleted < TutorialFacts.Length
+            && TutorialFacts[Flow.TutorialCompleted].Contains(fact);
+        // Quest 16 Oct 18:02: the mug and stone sat beside the FX1 module and took 7 grabs meant for it; the station replaces them.
+        bool TrainerGroup => trainingStation && Flow?.IsTutorial == true && Flow.TutorialCompleted == (int)TutorialStep.Inspect;
         public ResearchTrainingStation trainingStation;
         public bool TutorialUsesHands => Record?.input_mode == ExperimentInputMode.HandTracking ||
             (Record?.input_mode == ExperimentInputMode.TechnicalBoth && guards.Any(g => g && g.TrackingValid && g.Mode == HandsLabInputGuard.InputMode.TrackedHand));
@@ -415,6 +419,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
                     layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
                     panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
+                    reader_distance_preset = ResearchUIPolicy.ReaderDistanceAllowed(IsTechnical) ? ResearchUIPolicy.ReaderDistanceVersion : null,
                     tutorial_facts = TutorialFacts, attribution = policyAttribution }, source: "System", reason: policyAttribution);
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
                 Error = "";
@@ -869,8 +874,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var item in trainingObjects)
                 if (item && item.grabbable)
                 {
-                    if (!practice && item.IsHeld) item.DetachForSystem("practice_gate", Logger?.NewActionId());
-                    item.grabbable.enabled = practice;
+                    if ((!practice || TrainerGroup) && item.IsHeld) item.DetachForSystem("practice_gate", Logger?.NewActionId());
+                    item.grabbable.enabled = practice && !TrainerGroup;
+                    if (item.gameObject.activeSelf == TrainerGroup) item.gameObject.SetActive(!TrainerGroup);
                 }
             foreach (var gate in locomotionGates) if (gate) gate.SetActive(allow && Flow.CanInteract && !referenceNavigationHeld);
             try

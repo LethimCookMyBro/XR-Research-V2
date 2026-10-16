@@ -132748,7 +132748,7 @@ MonoBehaviour:
   seat: {fileID: 1958696595}
   spec:
     approachMm: 25
-    posTolMm: 6
+    posTolMm: 15
     angTolDeg: 15
     hysteresisMm: 2
     hysteresisDeg: 4

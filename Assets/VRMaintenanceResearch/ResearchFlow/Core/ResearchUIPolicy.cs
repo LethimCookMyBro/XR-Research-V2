@@ -38,6 +38,12 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable;
 
+        // User request 16 Oct 2026: the fixed Reader (~1.8 m, PDF ~19 deg wide) is hard to read. One control toggles between the
+        // station anchor and a nearer validated pose; no free drag. Technical sessions only until the researcher approves it
+        // for Study (the advisor amendment fixes UI pose for Study).
+        public const string ReaderDistanceVersion = "S1_READER_DISTANCE_PRESET_20261016";
+        public static bool ReaderDistanceAllowed(bool technical) => ReaderPoseFixedPerTask && technical;
+
         /// <summary>
         /// Runtime continuity only: a resumed session without a recorded policy keeps the movable-panel behaviour it most likely
         /// started with, so the UI never changes mid-session. This is NOT an analysis attribution - exports report such sessions as
