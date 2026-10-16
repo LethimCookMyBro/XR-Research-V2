@@ -1495,7 +1495,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 actionLabels[i].rectTransform.offsetMax = new Vector2(-12, -5);
                 // D03: 25 px thin Thai/Japanese strokes rendered washed out in the Game View; action labels read at body-adjacent size.
                 actionLabels[i].fontSize = 30;
-                var variant = buttons[i].command == "pause" ? ResearchButtonVariant.Ghost : compactTask ? ResearchButtonVariant.Secondary : i == 0 ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary;
+                // Recall-panel on a researcher-owned Stop card is geometry recovery, not the step the system waits for (design_rule 3.1).
+                var variant = buttons[i].command == "pause" ? ResearchButtonVariant.Ghost : compactTask || buttons[i].command == "panel_recovery" ? ResearchButtonVariant.Secondary
+                    : i == 0 ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary;
                 if (compactTask && (buttons[i].command == "reference" || buttons[i].command == "inspect")) variant = ResearchButtonVariant.Secondary;
                 ResearchUITheme.Button(actions[i], variant);
             }
@@ -1522,7 +1524,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (checkpoint) textHeight = LayoutCheckpointSteps(width);
             // Measure at the width the title really gets: narrower when the Pause utility shares its row (design_rule D08).
             bool pauseInTitleRow = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
-            bool stopInTitleRow = controller && controller.ParticipantCanStop && !referenceCompact;
+            bool stopInTitleRow = controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop") && !referenceCompact;
             float titleReserve = pauseInTitleRow && stopInTitleRow ? 276 : pauseInTitleRow || stopInTitleRow ? 180 : 88;
             // Task: the step counter shares the Stop/Pause row, so the task name gets the full width below it.
             float titleHeight = compactTask ? TaskEyebrow + title.GetPreferredValues(title.text, width - 88, 500).y + 8
@@ -1999,7 +2001,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
             helpUtility.gameObject.SetActive(mainOwns && !referenceOwns);
             var referencePause = referenceExpanded.transform.Find("Pause"); if (referencePause) referencePause.gameObject.SetActive(referenceOwns);
-            bool stopAvailable = controller && controller.ParticipantCanStop;
+            // An already stopped session cannot be stopped again (controller.Stop returns early); the icon there was only noise.
+            bool stopAvailable = controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop");
             bool referenceStopOwns = stopAvailable && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
