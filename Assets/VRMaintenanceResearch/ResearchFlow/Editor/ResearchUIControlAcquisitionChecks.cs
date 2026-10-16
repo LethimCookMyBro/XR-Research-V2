@@ -44,7 +44,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             try
             {
                 foreach(var language in new[]{ParticipantLanguage.Thai,ParticipantLanguage.Japanese})
-                foreach(var stage in new[]{"details","pdf_A","pdf_B"})
+                foreach(var stage in new[]{"details","pdf_A","pdf_B","formats_A"})
                 {
                     object fixture=null; string name=language+"/"+stage;
                     try
@@ -110,6 +110,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             var orphan=c.Registry.CreateNext(ParticipantGroup.Dev);
                             Set(c,"SetupOrder",c.SetupOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB); Set(c,"SetupOrder",startOrder);
                             Check(c.TechnicalNextRun().id==orphan.participant_id&&c.Registry.List(ParticipantGroup.Dev).Count==1,name+"/unstarted DEV record is reused, not duplicated",c.TechnicalNextRun().id);
+                        }
+                        else if(stage=="formats_A")
+                        {
+                            // Quest 16 Oct: the video viewport looked small beside the PDF. Measure each format's content area in the fixed viewer.
+                            Call(fixture,"Seed",ResearchFlowState.Task1Active,5,null);
+                            Field<ResearchTaskTiming>(c,"taskTiming").Start(c.Logger.Timestamp);
+                            Set(c,"ReferenceOpen",true); Set(c,"ReferenceMinimized",false); Set(c,"ReferenceSection","user_manual"); Flush();
+                            var viewport=Field<ScrollRect>(v,"scroll").viewport;
+                            foreach(var format in new[]{"user_manual","step_by_step","illustrated","video"})
+                            {
+                                if(c.ReferenceSection!=format) Click("reference_tab."+format);
+                                Check(c.ReferenceSection==format,name+"/"+format+" selected by click",c.ReferenceSection);
+                                Rect view=viewport.rect;
+                                var surface=format=="video"?v.ReferenceViewer.transform.GetComponentsInChildren<RectTransform>(true).FirstOrDefault(t=>t.name=="VideoSurface"):null;
+                                rows.Add(new { name=name+"/"+format+"/geometry",viewport=new[]{view.width,view.height},
+                                    video_surface=surface?new[]{surface.rect.width,surface.rect.height}:null,
+                                    video_16x9_share=surface?Mathf.Min(surface.rect.width,surface.rect.height*16f/9)*Mathf.Min(surface.rect.height,surface.rect.width*9f/16)/(view.width*view.height):(float?)null });
+                                if(format=="video") Check(surface&&surface.rect.height>0,name+"/video surface laid out",null);
+                                Call(fixture,"Capture","format_"+format,v.referencePanel,new List<object>(),rows);
+                            }
                         }
                         else
                         {

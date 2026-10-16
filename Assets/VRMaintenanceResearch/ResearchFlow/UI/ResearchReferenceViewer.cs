@@ -478,7 +478,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             statusLabel.text = Local("กำลังโหลดวิดีโอ", "動画を読み込み中", "Loading video"); statusLabel.gameObject.SetActive(true);
             videoLoadStarted = Time.realtimeSinceStartup; videoLoadPhase = "created"; videoStallShown = false;
             videoSurface = Rect(content, "VideoSurface", Vector2.zero);
-            Stretch(videoSurface, new Vector2(12, 136), new Vector2(-12, -12));
+            Stretch(videoSurface, new Vector2(12, 80), new Vector2(-12, -12));
             var frame = Rect(videoSurface, "VideoFrame", Vector2.zero); Stretch(frame, Vector2.zero, Vector2.zero);
             videoImage = frame.gameObject.AddComponent<UnityEngine.UI.RawImage>(); videoImage.raycastTarget = false;
             timeLabel = Text(content, "VideoTime", 24);
@@ -626,9 +626,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void CreateTimeline()
         {
-            var rect = Rect(content, "VideoTimeline", new Vector2(Mathf.Max(1, scroll.viewport.rect.width - 24), 72));
-            rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0); rect.anchoredPosition = new Vector2(0, 100);
-            rect.sizeDelta = new Vector2(rect.sizeDelta.x, 64);
+            // One transport row (Play, time, timeline, seek) leaves the rest of the viewer to the picture (Quest 16 Oct: video looked small).
+            var rect = Rect(content, "VideoTimeline", Vector2.zero);
+            rect.anchorMin = new Vector2(0, 0); rect.anchorMax = new Vector2(1, 0); rect.pivot = new Vector2(.5f, .5f);
+            rect.offsetMin = new Vector2(372, 0); rect.offsetMax = new Vector2(-156, 64);
             var background = rect.gameObject.AddComponent<UnityEngine.UI.Image>(); background.color = Color.clear;
             timeline = rect.gameObject.AddComponent<ResearchReaderTimeline>(); timeline.viewer = this;
             timeline.direction = Slider.Direction.LeftToRight; timeline.minValue = 0; timeline.maxValue = 1;
