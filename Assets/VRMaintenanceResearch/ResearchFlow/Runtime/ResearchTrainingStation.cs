@@ -46,6 +46,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             && controller.Flow.CanInteract && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
 
         Pose moduleHome, leadRest;
+        const float LeadRadius = .004f;
+        float? baseTop;
         float startYaw;
         bool wasSeated, wasConnected, wasBlocked, wasTight, wasLoose, unlockedWhileSeated;
         string lastInput = "None";
@@ -55,6 +57,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             moduleHome = new Pose(module.transform.position, module.transform.rotation);
             leadRest = new Pose(leadHead.transform.localPosition, leadHead.transform.localRotation);
             startYaw = turntable.localEulerAngles.y;
+            var body = moduleSocket.GetComponentsInChildren<Collider>(true).FirstOrDefault(c => c.name == "COL_TRAINER_FX1_BASE_Body");
+            if (body) baseTop = body.bounds.max.y + LeadRadius;
             ApplyLatch(false);
             module.PoseAllowed = ModulePoseAllowed;
             leadHead.PoseAllowed = pose => Vector3.Distance(pose.GetColumn(3), leadAnchor.position) <= leadReach;
@@ -221,12 +225,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Active) ModuleAttempt();
             if (leadBones.Length == 0 || !leadAnchor) return;
             // Bones between the fixed end and the held plug follow a sagging curve; the lead has no physics of its own.
+            // The sag stops on the base top: unclamped it sank up to 22 mm into the base (measured 16 Oct), which reads as a
+            // cable through the table. Visual only; sockets and colliders never read the bones.
             Vector3 a = leadAnchor.position, b = leadHead.transform.position;
             float sag = Mathf.Max(.01f, leadReach - Vector3.Distance(a, b)) * .5f;
             for (int i = 0; i < leadBones.Length; i++)
             {
                 float t = (i + 1f) / (leadBones.Length + 1);
-                leadBones[i].position = Vector3.Lerp(a, b, t) + Vector3.down * (sag * 4 * t * (1 - t));
+                var p = Vector3.Lerp(a, b, t) + Vector3.down * (sag * 4 * t * (1 - t));
+                if (baseTop.HasValue) p.y = Mathf.Max(p.y, Mathf.Min(baseTop.Value, Mathf.Lerp(a.y, b.y, t)));
+                leadBones[i].position = p;
             }
         }
 
