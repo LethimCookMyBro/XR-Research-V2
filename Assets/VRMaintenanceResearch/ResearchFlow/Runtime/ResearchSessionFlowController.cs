@@ -140,6 +140,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool HelpRequested { get; private set; }
         public bool ParticipantMayResume => Flow != null && Flow.Paused && PauseKind != "stop" && string.IsNullOrEmpty(Error) &&
             (IsTechnical || (Flow.IsTutorial && PauseKind == "participant"));
+        // Headset DEV self-test only: the wearer is also the tester, so Stop needs an in-headset way back (Quest 16 Oct ended in Quit).
+        // Study, pilot and console-started sessions keep Stop researcher-owned.
+        public bool TesterMayResumeStop => TechnicalSelfTest && Record?.test_data == true && Flow != null && Flow.Paused
+            && PauseKind == "stop" && string.IsNullOrEmpty(Error);
         public bool ParticipantCanStop => Record?.session_state == RegistryState.InProgress && Flow != null
             && Flow.State > ResearchFlowState.ResearcherSetup && Flow.State < ResearchFlowState.ParticipantComplete;
         double pauseStart = double.NaN;
@@ -440,12 +444,34 @@ namespace VRMaintenanceResearch.ResearchFlow
             return string.IsNullOrEmpty(Error);
         }
 
+        // A DEV record that never started (e.g. a Start that failed readiness) is reused, so retries do not pile up empty IDs.
+        ParticipantRecord UnstartedDevRecord() => Registry.List(ParticipantGroup.Dev).LastOrDefault(p => p.session_state == RegistryState.Available);
+
+        (string id, string layout) technicalPreview;
+        TaskOrder technicalPreviewOrder;
+        public (string id, string layout) TechnicalNextRun()
+        {
+            if (Registry == null) return ("-", "-");
+            if (technicalPreview.id == null || technicalPreviewOrder != SetupOrder)
+            {
+                try
+                {
+                    string id = UnstartedDevRecord()?.participant_id ?? Registry.PeekNextId(ParticipantGroup.Dev);
+                    technicalPreview = (id, Registry.PreviewAssignment(ParticipantGroup.Dev, SetupOrder).layout);
+                    technicalPreviewOrder = SetupOrder;
+                }
+                catch (Exception ex) { return ("-", ex.GetType().Name); }
+            }
+            return technicalPreview;
+        }
+
         // Next DEV id + the existing StartSession path. Readiness is re-checked here, not only in the UI.
         public bool StartTechnicalSelfTest(string inputSource = "None")
         {
             if (!TechnicalReady) return false;
             string id;
-            try { id = Registry.CreateNext(ParticipantGroup.Dev).participant_id; }
+            technicalPreview = default;
+            try { id = (UnstartedDevRecord() ?? Registry.CreateNext(ParticipantGroup.Dev)).participant_id; }
             catch (Exception ex) { Error = "Registry unavailable: " + ex.Message; view?.Refresh(); return false; }
             StartSession(id, SetupLanguage, SetupInput, SetupOrder);
             if (Flow == null || !string.IsNullOrEmpty(Error)) return false;
@@ -482,6 +508,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (RenderComparisonRunning && command != "help_request") return false;
             if (command == "session_resume") return ParticipantMayResume && Resume("ParticipantResumed", "User", inputSource);
+            if (command == "tester_resume") return TesterMayResumeStop && Resume("TesterResumedAfterStop", "Tester", inputSource);
             if (command == "help_request")
             {
                 if (!Flow.Paused || HelpRequested || !Log("HELP_REQUESTED", "safety", "Requested", inputSource: inputSource)) return false;
@@ -1109,6 +1136,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 Log(duplicate && !recovery ? "TUTORIAL_ACTION_DUPLICATE" : "TUTORIAL_ACTION_REJECTED", "training." + fact, "NotCredited",
                     after: diagnostic, source: source, actionId: actionId, inputSource: inputSource, trackingValid: trackingValid, reason: rejection);
+                if (source == "User") view?.TutorialActionNotCounted(fact, rejection);
                 if (fact == "release" && Flow.TutorialCompleted == 2) InterruptTutorialPractice("released_before_instruction");
                 if (fact == "close" && Flow.TutorialCompleted == 3) InterruptTutorialPractice("closed_before_instruction");
                 return false;

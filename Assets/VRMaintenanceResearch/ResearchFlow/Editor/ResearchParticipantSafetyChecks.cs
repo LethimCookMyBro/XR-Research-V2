@@ -38,7 +38,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Application.logMessageReceived += onLog;
             Action<bool,string,object> check = (pass, name, data) => { rows.Add(new { pass, name, data }); if (!pass) failures.Add(name); };
             foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
-            foreach (string stage in new[] { "confirmation", "task_B", "stop_main", "stop_reader", "stop_error", "stop_writer_fault", "checkpoint", "guard_tutorial_start", "guard_tutorial_continue", "guard_task_start", "guard_task_start_confirm", "guard_inspect", "guard_inspect_continue", "guard_technical_resume" })
+            foreach (string stage in new[] { "confirmation", "task_B", "stop_main", "stop_reader", "stop_error", "stop_writer_fault", "checkpoint", "guard_tutorial_start", "guard_tutorial_continue", "guard_task_start", "guard_task_start_confirm", "guard_inspect", "guard_inspect_continue", "guard_technical_resume", "stop_tester_resume", "tutorial_not_counted" })
             {
                 try
                 {
@@ -86,8 +86,35 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             f.Down(resume); Set(c, "Error", "fixture context changed"); f.UpClick(resume);
                             check(c.Flow.State == ResearchFlowState.PostTask1Checkpoint && Count(Read(f.Writer.EventsPath), "CHECKPOINT_COMPLETED") == 0, name + "/context change cannot confirm checkpoint", State(c));
                         }
+                        else if (stage == "tutorial_not_counted")
+                        {
+                            f.Seed(ResearchFlowState.TutorialInteractions, 0);
+                            int Notices() => Count(Read(f.Writer.EventsPath), "TUTORIAL_NOT_COUNTED_FEEDBACK");
+                            var success = f.View.transform.GetComponentsInChildren<RectTransform>(true).First(t => t.name == "TutorialSuccess");
+                            string Shown() => success.Find("Label").GetComponent<TMP_Text>().text;
+                            // Stopped Editor has no tracked headset: the real controller path rejects as safety_or_tracking_invalid, which stays silent.
+                            c.TutorialActionCommitted("grab", 0, null, "Controller");
+                            check(Read(f.Writer.EventsPath).Contains("\"safety_or_tracking_invalid\"") && Notices() == 0, name + "/tracking-invalid rejection adds no notice", null);
+                            // The two reasons logged on Quest 16 Oct, rendered by the real view.
+                            f.View.TutorialActionNotCounted("grab", "instruction_not_armed_at_attempt");
+                            check(Notices() == 1 && success.gameObject.activeInHierarchy && !success.Find("Checkmark").gameObject.activeSelf
+                                && Shown() == ResearchStrings.Get("tutorial.notice.not_yet", language.ToString()), name + "/unarmed grab shows not-counted notice without checkmark", Shown());
+                            f.Capture("not_counted", f.View.mainPanel, captures, rows);
+                            f.View.TutorialActionNotCounted("grab", "instruction_not_armed_at_attempt");
+                            check(Notices() == 1, name + "/repeat within the notice window does not re-log", null);
+                            f.View.TutorialActionNotCounted("release", "already_credited");
+                            check(Notices() == 2 && Shown() == string.Format(ResearchStrings.Get("tutorial.notice.already_done", language.ToString()), ResearchStrings.Get("tutorial.fact.release", language.ToString())),
+                                name + "/duplicate release names the completed skill", Shown());
+                            f.Capture("already_done", f.View.mainPanel, captures, rows);
+                            foreach (var silent in new[] { ("teleport", "instruction_not_armed_at_attempt"), ("snap", "already_credited"), ("switch", "already_credited"), ("grab", "safety_or_tracking_invalid") })
+                                f.View.TutorialActionNotCounted(silent.Item1, silent.Item2);
+                            check(Notices() == 2, name + "/locomotion, Reader browsing and tracking rejections stay silent", null);
+                            check(Count(Read(f.Writer.EventsPath), "TUTORIAL_SKILL_CREDIT") == 0 && c.Flow.TutorialCompleted == 0, name + "/notices grant no credit", State(c));
+                            credits = c.Flow.TutorialCompleted;
+                        }
                         else
                         {
+                            if (stage == "stop_tester_resume") Set(c, "TechnicalSelfTest", true);
                             f.Click(f.Action("task_start")); f.Click(f.Action("task_start_confirm"));
                             check(c.Flow.State == ResearchFlowState.Task1Active && !Timing(c).Ended && string.IsNullOrEmpty(c.Error), name + "/actual task active precondition", State(c));
                             if (stage == "stop_reader") { Set(c, "ReferenceOpen", true); Set(c, "ReferenceMinimized", false); }
@@ -109,6 +136,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             else check(!Timing(c).Ended, name + "/nonfailure stop does not end task", State(c));
                             check(!c.Command("session_resume", "None"), name + "/participant cannot self resume", State(c));
                             f.Capture("after", f.View.mainPanel, captures, rows);
+                            bool testerRoute = f.View.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "tester_resume" && a.GetComponent<Button>().IsInteractable());
+                            if (stage != "stop_tester_resume")
+                                check(!testerRoute && !c.TesterMayResumeStop && !c.Command("tester_resume", "None") && c.Flow.Paused, name + "/no tester resume outside a headset self-test", State(c));
+                            else
+                            {
+                                var resume = f.Action("tester_resume"); f.Click(resume, 2);
+                                check(c.Flow.Paused && c.PauseKind == "stop", name + "/double press does not resume", State(c));
+                                f.Click(resume);
+                                string raw = Read(f.Writer.EventsPath);
+                                check(!c.Flow.Paused && c.Flow.State == ResearchFlowState.Task1Active && !Timing(c).Ended && raw.Contains("\"TesterResumedAfterStop\"") && raw.Contains("\"source\":\"Tester\""),
+                                    name + "/tester resumes the same task with a Tester-attributed event", State(c));
+                                f.Capture("tester_resumed", f.View.mainPanel, captures, rows);
+                            }
                         }
                         check(f.TextOverflows.Count == 0, name + "/visible text overflow", f.TextOverflows);
                         check(identity == Identity(c) && c.Flow.TutorialCompleted == credits, name + "/IDs and training credits unchanged", new { before = identity, after = Identity(c), c.Flow.TutorialCompleted });

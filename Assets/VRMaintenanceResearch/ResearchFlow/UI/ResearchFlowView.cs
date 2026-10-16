@@ -133,8 +133,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && referenceGroup.alpha > .01f && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead);
         }
         ResearchPanelMotion recoveryPanel;
-        bool recoveryWasNeeded;
-        float recoveryTransitionSince = float.NegativeInfinity;
+        bool recoveryWasNeeded, recoveryPlaced;
+        float recoveryTransitionSince = float.NegativeInfinity, fallbackSince = float.NegativeInfinity;
+        const float FallbackDwellSeconds = .75f;
         string placedInstruction;
         bool recoverTaskOnResume;
         readonly List<ResearchUIAction> placementActions = new List<ResearchUIAction>();
@@ -462,11 +463,37 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Trainer Inspect samples show their result sentence in the feedback line instead of the generic completed-fact text.
         string trainerResultKey;
         public void ShowTrainerResult(string key) { trainerResultKey = key; ShowTutorialConfirmation(); }
-        string CompletionText() => trainerResultKey != null ? Text(trainerResultKey)
+        string CompletionText() => NoticeActive ? noticeText : trainerResultKey != null ? Text(trainerResultKey)
             : string.Format(Text("tutorial.completed_fact"), Text("tutorial.fact." + CompletedTutorialFact));
+
+        // Quest 16 Oct: 16 grab/release rejections and 17 duplicates reached the log with no visible response.
+        // The notice explains "not counted" without changing credit; locomotion and Reader browsing are normal use, not retries.
+        static readonly HashSet<string> SilentDuplicates = new HashSet<string> { "teleport", "snap", "roomscale", "switch", "reference", "close", "restore", "select" };
+        const float NoticeSeconds = 3f;
+        string noticeKey, noticeText;
+        float noticeUntil = float.NegativeInfinity;
+        bool NoticeActive => noticeKey != null && trainerResultKey == null && Time.unscaledTime < noticeUntil;
+        Color FeedbackColor => NoticeActive ? Ink : Positive;
+        bool FeedbackCheckmark => !NoticeActive && (trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+
+        public void TutorialActionNotCounted(string fact, string reason)
+        {
+            if (reason == "safety_or_tracking_invalid" || !tutorialSuccess) return;
+            bool duplicate = reason == "already_credited";
+            if (duplicate ? SilentDuplicates.Contains(fact) : fact == "teleport" || fact == "snap" || fact == "roomscale") return;
+            string key = duplicate ? "tutorial.notice.already_done" : "tutorial.notice.not_yet";
+            if (key == noticeKey && Time.unscaledTime < noticeUntil) { noticeUntil = Time.unscaledTime + NoticeSeconds; return; }
+            noticeKey = key; noticeUntil = Time.unscaledTime + NoticeSeconds;
+            noticeText = duplicate ? string.Format(Text(key), Text("tutorial.fact." + fact)) : Text(key);
+            successLabel.font = Font; successLabel.color = FeedbackColor; successLabel.text = noticeText;
+            tutorialSuccess.gameObject.SetActive(true); tutorialSuccess.Find("Checkmark").gameObject.SetActive(false);
+            controller.Log("TUTORIAL_NOT_COUNTED_FEEDBACK", "training." + fact, "RendererTextApplied",
+                after: new { fact, reason, text = noticeText, frame = Time.frameCount, human_seen = (bool?)null }, source: "System");
+        }
 
         public void TutorialFactCompleted(string fact)
         {
+            noticeKey = null;
             if (fact != "inspect" && fact != "inspect_fail") trainerResultKey = null;
             successUntil = Time.unscaledTime + .25f;
             factFeedbackUntil = Time.unscaledTime + FactFeedbackSeconds;
@@ -495,21 +522,21 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Practice Inspect results (trainerResultKey) explain an outcome and stay until the next action.
         const float FactFeedbackSeconds = 3.5f;
         float factFeedbackUntil = float.NegativeInfinity;
-        bool TutorialFeedbackVisible => trainerResultKey != null || (!string.IsNullOrEmpty(CompletedTutorialFact) && Time.unscaledTime < factFeedbackUntil);
+        bool TutorialFeedbackVisible => NoticeActive || trainerResultKey != null || (!string.IsNullOrEmpty(CompletedTutorialFact) && Time.unscaledTime < factFeedbackUntil);
 
         void ShowTutorialConfirmation()
         {
             // Completed-action feedback stays in its reserved secondary line; the next instruction remains visible.
-            successLabel.font = Font; successLabel.fontSize = 25; successLabel.color = Positive;
+            successLabel.font = Font; successLabel.fontSize = 25; successLabel.color = FeedbackColor;
             successLabel.text = CompletionText();
-            tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+            tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(FeedbackCheckmark);
             RecordTutorialFeedbackApplied();
         }
 
         void RecordTutorialFeedbackApplied()
         {
             string action = controller?.TutorialLastCreditActionId;
-            if (string.IsNullOrEmpty(CompletedTutorialFact) || string.IsNullOrEmpty(action) || feedbackApplied == action) return;
+            if (NoticeActive || string.IsNullOrEmpty(CompletedTutorialFact) || string.IsNullOrEmpty(action) || feedbackApplied == action) return;
             if (controller.Log("TUTORIAL_FEEDBACK_APPLIED", "tutorial." + CompletedTutorialFact, "RendererTextApplied",
                 after: new { fact = CompletedTutorialFact, instruction_epoch = controller.TutorialLastCreditEpoch,
                     count = controller.TutorialCompletedFactCount, text = successLabel.text, frame = Time.frameCount,
@@ -523,6 +550,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 inspectionVisibility = StartCoroutine(ObserveInspectionFeedback(controller.InspectionId));
             SyncReaderVisibility();
             RevalidateReferenceLayoutIfReady();
+            if (noticeKey != null && !NoticeActive) { noticeKey = null; if (tutorialSuccess && tutorialSuccess.gameObject.activeSelf) ShowTutorialConfirmation(); }
             if (tutorialSuccess && tutorialSuccess.gameObject.activeSelf && !TutorialFeedbackVisible) tutorialSuccess.gameObject.SetActive(false);
             RevalidateMainLayoutIfReady();
             NotifyReferenceVisibility("render_visibility");
@@ -1199,6 +1227,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool lastQuestionnairePending = state == "PostTask2Checkpoint";
             if (lastQuestionnairePending) state = "ParticipantComplete";
             bool selfResume = state == "pause" && controller && controller.ParticipantMayResume;
+            bool testerResume = state == "pause" && controller && controller.TesterMayResumeStop;
             // Status modals open straight ahead; working slates keep their side placement.
             mainPanel.centered = state == "setup" || state == "TutorialWelcome" || state == "TutorialComplete" || state.Contains("Ready") || state == "pause" || state == "tracking" || state == "error" || state == "ended" || state == "pass" || state == "fail" || state == "checking" || state == "timeout" || state.Contains("Checkpoint") || state == "ParticipantComplete" || state == "ResearcherSummary";
             compactTask = state == "Task1Active" || state == "Task2Active";
@@ -1237,7 +1266,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (rule) { rule.gameObject.SetActive(!resultState); rule.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, compactTask ? 40 : tutorialChecklist ? 212 : checkpoint ? 157 : 90); }
             actionsRoot.anchoredPosition = new Vector2(0, -panelSize.y / 2 + 76);
             bool technicalTest = controller && controller.TechnicalSelfTest;
-            waitingLabel.gameObject.SetActive((state == "pause" && !selfResume) || state == "error");
+            waitingLabel.gameObject.SetActive((state == "pause" && !selfResume && !testerResume) || state == "error");
             waitingLabel.rectTransform.anchoredPosition = new Vector2(0, -panelSize.y / 2 + 67);
             waitingLabel.text = Text("status.wait_researcher");
             foreach (var action in actions) { action.gameObject.SetActive(false); action.interactable = true; }
@@ -1253,10 +1282,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "pause":
                     // Temporary pause: participant may continue (technical/tutorial). Study task pause: researcher resumes.
                     title.text = Text(controller.PauseKind == "stop" ? "stop.title" : selfResume ? "pause.participant.title" : "pause.title");
-                    body.text = "<color=#" + ColorUtility.ToHtmlStringRGB(Ink) + ">" + Text(controller.PauseKind == "stop" ? "stop.body" : selfResume ? "pause.participant.body" : "pause.body")
+                    body.text = "<color=#" + ColorUtility.ToHtmlStringRGB(Ink) + ">" + Text(testerResume ? "stop.tester_body" : controller.PauseKind == "stop" ? "stop.body" : selfResume ? "pause.participant.body" : "pause.body")
                         + (!selfResume && controller.HelpRequested ? "\n" + Text("pause.help_sent") : "")
                         + "\n<size=90%>" + Text("pause.safety") + "</size></color>";
                     if (selfResume) SetActions(("session_resume", "action.resume"));
+                    else if (testerResume) SetActions(("tester_resume", "action.resume"), ("panel_recovery", "action.recover_short"));
                     else SetActions(("panel_recovery", "action.recover_short"));
                     break;
                 case "TutorialWelcome": title.text = Text("welcome.title"); body.text = Text("welcome.body") + "\n\n" + Text(controller.TutorialUsesHands ? "welcome.hand" : "welcome.controller"); SetActions(("tutorial_start", "tutorial.start")); break;
@@ -1400,8 +1430,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         void TechnicalSetup()
         {
             title.text = Text("technical.setup.title");
-            body.text = Text("technical.ready_summary") + "\n" + Text("technical.option." + controller.SetupLanguage)
-                + " · " + Text("technical.option." + controller.SetupOrder);
+            var next = controller.TechnicalNextRun();
+            body.text = Text("technical.ready_summary") + "\n" + string.Format(Text("technical.next_run"), next.id, next.layout);
             string[] keys = { "headset", "left", "right", "floor", "logger" };
             bool[] readiness = { controller.HeadsetReady, controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left), controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right), controller.FloorReady, controller.LoggerReady };
             setupDetailsVisible = setupDetailsRequested || !controller.TechnicalReady || Array.Exists(readiness, ready => !ready);
@@ -1481,7 +1511,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (var action in actions) tutorialAction |= action.gameObject.activeSelf;
             float coachContent = Mathf.Max(coachDemo ? 324 : 170, textHeight + 8);
             // Coach: title 56, progress 36, rule, content, reserved success line, then the one action.
-            float height = technicalSetup ? (setupDetailsVisible ? 900 : Mathf.Max(500, textHeight + 500)) : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
+            float height = technicalSetup ? (setupDetailsVisible ? 990 : Mathf.Max(640, textHeight + 600)) : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
                 : tutorialChecklist ? 128 + coachContent + ResearchUITheme.SectionGap + 48 + (tutorialAction ? ResearchUITheme.ActionGap + 102 : 40)
                 : compactTask ? Mathf.Max(310, textHeight + titleHeight + 222) : Mathf.Max(360, textHeight + titleHeight + 210);
             float statusHeight = positiveIcon.activeSelf || negativeIcon.activeSelf ? 128 : 0;
@@ -1527,7 +1557,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             setupBrand.gameObject.SetActive(technicalSetup);
             technicalRows.gameObject.SetActive(technicalSetup && setupDetailsVisible);
             technicalOptions.gameObject.SetActive(technicalSetup);
-            foreach (Transform option in technicalOptions) option.gameObject.SetActive(technicalSetup && (option == operatorEntry.transform || option == technicalDetails.transform));
+            // Quest 16 Oct: a solo tester changed language/order only inside the dense researcher panel; the two toggles live on the card.
+            foreach (Transform option in technicalOptions) option.gameObject.SetActive(technicalSetup && option.name != "Option_input");
             checklist.gameObject.SetActive(false);
             tutorialProgress.gameObject.SetActive(tutorialChecklist && !referenceCompact || compactTask);
             mainPauseEligible = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
@@ -1616,7 +1647,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = new Vector2(inner, 48);
                 tutorialSuccess.Find("Checkmark").GetComponent<RectTransform>().anchoredPosition = new Vector2(-inner / 2 + 30, 0);
                 successLabel.rectTransform.sizeDelta = new Vector2(inner - 72, 48); successLabel.rectTransform.anchoredPosition = new Vector2(24, 0);
-                successLabel.font = Font; successLabel.color = Positive;
+                successLabel.font = Font; successLabel.color = FeedbackColor;
                 successLabel.text = CompletionText();
                 // A practice result sentence may wrap; grow the chip upward to its text instead of shrinking the font.
                 float chipHeight = Mathf.Max(48, successLabel.GetPreferredValues(successLabel.text, inner - 72, 0).y + 12);
@@ -1626,7 +1657,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = new Vector2(inner, chipHeight);
                     successLabel.rectTransform.sizeDelta = new Vector2(inner - 72, chipHeight);
                 }
-                tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(trainerResultKey == null || trainerResultKey.EndsWith(".pass"));
+                tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(FeedbackCheckmark);
             RecordTutorialFeedbackApplied();
                 retainedLabel.font = Font; retainedLabel.color = Muted;
                 retainedLabel.text = Text("tutorial.retained");
@@ -1680,9 +1711,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 {
                     var option = (RectTransform)technicalOptions.GetChild(i);
                     if (!option.gameObject.activeSelf) continue;
-                    option.sizeDelta = new Vector2(optionWidth, 64); option.anchoredPosition = option == technicalDetails.transform ? new Vector2(0, 90) : Vector2.zero;
+                    bool toggle = option.name.StartsWith("Option_", StringComparison.Ordinal);
+                    float half = (optionWidth - ResearchUITheme.TargetGap) / 2;
+                    option.sizeDelta = new Vector2(toggle ? half : optionWidth, 64);
+                    option.anchoredPosition = toggle ? new Vector2((option.name == "Option_language" ? -1 : 1) * (half + ResearchUITheme.TargetGap) / 2, 180)
+                        : option == technicalDetails.transform ? new Vector2(0, 90) : Vector2.zero;
                     ResearchUITheme.Button(option.GetComponent<UnityEngine.UI.Button>(), ResearchButtonVariant.Secondary);
-                    var label = option.GetComponentInChildren<TMP_Text>(); label.fontSize = 22; label.font = Font;
+                    var label = option.GetComponentInChildren<TMP_Text>(); label.fontSize = 26; label.font = Font;
                 }
             }
             else title.color = Ink;
@@ -1948,6 +1983,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             stopUtility.gameObject.SetActive(mainStopOwns);
             var referenceStop = referenceExpanded.transform.Find("Stop"); if (referenceStop) referenceStop.gameObject.SetActive(referenceStopOwns);
             bool fallbackStop = stopAvailable && !mainStopOwns && !referenceStopOwns;
+            // Quest 16 Oct: each glance at the table re-placed this strip (34 recentres in 2 min). A short dwell ignores glances;
+            // Menu still pauses at once.
+            // A minimized or closed panel is a deliberate state, not a glance: Stop appears at once there.
+            bool glance = mainContent.activeInHierarchy && !controller.ReferenceOpen;
+            if (!fallbackStop || !glance) fallbackSince = float.NegativeInfinity;
+            else if (float.IsNegativeInfinity(fallbackSince)) fallbackSince = Time.unscaledTime;
+            fallbackStop &= !glance || recoveryWasNeeded || Time.unscaledTime - fallbackSince >= FallbackDwellSeconds;
             bool layoutChanged = LayoutRecoveryUtility(false, compact: true, fallbackStop: fallbackStop);
             recoveryPanel.centered = true;
             bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant" && !controller.ParticipantMayResume
@@ -1962,7 +2004,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (Time.unscaledTime - recoveryTransitionSince < .08f) needed = recoveryWasNeeded;
             }
             if (RecoveryCanvas.gameObject.activeSelf != needed) RecoveryCanvas.gameObject.SetActive(needed);
-            if (needed && (!recoveryWasNeeded || layoutChanged)) recoveryPanel.Recenter(false, false);
+            if (needed && (!recoveryWasNeeded || layoutChanged) && (layoutChanged || !recoveryPlaced || !recoveryPanel.IsReadableFromHead))
+            { recoveryPanel.Recenter(false, false); recoveryPlaced = true; }
             recoveryWasNeeded = needed;
         }
 

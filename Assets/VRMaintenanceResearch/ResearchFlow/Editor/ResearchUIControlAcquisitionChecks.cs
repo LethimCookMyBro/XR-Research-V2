@@ -96,6 +96,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             a=Action("technical_details"); held=Down(a); Set(c,"Error","owned context changed"); Up(a,held); Set(c,"Error",""); Flush();
                             Check(!Visible(),name+"/stale context release cannot toggle",Visible());
                             Check(Hash(c.Registry.RegistryPath)==registryHash&&c.Registry.List(ParticipantGroup.Test).Single().run_id==ownedRecord.run_id,name+"/no new session or registry mutation",c.Registry.RegistryPath);
+                            // Quest 16 Oct: the tester could only change language/order inside the dense researcher panel.
+                            var startLanguage=c.SetupLanguage; var startOrder=c.SetupOrder;
+                            Click("technical_language"); Check(c.SetupLanguage!=startLanguage,name+"/card language toggle clicks",c.SetupLanguage.ToString());
+                            Click("technical_language"); Check(c.SetupLanguage==startLanguage,name+"/card language toggle returns",c.SetupLanguage.ToString());
+                            Click("technical_order"); Check(c.SetupOrder!=startOrder,name+"/card order toggle clicks",c.SetupOrder.ToString());
+                            var body=Field<TMPro.TMP_Text>(v,"body"); var next=c.TechnicalNextRun();
+                            Check(next.id=="DEV001"&&(next.layout=="P"||next.layout=="Q")&&body.gameObject.activeInHierarchy&&body.text.Contains(next.id),name+"/card names the DEV id and layout Start will use",new { next.id,next.layout,body.text });
+                            Check(Hash(c.Registry.RegistryPath)==registryHash,name+"/previewing creates no record",null);
+                            Call(fixture,"Capture","setup_card",v.mainPanel,new List<object>(),rows);
+                            Click("technical_order"); Check(c.SetupOrder==startOrder,name+"/card order toggle returns",c.SetupOrder.ToString());
+                            // A Start that fails after CreateNext leaves an unstarted DEV record; the next Start reuses it.
+                            var orphan=c.Registry.CreateNext(ParticipantGroup.Dev);
+                            Set(c,"SetupOrder",c.SetupOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB); Set(c,"SetupOrder",startOrder);
+                            Check(c.TechnicalNextRun().id==orphan.participant_id&&c.Registry.List(ParticipantGroup.Dev).Count==1,name+"/unstarted DEV record is reused, not duplicated",c.TechnicalNextRun().id);
                         }
                         else
                         {

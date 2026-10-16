@@ -102,14 +102,23 @@ namespace VRMaintenanceResearch.ResearchFlow
             Prefix(group);
             using (AcquireLock()) return Read().participants.Where(p => p.group == group).OrderBy(p => Number(p)).ToArray();
         }
+        static string NextId(Document doc, ParticipantGroup group)
+        {
+            int number = checked(doc.participants.Where(p => p.group == group).Select(Number).DefaultIfEmpty(0).Max() + 1);
+            return Prefix(group) + number.ToString(IsTechnical(group) ? "D3" : "D2", CultureInfo.InvariantCulture);
+        }
+        public string PeekNextId(ParticipantGroup group)
+        {
+            Prefix(group);
+            using (AcquireLock()) return NextId(Read(), group);
+        }
         public ParticipantRecord CreateNext(ParticipantGroup group)
         {
-            var prefix = Prefix(group);
+            Prefix(group);
             using (AcquireLock())
             {
                 var doc = Read();
-                int number = checked(doc.participants.Where(p => p.group == group).Select(Number).DefaultIfEmpty(0).Max() + 1);
-                var record = new ParticipantRecord { participant_id = prefix + number.ToString(IsTechnical(group) ? "D3" : "D2", CultureInfo.InvariantCulture),
+                var record = new ParticipantRecord { participant_id = NextId(doc, group),
                     group = group, language = group == ParticipantGroup.Japanese ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai,
                     created_at = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), test_data = IsTechnical(group) };
                 doc.participants.Add(record); Save(doc); return record;

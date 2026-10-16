@@ -35,7 +35,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             presses.Remove(data.pointerId);
             releasedCommand = releasedContext = null;
             if (data.clickCount > 1 && (press.command == "tutorial_start" || press.command == "tutorial_continue" || press.command == "task_start"
-                || press.command == "task_start_confirm" || press.command == "inspect" || press.command == "inspect_continue" || press.command == "technical_resume")) return;
+                || press.command == "task_start_confirm" || press.command == "inspect" || press.command == "inspect_continue" || press.command == "technical_resume" || press.command == "tester_resume")) return;
             if (!button.IsActive() || !button.IsInteractable())
             {
                 view?.controller?.Log("UI_CLICK_REJECTED", press.command, "StaleAcquisition", source: "System", inputSource: press.input, reason: "control_unavailable");
