@@ -364,6 +364,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (view) view.ReferenceVisibilityChanged += ReferenceVisibilityChanged;
             ResearchHandContactProxy.Install(this);
             ResearchHeldObjectConstraint.Install(this);
+            // Optional DEV-only HTTPS sync reads completed immutable bundles; absent provisioning is a no-op.
+            if (!Application.isEditor && TechnicalBuild && !GetComponent<ResearchQuestCloudUploader>())
+                gameObject.AddComponent<ResearchQuestCloudUploader>();
             if (TechnicalSelfSetup) Refresh(); else view?.Refresh();
         }
 
