@@ -283,7 +283,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 foreach (var panel in new[] { ui.mainPanel, ui.referencePanel }) typeof(ResearchPanelMotion).GetField("environment", flags).SetValue(panel, Array.Empty<Renderer>());
                 Check(!ui.LocalCommand("unknown", "None") && !fixture.Command("technical_start"), "Setup rejects unknown/unavailable actions");
                 Set(fixture, "TechnicalSelfSetup", true);
-                Check(fixture.Command("technical_order") && fixture.SetupOrder == TaskOrder.BA, "Accepted setup action reports its actual changed option");
+                Check(fixture.Command("technical_order.BA") && fixture.SetupOrder == TaskOrder.BA, "Accepted setup action reports its actual changed option");
                 Check(!fixture.Command("technical_start") && fixture.Record == null, "Start readiness rejection reports false without starting a session");
                 Check(!ResearchUIFeedback.TryGetHapticDevice(fixture, 731, out _), "Unattributed Editor input cannot resolve a native controller for haptics");
 
@@ -692,8 +692,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     if (fact == "release") stagedPointers.Remove(int.MinValue);
                     controller.DemoTutorialEvidence(fact);
                     var success = controller.view.mainPanel.transform.Find("Expanded/TutorialSuccess");
-                    Require(success.gameObject.activeInHierarchy && success.GetComponentInChildren<TMP_Text>().text.StartsWith(ResearchStrings.Get("tutorial.success", requestedLanguage)),
-                        "Each completed action shows secondary feedback while the next action is visible: " + fact);
+                    string expectedFeedback = string.Format(ResearchStrings.Get("tutorial.completed_fact", requestedLanguage), ResearchStrings.Get("tutorial.fact." + fact, requestedLanguage));
+                    Require(success.gameObject.activeInHierarchy && success.GetComponentInChildren<TMP_Text>().text == expectedFeedback,
+                        "Each completed action shows secondary feedback while the next action is visible: " + fact + " active=" + success.gameObject.activeInHierarchy + " text=" + success.GetComponentInChildren<TMP_Text>().text);
                     yield return Stable();
                     bool completed = fact == "release";
                     Require(controller.Flow.TutorialCompleted == (completed ? 3 : 2), "Cumulative tutorial evidence through " + fact + (completed ? " completes all four requirements" : " must not complete grab practice"));
@@ -713,13 +714,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return ExerciseReference("tutorial");
             Require(controller.Flow.TutorialCompleted == 4, "Reference practice requires open, format switch, drag and close");
             yield return ToolbarClick("reference_close");
-            CheckTutorialPrompt("tutorial.try.inspect");
-            var inspectReadyBounds = ScreenBounds(controller.view.mainPanel.GetComponent<RectTransform>());
-            Require(controller.origin.Camera.pixelRect.Contains(inspectReadyBounds.min) && controller.origin.Camera.pixelRect.Contains(inspectReadyBounds.max),
-                "Expanded Inspect tutorial panel fits the viewport after closing Reference");
-            yield return Capture("tutorial_checklist_inspect_ready");
-            Click("inspect"); yield return Stable();
-            Require(controller.Flow.State == ResearchFlowState.TutorialComplete && controller.Flow.TutorialCompleted == 5, "Five tutorial steps complete");
+            // Trainer FX1 skills now sit between Reference and Inspect (S1_TRAINING_FIXED_UI_20261015). ResearchS1FlowDriver drives them
+            // with native SDK input; this UI fixture credits them as labelled DEMO_INPUT so it can reach the Task surfaces it checks.
+            bool trainer = controller.trainingStation;
+            while (trainer && controller.Flow.IsTutorial && controller.Flow.State != ResearchFlowState.TutorialComplete)
+            {
+                string fact = controller.TutorialFact;
+                yield return AwaitTutorialActionReady(fact);
+                if (fact == "examine") yield return Capture("tutorial_trainer_examine");
+                controller.DemoTutorialEvidence(fact); yield return Stable();
+            }
+            if (!trainer)
+            {
+                CheckTutorialPrompt("tutorial.try.inspect");
+                var inspectReadyBounds = ScreenBounds(controller.view.mainPanel.GetComponent<RectTransform>());
+                Require(controller.origin.Camera.pixelRect.Contains(inspectReadyBounds.min) && controller.origin.Camera.pixelRect.Contains(inspectReadyBounds.max),
+                    "Expanded Inspect tutorial panel fits the viewport after closing Reference");
+                yield return Capture("tutorial_checklist_inspect_ready");
+                Click("inspect"); yield return Stable();
+            }
+            Require(controller.Flow.State == ResearchFlowState.TutorialComplete && controller.Flow.TutorialCompleted == 5, "Five tutorial steps complete: " + controller.Flow.TutorialCompleted);
             yield return Capture("tutorial_complete");
             Require(rows.All(r => !r.gameObject.activeInHierarchy) && !progress.gameObject.activeInHierarchy && !controller.view.mainPanel.movable && controller.view.mainPanel.centered, "TutorialComplete is a fixed centered transition without practice progress clutter");
             var completedBounds = ScreenBounds(controller.view.mainPanel.GetComponent<RectTransform>());
@@ -1023,8 +1037,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var slate = controller.view.mainPanel.transform.Find("Expanded");
                 Require(slate.Find("TutorialSuccess").gameObject.activeInHierarchy && slate.Find("Body").gameObject.activeInHierarchy,
                     "Secondary confirmation keeps the current instruction visible: " + expected);
-                Require(slate.Find("TutorialSuccess/Label").GetComponent<TMP_Text>().text.StartsWith(ResearchStrings.Get("tutorial.success", requestedLanguage)),
-                    "Secondary feedback names the completed action");
+                string completed = controller.TutorialLastCompletedFact;
+                Require(!string.IsNullOrEmpty(completed) && slate.Find("TutorialSuccess/Label").GetComponent<TMP_Text>().text
+                    == string.Format(ResearchStrings.Get("tutorial.completed_fact", requestedLanguage), ResearchStrings.Get("tutorial.fact." + completed, requestedLanguage)),
+                    "Secondary feedback names the completed action: " + completed);
             }
             var body = integrated ? controller.view.referencePanel.transform.Find("Expanded/TutorialCue").GetComponent<TMP_Text>()
                 : controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Single(t => t.name == "Body");
@@ -1056,12 +1072,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Require(body.gameObject.activeInHierarchy && body.transform.IsChildOf(controller.view.referencePanel.transform), "Current Tutorial cue is actually visible inside Reference");
                 var readerRoot = controller.view.referencePanel.transform;
                 var cueBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(readerRoot, body.transform);
-                foreach (var format in readerRoot.GetComponentsInChildren<ResearchUIAction>(false).Where(a => a.command.StartsWith("reference_tab.")))
-                {
-                    var formatBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(readerRoot, format.transform);
-                    Require(cueBounds.min.y - formatBounds.max.y >= ResearchUITheme.SpaceL - 1,
-                        "Integrated current action stays clear above the format row");
-                }
+                RequireNoReaderCollisions("integrated cue " + expected);
                 var readerDemo = readerRoot.Find("Expanded/TutorialDemo");
                 if (readerDemo && readerDemo.gameObject.activeInHierarchy)
                     Require(cueBounds.min.x - RectTransformUtility.CalculateRelativeRectTransformBounds(readerRoot, readerDemo).max.x >= ResearchUITheme.SpaceL - 1,
@@ -1223,7 +1234,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             Require(!controller.ReferenceMinimized && controller.ReferenceSection == "user_manual", "Restore preserves active information format");
             CheckReferenceLocomotionGate(true);
-            bool expandedPoseFits = (bool)typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(panel, new object[] { moved, movedRotation });
+            bool expandedPoseFits = (bool)typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(panel, new object[] { moved, movedRotation, 1f });
             Require(expandedPoseFits ? Vector3.Distance(moved, panel.transform.position) < .001f && Quaternion.Angle(movedRotation, panel.transform.rotation) < .01f : panel.IsReadableFromHead && !panel.PlacementBlocked,
                 "Restore preserves a fitting expanded pose or recovers out-of-view expanded bounds; priorFits=" + expandedPoseFits + "; recoveryDistance=" + Vector3.Distance(moved, panel.transform.position));
             Require(!ActiveCommands().Contains("reference_recenter"), "Reference has no retired participant Recenter button");
@@ -1239,7 +1250,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (controller.Flow.IsTaskActive) Require(!ActiveCommands().Contains("main_restore"), "Reference close preserves expanded task state");
             if (controller.Flow.IsTutorial)
             {
-                Require(!ActiveCommands().Contains("reference") && ActiveCommands().Contains("inspect"), "Completed Reference practice exposes only current Inspect action");
+                // With the Trainer FX1 station the next step is Examine on the module, so Inspect waits for its own turn.
+                bool trainerNext = controller.trainingStation && controller.TutorialFact != "inspect";
+                Require(!ActiveCommands().Contains("reference") && ActiveCommands().Contains("inspect") != trainerNext,
+                    "Completed Reference practice offers only the current action: " + controller.TutorialFact);
                 controller.Log("DEMO_INPUT", "reference.reopen", "ProgrammaticAnimationRegressionFixture", source: "Tester");
                 controller.Command("reference", "SimulatedController");
             }
@@ -1308,30 +1322,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Click("reference_tab." + format); yield return Stable();
                 Require(controller.ReferenceSection == format, "Reference switches to information format " + format);
                 var tab = tabs.Single(t => t.GetComponent<ResearchUIAction>().command == "reference_tab." + format);
-                Require(tab.GetComponentInChildren<TMP_Text>().text == ResearchStrings.Get("reference." + format, requestedLanguage),
-                    "Reference format label is localized: " + format);
-                bool visualTutorial = controller.Flow.IsTutorial && format == "illustrated";
+                Require(tab.GetComponentInChildren<TMP_Text>().text == ResearchStrings.Get("reference." + format, requestedLanguage) + (format == "user_manual" ? " (PDF)" : ""),
+                    "Reference format label is localized: " + format + " label=" + tab.GetComponentInChildren<TMP_Text>().text);
+                // The bound S1 package (T_/A_/B_ per language) replaced the retired four-frame tutorial drawing in every context.
                 var drawing = panel.transform.Find("Expanded/IllustratedInstruction");
-                Require(drawing != null && drawing.gameObject.activeSelf == visualTutorial, "Tutorial diagram is isolated from experimental content: " + format);
-                if (visualTutorial)
-                {
-                    Require(drawing.Cast<Transform>().Count(t => t.name.StartsWith("Frame_")) == 4 && !scroll.gameObject.activeSelf, "Illustrated Instruction contains four visual panels");
-                    foreach (var caption in drawing.GetComponentsInChildren<TMP_Text>(false).Where(t => t.name == "Caption"))
-                    {
-                        caption.ForceMeshUpdate(); Require(!caption.isTextOverflowing && caption.preferredHeight <= caption.rectTransform.rect.height + 1, "Illustrated caption fits: " + caption.text);
-                    }
-                }
-                else
-                {
-                    var content = scroll.viewport.GetComponentsInChildren<TMP_Text>(false).Single(t => t.name == "ContentText");
-                    Require(!string.IsNullOrWhiteSpace(content.text), "Technical Reference format content: " + format);
-                }
-                if (scroll.content.rect.height <= scroll.viewport.rect.height + 1)
-                {
-                    Require(!ActiveCommands().Contains("reference_previous") && !ActiveCommands().Contains("reference_next")
-                        && !panel.GetComponentsInChildren<TMP_Text>(true).Single(t => t.name == "PagePosition").gameObject.activeSelf,
-                        "Single-page format hides Previous, Next and page count: " + format);
-                }
+                Require(drawing == null || !drawing.gameObject.activeSelf, "Retired tutorial diagram stays hidden: " + format);
+                var viewerTexts = scroll.viewport.GetComponentsInChildren<TMP_Text>(false);
+                var viewerImages = scroll.viewport.GetComponentsInChildren<RawImage>(false);
+                bool packageContent = format == "user_manual" ? viewerImages.Any(r => r.name.StartsWith("PDFPage_", StringComparison.Ordinal) && r.texture)
+                    : format == "step_by_step" ? viewerTexts.Any(t => t.name == "ReaderText" && !string.IsNullOrWhiteSpace(t.text))
+                    : format == "illustrated" ? viewerImages.Any(r => r.texture) && viewerTexts.Any(t => t.name == "ImageCaption" && !string.IsNullOrWhiteSpace(t.text))
+                    : viewerImages.Length > 0 && viewerTexts.Any(t => t.name == "VideoTime");
+                Require(packageContent, "Bound S1 Reader package shows " + format + " content: texts=" + string.Join(",", viewerTexts.Select(t => t.name)) + " images=" + viewerImages.Length);
+                // S1 Previous/Next walk pages, steps or images of the package, so they follow the item count, not text overflow.
+                var viewer = controller.view.ReferenceViewer; var pageLabel = panel.GetComponentsInChildren<TMP_Text>(true).Single(t => t.name == "PagePosition");
+                bool paged = format != "video" && viewer && viewer.PageCount > 1;
+                bool Shown(string command) => panel.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == command);
+                // Visible, not interactable: Previous is correctly disabled on the first item.
+                Require(Shown("reference_previous") == paged && Shown("reference_next") == paged
+                    && pageLabel.gameObject.activeInHierarchy == paged && (!paged || pageLabel.text == viewer.NavigationLabel),
+                    "Previous, Next and the counter appear exactly when the format has several items: " + format + " count=" + (viewer ? viewer.PageCount : 0) + " label=" + pageLabel.text);
                 if (label == "tutorial")
                 {
                     CheckTutorialPrompt(controller.TutorialInstructionKey);
@@ -1348,10 +1358,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach (var tab in tabs)
             {
                 tab.GetWorldCorners(tabCorners);
-                float gapMillimeters = Vector3.Dot((tabCorners[0] + tabCorners[3] - viewportCorners[1] - viewportCorners[2]) * .5f, panel.transform.up) * 1000;
-                Require(gapMillimeters >= 12, "Reference content stays at least 12 mm below format tabs " + tab.name);
+                // Format tabs are a left sidebar (design_rule 5.2): the content must clear them sideways or vertically.
+                float sideGap = Vector3.Dot(viewportCorners[0] - tabCorners[3], panel.transform.right) * 1000;
+                float belowGap = Vector3.Dot(tabCorners[0] - viewportCorners[1], panel.transform.up) * 1000;
+                Require(Mathf.Max(sideGap, belowGap) >= 12, "Reference content stays at least 12 mm clear of format tab " + tab.name + " side=" + sideGap.ToString("0.0") + "mm below=" + belowGap.ToString("0.0") + "mm");
             }
-            Require(scroll.verticalScrollbar == null || !scroll.verticalScrollbar.IsInteractable(), "Narrow scrollbar is a passive indicator, never required input");
+            // Since 14 Oct the PDF scrollbar is a guarded drag control (owner asked for one on Quest); Next, thumbstick and content drag below stay the required routes.
+            Require(scroll.verticalScrollbar == null || !scroll.verticalScrollbar.IsInteractable() || scroll.verticalScrollbar is ResearchReaderScrollbar,
+                "Scrollbar is passive or the guarded Reader scrollbar, never the only input");
             if (scroll.content.rect.height <= scroll.viewport.rect.height + 1)
             {
                 Require(!ActiveCommands().Contains("reference_previous") && !ActiveCommands().Contains("reference_next")
@@ -1364,21 +1378,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach (var key in new[] { "PagePosition", "PreviousPage/Label", "NextPage/Label" })
             {
                 var caption = panel.transform.Find("Expanded/" + key).GetComponent<TMP_Text>(); caption.ForceMeshUpdate();
-                Require(caption.textInfo.lineCount == 1 && !caption.isTextOverflowing && caption.preferredWidth <= caption.rectTransform.rect.width + 1,
+                // Previous/Next are chevron icons with an empty label; any label text that is present must fit one line.
+                Require(string.IsNullOrEmpty(caption.text) && key != "PagePosition" || caption.textInfo.lineCount == 1 && !caption.isTextOverflowing && caption.preferredWidth <= caption.rectTransform.rect.width + 1,
                     "Localized Reference page control fits one readable line: " + key);
             }
             scroll.verticalNormalizedPosition = 1; yield return Stable();
             Click("reference_next"); yield return Stable();
             Require(scroll.verticalNormalizedPosition < .99f, "Next page navigates reference without touching scrollbar");
-            var pageText = scroll.viewport.GetComponentsInChildren<TMP_Text>().First(t => t.name == "ContentText");
-            Require(pageText.overflowMode == TextOverflowModes.Page && pageText.pageToDisplay == 2 && pageText.textInfo.pageCount >= 2,
-                "Next renders a distinct TMP page instead of a nearly identical scrolled viewport");
-            Require(panel.transform.Find("Expanded/PagePosition").GetComponent<TMP_Text>().text == string.Format(ResearchStrings.Get("reference.page_position", requestedLanguage), 2, pageText.textInfo.pageCount),
-                "Reference progress explicitly identifies the current page");
-            // TMP pageInfo.lastCharacterIndex retains overflow lookahead; use assigned character pages.
-            var characters = pageText.textInfo.characterInfo.Take(pageText.textInfo.characterCount).ToArray();
-            Require(characters.Any(c => c.pageNumber == 1) && characters.Where(c => c.pageNumber == 1).Min(c => c.index) > characters.Where(c => c.pageNumber == 0).Max(c => c.index),
-                "Reference pages contain distinct, ordered character ranges");
+            // The bound S1 PDF is one continuous scroll of page images; Next jumps to the next page and the secondary counter follows it.
+            int pdfPageCount = scroll.viewport.GetComponentsInChildren<RawImage>(true).Count(r => r.name.StartsWith("PDFPage_", StringComparison.Ordinal));
+            string pagePosition = panel.transform.Find("Expanded/PagePosition").GetComponent<TMP_Text>().text;
+            Require(pdfPageCount >= 2 && pagePosition == "2 / " + pdfPageCount, "Reference progress identifies the current PDF page: " + pagePosition + " of " + pdfPageCount);
             yield return Capture("reference_page_2_" + label);
             Click("reference_previous"); yield return Stable();
             Require(scroll.verticalNormalizedPosition > .99f, "Previous page returns to reference beginning");
@@ -1633,34 +1643,42 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(!ActiveCommands().Contains("technical_input") && controller.guards.All(g => g.policy == VRMaintenanceResearch.HandsLabQuest3.Runtime.HandsLabInputGuard.ModePolicy.Controllers), "Headset setup has no input-mode choice and requires controller guards");
             controller.Command("technical_input", "ProgrammaticOfflineFixture");
             Require(controller.SetupInput == ExperimentInputMode.Controller, "Retired input-mode command cannot enable hand mode");
-            var primary = ActiveCommands().Where(c => !c.StartsWith("technical_language") && !c.StartsWith("technical_input") && !c.StartsWith("technical_order")).ToArray();
-            Require(primary.SequenceEqual(new[] { "technical_start" }), "Exactly one primary action: Start Full Test");
+            // 17 Oct setup card: the main page holds one status line, the run choice, the ID, Start and Details only.
+            var primary = ActiveCommands().Where(c => !c.StartsWith("technical_run_") && c != "technical_details").ToArray();
+            Require(primary.SequenceEqual(new[] { "technical_start" }), "Exactly one primary action on the main page: Start");
             var readiness = controller.view.mainPanel.transform.Find("Expanded/TechnicalReadiness");
+            Require(!readiness.gameObject.activeInHierarchy, "Readiness rows stay on the details page");
+            Require(!ActiveCommands().Any(c => c.StartsWith("technical_language") || c.StartsWith("technical_order")), "Language/order choices stay on the details page");
+            var mainTexts = controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false);
+            Require(mainTexts.Any(t => t.name == "Label" && t.text == ResearchStrings.Get("technical.status_ready", "Thai")), "One status line says the card is ready");
+            Require(mainTexts.Any(t => t.name == "IdValue" && t.text == controller.TechnicalNextRun().id && t.text.StartsWith("DEV"))
+                && mainTexts.All(t => !t.text.Contains("TH0") && !t.text.Contains("JP0")), "Card names the DEV id Start will use and no study id");
+            SetupClick("technical_details"); yield return Stable();
             var readinessLabels = readiness.GetComponentsInChildren<TMP_Text>(false);
-            Require(readiness.gameObject.activeInHierarchy && readiness.childCount == 5, "Setup shows five readiness rows");
+            Require(readiness.gameObject.activeInHierarchy && readiness.childCount == 5 && !ActiveCommands().Contains("technical_start"), "Details page shows five readiness rows and no Start");
             foreach (var key in new[] { "technical.headset", "technical.left", "technical.right", "technical.floor", "technical.logger" })
                 Require(readinessLabels.Any(t => t.text == ResearchStrings.Get(key, "Thai")), "Readiness shows " + key);
-            Require(controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).All(t => !t.text.Contains("DEV") && !t.text.Contains("TH0") && !t.text.Contains("JP0")), "Setup never asks for or shows a participant ID");
-            Require(!ActiveCommands().Any(c => c == "technical_language" || c == "technical_order"), "Participant setup has no operator language/order options");
-            if (requestedLanguage == "Japanese") controller.Command("technical_language", "ProgrammaticOfflineFixture");
-            if (requestedOrder == TaskOrder.BA) controller.Command("technical_order", "ProgrammaticOfflineFixture");
-            yield return Stable();
-            Require(controller.SetupLanguage.ToString() == requestedLanguage && controller.SetupOrder == requestedOrder, "Explicit technical operator configures language/order before participant start");
-            foreach (var option in new[] { null, "technical_order" })
+            SetupClick("technical_language." + requestedLanguage); yield return Stable();
+            SetupClick("technical_order." + requestedOrder); yield return Stable();
+            Require(controller.SetupLanguage.ToString() == requestedLanguage && controller.SetupOrder == requestedOrder, "Details page segments configure language/order before start");
+            foreach (var page in new[] { "details", "main" })
             {
-                if (option != null) { controller.Command(option, "ProgrammaticOfflineFixture"); yield return Stable(); }
-                foreach (var label in readinessLabels)
+                foreach (var label in readiness.GetComponentsInChildren<TMP_Text>(false))
                 { label.ForceMeshUpdate(); Require(label.preferredHeight <= label.rectTransform.rect.height + 1, "Readiness label fits its row"); }
                 foreach (var label in controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false))
-                { label.ForceMeshUpdate(); Require(label.textInfo.lineCount <= 1, "Setup label stays on one line: " + label.name + " '" + label.text + "'"); }
-                if (option != null) { controller.Command(option, "ProgrammaticOfflineFixture"); yield return Stable(); }
+                { label.ForceMeshUpdate(); Require(label.textInfo.lineCount <= 1, "Setup label stays on one line (" + page + "): " + label.name + " '" + label.text + "'"); }
+                if (page == "details") { SetupClick("technical_details"); yield return Stable(); }
             }
-            Require(controller.SetupInput == ExperimentInputMode.Controller && controller.SetupOrder == requestedOrder, "Option cycling returns to the requested settings");
+            Require(ActiveCommands().Contains("technical_start") && controller.SetupInput == ExperimentInputMode.Controller, "Back returns to the main page with Start");
             yield return Capture("00_technical_setup_ready");
             int devBefore = controller.Registry.List(ParticipantGroup.Dev).Count;
+            string namedId = controller.TechnicalNextRun().id;
+            bool reused = controller.Registry.List(ParticipantGroup.Dev).Any(p => p.participant_id == namedId && p.session_state == RegistryState.Available);
             SetupClick("technical_start");
+            // An unstarted DEV record is reused (no duplicate IDs); otherwise Start creates exactly the next one. Either way it is the ID the card named.
             Require(controller.TechnicalSelfTest && controller.Record != null && controller.Record.group == ParticipantGroup.Dev && controller.Record.test_data
-                && controller.Registry.List(ParticipantGroup.Dev).Count == devBefore + 1, "Start Full Test created the next DEV test-data record");
+                && controller.Record.participant_id == namedId && controller.Registry.List(ParticipantGroup.Dev).Count == devBefore + (reused ? 0 : 1),
+                "Start opened the DEV test-data record the card named");
             Require(controller.Flow.State == ResearchFlowState.TutorialWelcome, "Flow left ResearcherSetup through StartSession");
             yield return Transition("arrival_training");
             start = EditorApplication.timeSinceStartup;
@@ -1836,7 +1854,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 { gameView.Repaint(); yield return null; }
             }
             var referenceScroll = controller.view.referencePanel.GetComponentInChildren<ScrollRect>(true);
-            if (controller.ReferenceOpen && !controller.ReferenceMinimized && referenceScroll.gameObject.activeInHierarchy)
+            // The PDF format draws page images and no TMP text; pages load lazily, so every page inside the viewport must be decoded.
+            var viewportRect = referenceScroll.viewport.rect;
+            var pdfPages = referenceScroll.viewport.GetComponentsInChildren<RawImage>(false).Where(r => r.name.StartsWith("PDFPage_", StringComparison.Ordinal))
+                .Where(r => { var c = new Vector3[4]; r.rectTransform.GetWorldCorners(c); float top = referenceScroll.viewport.InverseTransformPoint(c[1]).y, bottom = referenceScroll.viewport.InverseTransformPoint(c[0]).y;
+                    return bottom < viewportRect.yMax && top > viewportRect.yMin; }).ToArray();
+            if (controller.ReferenceOpen && !controller.ReferenceMinimized && referenceScroll.gameObject.activeInHierarchy && !referenceScroll.viewport.GetComponentInChildren<TMP_Text>())
+                Require(pdfPages.Length > 0 && pdfPages.All(r => r.texture), "Image-only Reference shows decoded PDF pages in its viewport: " + label + " visible=" + string.Join(",", pdfPages.Select(r => r.name + (r.texture ? "" : "(blank)"))));
+            // Capture C04 accepts a scrolling caption under a >=55%-height image; overflow must then be reachable by a visible scrollbar.
+            else if (controller.ReferenceOpen && !controller.ReferenceMinimized && referenceScroll.gameObject.activeInHierarchy
+                && referenceScroll.content.rect.height > referenceScroll.viewport.rect.height + 1)
+                Require(referenceScroll.vertical && referenceScroll.verticalScrollbar && referenceScroll.verticalScrollbar.gameObject.activeInHierarchy,
+                    "Overflowing Reference content offers a visible scrollbar: " + label);
+            else if (controller.ReferenceOpen && !controller.ReferenceMinimized && referenceScroll.gameObject.activeInHierarchy)
             {
                 var text = referenceScroll.viewport.GetComponentInChildren<TMP_Text>(); text.ForceMeshUpdate(true);
                 var rect = referenceScroll.viewport.rect; var padding = referenceScroll.viewport.GetComponent<RectMask2D>().padding;
@@ -1871,6 +1901,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         && (!unavailable || tab.text.Contains(ResearchStrings.Get("reference.unavailable", requestedLanguage))),
                         "Reference format identity and explicit unavailable status fit the tab: " + tab.transform.parent.name + " " + label);
                 }
+            if (controller.ReferenceOpen && !controller.ReferenceMinimized) RequireNoReaderCollisions(label);
             if (controller.ReferenceOpen && !controller.ReferenceMinimized && controller.Flow.IsTutorial && controller.ReferenceSection == "illustrated")
                 foreach (var text in controller.view.referencePanel.GetComponentsInChildren<TMP_Text>(false).Where(t => t.name == "Caption"))
                 {
@@ -2077,6 +2108,36 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             if (!condition) throw new InvalidOperationException(message);
             assertions.Add(message);
+        }
+
+        // 17 Oct: Training feedback and the PDF zoom row shared one slot, so a label sat under a button. Scrolling document
+        // content is masked by the viewport and excluded; every other inked label must clear other labels and foreign buttons.
+        private static void RequireNoReaderCollisions(string label)
+        {
+            var root = (RectTransform)controller.view.referencePanel.transform.Find("Expanded");
+            var viewport = controller.view.referencePanel.GetComponentInChildren<ScrollRect>(true)?.viewport;
+            bool Outside(Transform t) => !viewport || !t.IsChildOf(viewport);
+            Rect Box(RectTransform r) { var c = new Vector3[4]; r.GetWorldCorners(c); var a = root.InverseTransformPoint(c[0]); var b = root.InverseTransformPoint(c[2]); return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)); }
+            bool Hit(Rect a, Rect b) => a.xMin < b.xMax - 1 && a.xMax > b.xMin + 1 && a.yMin < b.yMax - 1 && a.yMax > b.yMin + 1;
+            var inked = new List<(TMP_Text text, Rect box)>();
+            foreach (var text in root.GetComponentsInChildren<TMP_Text>(false).Where(t => Outside(t.transform) && !string.IsNullOrWhiteSpace(t.text)))
+            {
+                text.ForceMeshUpdate();
+                var glyphs = text.textInfo.characterInfo.Take(text.textInfo.characterCount).Where(ch => ch.isVisible).ToArray();
+                if (glyphs.Length == 0) continue;
+                var p = glyphs.SelectMany(ch => new[] { ch.bottomLeft, ch.topRight }).Select(v => root.InverseTransformPoint(text.transform.TransformPoint(v))).ToArray();
+                inked.Add((text, Rect.MinMaxRect(p.Min(v => v.x), p.Min(v => v.y), p.Max(v => v.x), p.Max(v => v.y))));
+            }
+            var buttons = root.GetComponentsInChildren<Button>(false).Where(b => Outside(b.transform)).Select(b => (button: b, box: Box((RectTransform)b.transform))).ToArray();
+            var clashes = new List<string>();
+            for (int i = 0; i < inked.Count; i++)
+            {
+                for (int j = i + 1; j < inked.Count; j++)
+                    if (Hit(inked[i].box, inked[j].box)) clashes.Add(inked[i].text.transform.parent.name + "/" + inked[i].text.name + " x " + inked[j].text.transform.parent.name + "/" + inked[j].text.name);
+                foreach (var b in buttons)
+                    if (!inked[i].text.transform.IsChildOf(b.button.transform) && Hit(inked[i].box, b.box)) clashes.Add(inked[i].text.transform.parent.name + "/" + inked[i].text.name + " under " + b.button.name);
+            }
+            Require(clashes.Count == 0, "Reader labels clear other labels and controls: " + label + (clashes.Count > 0 ? " -> " + string.Join("; ", clashes) : ""));
         }
 
         private static void Finish(Exception error)

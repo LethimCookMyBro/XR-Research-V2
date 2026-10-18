@@ -99,7 +99,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
                 // The provider is not declared in normal/study builds. Runtime also enforces exact technical identity and shell/app UID.
                 File.WriteAllText(ProfileManifest, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                    "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"th.ac.tmu.vr.researchflow.transport\"><application>" +
+                    "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"th.ac.tmu.vr.researchflow.transport\">" +
+                    "<application android:label=\"@string/app_name\" android:icon=\"@mipmap/app_icon\">" +
+                    "<activity android:name=\"com.unity3d.player.UnityPlayerGameActivity\" android:label=\"@string/app_name\" android:icon=\"@mipmap/app_icon\" />" +
                     "<provider android:name=\"th.ac.tmu.vr.researchflow.transport.QuestProfileProvider\" android:authorities=\"" + TechnicalApplicationId +
                     ".quest-profile\" android:exported=\"true\" android:grantUriPermissions=\"false\" /></application></manifest>\n");
                 AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport);

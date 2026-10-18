@@ -211,26 +211,34 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Fixed-UI policy: working slates go to their station anchor first (same clearance/view checks); head-relative
             // candidates below remain only as a logged System fallback so a blocked anchor never hides the panel.
             string anchorId = null, anchorFallback = null;
-            found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
+            bool preferHeadRelative = participant && ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable;
+            if (!preferHeadRelative)
+                found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
             // A low eye pose or tall assembly can block the slate. Try bounded
             // height/distance alternatives before turning it farther out of view.
-            if (!found) foreach (float angle in angles)
+            var distances = preferHeadRelative
+                ? new[] { .85f, 1.0f, 1.15f, 1.3f, 1.5f }
+                : panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f };
+            var candidateAngles = preferHeadRelative ? new[] { 0f, 16f, 24f, 32f, 45f } : angles;
+            if (!found) foreach (float angle in candidateAngles)
             {
-                // The labeled recovery strip must not spawn through a resting hand and acquire a near poke.
-                foreach (float distance in panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f })
+                foreach (float distance in distances)
                 {
                     // At a native .99 m eye pose, no original Tutorial candidate was both visible and clear near the worktop.
-                    foreach (float height in panelId == "recovery" ? new[] { -.25f, -.4f, .2f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
+                    foreach (float height in preferHeadRelative ? new[] { -.08f, 0f, .12f, .24f } : panelId == "recovery" ? new[] { -.25f, -.4f, .2f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
                     {
                         var direction = Quaternion.AngleAxis(side * angle, Vector3.up) * forward;
                         rotation = Quaternion.LookRotation(direction, Vector3.up);
                         position = view.Head.position + direction * distance + Vector3.up * height;
-                        if (FitsView(position, rotation) && PlacementClear(position, rotation)) { found = true; break; }
+                        bool viewOk = preferHeadRelative && distance < 1.15f ? ReadableFromHeadForDrag(position, rotation) : FitsView(position, rotation);
+                        if (viewOk && PlacementClear(position, rotation)) { found = true; break; }
                     }
                     if (found) break;
                 }
                 if (found) break;
             }
+            if (!found && preferHeadRelative)
+                found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
             if (!found)
             {
                 if (!PlacementBlocked) view.controller?.Log("PANEL_PLACEMENT", panelId, "Blocked", after: anchorFallback != null ? new { anchor_rejection = anchorFallback } : null,
@@ -297,21 +305,31 @@ namespace VRMaintenanceResearch.ResearchFlow
             return false;
         }
 
-        bool FitsView(Vector3 position, Quaternion rotation)
+        public bool ReadableFromHeadForDrag(Vector3 position, Quaternion rotation)
+        {
+            if (!ReadableFace(position, rotation)) return false;
+            if (!view || !view.Head) return false;
+            // A slate pulled close may be wider than the view, but its central 75 % must stay inside both eyes' viewports.
+            return FitsView(position, rotation, ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable
+                && Vector3.Distance(position, view.Head.position) < 1.25f ? .75f : 1f);
+        }
+
+        bool FitsView(Vector3 position, Quaternion rotation, float extent = 1f)
         {
             if (!ReadableFace(position, rotation)) return false;
             var camera = view.Head.GetComponent<Camera>();
             if (!camera) return true;
             // Mono can accept a slate clipped in one native eye. Validate both actual stereo transforms.
             return camera.stereoEnabled
-                ? FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Left)
-                    && FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Right)
-                : FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Mono);
+                ? FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Left, extent)
+                    && FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Right, extent)
+                : FitsViewEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Mono, extent);
         }
 
-        bool FitsViewEye(Vector3 position, Quaternion rotation, Camera camera, Camera.MonoOrStereoscopicEye eye)
+        bool FitsViewEye(Vector3 position, Quaternion rotation, Camera camera, Camera.MonoOrStereoscopicEye eye, float extent)
         {
-            var rect = ((RectTransform)transform).rect;
+            var full = ((RectTransform)transform).rect;
+            var rect = new Rect(full.center - full.size * extent / 2, full.size * extent);
             for (int horizontal = 0; horizontal < 2; horizontal++)
                 for (int vertical = 0; vertical < 2; vertical++)
                 {
@@ -338,7 +356,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 { Recenter(false, false, onlyIfNeeded: true, reason: "clearance"); pendingRequireView = requireView; }
                 return;
             }
-            if (ReadableFace(transform.position, transform.rotation) && (!requireView || FitsView(transform.position, transform.rotation)) && PlacementClear(transform.position, transform.rotation))
+            if (ReadableFace(transform.position, transform.rotation) && (!requireView || ReadableFromHeadForDrag(transform.position, transform.rotation)) && PlacementClear(transform.position, transform.rotation))
             {
                 if (!RecenterPending) SetPlacementBlocked(false);
                 return;
@@ -348,7 +366,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         // Nearer Reader pose on the current head-to-panel line, with the same stereo view and clearance checks as every placement.
-        static readonly float[] CloserDistances = { 1.0f, 1.15f, 1.3f };
+        static readonly float[] CloserDistances = { 0.80f, 0.95f, 1.10f, 1.25f, 1.40f };
+        static readonly float[] CloserHeightOffsets = { 0f, 0.10f, 0.20f, -0.08f };
         public bool TryCloserPose(out Pose pose)
         {
             pose = default;
@@ -357,10 +376,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (float distance in CloserDistances)
             {
                 if (line.magnitude <= distance + .05f) continue;
-                var position = head + line.normalized * distance;
-                var flat = Vector3.ProjectOnPlane(position - head, Vector3.up);
-                var rotation = flat.sqrMagnitude > .0001f ? Quaternion.LookRotation(flat, Vector3.up) : transform.rotation;
-                if (FitsView(position, rotation) && PlacementClear(position, rotation)) { pose = new Pose(position, rotation); return true; }
+                foreach (float dy in CloserHeightOffsets)
+                {
+                    var position = head + line.normalized * distance + Vector3.up * dy;
+                    var flat = Vector3.ProjectOnPlane(position - head, Vector3.up);
+                    var rotation = flat.sqrMagnitude > .0001f ? Quaternion.LookRotation(flat, Vector3.up) : transform.rotation;
+                    bool viewOk = distance < 1.15f ? ReadableFromHeadForDrag(position, rotation) : FitsView(position, rotation);
+                    if (viewOk && PlacementClear(position, rotation)) { pose = new Pose(position, rotation); return true; }
+                }
             }
             return false;
         }

@@ -386,8 +386,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool show = visible && format == "pdf" && IsReady;
             if (!pdfControls && show)
             {
-                pdfControls = Rect(scroll.transform.parent, "PdfViewControls", new Vector2(500, 48));
-                pdfControls.anchoredPosition = new Vector2(-280, -350);
+                // Viewer footer, left of the page counter (x>=108); the sidebar slot below the format tabs holds Training feedback.
+                pdfControls = Rect(scroll.transform.parent, "PdfViewControls", new Vector2(384, 48));
+                pdfControls.anchoredPosition = new Vector2(-88, -350);
                 string[] labels = { "-", "100%", "+", "<", ">" };
                 string[] commands = { "zoom_out", "zoom_reset", "zoom_in", "pan_left", "pan_right" };
                 pdfButtons = new UnityEngine.UI.Button[commands.Length];
@@ -395,7 +396,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 {
                     pdfButtons[i] = Control(pdfControls, "Pdf_" + commands[i], labels[i], "reference_media." + commands[i]);
                     var rect = pdfButtons[i].GetComponent<RectTransform>();
-                    rect.sizeDelta = new Vector2(88, 48); rect.anchoredPosition = new Vector2((i - 2) * 100, 0);
+                    // "100%" keeps the original 88 px so it never wraps; symbol buttons are 64 px on an 80 px pitch.
+                    rect.sizeDelta = new Vector2(i == 1 ? 88 : 64, 48); rect.anchoredPosition = new Vector2((i - 2) * 80, 0);
+                    pdfButtons[i].GetComponentInChildren<TMP_Text>().textWrappingMode = TextWrappingModes.NoWrap;
                     pdfButtons[i].GetComponentInChildren<TMP_Text>().margin = Vector4.zero;
                 }
             }
@@ -524,7 +527,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                     yield return request.SendWebRequest();
                     if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
                     if (request.result != UnityWebRequest.Result.Success) { Fail("Video read failed: " + request.error); prepare = null; yield break; }
-                    if (!HashMatches(request.downloadHandler.data, package.video.sha256)) { Fail("Video SHA256 mismatch"); prepare = null; yield break; }
+                    // 20-31 MB per clip: hash off the main thread so the headset keeps rendering while "reading" shows.
+                    byte[] videoBytes = request.downloadHandler.data; string expectedHash = package.video.sha256;
+                    var hashing = System.Threading.Tasks.Task.Run(() => HashMatches(videoBytes, expectedHash));
+                    while (!hashing.IsCompleted) yield return null;
+                    if (!ResearchVideoLoadRules.AcceptAsync(acquired, generation, visible)) { if (acquired == generation) prepare = null; yield break; }
+                    if (hashing.IsFaulted || !hashing.Result) { Fail("Video SHA256 mismatch"); prepare = null; yield break; }
                 }
                 verifiedVideos.Add(verifiedKey);
                 LoadPhase("verified");
@@ -870,8 +878,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             contentText = timeLabel = null; videoImage = null;
             timeline = null;
         }
+        void OnEnable() { appFocused = true; appPaused = false; }
         void OnApplicationFocus(bool focused) { appFocused = focused; if (!focused) SetVisible(false); }
-        void OnApplicationPause(bool paused) { appPaused = paused; if (paused) SetVisible(false); }
+        void OnApplicationPause(bool paused) { appPaused = paused; if (paused) SetVisible(false); else if (!Application.isEditor) appFocused = true; }
         void OnDisable() { SetVisible(false); }
         void OnDestroy()
         {

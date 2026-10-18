@@ -346,7 +346,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 if (!workingTutorial && !workingTask) Check(panel.centered, context, "modal must use centered placement", panel);
                                 Check(!panel.PlacementBlocked, context, "modal must have a valid placement", panel);
                                 Check(panel.GetComponent<Canvas>().enabled, context, "modal canvas must remain enabled", panel);
-                                Check((bool)fitsView.Invoke(panel, new object[] { panel.transform.position, panel.transform.rotation }), context, "actual card must fit the copied camera viewport", panel);
+                                Check((bool)fitsView.Invoke(panel, new object[] { panel.transform.position, panel.transform.rotation, 1f }), context, "actual card must fit the copied camera viewport", panel);
                                 Check(panel.PlacementClear(panel.transform.position, panel.transform.rotation), context, "actual card must clear the authored scene and sightlines", panel);
                                 panel.transform.localScale = Vector3.one * .001f; // Check the resting native control rect, independent of enter animation.
                                 var controls = panel.GetComponentsInChildren<UnityEngine.UI.Button>(false).Where(b => b.isActiveAndEnabled && b.IsInteractable()).Select(b => (RectTransform)b.transform)

@@ -130,8 +130,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             ReferenceViewer.SetVisible(controller && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
                 && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
-                && referenceGroup.alpha > .01f && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead);
+                && referenceGroup.alpha > .01f && !referencePanel.PlacementBlocked && ReaderReadable);
         }
+        // A DEV Reader pulled close is wider than the view; its central 75% must still face the head inside both eyes.
+        bool ReaderReadable => referencePanel.IsReadableFromHead || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable
+            && referencePanel.ReadableFromHeadForDrag(referencePanel.transform.position, referencePanel.transform.rotation));
         ResearchPanelMotion recoveryPanel;
         bool recoveryWasNeeded, recoveryPlaced;
         float recoveryTransitionSince = float.NegativeInfinity, fallbackSince = float.NegativeInfinity;
@@ -157,7 +160,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool IsReferenceActuallyVisible => controller && controller.ReferenceOpen && !controller.ReferenceMinimized
             && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
             && referencePanel && referencePanel.gameObject.activeInHierarchy && !referencePanel.PlacementBlocked
-            && referencePanel.IsReadableFromHead
+            && ReaderReadable
             && !string.IsNullOrEmpty(controller.ReferenceSection) && controller.ReferenceAvailable(controller.ReferenceSection)
             && ReferenceViewer && ReferenceViewer.IsReady && ReferenceViewer.Status != "Blocked"
             && referencePanel.GetComponent<Canvas>().enabled && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f;
@@ -196,6 +199,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         static string[] Sections => ResearchReferenceScheme.Active;
         static readonly Color Background = ResearchUITheme.Glass, Card = ResearchUITheme.Elevated, Accent = ResearchUITheme.Blue;
         static readonly Color Ink = ResearchUITheme.Ink, Muted = ResearchUITheme.Muted, Positive = ResearchUITheme.Success;
+        static readonly Color SegmentTrack = new Color(.89f, .94f, 1f), DisabledFill = new Color(.88f, .91f, .95f);
         // Minimized panels collapse to a compact pill at the panel's own position, never a
         // large card floating detached across the FOV. Sized once here so the four call
         // sites that build/resize the pills cannot drift apart again.
@@ -235,7 +239,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         Button previousPage, nextPage;
         RectTransform technicalOptions, technicalRows;
         ResearcherSetupView questSetup;
-        Button operatorEntry, technicalDetails;
+        Button operatorEntry, technicalDetails, runNew, runResume, langThai, langJapanese, orderAB, orderBA;
+        TMP_Text setupMeta, setupStatus, setupRunCaption, setupIdCaption, setupIdValue, setupNote, setupReadinessCaption;
+        TrainingRoundedGraphic setupMetaChip, setupStatusSurface, setupStatusDot, setupRunTrack, setupLangTrack, setupOrderTrack, setupRuleA;
         bool setupDetailsRequested, setupDetailsVisible;
         TMP_Text setupBrand;
         TrainingRoundedGraphic taskToolbarSurface;
@@ -261,6 +267,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool ReaderDistanceControl => controller && ResearchUIPolicy.ReaderDistanceAllowed(controller.IsTechnical) && !controller.ReferenceMinimized;
         string ReaderAnchorKey => controller?.Flow == null ? null : controller.Flow.IsTaskActive ? "task:" + controller.Flow.CurrentTask
             : controller.Flow.IsTutorial ? "tutorial" : controller.Flow.State.ToString();
+        public void SaveReaderTaskPose(Vector3 position, Quaternion rotation)
+        {
+            readerAnchorPosition = position;
+            readerAnchorRotation = rotation;
+            readerAnchorKey = ReaderAnchorKey;
+        }
         Vector2 expandedMainSize = new Vector2(1000, 620);
         void Awake()
         {
@@ -808,8 +820,6 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!technicalOptions)
             {
                 technicalOptions = Rect(mainContent.transform, "TechnicalOptions", Vector2.zero, new Vector2(588, 56));
-                foreach (var option in new[] { "language", "order" })
-                    Button(technicalOptions, "Option_" + option, Vector2.zero, new Vector2(186, 56), "", "technical_" + option, false);
             }
             var inputOption = technicalOptions.Find("Option_input");
             if (inputOption) inputOption.gameObject.SetActive(false); // Existing serialized scenes retain the retired control.
@@ -819,6 +829,25 @@ namespace VRMaintenanceResearch.ResearchFlow
                 operatorEntry = Button(technicalOptions, "Operator Setup", Vector2.zero, new Vector2(360, 64), "", "", false);
             technicalDetails = technicalOptions.Find("Details")?.GetComponent<UnityEngine.UI.Button>();
             if (!technicalDetails) technicalDetails = Button(technicalOptions, "Details", Vector2.zero, new Vector2(660, 64), "", "technical_details", false);
+            runNew = technicalOptions.Find("Run New")?.GetComponent<UnityEngine.UI.Button>();
+            if (!runNew) runNew = Button(technicalOptions, "Run New", Vector2.zero, new Vector2(320, 64), "", "technical_run_new", false);
+            runResume = technicalOptions.Find("Run Resume")?.GetComponent<UnityEngine.UI.Button>();
+            if (!runResume) runResume = Button(technicalOptions, "Run Resume", Vector2.zero, new Vector2(320, 64), "", "technical_run_resume", false);
+            TrainingRoundedGraphic Surface(string name, Color color, float radius) => technicalOptions.Find(name)?.GetComponent<TrainingRoundedGraphic>() ?? Round(technicalOptions, name, Vector2.zero, new Vector2(10, 10), color, radius);
+            TMP_Text Caption(Transform parent, string name, float size) => parent.Find(name)?.GetComponent<TMP_Text>() ?? Label(parent, name, Vector2.zero, new Vector2(10, 10), "", size);
+            UnityEngine.UI.Button Segment(string name, string command) => technicalOptions.Find(name)?.GetComponent<UnityEngine.UI.Button>() ?? Button(technicalOptions, name, Vector2.zero, new Vector2(10, 10), "", command, false);
+            setupMetaChip = Surface("MetaChip", new Color(.90f, .95f, 1f), 20); setupMeta = Caption(setupMetaChip.transform, "Label", 22);
+            setupStatusSurface = Surface("StatusBanner", Color.white, 18); setupStatus = Caption(setupStatusSurface.transform, "Label", 28);
+            setupStatusDot = setupStatusSurface.transform.Find("Dot")?.GetComponent<TrainingRoundedGraphic>() ?? Round(setupStatusSurface.transform, "Dot", Vector2.zero, new Vector2(16, 16), Color.white, 8);
+            setupRunCaption = Caption(technicalOptions, "RunCaption", 26); setupIdCaption = Caption(technicalOptions, "IdCaption", 26);
+            setupIdValue = Caption(technicalOptions, "IdValue", 32);
+            setupNote = Caption(technicalOptions, "SettingsNote", 24); setupReadinessCaption = Caption(technicalOptions, "ReadinessCaption", 24);
+            setupRuleA = Surface("RuleA", new Color(.5f, .65f, .85f, .25f), 0);
+            // Segment tracks sit behind their two choices; created before them so they render first.
+            setupRunTrack = Surface("RunTrack", SegmentTrack, 20); setupLangTrack = Surface("LanguageTrack", SegmentTrack, 20); setupOrderTrack = Surface("OrderTrack", SegmentTrack, 20);
+            foreach (var track in new[] { setupOrderTrack, setupLangTrack, setupRunTrack }) track.transform.SetAsFirstSibling();
+            langThai = Segment("Language Thai", "technical_language.Thai"); langJapanese = Segment("Language Japanese", "technical_language.Japanese");
+            orderAB = Segment("Order AB", "technical_order.AB"); orderBA = Segment("Order BA", "technical_order.BA");
             operatorEntry.GetComponent<ResearchUIAction>().enabled = false;
             operatorEntry.onClick.RemoveAllListeners(); operatorEntry.onClick.AddListener(() => OpenResearcherSetup());
             scroll.verticalScrollbar.gameObject.SetActive(false);
@@ -1258,7 +1287,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             checklist.gameObject.SetActive(tutorialChecklist); body.gameObject.SetActive(!tutorialChecklist);
             positiveIcon.SetActive(state == "pass" || state == "TutorialComplete" || state == "ParticipantComplete" || state == "ResearcherSummary");
             negativeIcon.SetActive(state == "fail");
-            mainPanel.movable = (tutorialChecklist && !controller.ReferenceOpen) || state.Contains("Active");
+            mainPanel.movable = (tutorialChecklist && !controller.ReferenceOpen) || state.Contains("Active")
+                || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable && (state == "pass" || state == "fail"));
             mainToolbar.SetActive(mainPanel.movable);
             if (!mainPanel.movable) mainMinimized = false;
             mainContent.SetActive(!mainMinimized); mainPill.SetActive(mainMinimized);
@@ -1398,9 +1428,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var handle = toolbar.Find("DragHandle");
                 if (handle && handle.gameObject.activeSelf != ResearchUIPolicy.PanelDragAllowed) handle.gameObject.SetActive(ResearchUIPolicy.PanelDragAllowed);
                 var recenter = toolbar.Find("Recenter");
-                bool show = recenter && recenter.GetComponent<ResearchUIAction>().command == "reference_distance" ? ReaderDistanceControl : ResearchUIPolicy.ParticipantRecenterAllowed;
+                bool isReaderDistance = recenter && recenter.GetComponent<ResearchUIAction>()?.command == "reference_distance";
+                bool show = isReaderDistance ? ReaderDistanceControl : ResearchUIPolicy.ParticipantRecenterAllowed;
                 if (recenter && !show && recenter.gameObject.activeSelf) recenter.gameObject.SetActive(false);
-                else if (recenter && show && ResearchUIPolicy.ReaderPoseFixedPerTask && !recenter.gameObject.activeSelf) recenter.gameObject.SetActive(true);
+                else if (recenter && show && isReaderDistance && ResearchUIPolicy.ReaderPoseFixedPerTask && !recenter.gameObject.activeSelf) recenter.gameObject.SetActive(true);
             }
         }
 
@@ -1452,29 +1483,53 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Technical package only: readiness at a glance, one primary Start, options as small secondary buttons.
         void TechnicalSetup()
         {
-            title.text = Text("technical.setup.title");
             var next = controller.TechnicalNextRun();
-            body.text = Text("technical.ready_summary") + "\n" + string.Format(Text("technical.next_run"), next.id, next.layout);
+            var saved = controller.TechnicalResumeSelected ? next.resume : null;
+            bool details = setupDetailsVisible = setupDetailsRequested;
+            title.text = Text(details ? "technical.details_show" : "technical.setup.title");
             string[] keys = { "headset", "left", "right", "floor", "logger" };
             bool[] readiness = { controller.HeadsetReady, controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left), controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right), controller.FloorReady, controller.LoggerReady };
-            setupDetailsVisible = setupDetailsRequested || !controller.TechnicalReady || Array.Exists(readiness, ready => !ready);
-            technicalDetails.GetComponentInChildren<TMP_Text>().text = Text(setupDetailsVisible ? "technical.details_hide" : "technical.details_show");
-            technicalDetails.interactable = controller.TechnicalReady && !Array.Exists(readiness, ready => !ready);
+            // One summary names what Start waits for; the five rows are on the details page.
+            var waiting = new List<string>();
+            for (int i = 0; i < keys.Length; i++) if (!readiness[i]) waiting.Add(Text("technical." + keys[i]));
+            if (waiting.Count == 0) waiting.Add(Text("technical.logger")); // TechnicalReady also needs an idle registry/logger
+            setupStatus.text = controller.TechnicalReady ? Text("technical.status_ready")
+                : string.Format(Text("technical.status_waiting"), string.Join(Text("technical.list_separator"), waiting));
+            setupMeta.text = Text("technical.meta");
+            setupRunCaption.text = Text("technical.run_caption");
+            runNew.GetComponentInChildren<TMP_Text>().text = Text("technical.run_new");
+            runResume.GetComponentInChildren<TMP_Text>().text = Text("technical.run_resume");
+            setupIdCaption.text = Text("technical.id_caption");
+            setupIdValue.text = saved != null ? string.Format(Text("technical.id_resume"), saved.participant_id) : next.id;
+            technicalDetails.GetComponentInChildren<TMP_Text>().text = Text(details ? "technical.details_back" : "technical.details_show");
+            technicalDetails.interactable = true;
+            foreach (var part in new Component[] { setupMetaChip, technicalDetails }) part.gameObject.SetActive(true);
+            foreach (var part in new Component[] { setupStatusSurface, setupIdCaption, setupIdValue }) part.gameObject.SetActive(!details);
+            foreach (var part in new Component[] { setupRunCaption, setupRunTrack, runNew, runResume, setupRuleA }) part.gameObject.SetActive(!details && next.resume != null);
+            // A saved run keeps its own language and order, so the two choices apply to a new run only.
+            foreach (var part in new Component[] { setupLangTrack, setupOrderTrack, langThai, langJapanese, orderAB, orderBA }) part.gameObject.SetActive(details && saved == null);
+            foreach (var part in new Component[] { setupNote, setupReadinessCaption, operatorEntry }) part.gameObject.SetActive(details);
+            langThai.GetComponentInChildren<TMP_Text>().text = Text("technical.option.Thai");
+            langJapanese.GetComponentInChildren<TMP_Text>().text = Text("technical.option.Japanese");
+            orderAB.GetComponentInChildren<TMP_Text>().text = Text("technical.option.AB");
+            orderBA.GetComponentInChildren<TMP_Text>().text = Text("technical.option.BA");
+            setupNote.text = saved != null ? string.Format(Text("technical.resume_note"), Text("technical.option." + saved.language), saved.task_order == TaskOrder.AB ? "A-B" : "B-A", saved.task_a_layout ?? "-")
+                : string.Format(Text("technical.layout_note"), next.layout);
+            setupReadinessCaption.text = Text("technical.readiness_caption");
             for (int i = 0; i < keys.Length; i++)
             {
                 var row = technicalRows.GetChild(i); var label = row.Find("Label").GetComponent<TMP_Text>();
                 label.text = Text("technical." + keys[i]); label.font = Font;
                 var status = row.Find("Status"); var statusLabel = status.Find("Label").GetComponent<TMP_Text>();
                 statusLabel.text = Text(readiness[i] ? "action.ready" : "technical.waiting"); statusLabel.font = Font;
-                statusLabel.rectTransform.sizeDelta = new Vector2(158, 48);
-                statusLabel.color = readiness[i] ? Positive : Muted;
-                status.GetComponent<TrainingRoundedGraphic>().color = ResearchUITheme.Glass;
+                statusLabel.color = readiness[i] ? Positive : ResearchUITheme.Warning;
+                status.GetComponent<TrainingRoundedGraphic>().color = readiness[i] ? new Color(.89f, .97f, .92f) : new Color(1f, .95f, .86f);
                 status.Find("Checkmark").gameObject.SetActive(readiness[i]);
             }
-            SetActions(("technical_start", "technical.start"));
+            SetActions(("technical_start", saved != null ? "technical.resume_run" : "technical.start"));
+            if (saved != null) actionLabels[0].text = string.Format(Text("technical.resume_run"), saved.participant_id);
             actions[0].interactable = controller.TechnicalReady;
-            technicalOptions.Find("Option_language").GetComponentInChildren<TMP_Text>().text = Text("technical.option." + controller.SetupLanguage);
-            technicalOptions.Find("Option_order").GetComponentInChildren<TMP_Text>().text = Text("technical.option." + controller.SetupOrder);
+            actions[0].gameObject.SetActive(!details); // Start lives on the main page; Back returns to it from the same spot
             operatorEntry.GetComponentInChildren<TMP_Text>().text = Text("technical.operator_setup");
         }
 
@@ -1496,8 +1551,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 // D03: 25 px thin Thai/Japanese strokes rendered washed out in the Game View; action labels read at body-adjacent size.
                 actionLabels[i].fontSize = 30;
                 // Recall-panel on a researcher-owned Stop card is geometry recovery, not the step the system waits for (design_rule 3.1).
-                var variant = buttons[i].command == "pause" ? ResearchButtonVariant.Ghost : compactTask || buttons[i].command == "panel_recovery" ? ResearchButtonVariant.Secondary
-                    : i == 0 ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary;
+                // Timer confirmation: Start timer is the awaited step; Back keeps the left slot so a repeated Start click lands on Back.
+                var variant = buttons[i].command == "pause" ? ResearchButtonVariant.Ghost : compactTask || buttons[i].command == "panel_recovery" || buttons[i].command == "task_start_back" ? ResearchButtonVariant.Secondary
+                    : i == 0 || buttons[i].command == "task_start_confirm" ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary;
                 if (compactTask && (buttons[i].command == "reference" || buttons[i].command == "inspect")) variant = ResearchButtonVariant.Secondary;
                 ResearchUITheme.Button(actions[i], variant);
             }
@@ -1511,7 +1567,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool pause = state == "pause";
             bool referenceCompact = tutorialChecklist && controller && controller.ReferenceOpen;
             compactTutorialReference = referenceCompact;
-            float width = compactTask ? 700 : referenceCompact ? 520 : tutorialChecklist ? 860 : resultState || checkpoint || pause ? 720 : 780;
+            float width = compactTask ? 700 : referenceCompact ? 520 : tutorialChecklist ? 860 : technicalSetup ? 880 : resultState || checkpoint || pause ? 720 : 780;
             title.fontSize = compactTask ? 32 : 38;
             bool coachDemo = tutorialChecklist && !referenceCompact && !tutorialDone && controller.TutorialFact != "inspect";
             float instructionWidth = width - 2 * Pad - (coachDemo ? TutorialDemoBand : 0);
@@ -1524,7 +1580,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (checkpoint) textHeight = LayoutCheckpointSteps(width);
             // Measure at the width the title really gets: narrower when the Pause utility shares its row (design_rule D08).
             bool pauseInTitleRow = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
-            bool stopInTitleRow = controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop") && !referenceCompact;
+            bool stopInTitleRow = StopOffered && !referenceCompact;
             float titleReserve = pauseInTitleRow && stopInTitleRow ? 276 : pauseInTitleRow || stopInTitleRow ? 180 : 88;
             // Task: the step counter shares the Stop/Pause row, so the task name gets the full width below it.
             float titleHeight = compactTask ? TaskEyebrow + title.GetPreferredValues(title.text, width - 88, 500).y + 8
@@ -1536,7 +1592,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (var action in actions) tutorialAction |= action.gameObject.activeSelf;
             float coachContent = Mathf.Max(coachDemo ? 324 : 170, textHeight + 8);
             // Coach: title 56, progress 36, rule, content, reserved success line, then the one action.
-            float height = technicalSetup ? (setupDetailsVisible ? 990 : Mathf.Max(640, textHeight + 600)) : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
+            float height = technicalSetup ? LayoutTechnicalCard(width, 0) : referenceCompact ? Mathf.Max(130, textHeight + 2 * ResearchUITheme.SpaceXL)
                 : tutorialChecklist ? 128 + coachContent + ResearchUITheme.SectionGap + 48 + (tutorialAction ? ResearchUITheme.ActionGap + 102 : 40)
                 : compactTask ? Mathf.Max(310, textHeight + titleHeight + 222) : Mathf.Max(360, textHeight + titleHeight + 210);
             float statusHeight = positiveIcon.activeSelf || negativeIcon.activeSelf ? 128 : 0;
@@ -1574,7 +1630,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 icon.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, height / 2 - 88);
                 foreach (var stroke in icon.GetComponentsInChildren<Graphic>(true)) stroke.color = icon == positiveIcon ? Positive : ResearchUITheme.Failure;
             }
-            body.gameObject.SetActive(!tutorialChecklist && (!technicalSetup || !setupDetailsVisible));
+            body.gameObject.SetActive(!tutorialChecklist && !technicalSetup);
             checkpointSteps.gameObject.SetActive(checkpoint);
             checkpointSteps.anchoredPosition = body.rectTransform.anchoredPosition;
             if (checkpoint) body.gameObject.SetActive(false);
@@ -1582,8 +1638,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             setupBrand.gameObject.SetActive(technicalSetup);
             technicalRows.gameObject.SetActive(technicalSetup && setupDetailsVisible);
             technicalOptions.gameObject.SetActive(technicalSetup);
-            // Quest 16 Oct: a solo tester changed language/order only inside the dense researcher panel; the two toggles live on the card.
-            foreach (Transform option in technicalOptions) option.gameObject.SetActive(technicalSetup && option.name != "Option_input");
+            // TechnicalSetup() decides which card parts apply; this pass hides them off the card. The Option_* toggles are retired
+            // controls kept in the serialized scene (language/order are segmented choices inside the details section now).
+            foreach (Transform option in technicalOptions) if (!technicalSetup || option.name.StartsWith("Option_", StringComparison.Ordinal)) option.gameObject.SetActive(false);
             checklist.gameObject.SetActive(false);
             tutorialProgress.gameObject.SetActive(tutorialChecklist && !referenceCompact || compactTask);
             mainPauseEligible = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
@@ -1712,39 +1769,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     shown[i].transform.Find("UtilityIcon").gameObject.SetActive(true);
                 }
             }
-            if (technicalSetup)
-            {
-                setupBrand.rectTransform.anchoredPosition = new Vector2(0, height / 2 - 54);
-                title.fontSize = 28; title.color = Muted; title.rectTransform.anchoredPosition = new Vector2(0, height / 2 - 107);
-                rule.anchoredPosition = new Vector2(0, height / 2 - 150);
-                // Readiness rows: 60 high on an 80 pitch, a full section gap below the rule.
-                float pitch = ResearchUITheme.RowHeight + ResearchUITheme.RowGap;
-                technicalRows.sizeDelta = new Vector2(690, 4 * pitch + ResearchUITheme.RowHeight);
-                technicalRows.anchoredPosition = new Vector2(0, height / 2 - 174 - technicalRows.sizeDelta.y / 2);
-                for (int i = 0; i < technicalRows.childCount; i++)
-                {
-                    var row = (RectTransform)technicalRows.GetChild(i);
-                    row.anchoredPosition = new Vector2(0, 2 * pitch - i * pitch); row.sizeDelta = new Vector2(690, ResearchUITheme.RowHeight);
-                    row.Find("Label").GetComponent<RectTransform>().sizeDelta = new Vector2(410, 56);
-                    row.Find("Rule").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -pitch / 2);
-                    row.Find("Rule").gameObject.SetActive(i < technicalRows.childCount - 1);
-                }
-                body.rectTransform.anchoredPosition = new Vector2(0, height / 2 - 174 - (textHeight + 14) / 2);
-                technicalOptions.anchoredPosition = new Vector2(0, -height / 2 + 160);
-                float optionWidth = width - 120;
-                for (int i = 0; i < technicalOptions.childCount; i++)
-                {
-                    var option = (RectTransform)technicalOptions.GetChild(i);
-                    if (!option.gameObject.activeSelf) continue;
-                    bool toggle = option.name.StartsWith("Option_", StringComparison.Ordinal);
-                    float half = (optionWidth - ResearchUITheme.TargetGap) / 2;
-                    option.sizeDelta = new Vector2(toggle ? half : optionWidth, 64);
-                    option.anchoredPosition = toggle ? new Vector2((option.name == "Option_language" ? -1 : 1) * (half + ResearchUITheme.TargetGap) / 2, 180)
-                        : option == technicalDetails.transform ? new Vector2(0, 90) : Vector2.zero;
-                    ResearchUITheme.Button(option.GetComponent<UnityEngine.UI.Button>(), ResearchButtonVariant.Secondary);
-                    var label = option.GetComponentInChildren<TMP_Text>(); label.fontSize = 26; label.font = Font;
-                }
-            }
+            if (technicalSetup) LayoutTechnicalCard(width, height / 2);
             else title.color = Ink;
             if (referenceCompact)
             {
@@ -1770,6 +1795,127 @@ namespace VRMaintenanceResearch.ResearchFlow
             researcher.gameObject.SetActive(waitingLabel.gameObject.activeSelf);
             waitingLabel.rectTransform.anchoredPosition += new Vector2(24, 0);
             researcher.anchoredPosition = new Vector2(-Mathf.Min(waitingLabel.preferredWidth, width - 160) / 2 - 12, waitingY);
+        }
+
+        // Setup card laid out top-down from the card's top edge. Called once with top 0 to measure, then with the real top.
+        // Main page: status, run choice, ID, Start, Details. The details page swaps in at the same height, with Back where
+        // Details was, so opening it never resizes or moves the slate (a taller card was pushed 0.5 m farther away).
+        float LayoutTechnicalCard(float width, float top)
+        {
+            const float headerHeight = 180, runHeight = 96, idHeight = 88, startHeight = 88, toggleHeight = 64, rowPitch = 52;
+            float inner = width - 2 * Pad, left = -inner / 2, half = (inner - ResearchUITheme.TargetGap) / 2;
+            float halfOffset = (half + ResearchUITheme.TargetGap) / 2;
+            bool resume = controller.TechnicalResumeSelected, details = setupDetailsVisible, ready = controller.TechnicalReady;
+            bool runRow = controller.TechnicalNextRun().resume != null;
+            technicalOptions.anchoredPosition = Vector2.zero; // card parts use the content's own coordinates
+            float y = 0;
+            void Place(RectTransform rt, float x, float w, float h) { rt.sizeDelta = new Vector2(w, h); rt.anchoredPosition = new Vector2(x, top - y - h / 2); }
+            void Style(TMP_Text label, float size, Color color, TextAlignmentOptions alignment, FontStyles style = FontStyles.Normal)
+            { label.font = Font; label.fontSize = size; label.color = color; label.alignment = alignment; label.fontStyle = style; label.textWrappingMode = TextWrappingModes.Normal; }
+            void Segment(UnityEngine.UI.Button button, TrainingRoundedGraphic track, float x, bool selected)
+            {
+                Place((RectTransform)button.transform, x, track.rectTransform.sizeDelta.x / 2 - 8, track.rectTransform.sizeDelta.y - 8);
+                ResearchUITheme.Button(button, ResearchButtonVariant.Tab);
+                // Selected = white thumb with a bold blue label on the blue track; the other choice keeps the track colour and Ink text.
+                button.targetGraphic.color = selected ? ResearchUITheme.Content : SegmentTrack;
+                var edge = button.GetComponent<ResearchGlassEffect>(); if (edge) edge.edgeAlpha = selected ? .35f : 0;
+                Style(button.GetComponentInChildren<TMP_Text>(), 26, selected ? ResearchUITheme.Blue : Ink, TextAlignmentOptions.Center, selected ? FontStyles.Bold : FontStyles.Normal);
+            }
+
+            Style(setupStatus, 26, ready ? ResearchUITheme.Success : new Color(.48f, .29f, .04f), TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            float statusHeight = Mathf.Max(64, setupStatus.GetPreferredValues(setupStatus.text, inner - 80, 400).y + 18);
+            float mainContentHeight = statusHeight + 26 + (runRow ? runHeight : 0) + idHeight;
+            float detailsContentHeight = (resume ? 72 : 86) + 52 + 3 * rowPitch + 18 + toggleHeight + 24;
+            // Extra room, when the details page needs more than the main page, opens above Start so Start and Details stay together.
+            float extra = Mathf.Max(0, detailsContentHeight - mainContentHeight - startHeight - 18);
+            float startTop = headerHeight + mainContentHeight + extra, toggleTop = startTop + startHeight + 18;
+            float height = toggleTop + toggleHeight + 36;
+
+            y = 36;
+            Style(setupBrand, 36, Ink, TextAlignmentOptions.MidlineLeft, FontStyles.Bold); setupBrand.font = englishFont;
+            setupBrand.textWrappingMode = TextWrappingModes.NoWrap; Place(setupBrand.rectTransform, 0, inner, 56);
+            y = 94;
+            // The test-data chip shares the subtitle row so the product name keeps the full width on one line.
+            Style(title, 26, ResearchUITheme.Blue, TextAlignmentOptions.MidlineLeft); Place(title.rectTransform, left + (inner - 236) / 2, inner - 236, 52);
+            Style(setupMeta, 22, ResearchUITheme.Blue, TextAlignmentOptions.Center);
+            Place(setupMetaChip.rectTransform, inner / 2 - 108, 216, 50);
+            setupMeta.rectTransform.sizeDelta = new Vector2(208, 46); setupMeta.rectTransform.anchoredPosition = Vector2.zero;
+            y = 156; Place((RectTransform)mainContent.transform.Find("HeaderRule"), 0, inner, 1.5f);
+
+            y = toggleTop;
+            Place((RectTransform)technicalDetails.transform, 0, inner, toggleHeight);
+            ResearchUITheme.Button(technicalDetails, ResearchButtonVariant.Secondary);
+            Style(technicalDetails.GetComponentInChildren<TMP_Text>(), 26, Ink, TextAlignmentOptions.Center);
+
+            y = headerHeight;
+            if (!details)
+            {
+                setupStatusSurface.color = ready ? new Color(.89f, .97f, .92f) : new Color(1f, .95f, .86f);
+                Place(setupStatusSurface.rectTransform, 0, inner, statusHeight);
+                setupStatus.rectTransform.sizeDelta = new Vector2(inner - 80, statusHeight); setupStatus.rectTransform.anchoredPosition = new Vector2(24, 0);
+                setupStatusDot.color = ready ? ResearchUITheme.Success : ResearchUITheme.Warning;
+                setupStatusDot.rectTransform.sizeDelta = new Vector2(16, 16); setupStatusDot.rectTransform.anchoredPosition = new Vector2(left + 30, 0);
+                y += statusHeight + 26;
+                if (runRow)
+                {
+                    Style(setupRunCaption, 26, Muted, TextAlignmentOptions.MidlineLeft); Place(setupRunCaption.rectTransform, left + 110, 220, 68);
+                    Place(setupRunTrack.rectTransform, inner / 2 - 220, 440, 68); // 60 px thumbs fit 26 pt labels
+                    Segment(runNew, setupRunTrack, inner / 2 - 330, !resume); Segment(runResume, setupRunTrack, inner / 2 - 110, resume);
+                    y += 82; Place(setupRuleA.rectTransform, 0, inner, 1.5f); y += 14;
+                }
+                Style(setupIdCaption, 26, Muted, TextAlignmentOptions.MidlineLeft); Place(setupIdCaption.rectTransform, left + 110, 220, 56);
+                Style(setupIdValue, 32, Ink, TextAlignmentOptions.MidlineRight, FontStyles.Bold); Place(setupIdValue.rectTransform, inner / 2 - (inner - 220) / 2, inner - 220, 60);
+                y = startTop;
+                var start = actions[0];
+                actionsRoot.anchoredPosition = new Vector2(0, top - y - startHeight / 2);
+                start.GetComponent<RectTransform>().sizeDelta = new Vector2(inner, startHeight); start.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
+                // Unavailable Start: an opaque grey fill with readable text (the default disabled tint made a pale, translucent lilac).
+                var startColors = start.colors; startColors.disabledColor = Color.white; start.colors = startColors;
+                start.targetGraphic.color = start.interactable ? ResearchUITheme.Blue : DisabledFill;
+                Style(actionLabels[0], 30, start.interactable ? Color.white : Muted, TextAlignmentOptions.Center, FontStyles.Bold);
+                return height;
+            }
+
+            if (!resume)
+            {
+                Place(setupLangTrack.rectTransform, -halfOffset, half, 68); Place(setupOrderTrack.rectTransform, halfOffset, half, 68);
+                Segment(langThai, setupLangTrack, -halfOffset - half / 4, controller.SetupLanguage == ParticipantLanguage.Thai);
+                Segment(langJapanese, setupLangTrack, -halfOffset + half / 4, controller.SetupLanguage == ParticipantLanguage.Japanese);
+                Segment(orderAB, setupOrderTrack, halfOffset - half / 4, controller.SetupOrder == TaskOrder.AB);
+                Segment(orderBA, setupOrderTrack, halfOffset + half / 4, controller.SetupOrder == TaskOrder.BA);
+                y += 86;
+            }
+            Style(setupReadinessCaption, 24, Muted, TextAlignmentOptions.MidlineLeft);
+            Style(setupNote, 24, Muted, resume ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.MidlineRight);
+            if (resume) { Place(setupNote.rectTransform, 0, inner, 56); y += 72; }
+            else Place(setupNote.rectTransform, halfOffset, half, 48);
+            Place(setupReadinessCaption.rectTransform, resume ? 0 : -halfOffset, resume ? inner : half, 48); y += 52;
+            // Two columns (headset + controllers | floor + logger) keep the page inside the main card's height.
+            Place(technicalRows, 0, inner, 3 * rowPitch);
+            for (int i = 0; i < technicalRows.childCount; i++)
+            {
+                var row = (RectTransform)technicalRows.GetChild(i);
+                int column = i < 3 ? 0 : 1, line = i < 3 ? i : i - 3;
+                row.sizeDelta = new Vector2(half, rowPitch - 6); row.anchoredPosition = new Vector2(column == 0 ? -halfOffset : halfOffset, rowPitch - line * rowPitch);
+                var icon = (RectTransform)row.Find("RowIcon"); if (icon) { icon.anchoredPosition = new Vector2(-half / 2 + 22, 0); icon.localScale = Vector3.one * .8f; }
+                var rowLabel = row.Find("Label").GetComponent<TMP_Text>();
+                // Fixed sizes (no auto-size) wide enough for the longest TH/JA labels at 23 pt and 22 pt pills.
+                rowLabel.fontSize = 23; rowLabel.enableAutoSizing = false; rowLabel.textWrappingMode = TextWrappingModes.NoWrap; rowLabel.alignment = TextAlignmentOptions.MidlineLeft;
+                float labelWidth = half - 44 - 136 - 8;
+                rowLabel.rectTransform.sizeDelta = new Vector2(labelWidth, 48); rowLabel.rectTransform.anchoredPosition = new Vector2(-half / 2 + 44 + labelWidth / 2, 0);
+                var status = (RectTransform)row.Find("Status"); status.sizeDelta = new Vector2(136, 46); status.anchoredPosition = new Vector2(half / 2 - 68, 0);
+                var statusLabel = status.Find("Label").GetComponent<TMP_Text>(); statusLabel.fontSize = 22; statusLabel.enableAutoSizing = false;
+                statusLabel.textWrappingMode = TextWrappingModes.NoWrap; statusLabel.alignment = TextAlignmentOptions.Center;
+                statusLabel.rectTransform.sizeDelta = new Vector2(100, 46); statusLabel.rectTransform.anchoredPosition = new Vector2(14, 0);
+                status.Find("Checkmark").GetComponent<RectTransform>().anchoredPosition = new Vector2(-48, 0);
+                status.Find("Checkmark").localScale = Vector3.one * .75f;
+                row.Find("Rule").gameObject.SetActive(false);
+            }
+            y += 3 * rowPitch + 18;
+            Place((RectTransform)operatorEntry.transform, 0, inner, toggleHeight);
+            ResearchUITheme.Button(operatorEntry, ResearchButtonVariant.Secondary);
+            Style(operatorEntry.GetComponentInChildren<TMP_Text>(), 26, Ink, TextAlignmentOptions.Center);
+            return height;
         }
 
         float LayoutCheckpointSteps(float width)
@@ -1984,6 +2130,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             return changed;
         }
 
+        // One rule for every Stop control. A stopped session cannot be stopped again (controller.Stop returns early), and the
+        // participant's own self-resume pause offers Continue only (design_rule 8.2). Tracking/application pauses keep Stop,
+        // because their Continue still waits on DeviceReady.
+        bool StopOffered => controller && controller.ParticipantCanStop
+            && !(controller.Flow.Paused && (controller.PauseKind == "stop" || (controller.PauseKind == "participant" && controller.ParticipantMayResume)));
+
         public void RefreshRecoveryUtility()
         {
             if (!RecoveryCanvas || !Head || !gameObject.activeInHierarchy) return;
@@ -2001,8 +2153,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
             helpUtility.gameObject.SetActive(mainOwns && !referenceOwns);
             var referencePause = referenceExpanded.transform.Find("Pause"); if (referencePause) referencePause.gameObject.SetActive(referenceOwns);
-            // An already stopped session cannot be stopped again (controller.Stop returns early); the icon there was only noise.
-            bool stopAvailable = controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop");
+            bool stopAvailable = StopOffered;
             bool referenceStopOwns = stopAvailable && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
@@ -2020,7 +2171,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             fallbackStop &= !glance || recoveryWasNeeded || Time.unscaledTime - fallbackSince >= FallbackDwellSeconds;
             bool layoutChanged = LayoutRecoveryUtility(false, compact: true, fallbackStop: fallbackStop);
             recoveryPanel.centered = true;
-            bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant" && !controller.ParticipantMayResume
+            // Includes the self-resume pause: with Stop hidden there, this strip is its only recall when the card is out of view.
+            bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant"
                 && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
             bool needed = fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
                 || (recoveryWasNeeded && mainPanel.RecenterPending)));
@@ -2112,10 +2264,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             switch (command)
             {
                 case "technical_details":
+                    // Details are most useful while something is not ready, so the toggle never waits on readiness.
                     if (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null
-                        || controller.Transitioning || !string.IsNullOrEmpty(controller.Error) || !controller.TechnicalReady
-                        || !controller.FloorReady || !controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left)
-                        || !controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right)) return false;
+                        || controller.Transitioning || !string.IsNullOrEmpty(controller.Error)) return false;
                     setupDetailsRequested = !setupDetailsRequested; Refresh(); accepted = true; break;
                 case "panel_recovery":
                     // Geometry recovery also works on a paused/error card; it never changes task state or resumes a study.

@@ -31,8 +31,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Begin(ResearchSessionFlowController controller, bool simulatedPresence, bool orderAB, out string error, string requestedRenderMode = "msaa")
         {
             error = null;
-            if (requestedRenderMode != "msaa" && requestedRenderMode != "resolution")
-            { error = "render_mode must be msaa or resolution."; return false; }
+            if (requestedRenderMode != "msaa" && requestedRenderMode != "resolution" && requestedRenderMode != "none")
+            { error = "render_mode must be msaa, resolution or none."; return false; }
             if (!ResearchSessionFlowController.TechnicalBuild || Running || controller.Record != null || controller.Flow != null)
             { error = "Isolated scenario requires an idle .technical package with no existing session."; return false; }
             renderMode = requestedRenderMode; renderResult = null;
@@ -42,16 +42,17 @@ namespace VRMaintenanceResearch.ResearchFlow
             // A fresh registry is isolated from DEV018 and every study identity; native input is never spoofed.
             owner.ConfigureTechnicalRegistry(Path.Combine(EvidencePath, "registry"));
             var record = owner.Registry.CreateNext(ParticipantGroup.Test);
-            owner.StartSession(record.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, orderAB ? TaskOrder.AB : TaskOrder.BA);
+            Running = true; Status = "running";
+            owner.StartSession(record.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, orderAB ? TaskOrder.AB : TaskOrder.BA, uiPolicy: ResearchUIPolicy.DevMovable);
             if (owner.Record == null || !string.IsNullOrEmpty(owner.Error))
             {
+                Running = false;
                 error = string.IsNullOrEmpty(owner.Error) ? "Technical session did not start." : owner.Error;
                 if (owner.Record?.session_state == RegistryState.InProgress) owner.ResearcherAbort(terminationReason: "technical_failure");
                 Status = "failed"; Error = error; return false;
             }
             owner.Log("TECHNICAL_SCENARIO_STARTED", "technical.scenario", "SyntheticCommands",
                 after: new { simulated_presence = SimulatedPresence, synthetic_commands = true, native_tracking_not_injected = true }, source: "Tester", inputSource: "SimulatedController");
-            Running = true; Status = "running";
             StartCoroutine(Drive());
             return true;
         }
@@ -88,9 +89,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Step = "tutorial." + fact;
                 yield return new WaitForSecondsRealtime(.4f);
                 double promptDeadline = Time.realtimeSinceStartupAsDouble + 5;
-                while (!owner.view.TutorialActionReady(fact) && Time.realtimeSinceStartupAsDouble < promptDeadline)
+                while (!(owner.view.TutorialActionReady(fact) && owner.TutorialArmedFact == fact) && Time.realtimeSinceStartupAsDouble < promptDeadline)
                     yield return null;
-                Require(owner.view.TutorialActionReady(fact), "Visible Tutorial prompt unavailable: " + fact);
+                Require(owner.view.TutorialActionReady(fact) && owner.TutorialArmedFact == fact, "Visible Tutorial prompt unavailable: " + fact);
                 if (fact == "grab")
                 {
                     heldFixture = Array.Find(owner.trainingObjects, item => item);
@@ -123,7 +124,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Require(owner.Command("reference_tab.user_manual", "SimulatedController"), "deliberate manual choice");
                 yield return Capture(Step + ".reference");
                 yield return VideoProbe(Step);
-                if (task == 0 && !Application.isEditor)
+                if (task == 0 && !Application.isEditor && renderMode != "none")
                 {
                     var comparison = owner.GetComponent<ResearchRenderExperiment>() ?? owner.gameObject.AddComponent<ResearchRenderExperiment>();
                     string renderError;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -232,10 +232,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (parts.Length == 2) layout = parts[1];
             }
 
-            // Participant UI policy: fixed-position demo by default; "legacy_movable" only for technical regression of the old drag UI.
-            string uiPolicy;
-            try { uiPolicy = ResearchUIPolicy.Parse((string)request["ui_policy"]); }
-            catch (ArgumentException ex) { return Fail(ex.Message + " Use 'fixed' (default) or 'legacy_movable'."); }
+            // Participant UI policy: DEV defaults to DevMovable; Study defaults to FixedDemo; "legacy_movable" for regression.
+            string rawPolicy = (string)request["ui_policy"];
+            string uiPolicy = null;
+            if (!string.IsNullOrWhiteSpace(rawPolicy))
+            {
+                try { uiPolicy = ResearchUIPolicy.Parse(rawPolicy); }
+                catch (ArgumentException ex) { return Fail(ex.Message + " Use 'fixed', 'dev_movable' or 'legacy_movable'."); }
+            }
 
             if (!controller.LoggerReady) return Fail("Logger not ready: " + controller.Error);
             if (!controller.DeviceReady)

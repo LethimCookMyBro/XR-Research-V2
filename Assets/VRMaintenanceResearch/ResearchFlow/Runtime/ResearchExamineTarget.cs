@@ -138,7 +138,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Keep the acquired action still. Information expansion after a completed click may reflow.
             if (stationCanvas.enabled && string.IsNullOrEmpty(observedInformation) && (hoveringPointer != int.MinValue || presses.Count > 0))
             {
-                if (Vector3.Dot(rect.forward, (rect.position - head.position).normalized) < .55f || !ReadablePlacement(camera, rect)) return false;
+                if (Vector3.Dot(rect.forward, (rect.position - head.position).normalized) < .55f
+                    || !(ReadablePlacement(camera, rect) || (training && ViewportPlacementOnly(camera, rect)))) return false;
                 AttachConnector(bounds); return true;
             }
             float half = rect.rect.width * Mathf.Abs(rect.lossyScale.x) * .5f;
@@ -151,6 +152,20 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset);
                     rect.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
                     if (ReadablePlacement(camera, rect)) { AttachConnector(bounds); return true; }
+                }
+            }
+            // Training only: a Task chip over a panel could catch a ray sweeping to a Reader button and log a false EXAMINE.
+            if (training)
+            {
+                for (int level = 0; level < 2; level++)
+                {
+                    var offset = chipOffset + Vector3.down * (level * .20f);
+                    for (int side = 0; side < 2; side++)
+                    {
+                        var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset);
+                        rect.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
+                        if (ViewportPlacementOnly(camera, rect)) { AttachConnector(bounds); return true; }
+                    }
                 }
             }
             return false;
@@ -177,7 +192,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && ReadablePlacementEye(camera, rect, Camera.MonoOrStereoscopicEye.Right)
             : ReadablePlacementEye(camera, rect, Camera.MonoOrStereoscopicEye.Mono);
 
-        bool ReadablePlacementEye(Camera camera, RectTransform rect, Camera.MonoOrStereoscopicEye eye)
+        bool ViewportPlacementOnly(Camera camera, RectTransform rect) => camera.stereoEnabled
+            ? ViewportPlacementEye(camera, rect, Camera.MonoOrStereoscopicEye.Left)
+                && ViewportPlacementEye(camera, rect, Camera.MonoOrStereoscopicEye.Right)
+            : ViewportPlacementEye(camera, rect, Camera.MonoOrStereoscopicEye.Mono);
+
+        bool ViewportPlacementEye(Camera camera, RectTransform rect, Camera.MonoOrStereoscopicEye eye)
         {
             var chip = ScreenBounds(camera, rect, eye);
             foreach (var corner in screenCorners)
@@ -187,7 +207,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                     || float.IsInfinity(point.x) || float.IsInfinity(point.y) || float.IsInfinity(point.z)
                     || point.z <= camera.nearClipPlane) return false;
             }
-            return chip.xMin >= .02f && chip.xMax <= .98f && chip.yMin >= .02f && chip.yMax <= .98f
+            return chip.xMin >= .02f && chip.xMax <= .98f && chip.yMin >= .02f && chip.yMax <= .98f;
+        }
+
+        bool ReadablePlacementEye(Camera camera, RectTransform rect, Camera.MonoOrStereoscopicEye eye)
+        {
+            var chip = ScreenBounds(camera, rect, eye);
+            return ViewportPlacementEye(camera, rect, eye)
                 && !OverlapsPanels(camera, chip, eye);
         }
 
@@ -274,9 +300,18 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (pointer.CollisionInfo.HasValue && pointer.CollisionInfo.Value.Distance < nearest - .005f
                     && !(focused && focused.hoveringPointer == pointer.Identifier)) continue;
                 if (Physics.Raycast(pointer.Ray, out var obstruction, nearest - .005f, ~0, QueryTriggerInteraction.Ignore)
-                    && Array.IndexOf(candidate.focusColliders, obstruction.collider) < 0) continue;
+                    && Array.IndexOf(candidate.focusColliders, obstruction.collider) < 0
+                    && obstruction.collider.name != "Trainer_Body"
+                    && !(candidate.training && obstruction.collider.transform.IsChildOf(candidate.training.transform))) continue;
                 SetFocus(candidate);
                 candidate.lastFocusTime = Time.unscaledTime;
+                return;
+            }
+            foreach (var target in Targets)
+            {
+                if (!target || !target.training || !target.Available || !target.controller || target.controller.TutorialArmedFact != "examine") continue;
+                SetFocus(target);
+                target.lastFocusTime = Time.unscaledTime;
                 return;
             }
             // A short bridge lets the pointer travel from the part onto its adjacent chip.

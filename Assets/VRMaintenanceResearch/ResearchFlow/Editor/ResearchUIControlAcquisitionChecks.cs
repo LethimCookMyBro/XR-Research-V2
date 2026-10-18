@@ -98,14 +98,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(Hash(c.Registry.RegistryPath)==registryHash&&c.Registry.List(ParticipantGroup.Test).Single().run_id==ownedRecord.run_id,name+"/no new session or registry mutation",c.Registry.RegistryPath);
                             // Quest 16 Oct: the tester could only change language/order inside the dense researcher panel.
                             var startLanguage=c.SetupLanguage; var startOrder=c.SetupOrder;
-                            Click("technical_language"); Check(c.SetupLanguage!=startLanguage,name+"/card language toggle clicks",c.SetupLanguage.ToString());
-                            Click("technical_language"); Check(c.SetupLanguage==startLanguage,name+"/card language toggle returns",c.SetupLanguage.ToString());
-                            Click("technical_order"); Check(c.SetupOrder!=startOrder,name+"/card order toggle clicks",c.SetupOrder.ToString());
-                            var body=Field<TMPro.TMP_Text>(v,"body"); var next=c.TechnicalNextRun();
-                            Check(next.id=="DEV001"&&(next.layout=="P"||next.layout=="Q")&&body.gameObject.activeInHierarchy&&body.text.Contains(next.id),name+"/card names the DEV id and layout Start will use",new { next.id,next.layout,body.text });
+                            var otherLanguage=startLanguage==ParticipantLanguage.Thai?ParticipantLanguage.Japanese:ParticipantLanguage.Thai; var otherOrder=startOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB;
+                            Click("technical_details");
+                            Click("technical_language."+otherLanguage); Check(c.SetupLanguage==otherLanguage,name+"/details language segment clicks",c.SetupLanguage.ToString());
+                            Click("technical_language."+startLanguage); Check(c.SetupLanguage==startLanguage,name+"/details language segment returns",c.SetupLanguage.ToString());
+                            Click("technical_order."+otherOrder); Check(c.SetupOrder==otherOrder,name+"/details order segment clicks",c.SetupOrder.ToString());
+                            var note=Field<TMPro.TMP_Text>(v,"setupNote"); var next=c.TechnicalNextRun();
+                            Check((next.layout=="P"||next.layout=="Q")&&note.gameObject.activeInHierarchy&&note.text.Contains(next.layout),name+"/details page names the table layout Start will use",new { next.layout,note.text });
+                            Click("technical_details");
+                            var idValue=Field<TMPro.TMP_Text>(v,"setupIdValue");
+                            Check(next.id=="DEV001"&&idValue.gameObject.activeInHierarchy&&idValue.text==next.id,name+"/card names the DEV id Start will use",new { next.id,idValue.text });
                             Check(Hash(c.Registry.RegistryPath)==registryHash,name+"/previewing creates no record",null);
                             Call(fixture,"Capture","setup_card",v.mainPanel,new List<object>(),rows);
-                            Click("technical_order"); Check(c.SetupOrder==startOrder,name+"/card order toggle returns",c.SetupOrder.ToString());
+                            Click("technical_details"); Click("technical_order."+startOrder); Check(c.SetupOrder==startOrder,name+"/details order segment returns",c.SetupOrder.ToString()); Click("technical_details");
                             // A Start that fails after CreateNext leaves an unstarted DEV record; the next Start reuses it.
                             var orphan=c.Registry.CreateNext(ParticipantGroup.Dev);
                             Set(c,"SetupOrder",c.SetupOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB); Set(c,"SetupOrder",startOrder);

@@ -41,6 +41,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool nativeDrag;
         RayInteractor rayInteractor;
         float rayDistance;
+        Vector3 startRayOrigin, startRayForward, startPanelPosition;
         Vector3 lastClearPosition;
         Quaternion lastClearRotation;
         bool hasClearPose;
@@ -67,6 +68,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             // so moving the slate cannot feed back into its drag coordinates.
             if (!rayInteractor) return;
             rayDistance = Mathf.Max(.01f, Vector3.Dot(transform.position - rayInteractor.Origin, rayInteractor.Forward));
+            startRayOrigin = rayInteractor.Origin;
+            startRayForward = rayInteractor.Forward;
             Begin(data, rayInteractor.Ray.GetPoint(rayDistance));
         }
 
@@ -74,6 +77,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (panel.view.controller && !panel.view.controller.LocalUICommandsAllowed) return;
             dragging = true; moved = false; pointer = data.pointerId; before = panel.Pose(); offset = panel.transform.position - point;
+            startPanelPosition = panel.transform.position;
             dragRotation = panel.transform.rotation;
             nativeDrag = rayInteractor;
             input = panel.view.controller?.InputSourceForPointer(pointer) ?? "None";
@@ -101,7 +105,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var grip = transform.Find("GripLine"); var graphic = grip ? grip.GetComponent<Graphic>() : null;
             if (graphic) graphic.canvasRenderer.SetColor(dragging || hovers > 0 ? ResearchUITheme.Hover
                 : highlight ? Color.Lerp(ResearchUITheme.Ink, ResearchUITheme.Warning, .35f + .35f * ResearchMotion.Ease(Mathf.PingPong(Time.unscaledTime / .8f, 1)))
-                : ResearchUITheme.Muted);
+                : Color.Lerp(ResearchUITheme.Muted, ResearchUITheme.Ink, .65f));
             if (dragging && (!ResearchUIPolicy.PanelDragAllowed || !panel || !panel.movable || !panel.view || !panel.view.Head)) { Finish(false, "panel_unavailable"); return; }
             // Validation is deliberately outside the per-ray visual pose update.
             if (dragging && Time.unscaledTime >= nextClearanceCheck) RememberClearPose();
@@ -110,7 +114,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         void RememberClearPose()
         {
             nextClearanceCheck = Time.unscaledTime + .1f;
-            if (!panel || !panel.PlacementClear(panel.transform.position, panel.transform.rotation)) return;
+            if (!panel || !panel.ReadableFromHeadForDrag(panel.transform.position, panel.transform.rotation)
+                || !panel.PlacementClear(panel.transform.position, panel.transform.rotation)) return;
             lastClearPosition = panel.transform.position; lastClearRotation = panel.transform.rotation; hasClearPose = true;
         }
 
@@ -120,7 +125,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!rayInteractor || !rayInteractor.isActiveAndEnabled || !panel || !panel.movable || !panel.view || !panel.view.Head) { Finish(false, "ray_inactive"); return; }
             // The owning ray's select state is the trigger truth; the canvas pointer-up can arrive a frame later.
             if (rayInteractor.State != InteractorState.Select) { Finish(true, "ray_released"); return; }
-            Move(rayInteractor.Ray.GetPoint(rayDistance));
+            float handPull = Vector3.Dot(rayInteractor.Origin - startRayOrigin, startRayForward);
+            float effectiveDistance = Mathf.Clamp(rayDistance + handPull * 2f, .45f, 2f);
+            Move(rayInteractor.Ray.GetPoint(effectiveDistance));
         }
 
         public void OnPointerUp(PointerEventData data) => OnEndDrag(data);
@@ -151,8 +158,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 raw.y = Mathf.Clamp(raw.y, head.position.y - .65f, head.position.y + .45f);
                 float rawStep = hasRaw ? Vector3.Distance(lastRaw, raw) : 0;
                 var position = Stabilize(raw, dt);
-                // Drag translates the acquired panel. Head movement must not rotate text or change the held pose.
                 var rotation = dragRotation;
+                if (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable && Vector3.Distance(raw, startPanelPosition) > .02f)
+                {
+                    var look = Vector3.ProjectOnPlane(position - head.position, Vector3.up);
+                    if (look.sqrMagnitude > .01f) rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
+                }
                 Sample(rawStep, position, rotation, head.position, dt);
                 // ponytail: held panels may overlap geometry; release/cancel validates or restores
                 // the last clear pose. Add a profiled swept clamp only if transient overlap is unacceptable.
@@ -196,12 +207,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             releaseCause = cause; rayStateAtRelease = rayInteractor ? rayInteractor.State.ToString() : "none";
             dragging = false; rayInteractor = null;
             if (!panel || !panel.view) return;
-            if (!panel.IsReadableFromHead || !panel.PlacementClear(panel.transform.position, panel.transform.rotation))
+            if (!panel.ReadableFromHeadForDrag(panel.transform.position, panel.transform.rotation)
+                || !panel.PlacementClear(panel.transform.position, panel.transform.rotation))
             {
                 ReleaseRecovered = true;
                 if (hasClearPose) panel.RestorePose(lastClearPosition, lastClearRotation);
                 panel.EnsureClear();
             }
+            else if (released && moved && panel.panelId == "reference")
+                panel.view.SaveReaderTaskPose(panel.transform.position, panel.transform.rotation);
             panel.view.controller?.Log("PANEL_DRAG_METRICS", panel.panelId, ReleaseRecovered ? "RecoveredClearance" : "Clear", after: new
             {
                 move_samples = MoveSamples, rejected_samples = RejectedSamples, move_ms = MoveMilliseconds, max_move_ms = MaxMoveMilliseconds,

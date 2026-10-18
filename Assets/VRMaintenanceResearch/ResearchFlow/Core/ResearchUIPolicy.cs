@@ -15,9 +15,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Earlier behaviour (free panel drag + drag lesson). Kept only for technical regression, never a participant choice.
         // Sessions recorded before the policy field existed are reported under this id.
         public const string LegacyMovable = "S1_BASELINE_MOVABLE_PANELS";
+        // User decision 17 Oct 2026: DEV/technical sessions restore participant-initiated panel drag and recenter
+        // with station-anchored defaults and no compulsory drag training lesson. Study sessions remain FixedDemo until approved.
+        public const string DevMovable = "S1_DEV_MOVABLE_UI_20261017";
 
         public const string ProtocolBaseline = "S1_LOCKED_TH_BASELINE";
         public const string ProtocolFixedDemo = "S1_LOCKED_TH_BASELINE+ADVISOR_UI_AMENDMENT_20261014";
+        public const string ProtocolDevMovable = "S1_LOCKED_TH_BASELINE+DEV_MOVABLE_UI_20261017";
         public const string TrainingBaseline = "S1_TRAINING_BASELINE_DRAG_LESSON";
         // 20261015: practice-station order builds toward 'ready' without repeated insert/latch/tighten (no session used 20261014).
         public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261015";
@@ -29,14 +33,14 @@ namespace VRMaintenanceResearch.ResearchFlow
         /// <summary>Policy of the open session (or the default before a session). Set only by the session controller.</summary>
         public static string Active { get; private set; } = Default;
 
-        public static bool PanelDragAllowed => Active == LegacyMovable;
-        public static bool ParticipantRecenterAllowed => Active == LegacyMovable;
-        public static bool ReaderPoseFixedPerTask => Active == FixedDemo;
+        public static bool PanelDragAllowed => Active == LegacyMovable || Active == DevMovable;
+        public static bool ParticipantRecenterAllowed => Active == LegacyMovable || Active == DevMovable;
+        public static bool ReaderPoseFixedPerTask => Active == FixedDemo || Active == DevMovable;
         public static bool TrainingIncludesPanelDrag => Active == LegacyMovable;
         /// <summary>Working slates use station anchors (ResearchStationAnchors) before any head-relative fallback.</summary>
-        public static bool StationAnchoredPanels => Active == FixedDemo;
+        public static bool StationAnchoredPanels => Active == FixedDemo || Active == DevMovable;
 
-        public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable;
+        public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable || policy == DevMovable;
 
         // User request 16 Oct 2026: the fixed Reader (~1.8 m, PDF ~19 deg wide) is hard to read. One control toggles between the
         // station anchor and a nearer validated pose; no free drag. Technical sessions only until the researcher approves it
@@ -51,15 +55,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         /// </summary>
         public static string ForRecord(string recordedPolicy) => string.IsNullOrEmpty(recordedPolicy) ? LegacyMovable : recordedPolicy;
 
-        public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : ProtocolBaseline;
-        public static string TrainingFor(string policy) => policy == FixedDemo ? TrainingFixedDemo : TrainingBaseline;
+        public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : policy == DevMovable ? ProtocolDevMovable : ProtocolBaseline;
+        public static string TrainingFor(string policy) => policy == FixedDemo || policy == DevMovable ? TrainingFixedDemo : TrainingBaseline;
 
-        /// <summary>Accepts the ids above plus short operator aliases ("fixed", "legacy_movable").</summary>
+        /// <summary>Accepts the ids above plus short operator aliases ("fixed", "dev_movable", "legacy_movable").</summary>
         public static string Parse(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return Default;
             string v = value.Trim();
             if (string.Equals(v, "fixed", StringComparison.OrdinalIgnoreCase)) return FixedDemo;
+            if (string.Equals(v, "dev_movable", StringComparison.OrdinalIgnoreCase)) return DevMovable;
             if (string.Equals(v, "legacy_movable", StringComparison.OrdinalIgnoreCase)) return LegacyMovable;
             if (IsKnown(v)) return v;
             throw new ArgumentException("Unknown UI policy: " + value);

@@ -23,12 +23,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var content = ((GameObject)typeof(ResearchFlowView).GetField("mainContent", flags).GetValue(ownedFixture)).GetComponent<RectTransform>();
             ownedFixture.Refresh(); Canvas.ForceUpdateCanvases();
             var panelBounds = Bounds(content, ownedFixture.mainPanel.GetComponent<RectTransform>());
-            var measures = new List<object>(); var failures = new List<string>();
+            var measures = new List<object>(); var failures = new List<string>(); var inked = new List<(TMP_Text text, Rect box)>();
             foreach (var text in content.GetComponentsInChildren<TMP_Text>(false))
             {
                 if (string.IsNullOrWhiteSpace(text.text)) continue;
                 text.ForceMeshUpdate(true, true);
                 var glyphs = text.textInfo.characterInfo.Take(text.textInfo.characterCount).Where(c => c.isVisible).ToArray();
+                if (glyphs.Length > 0) inked.Add((text, GlyphBounds(content, text, glyphs)));
                 bool glyphFit = glyphs.Length > 0 && glyphs.All(c => new[] {c.bottomLeft,c.topLeft,c.topRight,c.bottomRight}.All(p => Inside(text.rectTransform.rect,p)));
                 bool fit = glyphFit && !text.isTextOverflowing && !text.enableAutoSizing && text.preferredHeight <= text.rectTransform.rect.height + 1;
                 if (!fit) failures.Add(text.name + ": glyph overflow/autosizing");
@@ -38,6 +39,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 if (!labelContained) failures.Add(button.name + ": label rect outside button");
                 measures.Add(new {name=text.name,text=text.text,text.fontSize,text.preferredHeight,text.isTextOverflowing,glyphFit,rect=RectData(text.rectTransform.rect), button=button?button.name:null,buttonRect=button?RectData(((RectTransform)button.transform).rect):null,labelInButton=button?RectData(labelBounds):null,labelContained, minimumPointSize=glyphs.Length==0?0:glyphs.Min(c=>c.pointSize)});
             }
+            // Each label can fit its own rect while two rects still collide (17 Oct JA readiness pills), so compare inked glyph boxes pairwise.
+            for (int i = 0; i < inked.Count; i++)
+                for (int j = i + 1; j < inked.Count; j++)
+                    if (Overlaps(inked[i].box, inked[j].box))
+                        failures.Add(Path2(inked[i].text) + " / " + Path2(inked[j].text) + ": text overlaps text");
             var body = (TMP_Text)typeof(ResearchFlowView).GetField("body", flags).GetValue(ownedFixture);
             var title = (TMP_Text)typeof(ResearchFlowView).GetField("title", flags).GetValue(ownedFixture);
             foreach (var button in content.GetComponentsInChildren<Button>(false))
@@ -51,6 +57,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,json);return json;
         }
         static object RectData(Rect r)=>new {x=r.x,y=r.y,width=r.width,height=r.height};
+        static string Path2(TMP_Text t)=>(t.transform.parent?t.transform.parent.name+"/":"")+t.name;
+        static Rect GlyphBounds(RectTransform root,TMP_Text text,TMP_CharacterInfo[] glyphs)
+        {var p=glyphs.SelectMany(c=>new[]{c.bottomLeft,c.topRight}).Select(v=>root.InverseTransformPoint(text.transform.TransformPoint(v))).ToArray();return Rect.MinMaxRect(p.Min(x=>x.x),p.Min(x=>x.y),p.Max(x=>x.x),p.Max(x=>x.y));}
         static bool Inside(Rect r,Vector3 p)=>p.x>=r.xMin-1&&p.x<=r.xMax+1&&p.y>=r.yMin-1&&p.y<=r.yMax+1;
         static Rect Bounds(RectTransform root,RectTransform target)
         {var p=new Vector3[4];target.GetWorldCorners(p);for(int i=0;i<4;i++)p[i]=root.InverseTransformPoint(p[i]);return Rect.MinMaxRect(p.Min(x=>x.x),p.Min(x=>x.y),p.Max(x=>x.x),p.Max(x=>x.y));}

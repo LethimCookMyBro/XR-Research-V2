@@ -445,7 +445,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             float near = Vector3.Distance(head.position, panel.position);
             Step("reader distance " + far.ToString("F2") + " -> " + near.ToString("F2") + " m");
             // The Editor preview camera is 60 deg mono, so only 1.3 m fits there; Quest's wider per-eye view admits 1.0-1.15 m.
-            Require(near < far - .05f && near >= .95f, "Reader moved nearer and stayed at least 1 m away: " + far + " -> " + near);
+            // DEV movable policy (17 Oct) adds 0.80/0.95 m presets (ResearchPanelMotion.CloserDistances); the floor is the nearest preset.
+            Require(near < far - .05f && near >= .80f - .005f, "Reader moved nearer and stayed at or beyond the 0.80 m nearest preset: " + far + " -> " + near);
             yield return RayClick("reference_distance"); yield return Wait(.3);
             Require(Vector3.Distance(panel.position, anchored) < .005f, "Second press returned the Reader to its anchor");
         }

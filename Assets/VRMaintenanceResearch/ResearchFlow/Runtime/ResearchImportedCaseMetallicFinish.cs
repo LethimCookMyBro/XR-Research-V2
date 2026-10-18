@@ -46,6 +46,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var roots = scene.GetRootGameObjects().Where(g => g.name == "Environment_V2").ToArray();
                 if (roots.Length != 1) throw new InvalidOperationException("One canonical Environment_V2 required.");
                 var renderer = roots[0].GetComponentsInChildren<MeshRenderer>(true).Single(r => PathOf(r.transform) == TargetPath);
+                // The S1 Task A parts replaced this prop and it is switched off (ResearchS1SceneIntegration); nothing to finish.
+                if (!renderer.gameObject.activeInHierarchy) { Debug.Log("ENV_CASE_FINISH skipped: Case-front prop is switched off."); return; }
                 var mask = Resources.Load<Texture2D>(ResourceKey); // Shared resource asset; this policy never destroys or changes it.
                 owner = Acquire(scene.handle, renderer, mask, Application.platform == RuntimePlatform.Android);
                 Debug.Log("ENV_CASE_FINISH one Case-front slot uses owned SP_Steel copy and retained packed-map keywords.");

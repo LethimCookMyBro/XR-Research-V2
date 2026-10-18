@@ -56,8 +56,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     check(view.LocalCommand("technical_details","SimulatedController"),lang+" details collapse route accepted");
                     check(!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" details collapsed");
                     Set(right,"TrackingValid",false);view.Refresh();
-                    check(!controller.TechnicalReady&&Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" tracking failure autoexpand");
-                    check(!view.LocalCommand("technical_details","SimulatedController"),lang+" cannot hide failure");stage("setup_tracking_failure");
+                    // 17 Oct: one status line names the missing item; the rows stay on the details page, which still opens on failure.
+                    check(!controller.TechnicalReady&&!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf&&Get<TMPro.TMP_Text>(view,"setupStatus").text.Contains(ResearchStrings.Get("technical.right",lang.ToString())),lang+" tracking failure named in the status line");
+                    check(view.LocalCommand("technical_details","SimulatedController")&&Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" details open during failure");stage("setup_tracking_failure");
+                    check(view.LocalCommand("technical_details","SimulatedController"),lang+" details close during failure");
                     Set(right,"TrackingValid",true);view.Refresh();
                     check(controller.TechnicalReady&&!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" recovery compact");stage("setup_recovered");
                     Set(controller,"TechnicalSelfSetup",false);

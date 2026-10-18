@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -60,9 +60,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
         }
         public ResearchFloorPolicy FloorPolicy { get; private set; }
+        bool IsolatedScenarioSimulated => TechnicalBuild && TryGetComponent<ResearchTechnicalScenario>(out var scenario) && scenario.Owns(this) && scenario.SimulatedPresence;
         // Inactive Editor callback fixtures have no Awake/native XR; standalone always requires the real policy.
         public bool FloorReady => FloorPolicy ? FloorPolicy.Ready : IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed;
-        public bool DeviceReady => FloorReady && guards.Length == 2 && guards.All(g => g && g.TrackingValid);
+        public bool DeviceReady => FloorReady && ((guards.Length == 2 && guards.All(g => g && g.TrackingValid)) || IsolatedScenarioSimulated);
         public bool LoggerReady => Registry != null && (Logger == null || Logger.State == HandsLabLogState.Active);
         // One reason string per researcher control so every operator surface shows the same why-not, mirroring StartSession/ResearcherResume gates.
         public string ResearcherStartBlocker(ParticipantRecord record) =>
@@ -102,7 +103,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var hmd = InputDevices.GetDeviceAtXRNode(XRNode.Head);
                 bool tracked = hmd.isValid && hmd.TryGetFeatureValue(CommonUsages.isTracked, out bool isTracked) && isTracked;
                 bool absent = hmd.isValid && hmd.TryGetFeatureValue(CommonUsages.userPresence, out bool present) && !present;
-                return (tracked && !absent) || ResearchFloorPolicy.EditorFixtureAllowed;
+                return (tracked && !absent) || ResearchFloorPolicy.EditorFixtureAllowed || IsolatedScenarioSimulated;
             }
         }
         public bool GuardTracked(Oculus.Interaction.Input.Handedness side) => guards.Any(g => g && g.side == side && g.TrackingValid);
@@ -392,6 +393,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     || taskPorts.Select(t => t.taskId).Distinct().Count() != 2))
                     throw new InvalidOperationException("Study requires tracked device, bilingual review and two approved task adapters. Use DEV/TEST for the integration demo.");
                 Record = Registry.StartOrResume(id, language, input, order, layoutOverride: layout, uiPolicy: uiPolicy);
+                if (TechnicalBuild && Record.group == ParticipantGroup.Dev) TechnicalSelfTest = true;
                 // A resumed record keeps the policy it started with (absent = earlier movable-panel build), so training facts,
                 // drag availability and analysis grouping never mix policies within one session.
                 ResearchUIPolicy.Apply(ResearchUIPolicy.ForRecord(Record.ui_policy));
@@ -443,8 +445,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!TechnicalSelfSetup || Record != null || Transitioning || !string.IsNullOrEmpty(Error)) return false;
             switch (command)
             {
-                case "technical_language": SetupLanguage = SetupLanguage == ParticipantLanguage.Thai ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai; break;
-                case "technical_order": SetupOrder = SetupOrder == TaskOrder.AB ? TaskOrder.BA : TaskOrder.AB; break;
+                case "technical_language.Thai": SetupLanguage = ParticipantLanguage.Thai; break;
+                case "technical_language.Japanese": SetupLanguage = ParticipantLanguage.Japanese; break;
+                case "technical_order.AB": SetupOrder = TaskOrder.AB; break;
+                case "technical_order.BA": SetupOrder = TaskOrder.BA; break;
+                case "technical_run_new": SelectTechnicalRun(false); break;
+                case "technical_run_resume": if (!SelectTechnicalRun(true)) return false; break;
                 case "technical_start": return StartTechnicalSelfTest(inputSource);
                 default: return false;
             }
@@ -455,37 +461,66 @@ namespace VRMaintenanceResearch.ResearchFlow
         // A DEV record that never started (e.g. a Start that failed readiness) is reused, so retries do not pile up empty IDs.
         ParticipantRecord UnstartedDevRecord() => Registry.List(ParticipantGroup.Dev).LastOrDefault(p => p.session_state == RegistryState.Available);
 
-        (string id, string layout) technicalPreview;
-        TaskOrder technicalPreviewOrder;
-        public (string id, string layout) TechnicalNextRun()
+        // An open task cannot be restored (StartSession refuses it), so only tutorial/checkpoint saves are offered.
+        static bool ResumableDevRecord(ParticipantRecord p) => p != null && p.session_state == RegistryState.InProgress
+            && p.flow_state != ResearchFlowState.Task1Active && p.flow_state != ResearchFlowState.Task2Active;
+
+        // The headset card offers exactly two choices: a fresh run and the newest safe saved run. Older saves stay in advanced setup.
+        bool technicalResumeSelected;
+        public bool TechnicalResumeSelected => technicalResumeSelected && TechnicalNextRun().resume != null;
+
+        bool SelectTechnicalRun(bool resume)
         {
-            if (Registry == null) return ("-", "-");
+            if (resume && TechnicalNextRun().resume == null) return false;
+            technicalResumeSelected = resume;
+            return true;
+        }
+
+        (string id, string layout, ParticipantRecord resume) technicalPreview;
+        TaskOrder technicalPreviewOrder;
+        public (string id, string layout, ParticipantRecord resume) TechnicalNextRun()
+        {
+            if (Registry == null) return ("-", "-", null);
             if (technicalPreview.id == null || technicalPreviewOrder != SetupOrder)
             {
                 try
                 {
                     string id = UnstartedDevRecord()?.participant_id ?? Registry.PeekNextId(ParticipantGroup.Dev);
-                    technicalPreview = (id, Registry.PreviewAssignment(ParticipantGroup.Dev, SetupOrder).layout);
+                    var resume = Registry.List(ParticipantGroup.Dev).LastOrDefault(ResumableDevRecord);
+                    technicalPreview = (id, Registry.PreviewAssignment(ParticipantGroup.Dev, SetupOrder).layout, resume);
                     technicalPreviewOrder = SetupOrder;
                 }
-                catch (Exception ex) { return ("-", ex.GetType().Name); }
+                catch (Exception ex) { return ("-", ex.GetType().Name, null); }
             }
             return technicalPreview;
         }
 
-        // Next DEV id + the existing StartSession path. Readiness is re-checked here, not only in the UI.
+        // Next DEV id (or the selected saved run) + the existing StartSession path. Readiness is re-checked here, not only in the UI.
         public bool StartTechnicalSelfTest(string inputSource = "None")
         {
             if (!TechnicalReady) return false;
             string id;
+            var language = SetupLanguage; var input = SetupInput; var order = SetupOrder;
+            bool resume = TechnicalResumeSelected;
+            string resumeId = TechnicalNextRun().resume?.participant_id;
+            technicalResumeSelected = false;
             technicalPreview = default;
-            try { id = (UnstartedDevRecord() ?? Registry.CreateNext(ParticipantGroup.Dev)).participant_id; }
+            try
+            {
+                var saved = resume ? Registry.List(ParticipantGroup.Dev).FirstOrDefault(p => p.participant_id == resumeId && ResumableDevRecord(p)) : null;
+                // Ended elsewhere (ADB/console) since the card was drawn: redraw from the registry instead of a sticky Error that
+                // would disable every setup control until restart.
+                if (resume && saved == null) { view?.Refresh(); return false; }
+                // A resumed record keeps its own configuration; the card's language/order apply only to a fresh run.
+                if (saved != null) { id = saved.participant_id; language = saved.language; input = saved.input_mode; order = saved.task_order; }
+                else id = (UnstartedDevRecord() ?? Registry.CreateNext(ParticipantGroup.Dev)).participant_id;
+            }
             catch (Exception ex) { Error = "Registry unavailable: " + ex.Message; view?.Refresh(); return false; }
-            StartSession(id, SetupLanguage, SetupInput, SetupOrder);
+            StartSession(id, language, input, order);
             if (Flow == null || !string.IsNullOrEmpty(Error)) return false;
             TechnicalSelfTest = true;
-            Log("TECHNICAL_SELF_START", "session", "Started", after: new { participant_id = id, language = SetupLanguage.ToString(),
-                input_mode = SetupInput.ToString(), task_order = SetupOrder.ToString(), source = "HeadsetTechnicalSetup" }, source: "Tester", inputSource: inputSource);
+            Log("TECHNICAL_SELF_START", "session", resume ? "Resumed" : "Started", after: new { participant_id = id, language = language.ToString(),
+                input_mode = input.ToString(), task_order = order.ToString(), source = "HeadsetTechnicalSetup" }, source: "Tester", inputSource: inputSource);
             view?.Refresh();
             return string.IsNullOrEmpty(Error);
         }
@@ -1111,7 +1146,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool TutorialInputValid => !RenderComparisonRunning && Flow?.IsTutorial == true && Flow.CanInteract && !Transitioning
             && FloorReady && HeadsetReady && string.IsNullOrEmpty(Error) && Logger?.State == HandsLabLogState.Active
             && (Record == null || Record.session_state == RegistryState.InProgress)
-            && (guards.Length == 0 ? IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed : guards.All(g => g && g.TrackingValid
+            && (guards.Length == 0 ? IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed : IsolatedScenarioSimulated || guards.All(g => g && g.TrackingValid
                 && g.InteractionsAllowed && !g.WaitingForNeutral && !g.Suspended && !g.SystemCancelling));
 
         public long TutorialActionEpoch(string fact) => TutorialInputValid && tutorialInstruction?.fact == fact ? tutorialInstruction.epoch : 0;
@@ -1205,7 +1240,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         bool TutorialControlNeutral(string fact)
         {
-            if (fact == "move" || fact == "rotate" || fact == "release" || fact == "roomscale") return true;
+            if (IsolatedScenarioSimulated || fact == "move" || fact == "rotate" || fact == "release" || fact == "roomscale") return true;
             foreach (var guard in guards)
             {
                 if (guard.Mode == HandsLabInputGuard.InputMode.Controller && guard.controllerReference is Oculus.Interaction.Input.IController input)
@@ -1683,6 +1718,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var guard in guards) if (guard) guard.StateChanged -= TutorialInputChanged;
             GetComponent<ResearchMovementSampler>()?.FlushAndStop("runtime_stopped");
             if (Logger != null) { Logger.WriteFailed -= LoggerFailed; Logger.Dispose(); }
+            if (Application.isEditor && Record != null) ResearchUIPolicy.Apply(ResearchUIPolicy.Default);
             // Let an in-flight snapshot reach its queue job; the frozen prefixes do not depend on the closed writer.
             if (pendingExports.Count > 0 && !WaitForExports(15000)) Debug.LogError("[ResearchExport] Snapshot still running at shutdown; the run stays on device for a saved-run export.");
         }

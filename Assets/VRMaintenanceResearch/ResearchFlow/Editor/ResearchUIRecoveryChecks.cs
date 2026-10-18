@@ -310,7 +310,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 ((RectTransform)panel.transform).sizeDelta = new Vector2(260, 76);
                 var fits = typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic);
                 var position = head.transform.position + Vector3.forward;
-                bool Fits(float yaw) => (bool)fits.Invoke(panel, new object[] { position, Quaternion.Euler(0, yaw, 0) });
+                bool Fits(float yaw) => (bool)fits.Invoke(panel, new object[] { position, Quaternion.Euler(0, yaw, 0), 1f });
                 if (!Fits(0)) throw new InvalidOperationException("Readable front collapsed control rejected.");
                 if (Fits(180)) throw new InvalidOperationException("Rear-face collapsed control accepted (mirrored text path).");
                 if (Fits(90)) throw new InvalidOperationException("Edge-on collapsed control accepted (unreadable ray path).");
@@ -422,14 +422,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 bool mono = panel.IsReadableFromHead; // Use the intended candidate, not the construction pose.
                 panel.transform.SetPositionAndRotation(position, Quaternion.identity); mono = panel.IsReadableFromHead;
                 var method = typeof(ResearchPanelMotion).GetMethod("FitsViewEye", BindingFlags.Instance | BindingFlags.NonPublic);
-                bool? left = method == null ? (bool?)null : (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Left });
-                bool? right = method == null ? (bool?)null : (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Right });
+                bool? left = method == null ? (bool?)null : (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Left, 1f });
+                bool? right = method == null ? (bool?)null : (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Right, 1f });
                 File.WriteAllText(path, JsonConvert.SerializeObject(new { mono, left, right, synthetic_eye_matrices = true, hardware_verified = false }, Formatting.Indented));
                 if (!mono || left != false || right != true) throw new InvalidOperationException("Mono fit does not establish both-eye fit.");
                 camera.SetStereoProjectionMatrix(Camera.StereoscopicEye.Left, wide);
                 camera.SetStereoProjectionMatrix(Camera.StereoscopicEye.Right, narrow);
-                if (!(bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Left }) ||
-                    (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Right }))
+                if (!(bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Left, 1f }) ||
+                    (bool)method.Invoke(panel, new object[] { position, Quaternion.identity, camera, Camera.MonoOrStereoscopicEye.Right, 1f }))
                     throw new InvalidOperationException("Right-only clipping was accepted.");
                 return "STEREO_BOUNDS_PASS real Camera API with synthetic asymmetric matrices; native branch requires next authorized APK";
             }
@@ -655,7 +655,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 text.text = string.Join("\n", Enumerable.Repeat("資料の現在のページを表示します。", 50));
                 Canvas.ForceUpdateCanvases(); refresh();
                 var longSize = rect.sizeDelta;
-                bool oldPoseFits = (bool)typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(panel, new object[] { originalPosition, Quaternion.identity });
+                bool oldPoseFits = (bool)typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(panel, new object[] { originalPosition, Quaternion.identity, 1f });
                 bool revalidated = panel.IsReadableFromHead && !panel.PlacementBlocked;
                 var result = new { short_size = shortSize.ToString(), long_size = longSize.ToString(), original_position = originalPosition.ToString(),
                     corrected_position = panel.transform.position.ToString(), old_pose_fits_new_bounds = oldPoseFits, revalidated,

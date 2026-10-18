@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -143,8 +143,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public ParticipantRecord StartOrResume(string participantId, ParticipantLanguage language, ExperimentInputMode inputMode,
             TaskOrder? orderOverride = null, bool technicalOverride = false, string layoutOverride = null, string uiPolicy = null)
         {
-            uiPolicy = uiPolicy ?? ResearchUIPolicy.Default;
-            if (!ResearchUIPolicy.IsKnown(uiPolicy)) throw new ArgumentException("Invalid session settings");
+            if (uiPolicy != null && !ResearchUIPolicy.IsKnown(uiPolicy)) throw new ArgumentException("Invalid session settings");
             if (!Enum.IsDefined(typeof(ParticipantLanguage), language) || !Enum.IsDefined(typeof(ExperimentInputMode), inputMode)
                 || (orderOverride.HasValue && !Enum.IsDefined(typeof(TaskOrder), orderOverride.Value))
                 || (layoutOverride != null && layoutOverride != "P" && layoutOverride != "Q")) throw new ArgumentException("Invalid session settings");
@@ -152,6 +151,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 var doc = Read(); var record = Find(doc, participantId);
                 bool technical = IsTechnical(record.group);
+                string resolvedPolicy = uiPolicy ?? (record.group == ParticipantGroup.Dev ? ResearchUIPolicy.DevMovable : ResearchUIPolicy.Default);
+                if (!ResearchUIPolicy.IsKnown(resolvedPolicy)) throw new ArgumentException("Invalid session settings");
                 var effectiveInput = record.session_state == RegistryState.InProgress ? record.input_mode : inputMode;
                 if (!technical && effectiveInput != ExperimentInputMode.Controller)
                     throw new InvalidOperationException("Study sessions require Controller input; incompatible saved sessions remain unchanged.");
@@ -159,7 +160,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (record.session_state != RegistryState.Available) throw new InvalidOperationException("Participant ID is locked: " + participantId);
                 var defaultLanguage = record.group == ParticipantGroup.Japanese ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai;
                 if (!technical && language != defaultLanguage && !technicalOverride) throw new InvalidOperationException("Study language override requires explicit technical override");
-                if (!technical && uiPolicy != ResearchUIPolicy.Default) throw new InvalidOperationException("Study sessions use the default participant UI policy");
+                if (!technical && resolvedPolicy != ResearchUIPolicy.Default) throw new InvalidOperationException("Study sessions use the default participant UI policy");
                 (record.task_order, record.task_a_layout) = Balance(doc, record.group, orderOverride, layoutOverride);
                 record.task_order_overridden = orderOverride.HasValue;
                 record.task_a_layout_overridden = layoutOverride != null;
@@ -169,8 +170,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 record.session_id = Guid.NewGuid().ToString("N"); record.run_id = Guid.NewGuid().ToString("N");
                 record.started_at = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture);
                 record.session_state = RegistryState.InProgress; record.flow_state = ResearchFlowState.TutorialWelcome;
-                record.ui_policy = uiPolicy; record.protocol_version = ResearchUIPolicy.ProtocolFor(uiPolicy);
-                record.training_version = ResearchUIPolicy.TrainingFor(uiPolicy); record.layout_version = ResearchUIPolicy.LayoutVersion;
+                record.ui_policy = resolvedPolicy; record.protocol_version = ResearchUIPolicy.ProtocolFor(resolvedPolicy);
+                record.training_version = ResearchUIPolicy.TrainingFor(resolvedPolicy); record.layout_version = ResearchUIPolicy.LayoutVersion;
                 record.revision++; Save(doc); return record;
             }
         }
