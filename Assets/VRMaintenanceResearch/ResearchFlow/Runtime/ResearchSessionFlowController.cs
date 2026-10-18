@@ -276,6 +276,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (trainingObjects.Any(item => item && item.IsHeld)) return true;
                 if (placementHeldObject && placementHeldObject.gameObject.activeInHierarchy && placementHeldObject.GrabPoints?.Count > 0) return true;
                 placementHeldObject = null;
+                if (!gameObject.scene.IsValid()) return false; // isolated Editor fixtures (HideAndDontSave roots) have no scene
                 foreach (var root in gameObject.scene.GetRootGameObjects())
                 {
                     root.GetComponentsInChildren(false, placementObjects);

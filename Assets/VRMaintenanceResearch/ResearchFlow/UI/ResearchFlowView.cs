@@ -2000,8 +2000,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!TutorialReader) return;
             referenceTutorialProgress.rectTransform.anchoredPosition = new Vector2(128, 277);
             referenceTutorialProgress.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialProgress.fontSize = 24;
-            referenceTutorialCue.rectTransform.anchoredPosition = new Vector2(128, 224);
-            referenceTutorialCue.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialCue.fontSize = 25;
+            // Bottom edge stays just above the viewer; a two-line cue grows upward beside the right-aligned progress label.
+            referenceTutorialCue.fontSize = 25;
+            float cueHeight = Mathf.Max(52, referenceTutorialCue.GetPreferredValues(referenceTutorialCue.text, 820, 1500).y + 8);
+            referenceTutorialCue.rectTransform.sizeDelta = new Vector2(820, cueHeight);
+            referenceTutorialCue.rectTransform.anchoredPosition = new Vector2(128, 198 + cueHeight / 2);
             tutorialDemo.gameObject.SetActive(false);
             tutorialSuccess.SetParent(referenceExpanded.transform, false); tutorialSuccess.Find("Chip").gameObject.SetActive(false);
             // Capture C03: the former (-284,-354) 512x52 slot overlapped the video Play control and time label (viewer spans x>=-281,

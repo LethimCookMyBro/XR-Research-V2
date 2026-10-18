@@ -375,15 +375,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     {
                         head.transform.SetPositionAndRotation(new Vector3(100, 1.65f, 100), Quaternion.identity);
                         Set("Record", new ParticipantRecord { participant_id = "DEV_GROWTH", test_data = true, language = language, input_mode = ExperimentInputMode.Controller });
-                        Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3)); view.Refresh();
-                        view.mainPanel.transform.SetPositionAndRotation(head.transform.position + new Vector3(.2f, -.2f, 1), Quaternion.identity);
+                        Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 0)); view.Refresh(); // select -> grab step grows the same-state slate (668 -> 766 px, 18 Oct)
+                        view.mainPanel.transform.SetPositionAndRotation(head.transform.position + new Vector3(.2f, -.2f, 1.2f), Quaternion.identity);
                         float beforeHeight = ((RectTransform)view.mainPanel.transform).rect.height;
                         if (!view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Smaller authored cue fixture must fit.");
                         var original = view.mainPanel.transform.position;
                         var handle = view.mainPanel.GetComponentInChildren<ResearchDragHandle>(true);
                         var dragging = typeof(ResearchDragHandle).GetField("dragging", BindingFlags.Instance | BindingFlags.NonPublic);
                         dragging.SetValue(handle, held);
-                        Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 4)); view.Refresh();
+                        Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 1)); view.Refresh();
                         float afterHeight = ((RectTransform)view.mainPanel.transform).rect.height;
                         bool deferred = !held || view.mainPanel.transform.position == original;
                         dragging.SetValue(handle, false);
@@ -504,6 +504,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 void Set(string property, object value) => typeof(ResearchSessionFlowController).GetProperty(property).GetSetMethod(true).Invoke(fixture, new[] { value });
                 Set("Record", new ParticipantRecord { participant_id = "DEV_VISIBILITY_FACE", test_data = true, input_mode = ExperimentInputMode.Controller });
                 Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5)); Set("ReferenceOpen", true); Set("ReferenceSection", "user_manual");
+                // Task content is offered only once the task clock runs (S1 timing), so the active-task fixture starts it.
+                ((ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture)).Start(0);
                 view.transform.SetParent(null, false); ui.SetActive(true); view.enabled = false;
                 var head = new GameObject("SyntheticVisibilityHead", typeof(Camera)); head.transform.SetParent(view.transform);
                 head.transform.position = new Vector3(100, 1.65f, 100); var camera = head.GetComponent<Camera>(); camera.enabled = false; camera.fieldOfView = 90; camera.aspect = 16f / 9;
@@ -535,11 +537,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 head.transform.position = new Vector3(100, 1.65f, 100); var camera = head.GetComponent<Camera>(); camera.enabled = false; camera.fieldOfView = 90; camera.aspect = 16f / 9;
                 view.Head = head.transform; view.Refresh(); view.mainPanel.Recenter(false, false);
                 var group = view.mainPanel.GetComponent<CanvasGroup>(); group.alpha = 1;
-                if (!view.TutorialActionReady(fixture.TutorialFact)) throw new InvalidOperationException("Tutorial visibility fixture lacks its front visible prompt; incidental failure.");
+                // TutorialPromptPresented is the gate the controller uses before it arms credit (ResearchSessionFlowController).
+                if (!view.TutorialPromptPresented(fixture.TutorialFact)) throw new InvalidOperationException("Tutorial visibility fixture lacks its front visible prompt; incidental failure.");
                 group.alpha = 0;
-                if (view.TutorialActionReady(fixture.TutorialFact)) throw new InvalidOperationException("Alpha-hidden Tutorial prompt remained eligible for action credit.");
+                if (view.TutorialPromptPresented(fixture.TutorialFact)) throw new InvalidOperationException("Alpha-hidden Tutorial prompt remained eligible for action credit.");
                 group.alpha = 1; view.mainPanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
-                if (view.TutorialActionReady(fixture.TutorialFact)) throw new InvalidOperationException("Rear-face Tutorial prompt remained eligible before concealment.");
+                if (view.TutorialPromptPresented(fixture.TutorialFact)) throw new InvalidOperationException("Rear-face Tutorial prompt remained eligible before concealment.");
                 return "TUTORIAL_VISIBILITY_PASS alpha-hidden/rear prompt ineligible; synthetic query only";
             }
             finally { if (ui) UnityEngine.Object.DestroyImmediate(ui); UnityEngine.Object.DestroyImmediate(root); }
@@ -598,10 +601,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 {
                                     var reader = view.referencePanel.transform;
                                     var cue = RectTransformUtility.CalculateRelativeRectTransformBounds(reader, text.transform);
+                                    // Format tabs form a left sidebar (design_rule 5.2), so the cue must clear each tab by SpaceL in some direction.
                                     foreach (var tab in reader.GetComponentsInChildren<ResearchUIAction>(false).Where(action => action.command.StartsWith("reference_tab.")))
-                                        separated &= cue.min.y - RectTransformUtility.CalculateRelativeRectTransformBounds(reader, tab.transform).max.y >= ResearchUITheme.SpaceL - 1;
+                                    {
+                                        var t = RectTransformUtility.CalculateRelativeRectTransformBounds(reader, tab.transform);
+                                        separated &= Mathf.Max(Mathf.Max(cue.min.y - t.max.y, t.min.y - cue.max.y), Mathf.Max(cue.min.x - t.max.x, t.min.x - cue.max.x)) >= ResearchUITheme.SpaceL - 1;
+                                    }
+                                    // The demo lives on the main slate and is hidden while the integrated Reader holds the cue.
                                     var demo = reader.Find("Expanded/TutorialDemo");
-                                    separated &= cue.min.x - RectTransformUtility.CalculateRelativeRectTransformBounds(reader, demo).max.x >= ResearchUITheme.SpaceL - 1;
+                                    if (demo && demo.gameObject.activeInHierarchy)
+                                        separated &= cue.min.x - RectTransformUtility.CalculateRelativeRectTransformBounds(reader, demo).max.x >= ResearchUITheme.SpaceL - 1;
                                 }
                                 string name = language + "/" + mode + "/" + facts[step][index];
                                 observations.Add(new { name, fact = fixture.TutorialFact, instruction = fixture.TutorialInstructionKey, text = text.text,
@@ -636,60 +645,30 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 void Set(string property, object value) => typeof(ResearchSessionFlowController).GetProperty(property).GetSetMethod(true).Invoke(fixture, new[] { value });
                 Set("Record", new ParticipantRecord { participant_id = "DEV_REFERENCE_RESIZE", test_data = true, language = ParticipantLanguage.Japanese, input_mode = ExperimentInputMode.Controller });
                 Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3));
-                // Exercise the paged text reader; the Tutorial manual is a compact controller legend.
-                Set("ReferenceOpen", true); Set("ReferenceSection", "step_by_step");
-                var credited = (HashSet<string>)typeof(ResearchSessionFlowController).GetField("tutorialEvidence", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture);
-                credited.Add("reference"); credited.Add("switch");
+                // The S1 Reader is a fixed viewer (design_rule 7): switching formats must not resize or move the window,
+                // so the retired paged-text growth path is replaced by that contract.
+                Set("ReferenceOpen", true);
                 ui.transform.SetParent(null, false); ui.SetActive(true); view.enabled = false;
                 foreach (var motion in ui.GetComponentsInChildren<ResearchPanelMotion>(true)) motion.enabled = false;
-                view.Refresh();
-                var text = (TMPro.TMP_Text)typeof(ResearchFlowView).GetField("referenceBody", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(view);
-                var refresh = (Action)typeof(ResearchFlowView).GetMethod("RefreshPageControls", BindingFlags.Instance | BindingFlags.NonPublic).CreateDelegate(typeof(Action), view);
-                text.text = "資料"; text.pageToDisplay = 1; Canvas.ForceUpdateCanvases(); refresh();
                 var panel = view.referencePanel; var rect = (RectTransform)panel.transform;
-                // At this 60-degree camera pose the short reader fits the bottom margin; the taller paged reader must not.
-                var originalPosition = head.transform.position + new Vector3(.2f, -.22f, 1.1f);
-                panel.transform.SetPositionAndRotation(originalPosition, Quaternion.identity);
-                if (!panel.IsReadableFromHead) throw new InvalidOperationException("Short reader fixture must start fully readable; incidental fixture failure.");
-                var shortSize = rect.sizeDelta;
-                text.text = string.Join("\n", Enumerable.Repeat("資料の現在のページを表示します。", 50));
-                Canvas.ForceUpdateCanvases(); refresh();
-                var longSize = rect.sizeDelta;
-                bool oldPoseFits = (bool)typeof(ResearchPanelMotion).GetMethod("FitsView", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(panel, new object[] { originalPosition, Quaternion.identity, 1f });
-                bool revalidated = panel.IsReadableFromHead && !panel.PlacementBlocked;
-                var result = new { short_size = shortSize.ToString(), long_size = longSize.ToString(), original_position = originalPosition.ToString(),
-                    corrected_position = panel.transform.position.ToString(), old_pose_fits_new_bounds = oldPoseFits, revalidated,
-                    fact = fixture.TutorialFact, ready = view.TutorialActionReady("reposition"), hardware_verified = false,
-                    scope = "Actual TMP page size growth with synthetic 60-degree camera, no physical wearer or input evidence" };
-                string folder = Path.GetFullPath(evidenceFolder); Directory.CreateDirectory(folder);
-                string path = Path.Combine(folder, "reference-resize-" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".json");
-                File.WriteAllText(path, JsonConvert.SerializeObject(result, Formatting.Indented));
-                if (longSize.y <= shortSize.y || oldPoseFits) throw new InvalidOperationException("Resize fixture did not grow beyond the prior readable viewport; incidental failure; " + path);
-                if (!revalidated) throw new InvalidOperationException("Growing Reference page left the root/toolbar outside the readable viewport; " + path);
-                var resting = panel.transform.position; var rotation = panel.transform.rotation;
-                head.transform.position += Vector3.right * .02f; refresh();
-                if (Vector3.Distance(resting, panel.transform.position) > .00001f || Quaternion.Angle(rotation, panel.transform.rotation) > .0001f)
-                    throw new InvalidOperationException("Unchanged Reference layout followed ordinary head motion.");
-                head.transform.position -= Vector3.right * .02f;
-                text.text = "資料"; refresh(); panel.transform.SetPositionAndRotation(originalPosition, Quaternion.identity);
-                var handle = panel.GetComponentInChildren<ResearchDragHandle>(true);
-                var dragging = typeof(ResearchDragHandle).GetField("dragging", BindingFlags.Instance | BindingFlags.NonPublic);
-                dragging.SetValue(handle, true);
-                try
+                var sizes = new List<object>(); Vector2? first = null; Vector3 pose = default; bool fixedSize = true, still = true, readable = true;
+                foreach (var section in ResearchReferenceScheme.Active)
                 {
-                    text.text = string.Join("\n", Enumerable.Repeat("資料の現在のページを表示します。", 50)); refresh();
-                    if (Vector3.Distance(originalPosition, panel.transform.position) > .00001f)
-                        throw new InvalidOperationException("Growing Reference reoriented or moved the explicitly injected held panel.");
+                    Set("ReferenceSection", section); view.Refresh(); Canvas.ForceUpdateCanvases();
+                    if (first == null) { first = rect.sizeDelta; panel.Recenter(false, false); pose = panel.transform.position; }
+                    fixedSize &= rect.sizeDelta == first.Value;
+                    still &= Vector3.Distance(pose, panel.transform.position) < .00001f;
+                    readable &= panel.IsReadableFromHead && !panel.PlacementBlocked;
+                    sizes.Add(new { section, size = rect.sizeDelta.ToString(), position = panel.transform.position.ToString() });
                 }
-                finally { dragging.SetValue(handle, false); }
-                typeof(ResearchFlowView).GetMethod("RevalidateReferenceLayoutIfReady", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view, null);
-                if (!panel.IsReadableFromHead || panel.PlacementBlocked)
-                    throw new InvalidOperationException("Deferred Reference bounds growth was not revalidated after held-state release.");
-                var completed = Newtonsoft.Json.Linq.JObject.FromObject(result);
-                completed["passed"] = true; completed["unchanged_layout_world_stable"] = true;
-                completed["injected_held_pose_unchanged"] = true; completed["deferred_release_revalidated"] = true;
-                File.WriteAllText(path, completed.ToString(Formatting.Indented));
-                return "REFERENCE_RESIZE_PASS actual page bounds revalidated, injected hold deferred, unchanged layout world-stable; " + path;
+                var result = new { sizes, fixedSize, still, readable, hardware_verified = false,
+                    scope = "Actual S1 Reader layout per format with a synthetic 60-degree camera; no wearer or input evidence" };
+                string folder = Path.GetFullPath(evidenceFolder); Directory.CreateDirectory(folder);
+                string path = Path.Combine(folder, "reference-fixed-size-" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".json");
+                File.WriteAllText(path, JsonConvert.SerializeObject(result, Formatting.Indented));
+                if (!fixedSize || !still) throw new InvalidOperationException("Switching Reader formats resized or moved the window; " + path);
+                if (!readable) throw new InvalidOperationException("A Reader format left the window outside the readable viewport; " + path);
+                return "REFERENCE_FIXED_SIZE_PASS four formats share one window size and pose and stay readable; " + path;
             }
             finally { if (ui) UnityEngine.Object.DestroyImmediate(ui); UnityEngine.Object.DestroyImmediate(root); }
         }
@@ -764,8 +743,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 heldField.SetValue(heldHandle, true); head.transform.position += new Vector3(1, 0, 1);
                 view.OnSpatialDiscontinuity("fixture_teleport_during_injected_hold");
                 view.RefreshRecoveryUtility(); // Explicit per-frame View lifecycle because this synthetic fixture disables Update.
+                // Quest 16 Oct glance dwell (.75 s) gates the Stop strip; this synchronous fixture backdates the dwell start once.
+                var dwell = typeof(ResearchFlowView).GetField("fallbackSince", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (!float.IsNegativeInfinity((float)dwell.GetValue(view))) { dwell.SetValue(view, Time.unscaledTime - 1f); view.RefreshRecoveryUtility(); }
                 if (!view.RecoveryCanvas.gameObject.activeSelf || view.RecoveryCanvas.GetComponent<ResearchPanelMotion>().PlacementBlocked)
-                    throw new InvalidOperationException("Interrupted held slate must preserve an independent readable recovery/Pause path.");
+                    throw new InvalidOperationException("Interrupted held slate must preserve an independent readable recovery/Pause path. canStop=" + fixture.ParticipantCanStop
+                        + " state=" + fixture.Record?.session_state + " mainReadable=" + view.mainPanel.IsReadableFromHead + " mainBlocked=" + view.mainPanel.PlacementBlocked
+                        + " recoveryActive=" + view.RecoveryCanvas.gameObject.activeSelf + " dwell=" + dwell.GetValue(view));
                 if (view.mainPanel.transform.position != heldPosition || view.mainPanel.transform.rotation != heldRotation) throw new InvalidOperationException("Spatial recovery moved a held panel.");
                 Capture("InterruptedInjectedHoldUnchanged");
                 heldField.SetValue(heldHandle, false);
