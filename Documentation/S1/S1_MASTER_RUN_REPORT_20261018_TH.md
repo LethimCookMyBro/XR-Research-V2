@@ -27,13 +27,13 @@
 | P0-B3 | หน้ายืนยันจับเวลาทำให้ "ย้อนกลับ" เป็นปุ่มสีน้ำเงินหลัก | ปุ่มแรกถูกกำหนดเป็น primary เสมอ | "เริ่มจับเวลา" เป็นปุ่มหลัก "ย้อนกลับ" เป็นปุ่มรองและอยู่ที่เดิม | `03_timer_confirm_ja.jpg`, `04_timer_confirm_th.jpg` — ผ่านใน Editor |
 | P0-B4 | ข้อความพักภาษาญี่ปุ่นเหลือ 「い。」 บรรทัดเดียว และคำว่า 研究者 ถูกตัดกลางคำ | ประโยคแรกซ้ำหัวข้อ และไม่มีจุดตัดบรรทัดตามวลี | ตัดประโยคที่ซ้ำ แล้วตัดบรรทัดตรงรอยต่อวลี (ข้อความภาษาไทยไม่เปลี่ยน) | `05_pause_ja.jpg` — ผ่านใน Editor, **รอผู้ตรวจภาษา** |
 | P0-B5 | ใน Training ข้อความ "ผ่านแล้ว" อยู่ใต้ปุ่มซูม PDF (−, 100%, +) | สองส่วนใช้ช่องเดียวกันใต้แท็บ | ย้ายแถวซูมไปท้ายช่องแสดงผล ปุ่ม 100% กว้าง 88 px และไม่ห่อบรรทัด ส่วน PlayCheck ตรวจการชนของข้อความกับปุ่มทุกภาพของ Reader | `06_training_reader_feedback_vs_zoom.jpg` และ mutation: เมื่อย้ายแถวซูมกลับที่เดิม check ฟ้อง — ผ่านใน Editor |
-| P0-C1 | Training ให้เครดิต Examine เมื่อจับโมดูลขึ้นมา | รอบก่อนเพิ่มทางนี้ไว้ แต่ใน Task จะบันทึก EXAMINE จากปุ่ม Examine เท่านั้น | ให้เครดิตจากปุ่ม Examine อย่างเดียว และล็อกโมดูลไว้จนถึงขั้นใส่โมดูล | การวิ่ง Training ทั้งชุดด้วย SDK ผ่าน — ผ่านใน Editor |
+| P0-C1 | Training ให้เครดิต Examine เมื่อจับโมดูลขึ้นมา (โค้ดของรอบก่อนที่ยังไม่ commit) | ใน Task จะบันทึก EXAMINE จากปุ่ม Examine เท่านั้น | เอาทางนี้ออกก่อน commit ไฟล์ `ResearchTrainingStation.cs` จึงเท่ากับ HEAD คือให้เครดิตจากปุ่มอย่างเดียว และโมดูลล็อกจนถึงขั้นใส่โมดูลเหมือนเดิม | การวิ่ง Training ทั้งชุดด้วย SDK ผ่าน — ผ่านใน Editor |
 | P0-C2 | ปุ่ม Examine ใน Task อาจไปทับแผงแล้วถูกกดโดยไม่ตั้งใจ | ทาง fallback ข้างแผงใช้ได้ทั้ง Task และ Training | จำกัดให้ใช้ได้เฉพาะ Training | Examine placement และ stability ผ่าน |
-| P0-C3 | Reader ในโหมด DEV อาจนับว่า "เห็น" ทั้งที่อยู่ด้านหลังผู้สวม | รอบก่อนเปลี่ยนเงื่อนไขเป็นแค่ "ไม่มี recenter ค้าง" | ต้องอ่านได้จากหัวตามปกติ หรือเมื่อดึงเข้าใกล้ พื้นที่ 75% ตรงกลางต้องอยู่ในมุมมองทั้งสองตา | spatial readability ผ่าน |
+| P0-C3 | Reader ในโหมด DEV อาจนับว่า "เห็น" ทั้งที่อยู่ด้านหลังผู้สวม | รอบก่อนเปลี่ยนเงื่อนไขเป็นแค่ "ไม่มี recenter ค้าง" | ต้องอ่านได้จากหัวตามปกติ (เท่ากับ HEAD) หรือเมื่อดึงเข้าใกล้ พื้นที่ 75% ตรงกลางต้องอยู่ในมุมมองทั้งสองตา **เงื่อนไขนี้กำหนดเวลาที่บันทึก exposure ของ Reader** จึงต่างจาก HEAD เฉพาะ session DEV ส่วน Study เหมือนเดิม | spatial readability ผ่าน ยังไม่ได้ตรวจ log exposure กับ Reader ที่ดึงเข้าใกล้บนเครื่องจริง |
 | P0-C4 | กด "ทำต่อ" รอบที่ถูกปิดไปแล้ว การ์ด Setup ค้าง | ระบบตั้ง Error ไว้และไม่ล้าง | วาดการ์ดใหม่จาก registry แทนการตั้ง Error | อ่านโค้ด (reviewer) |
-| P0-E1 | เปิดวิดีโอครั้งแรกอาจทำให้ภาพกระตุก | คำนวณ SHA256 ของไฟล์ 20–31 MB บน main thread | ย้ายไปคำนวณบน `Task.Run` | Reader suites ผ่าน ส่วนผลบน Quest = PENDING |
+| P0-E1 | เปิดวิดีโอครั้งแรกอาจทำให้ภาพกระตุก (อนุมาน ยังไม่ได้วัด) | คำนวณ SHA256 ของไฟล์ 20–31 MB บน main thread | ย้ายไปคำนวณบน `Task.Run` | วิดีโอผ่านเส้นทางนี้ในการวิ่ง full S1 ใน Editor แต่ไม่มีการทดสอบวิดีโอเฉพาะ และยังไม่ได้วัดอาการกระตุกบน Quest = PENDING |
 | P0-I1 | กด Play แล้วมี error `ENV_CASE_FINISH_FAILED` ทุกครั้ง | prop ฝาเคสถูกปิดไปแล้ว (ชิ้นส่วนจริงของ Task A มาแทน) | ข้าม prop ที่ปิดอยู่ | หลังแก้ console ขึ้น 0 error ตอนเริ่ม Play |
-| T-1 | PlayCheck เดิมล้มตั้งแต่ขั้นพัก | assertion ล้าสมัยหลายจุด (Reader แบบแบ่งหน้า TMP, แท็บแนวนอน, Training 5 ขั้น, reflection ที่ signature เปลี่ยน) | ปรับ assertion ให้ตรงกับพฤติกรรมจริง โดยดูพฤติกรรมจริงก่อนทุกครั้ง และไม่ทำให้ check อ่อนลง | assertion เพิ่มจาก 211 เป็น 1,891 ข้อ และผ่านถึงช่วงเริ่ม Task |
+| T-1 | PlayCheck เดิมล้มตั้งแต่ขั้นพัก | assertion ล้าสมัยหลายจุด (Reader แบบแบ่งหน้า TMP, แท็บแนวนอน, Training 5 ขั้น, reflection ที่ signature เปลี่ยน) | ปรับ assertion ให้ตรงกับพฤติกรรมจริง โดยดูพฤติกรรมจริงก่อนทุกครั้ง **มี 2 ข้อที่อ่อนลง** คือ caption ของรูปภาพ (จาก "ตัวอักษรทั้งหมดอยู่ในกรอบ" เป็น "ถ้าล้นกรอบต้องมี scrollbar ที่มองเห็น" ตามการตัดสินใจ C04 เดิม) และ Training ที่มี FX1 ให้เครดิต Inspect แบบ DEMO_INPUT จึงไม่ได้ตรวจว่าแผง Inspect อยู่ในมุมมอง (การกดผ่าน SDK ครอบคลุมใน flow driver) | assertion เพิ่มจาก 211 เป็น 1,887–1,891 ข้อ |
 
 งานของรอบก่อนหน้า (17 ต.ค.) ที่รวมอยู่ใน commit นี้ด้วย:
 - policy `S1_DEV_MOVABLE_UI_20261017` ใช้เฉพาะ DEV ส่วน Study ยังเป็น fixed
@@ -56,12 +56,23 @@
 
 | ชุดทดสอบ | ผล | หลักฐาน |
 |---|---|---|
-| Full S1 ไทย AB P (Training ด้วย SDK จริง → A → Inspect → checkpoint → B → Inspect → checkpoint → export → PC QC) | PASS, `data_complete=true` | `master-20261018/full_th_ab_p_final.log` |
-| Full S1 ญี่ปุ่น BA Q | รอบแรก QC ล้มเพราะช่องว่างข้อมูลการเคลื่อนไหว 0.2534 วินาที (เกณฑ์ 0.25) จาก Editor หน่วงครั้งเดียว รอบที่สอง PASS, `data_complete=true` | `full_ja_ba_q.log`, `full_ja_ba_q_r2.log` |
-| Participant safety, Stop fallback, UI control acquisition, Spatial readability, Examine stability และ placement, DEV reach | PASS ทั้งหมด | `master-20261018/suites3/` |
+| Full S1 ไทย AB P (Training ด้วย SDK จริง → A → Inspect → checkpoint → B → Inspect → checkpoint → export → PC QC) บน source สุดท้าย | `PASS_EDITOR_SIMULATED`, `data_complete=true` | `master-20261018/full_th_ab_p_final.log` |
+| Full S1 ญี่ปุ่น BA Q | สองรอบแรกวิ่งก่อนแก้ตาม review: รอบแรก QC ล้มเพราะช่องว่างข้อมูลการเคลื่อนไหว 0.2534 วินาที (เกณฑ์ 0.25) รอบที่สอง PASS ส่วนรอบบน source สุดท้ายดูข้อ 4.1 | `full_ja_ba_q.log`, `full_ja_ba_q_r2.log`, `full_ja_ba_q_final.log` |
+| Participant safety, Stop fallback, UI control acquisition, Spatial readability, Examine stability และ placement | PASS ทั้งหมดหลังแก้ตาม review | `master-20261018/suites3/` |
+| DEV reach | `DEV_REACH_PASS stations=2` (ฟังก์ชันคืนค่าเป็น string ไม่มีไฟล์) | `Logs/S1Master20261017/cable_probe_results.txt` ข้อ 4 |
 | Compact UI ไทย/ญี่ปุ่น 16 stage, 39 check | PASS | `Logs/S1Master20261017/compact_final2/` |
-| Tools export/QC unittest | exit 0 | `Logs/S1Master20261017/tools_unittest.log` |
-| PlayCheck แบบเดิม (ไทย/ญี่ปุ่น) | ผ่าน Setup → Pause → Training → Reader ทั้งสี่รูปแบบ → เริ่ม Task ได้ จากนั้นหยุดที่ fixture ป้อน input จำลอง (tracking pause หลังเริ่ม Task 0.7 วินาที) | OPEN; flow เต็มใช้ harness แบบ native แทน |
+| Tools export/QC unittest | exit 0 (เครื่องนี้ไม่มี pytest จึงใช้ unittest) | `Logs/S1Master20261017/tools_unittest.log` |
+| PlayCheck แบบเดิม (ไทย/ญี่ปุ่น) | ผ่าน Setup → Pause → Training → Reader ทั้งสี่รูปแบบ → เริ่ม Task ได้ จากนั้น `status: Failed` ใน `VerifyExperimentalUI` เพราะหาข้อความโจทย์ไม่พบ ในการวิ่งภาษาไทยพบว่าแผงเป็นหน้าพัก (tracking pause หลังเริ่ม Task 0.7 วินาทีใน fixture ป้อน input จำลอง) ส่วนภาษาญี่ปุ่นยังไม่ได้วินิจฉัย | OPEN; flow เต็มใช้ harness แบบ native แทน |
+
+คำเตือนจาก QC ที่มีในทุกการวิ่ง Editor (ไม่ใช่ failure): `missing_video_A/B` (ไม่มีการบันทึกวิดีโอใน Editor), `missing_or_incomplete_assessment_A/B` (ยังไม่มีแบบประเมิน เช่น NASA-TLX ซึ่งต้องให้คนกรอก) และ `unverified_information_visibility_A/B` (ใน Editor ยืนยันไม่ได้ว่าคนเห็นข้อมูลจริง)
+
+### 4.1 ญี่ปุ่น BA Q บน source สุดท้าย
+
+ผลคือ `FLOW_PASS_QC_FAIL` (DEV343, bundle `v1_3b56211a942283ab43cc62f1`)
+- ทั้ง flow ผ่านครบทุกขั้น
+- QC ล้มเพราะข้อมูลการเคลื่อนไหวของ Task A ขาดช่วง 0.403 วินาที (เกณฑ์ 0.25) ทันทีหลัง `GRAB G01` (หยิบ GPU) ทั้ง head และคอนโทรลเลอร์ทั้งสองข้าง
+- การวิ่งญี่ปุ่นที่ Task A มาเป็นงานที่สอง มีช่องว่างแบบนี้ 2 ใน 3 ครั้ง ทุกครั้งเกิดหลังการหยิบชิ้นส่วน (อีกครั้งคือ 0.35 วินาทีหลังหยิบ SATA power) ส่วนการวิ่งไทยไม่มีเลย 3 ใน 3 ครั้ง
+- ยังแยกไม่ได้ว่าเป็นอาการ Editor หน่วงเป็นครั้งคราว (เคยพบมาก่อน) หรือเป็นการกระตุกจริงตอนหยิบ = **OPEN** ต้องวัด frametime ขณะหยิบบน Quest หรือวิ่งพร้อม `ResearchFrameSpikeRecorder` ถ้าเป็นจริง ผู้สวมจะเห็นภาพค้างราว 0.4 วินาทีตอนหยิบ
 
 เมทริกซ์ TH/JA × AB/BA × P/Q 8 ช่อง: รอบนี้วิ่ง 2 ช่อง (TH AB P, JA BA Q) อีก 6 ช่องยังไม่ได้วิ่ง
 
@@ -84,6 +95,8 @@
 
 ## 6. สายไฟ โต๊ะ และระยะเอื้อม
 
+ตัวเลขทั้งหมดในข้อนี้คัดลอกจากผล probe ไว้ที่ `Logs/S1Master20261017/cable_probe_results.txt`
+
 - ตอนวางนิ่ง สายทั้ง 9 เส้นของ Task A/B และสาย FX1 อยู่เหนือพื้นผิวทำงานทั้ง layout P และ Q ไม่มี vertex ต่ำกว่าผิวโต๊ะเลย จุดต่ำสุดคือสาย AC สูง 0.950 ม. บนโต๊ะสูง 0.920 ม. (วัดจริง)
 - เมื่อจับหัวปลั๊กที่หยิบได้ (PCIe 8-pin, SATA data, SATA power) แล้ววางชิดโต๊ะในมุมเดียวกับตอนเสียบ ตัวสายจมลงโต๊ะได้ถึง 4.5 มม. ใน 16 จาก 262 ท่า แต่เมื่อยกสูง 5–15 ซม. ไม่จมเลย
 - ได้ลองยกกระดูกของสายให้สูงกว่าโต๊ะ 8 มม. แต่ผลไม่ต่าง (ยังเป็น 16/262 และ 4.5 มม.) จึงถอยการแก้นี้ออก สาเหตุที่น่าจะเป็นคือ mesh ห้อยต่ำกว่ากระดูกราว 12 มม. ตอนปลั๊กอยู่ในมุมของตอนเสียบ (อนุมาน)
@@ -93,7 +106,7 @@
 ## 7. Icon ของแอปบน Quest
 
 - APK ที่ติดตั้งอยู่ตอนนี้คือ `ResearchFlowQuest3_20261017_083533.apk` (byte ตรงกัน) มีทั้ง label และ icon
-- เอกสารของ Meta ระบุว่าแอปที่ sideload จะไม่ขึ้นในตารางแอปหลัก แต่จะอยู่ใน **Library → Unknown Sources** แหล่งที่มา: https://developers.meta.com/horizon/documentation/android-apps/enable-developer-mode/ และ https://developers.meta.com/horizon/policy/distribution-options/
+- เอกสารของ Meta หน้า developer mode ระบุว่าแอปที่ติดตั้งเองไม่ขึ้นในตารางแอปหลัก ให้ไปที่ **Library → Unknown Sources** (https://developers.meta.com/horizon/documentation/android-apps/enable-developer-mode/) ส่วนหน้า distribution options เขียนว่าแอป sideload "ไม่ปรากฏใน Library ของ Quest Home" (https://developers.meta.com/horizon/policy/distribution-options/) สองหน้านี้ขัดกันเล็กน้อย คนสวมต้องดูทั้งสองที่
 - ข้อความ "App name unavailable" ใน Universal Menu น่าจะเกิดจากไม่มีข้อมูลแอปฝั่ง Store (สมมติฐาน ไม่พบเอกสารยืนยัน)
 - ไม่ได้ติดตั้ง APK ใหม่ เพราะ brief ข้อ 16 ห้ามติดตั้งเมื่อไม่ได้ยืนยันว่ามีคนสวมหรือเจ้าของอยู่ และ "proximity CLOSE" มาจาก daemon ไม่ใช่คน
 - คำสั่งติดตั้งเมื่อพร้อม (สำรอง registry ก่อน ไม่ uninstall และไม่ล้างข้อมูล):
@@ -147,7 +160,18 @@ adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_2026
 - TMP font atlas เป็น SDF ไม่มี mip ซึ่งเป็นค่าปกติ
 - ไม่ได้เปลี่ยนค่าเพราะมีต้นทุน GPU บน Quest ที่ต้องวัด ข้อเสนอคือเทียบ `ForceEnable` หรือ anisoLevel 4 กับค่าปัจจุบันในมุมมองเดียวกัน แล้ววัด frametime p95/p99 และให้คนสวมดูผ่านเลนส์ = **OPEN**
 
-## 11. ข้อจำกัดที่ต้องรู้
+## 11. รายการใน Testing Matrix ที่รอบนี้ยังไม่ได้ทดสอบ (NOT TESTED)
+
+- ข้อ 15.1: ภาพที่ Game View 1.5x และผู้ตรวจภายนอก
+- ข้อ 15.2: input จริงบนเครื่องสำหรับการกรอวิดีโอ, การเลื่อน, focus loss และ haptics (ใน Editor ครอบคลุมด้วย SDK จำลองบางส่วน)
+- ข้อ 15.3: ไม่ได้แยกรายงานตามความสูงตา 1.0 และ 1.65 ม. (spatial readability suite ใช้ชุดท่าของมันเอง)
+- ข้อ 15.4: ไม่ได้รัน Inspect Fail และ Timeout เป็นการวิ่งแยกในรอบนี้ (มีเฉพาะ Inspect Fail ตัวอย่างใน Training)
+- ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งไป 2 ช่อง
+- ข้อ 15.6: รหัส DEV ซ้ำ, วิดีโอหาย, PDF ล้ม, logger fault, export ระหว่างพัก และการถอนตัว ไม่ได้รันในรอบนี้ (safety suite ครอบคลุม Stop, writer fault และ tracking guard)
+- ข้อ 15.8: ไม่ได้รัน UIRecovery แบบครบทุกชุด, Reader production suite และ code-level S1 evaluator
+- ข้อ 15.10–11: ทั้งการทดสอบผ่านเลนส์และการตัดสินใจของคน
+
+## 12. ข้อจำกัดที่ต้องรู้
 
 - ผลทั้งหมดในรายงานนี้คือ Editor PASS ไม่ใช่ Quest PASS
 - เมทริกซ์ 8 ช่องวิ่งไปเพียง 2 ช่อง
