@@ -6,13 +6,14 @@
 
 | รายการ | ค่า |
 |---|---|
-| Commit ของ source | `f5ea522` บน `main` (ต่อจาก `e2f9bb4`) |
-| APK | `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_072028.apk` |
-| SHA256 | `6cbe479b973dff6f24429e6d10f9f8c567489744a1f44faa43b0823a60828168` |
+| Commit ของ source | `aedd4c8` บน `main` (ต่อจาก `f5ea522` ซึ่งต่อจาก `e2f9bb4`) |
+| APK (ตัวล่าสุด ใช้ตัวนี้) | `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_114649.apk` |
+| SHA256 | `67ad621ab20adc03da8212022e823138f0ae4e362c1568df5dbfc82be9c522ba` |
 | ขนาด | 307,435,337 bytes |
-| Build | สำเร็จ, error 0, warning 360, 214.8 วินาที |
-| ผูกกับ source | `S1_Unity_PC_20261011/master-20261018/build_f5ea522/apk-binding.json` (ไฟล์ที่ยังไม่ commit = 0, drift หลัง restore = 0) |
-| ไฟล์ที่ build เขียนทับแล้วคืนค่าแล้ว | `ProjectSettings.asset` และ font atlas 4 ไฟล์ |
+| Build | สำเร็จ, error 0, warning 359 |
+| ผูกกับ source | `S1_Unity_PC_20261011/master-20261018/build_aedd4c8/apk-binding.json` (ไฟล์ที่ยังไม่ commit = 0, drift หลัง restore = 0) |
+| ไฟล์ที่ build เขียนทับแล้วคืนค่าแล้ว | `ProjectSettings.asset` และ font atlas 4 ไฟล์ (รอบแรกคืนได้ 3 ไฟล์ แล้ว Windows ปฏิเสธการเขียน 1 ไฟล์ชั่วคราว จึงรันรอบสองคืนอีก 2 ไฟล์ หลังจากนั้น git สะอาด) |
+| APK ตัวก่อน (แทนแล้ว) | `ResearchFlowQuest3_20261018_072028.apk` จาก `f5ea522`, SHA256 `6cbe479b…8168` |
 | Package / label | `th.ac.tmu.vr.researchflow.quest3.technical`, label "ResearchFlow Quest3 Technical" และ icon อยู่ทั้งที่ application และ launchable-activity (`aapt2 dump badging`) |
 | ติดตั้งบน Quest | **ยังไม่ได้ติดตั้ง** ดูข้อ 7 |
 
@@ -74,7 +75,29 @@
 - การวิ่งญี่ปุ่นที่ Task A มาเป็นงานที่สอง มีช่องว่างแบบนี้ 2 ใน 3 ครั้ง ทุกครั้งเกิดหลังการหยิบชิ้นส่วน (อีกครั้งคือ 0.35 วินาทีหลังหยิบ SATA power) ส่วนการวิ่งไทยไม่มีเลย 3 ใน 3 ครั้ง
 - ยังแยกไม่ได้ว่าเป็นอาการ Editor หน่วงเป็นครั้งคราว (เคยพบมาก่อน) หรือเป็นการกระตุกจริงตอนหยิบ = **OPEN** ต้องวัด frametime ขณะหยิบบน Quest หรือวิ่งพร้อม `ResearchFrameSpikeRecorder` ถ้าเป็นจริง ผู้สวมจะเห็นภาพค้างราว 0.4 วินาทีตอนหยิบ
 
-เมทริกซ์ TH/JA × AB/BA × P/Q 8 ช่อง: รอบนี้วิ่ง 2 ช่อง (TH AB P, JA BA Q) อีก 6 ช่องยังไม่ได้วิ่ง
+เมทริกซ์ TH/JA × AB/BA × P/Q 8 ช่อง:
+- วิ่งครบแล้ว 2 ช่อง คือ TH AB P (PASS) และ JA BA Q (flow ผ่าน แต่ QC ไม่ผ่าน ดูข้อ 4.1)
+- เริ่มวิ่งอีก 6 ช่องเมื่อ 18 ต.ค. 18:37 แต่มีคนใช้คอมเครื่องนี้อยู่ (idle 0 วินาที) harness จึงไม่แย่ง focus ตามที่ออกแบบไว้ ช่อง TH AB Q ผ่าน Training แล้ว ได้ `FAIL bridge:` ระหว่าง Task A ขณะ focus สลับกลับไปมา = **INCONCLUSIVE**
+- ผมหยุดชุดนี้เพื่อไม่รบกวนผู้ใช้ อีก 5 ช่องจึง **ยังไม่ได้วิ่ง** คำสั่งวิ่งต่อเมื่อเครื่องว่าง:
+
+```
+MATRIX_OUT=D:/VR_TMU/S1_Unity_PC_20261011/master-20261018/matrix bash S1_Unity_PC_20261011/claude-takeover-20261015/scripts/s1_matrix.sh Thai:AB:Q Thai:BA:P Thai:BA:Q Japanese:AB:P Japanese:AB:Q Japanese:BA:P
+```
+
+ชุดทดสอบเพิ่มเติมที่รันในรอบต่อ (18 ต.ค. บ่าย):
+
+| ชุดทดสอบ | ผล | หลักฐาน |
+|---|---|---|
+| Logic suites ของ ResearchFlow ทั้ง 13 ชุด (รันนอก Unity) รวม S1 evaluator 280 checks / 120 permutations, timing 73 checks (รวม timeout ของ task ที่สองใน BA), registry 162, behaviour 200, logger resume 76 | PASS ทั้งหมด | `Logs/S1Master20261017/logic_checks/` |
+| UIRecovery 16 ชุด | 15 PASS หลังปรับ fixture ให้ตรงกับ UI ปัจจุบัน, TemporalSequence ยัง OPEN (fixture ไม่มี session ที่กำลังรัน จึงไม่มี Stop ให้แถบ recovery แสดง) | `master-20261018/suites_final/uirec_*` |
+| Reader production (TH/JA × 4 รูปแบบ ผ่านการชี้ด้วย SDK) | PASS | `master-20261018/suites4/readerprod` |
+| Export lifecycle (task timeout, withdrawal + amendment, completion, การเขียน log ระหว่าง export) | PASS 78 rows | `suites_final/ResearchExportLifecycleChecks_*` |
+| Operator outcome (abort, invalidate, registry/auth/terminal write failure, export failure) | 11/11 PASS | `suites_final/ResearchS1OperatorOutcomeChecks_*` |
+| Operator confirmation | PASS | `suites_final/ResearchOperatorConfirmationChecks_*` |
+| TerminalUI / Pause ownership | 64/72 และ 75/133 (เดิม crash ทุกกรณี) ที่เหลือเป็นการคาดหวังตามดีไซน์ก่อน 14 ต.ค. คือแถบ recovery แบบเต็มที่มีปุ่มพัก และให้ Pause อยู่ที่แผงหลักขณะเปิด Reader ส่วนดีไซน์ปัจจุบันวาง Pause ไว้ที่ Reader และปุ่ม Menu ของคอนโทรลเลอร์พักได้เสมอ | OPEN (suite ล้าสมัย) |
+| TutorialResume | 0/3 fixture ใช้ station anchor ที่วางไว้สำหรับฉากจริง จึงหันหลังให้หัวสังเคราะห์ (rear_face) ยังไม่ได้แก้ | OPEN |
+| FocusedReaderInput.Run (ชุดเก่าที่ใช้ demo content) | 15 failures เพราะชี้ไปที่แพ็กเกจ demo ที่เลิกใช้ แทนด้วย RunProduction ซึ่งผ่าน | superseded |
+| หลังแก้รอบต่อ: safety, stop fallback, UI control, compact UI 39 checks | PASS | `master-20261018/suites4`, `Logs/S1Master20261017/compact_final3` |
 
 ## 5. สื่อ Reader ทั้ง 4 รูปแบบ (A/B × ไทย/ญี่ปุ่น = 16 ชุด และ Training)
 
@@ -112,10 +135,10 @@
 - คำสั่งติดตั้งเมื่อพร้อม (สำรอง registry ก่อน ไม่ uninstall และไม่ล้างข้อมูล):
 
 ```
-adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_072028.apk
+adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_114649.apk
 ```
 
-  จากนั้นยืนยันว่า SHA256 ของ base.apk บนเครื่องเท่ากับ `6cbe479b…8168` และค่า `lastUpdateTime` เปลี่ยน
+  จากนั้นยืนยันว่า SHA256 ของ base.apk บนเครื่องเท่ากับ `67ad621a…22ba` และค่า `lastUpdateTime` เปลี่ยน
 - รายละเอียดอยู่ที่ `Logs/S1Master20261017/icon_audit/`
 
 ## 8. Rive และมาสคอต
@@ -166,9 +189,9 @@ adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_2026
 - ข้อ 15.2: input จริงบนเครื่องสำหรับการกรอวิดีโอ, การเลื่อน, focus loss และ haptics (ใน Editor ครอบคลุมด้วย SDK จำลองบางส่วน)
 - ข้อ 15.3: ไม่ได้แยกรายงานตามความสูงตา 1.0 และ 1.65 ม. (spatial readability suite ใช้ชุดท่าของมันเอง)
 - ข้อ 15.4: ไม่ได้รัน Inspect Fail และ Timeout เป็นการวิ่งแยกในรอบนี้ (มีเฉพาะ Inspect Fail ตัวอย่างใน Training)
-- ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งไป 2 ช่อง
-- ข้อ 15.6: รหัส DEV ซ้ำ, วิดีโอหาย, PDF ล้ม, logger fault, export ระหว่างพัก และการถอนตัว ไม่ได้รันในรอบนี้ (safety suite ครอบคลุม Stop, writer fault และ tracking guard)
-- ข้อ 15.8: ไม่ได้รัน UIRecovery แบบครบทุกชุด, Reader production suite และ code-level S1 evaluator
+- ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งครบ 2 ช่อง, 1 ช่อง INCONCLUSIVE และ 5 ช่องยังไม่ได้วิ่ง เพราะมีคนใช้เครื่อง (ดูข้อ 4)
+- ข้อ 15.6: ครอบคลุมแล้วโดย export lifecycle (withdrawal, timeout), operator outcome (writer/registry/export failure), Reader wireframe (แพ็กเกจหาย, registry เสีย, หน้า PDF เสีย) และ registry checks (ไม่มีรหัสซ้ำ) **ยังไม่ได้ทดสอบ** กรณีไฟล์วิดีโอหายบนเครื่องจริง
+- ข้อ 15.8: รันครบแล้ว ดูข้อ 4
 - ข้อ 15.10–11: ทั้งการทดสอบผ่านเลนส์และการตัดสินใจของคน
 
 ## 12. ข้อจำกัดที่ต้องรู้
