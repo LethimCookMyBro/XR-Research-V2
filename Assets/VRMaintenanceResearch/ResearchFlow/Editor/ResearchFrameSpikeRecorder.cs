@@ -44,6 +44,49 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         static void Stop() { foreach (var r in recorders) r.Dispose(); recorders.Clear(); }
+
+        // Profiler capture that freezes on the first slow frame of an active task, so the offending script sample can be read
+        // afterwards. Armed through EditorPrefs before Play (survives the domain reload), so nothing touches the Editor mid-run.
+        const string TrapKey = "ResearchFlow.SpikeTrapMs", TrappedKey = "ResearchFlow.SpikeTrapFrame";
+        public static string Trap(double thresholdMs = 200)
+        {
+            UnityEditor.EditorPrefs.SetFloat(TrapKey, (float)thresholdMs); UnityEditor.EditorPrefs.SetInt(TrappedKey, -1);
+            Install(); return "trap armed >" + thresholdMs + "ms for the next active task";
+        }
+        static int editorOnlySpikes;
+        public static string TrapStatus() => (UnityEditor.EditorPrefs.GetInt(TrappedKey, -1) < 0
+            ? (UnityEditor.EditorPrefs.HasKey(TrapKey) ? "armed" : "off") : "trapped frame " + UnityEditor.EditorPrefs.GetInt(TrappedKey))
+            + "; skipped Editor-only spikes " + editorOnlySpikes;
+        [UnityEditor.InitializeOnLoadMethod]
+        static void Install() { UnityEditor.EditorApplication.update -= Watch; if (UnityEditor.EditorPrefs.HasKey(TrapKey)) UnityEditor.EditorApplication.update += Watch; }
+        static void Watch()
+        {
+            if (!UnityEditor.EditorApplication.isPlaying) return;
+            var controller = Object.FindFirstObjectByType<ResearchSessionFlowController>();
+            bool active = controller && controller.Flow != null && controller.Flow.IsTaskActive && !controller.Flow.Paused;
+            if (!UnityEditorInternal.ProfilerDriver.enabled) { if (active) { UnityEditorInternal.ProfilerDriver.ClearAllFrames(); UnityEditorInternal.ProfilerDriver.enabled = true; } return; }
+            float threshold = UnityEditor.EditorPrefs.GetFloat(TrapKey);
+            if (!active || Time.unscaledDeltaTime * 1000 < threshold) return;
+            UnityEditorInternal.ProfilerDriver.enabled = false;
+            int frame = UnityEditorInternal.ProfilerDriver.lastFrameIndex;
+            // An EditorLoop-dominated frame (focus change, bridge poll, repaint) cannot happen on Quest; keep waiting for app code.
+            if (PlayerLoopMs(frame) < threshold * .5f) { editorOnlySpikes++; UnityEditorInternal.ProfilerDriver.enabled = true; return; }
+            UnityEditor.EditorPrefs.SetInt(TrappedKey, frame);
+            UnityEditor.EditorPrefs.DeleteKey(TrapKey); UnityEditor.EditorApplication.update -= Watch;
+        }
+
+        static float PlayerLoopMs(int frame)
+        {
+            using (var view = UnityEditorInternal.ProfilerDriver.GetHierarchyFrameDataView(frame, 0,
+                UnityEditor.Profiling.HierarchyFrameDataView.ViewModes.Default, UnityEditor.Profiling.HierarchyFrameDataView.columnTotalTime, false))
+            {
+                if (view == null || !view.valid) return float.MaxValue;
+                var children = new List<int>(); view.GetItemChildren(view.GetRootItemID(), children);
+                foreach (int id in children)
+                    if (view.GetItemName(id) == "PlayerLoop") return view.GetItemColumnDataAsFloat(id, UnityEditor.Profiling.HierarchyFrameDataView.columnTotalTime);
+                return float.MaxValue;
+            }
+        }
     }
 }
 #endif

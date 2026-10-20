@@ -96,6 +96,9 @@
 - ผมวิ่งแบบบันทึกเวลาต่อเฟรม 1 รอบ: ได้ 1 เฟรมยาว 323 ms ใน `Update.ScriptRunBehaviourUpdate` และ 1 เฟรม 188 ms ที่มี GC 27 ms ยังไม่ทราบว่า script ตัวไหนเป็นต้นเหตุ ไฟล์คือ `master-20261018/spike_taskA.csv`
 - การอ่าน registry และ hash สื่อ Reader ใช้ไม่เกิน 100 ms ต่อแพ็กเกจ จึงไม่ใช่ต้นเหตุหลัก
 - ต้องวัดบน Quest (frametime ระหว่างทำ Task A) ก่อนสรุปว่าเป็นอาการของ Editor หรือภาพค้างจริง = **OPEN**
+- 20 ต.ค.: เพิ่มตัวดัก (`ResearchFrameSpikeRecorder.Trap`) ให้เปิด Profiler ตั้งแต่ Task เริ่ม และหยุดที่เฟรมแรกที่ยาวเกิน 200 ms ผลในการวิ่ง native ไทย AB P (DEV370) คือเฟรมยาว 211 ms ใช้เวลาใน `EditorLoop` 206 ms ส่วน `PlayerLoop` ของแอปใช้เพียง 4.6 ms เฟรมนั้นจึงเป็นงานของ Editor (สลับ focus ทุก 10 วินาที, คำสั่ง bridge, repaint) ซึ่งไม่มีบน Quest หลักฐาน: profiler frame 29872 และ `master-20261018/trap_early_th_ab_p.log`
+- ช่องว่าง 6 ครั้งในเมทริกซ์ไม่ได้เกิดหลังการหยิบหรือ Inspect: 3 ครั้งไม่มี event ใดในช่วงนั้น อีก 3 ครั้งจบตรงจุดที่ logger บันทึกว่า tracking ของหัวและคอนโทรลเลอร์ทั้งสองหายไปพร้อมกันระหว่าง Task ที่ไม่ได้พักและมี focus (`MOVEMENT_CONTEXT` ที่ `required_provider_validity` เป็น false แล้วกลับเป็น true ใน 30 ms) แบบนี้ตรงกับเฟรมค้างของ Editor ที่ทำให้ตัวจำลอง tracking ขาด (อนุมาน)
+- ตัวดักถูกแก้ให้ข้ามเฟรมที่ `EditorLoop` เป็นหลักและรอเฉพาะเฟรมที่ `PlayerLoop` ยาว เพื่อหา script ของเฟรม 323 ms เดิม แต่การวิ่งครั้งถัดไปไม่จบเพราะมีคนใช้เครื่อง (INCONCLUSIVE_FOCUS) = **OPEN** จนกว่าจะวิ่งตอนเครื่องว่าง
 
 การตรวจหน้าจอแบบเดิม (legacy play check, ญี่ปุ่น) หลังปรับให้ใช้มุมกล้อง 90 องศา (ใกล้ Quest 3 แทน 60 องศาของ Editor): ผ่าน 2,806 ข้อ ผ่าน Training, Pause, Reader และเริ่ม Task A ได้ จากนั้นหยุดที่ปุ่มตรวจดูของชิ้นงาน Task A ที่หาที่วางไม่ได้ขณะ Reader เปิดอยู่ (`canvas=False`) = **OPEN**: ต้องตรวจบน Quest ว่าผู้เล่นตรวจดูชิ้นงานได้หรือไม่ขณะเปิดคู่มือค้างไว้ ถ้าไม่ได้ ต้องย่อ Reader ก่อน
 
@@ -203,7 +206,7 @@ adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_2026
 - ข้อ 15.1: ภาพ 1.5x **ทำแล้ว** (compact UI 16 หน้า TH/JA ที่ 1920×1200 ผ่าน 39/39, `Logs/S1Master20261017/compact_1_5x_c`) และพบ/แก้ข้อความญี่ปุ่นบนการ์ด Task ที่เหลือ「ん。」บรรทัดเดียวกับคำในวงเล็บที่ถูกตัด ยังไม่ได้ทำ: ผู้ตรวจภายนอก
 - ข้อ 15.2: input จริงบนเครื่องสำหรับการกรอวิดีโอ, การเลื่อน, focus loss และ haptics (ใน Editor ครอบคลุมด้วย SDK จำลองบางส่วน)
 - ข้อ 15.3: ไม่ได้แยกรายงานตามความสูงตา 1.0 และ 1.65 ม. (spatial readability suite ใช้ชุดท่าของมันเอง)
-- ข้อ 15.4: Timeout ครอบคลุมโดย timing logic suite (73 checks รวม task ที่สองหมดเวลาใน BA) และ export lifecycle (task deadline) ส่วน Inspect Fail ใน Task ครอบคลุมโดย operator outcome และ legacy play check ช่วง Training; การวิ่ง native แบบตั้งใจให้ Inspect Fail ใน Task ยังไม่ได้ทำ
+- ข้อ 15.4: Timeout ครอบคลุมโดย timing logic suite (73 checks รวม task ที่สองหมดเวลาใน BA) และ export lifecycle (task deadline) ส่วน Inspect Fail ใน Task **ทำแล้ว 20 ต.ค.**: การวิ่ง native ไทย AB P (DEV370) กด Inspect ทันทีที่ Task A เริ่มก่อนประกอบอะไร ได้ `inspect_fail:inspect.s1.A.AssemblyIncomplete` และยังอยู่ที่ `Task1Active` (ไม่ข้ามไป checkpoint) จากนั้นทำ A ต่อจนได้ `inspect.s1.A.Pass`, ทำ B ได้ `inspect.s1.B.Pass` และ export ครบ flow ผ่าน ส่วน QC ล้มเพราะช่องว่างข้อมูลการเคลื่อนไหว 0.254–0.271 วินาที (ดูข้อ 4.1) หลักฐาน `master-20261018/trap_early_th_ab_p/run.json` ส่วน harness ใช้ `EARLY_INSPECT=1`
 - ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งครบแล้ว flow ผ่านทุกช่อง QC ข้อมูลผ่าน 2 ช่อง (ดูข้อ 4)
 - ข้อ 15.6: ครอบคลุมแล้วโดย export lifecycle (withdrawal, timeout), operator outcome (writer/registry/export failure), Reader wireframe (แพ็กเกจหาย, registry เสีย, หน้า PDF เสีย) และ registry checks (ไม่มีรหัสซ้ำ) **ยังไม่ได้ทดสอบ** กรณีไฟล์วิดีโอหายบนเครื่องจริง
 - ข้อ 15.8: รันครบแล้ว ดูข้อ 4
@@ -212,6 +215,6 @@ adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_2026
 ## 12. ข้อจำกัดที่ต้องรู้
 
 - ผลทั้งหมดในรายงานนี้คือ Editor PASS ไม่ใช่ Quest PASS
-- เมทริกซ์ 8 ช่องวิ่งไปเพียง 2 ช่อง
+- เมทริกซ์ 8 ช่องวิ่งครบแล้ว flow ผ่านทุกช่อง แต่ QC ข้อมูลการเคลื่อนไหวผ่านเพียง 2 ช่อง (ดูข้อ 4.1)
 - ยังไม่ได้วัดความคมชัด เฟรมเรต และอาการภาพสั่นบนเครื่องจริง
-- สคริปต์ harness `s1_full_run.py` อยู่นอก Git ที่ `S1_Unity_PC_20261011/claude-takeover-20261015/scripts/` (แก้ timeout ของคำสั่งตรวจสถานะ Play เป็น 180 วินาที และสำรองไฟล์เดิมไว้ที่ `.bak_20261018`)
+- สคริปต์ harness `s1_full_run.py` อยู่นอก Git ที่ `S1_Unity_PC_20261011/claude-takeover-20261015/scripts/` (แก้ timeout ของคำสั่งตรวจสถานะ Play เป็น 180 วินาที และสำรองไฟล์เดิมไว้ที่ `.bak_20261018`; 20 ต.ค. เพิ่มขั้น `EARLY_INSPECT=1` ที่เปิดใช้เมื่อสั่งเท่านั้น สำรองไว้ที่ `.bak_20261020`)
