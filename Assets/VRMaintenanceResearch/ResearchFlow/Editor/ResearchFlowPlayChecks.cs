@@ -946,6 +946,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             try
             {
                 if (!ResearchFlowVisualInput.Running) { ResearchFlowVisualInput.Begin(1.65f); ownsFixture = true; }
+                // A participant looks at the part to examine it; straight ahead, the 0.80 m Reader covers it and the chip correctly stays hidden.
+                ResearchFlowVisualInput.SetHeadFacing(((Transform)typeof(ResearchExamineTarget).GetField("focusAnchor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(module)).position);
                 yield return Stable();
                 var pointerInteractor = controller.guards.Where(g => g && g.interactionsRoot)
                     .SelectMany(g => g.interactionsRoot.GetComponentsInChildren<Oculus.Interaction.RayInteractor>(true))
@@ -1007,6 +1009,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     if (ownsFixture) ResearchFlowVisualInput.Stop();
                     else if (ResearchFlowVisualInput.Running)
                     {
+                        ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
                         ResearchFlowVisualInput.SetPose("nearUi");
                         for (int side = 0; side < 2; side++)
                         {
