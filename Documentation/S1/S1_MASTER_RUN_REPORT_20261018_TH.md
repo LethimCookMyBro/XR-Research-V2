@@ -15,7 +15,7 @@
 | ไฟล์ที่ build เขียนทับแล้วคืนค่าแล้ว | `ProjectSettings.asset` และ font atlas 4 ไฟล์ หลังจากนั้น git สะอาด |
 | APK ตัวก่อน (แทนแล้ว) | `ResearchFlowQuest3_20261018_114649.apk` จาก `aedd4c8` (`67ad621a…22ba`) และ `ResearchFlowQuest3_20261018_072028.apk` จาก `f5ea522` (`6cbe479b…8168`) |
 | Package / label | `th.ac.tmu.vr.researchflow.quest3.technical`, label "ResearchFlow Quest3 Technical" และ icon อยู่ทั้งที่ application และ launchable-activity (`aapt2 dump badging`) |
-| ติดตั้งบน Quest | **ยังไม่ได้ติดตั้ง** ดูข้อ 7 |
+| ติดตั้งบน Quest | **ติดตั้งแล้ว 20 ต.ค. 17:15** ด้วย `install -r` หลังตรวจว่าแอปไม่ได้เปิดอยู่ SHA256 ของ base.apk บนเครื่องตรงกับข้างบน และ registry/protocol-versions มี hash เท่าเดิมก่อนและหลังติดตั้ง (สำรองไว้ที่ `S1_Unity_PC_20261011/QuestInstall_20261020/backup_before`) เปิดแอปครั้งแรก: log มี `E Unity` 0 บรรทัด ไม่มี crash/ANR และสถานะเป็นหน้า Setup ของ DEV (ศีรษะ tracked, พื้นและ logger พร้อม, คอนโทรลเลอร์ยังไม่ถูกหยิบจึงรออยู่) **ยังไม่มีคนสวมทดสอบ** |
 
 ที่มาของ warning (อนุมาน): ส่วนใหญ่เป็น shader variant ของ package Unity Sentis (`ConvGeneric`) และ C# warning ประเภท CS0618 (API เก่า) กับ CS0414 (field ไม่ถูกใช้) ไม่มีจากโค้ด ResearchFlow ที่ทำให้ build ล้ม
 
