@@ -29,6 +29,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         internal sealed class Fixture : IDisposable
         {
             public readonly GameObject root;
+            readonly GameObject inputs;
+            readonly string previousPolicy = ResearchUIPolicy.Active;
+            static void ApplyPolicy(string policy) => typeof(ResearchUIPolicy).GetMethod("Apply", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { policy });
             public readonly ResearchSessionFlowController controller;
             public readonly ResearchLocomotionEvents locomotion;
             public readonly HandsLabObject item;
@@ -75,9 +78,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Set(left, "Mode", HandsLabInputGuard.InputMode.Controller);
                 Set(left, "TrackingValid", true); Set(left, "WaitingForNeutral", false); Set(left, "InteractionsAllowed", true);
                 controller.guards = new[] { left, guard };
+                // A disabled controller reads as unknown, not neutral (HandsLabInputGuard.ControllerNeutral), and holds every
+                // panel placement as interaction_busy. The inputs live outside the inactive controller root so they stay enabled.
+                inputs = new GameObject("FixtureControllerInputs") { hideFlags = HideFlags.HideAndDontSave };
+                SceneManager.MoveGameObjectToScene(inputs, scene);
                 foreach (var owner in controller.guards)
                 {
-                    var input = root.AddComponent<RecoveryControllerFixture>(); input.side = owner.side;
+                    var input = inputs.AddComponent<RecoveryControllerFixture>(); input.side = owner.side;
                     owner.controllerReference = input;
                     typeof(HandsLabInputGuard).GetField("controller", Hidden).SetValue(owner, input);
                     typeof(HandsLabInputGuard).GetField("started", Hidden).SetValue(owner, true);
@@ -86,6 +93,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var id = registry.CreateNext(ParticipantGroup.Dev).participant_id;
                 Set(controller, "Registry", registry);
                 Set(controller, "Record", registry.StartOrResume(id, ParticipantLanguage.Thai, ExperimentInputMode.Controller));
+                // StartSession applies the recorded policy (ResearchSessionFlowController.StartSession); a DEV record is DevMovable.
+                ApplyPolicy(ResearchUIPolicy.ForRecord(controller.Record.ui_policy));
                 Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, group));
                 if (bindRun) Set(controller, "Record", registry.SaveProgress(controller.Record, controller.Flow));
                 logger = new HandsLabLogger(directory, "None", "Actual Editor callback fixture", executionEnvironment: "Editor", technicalTest: true, testData: true,
@@ -107,14 +116,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 catch
                 {
-                    UnityEngine.Object.DestroyImmediate(root); EditorSceneManager.ClosePreviewScene(scene); throw;
+                    if (inputs) UnityEngine.Object.DestroyImmediate(inputs);
+                    ApplyPolicy(previousPolicy); UnityEngine.Object.DestroyImmediate(root); EditorSceneManager.ClosePreviewScene(scene); throw;
                 }
             }
             public void Present()
             {
-                controller.view.Refresh(); controller.view.mainPanel.Recenter(false, false); Canvas.ForceUpdateCanvases(); controller.TutorialPromptShown();
+                controller.view.Refresh(); controller.view.mainPanel.Recenter(false, false);
+                // Read before IsReadableFromHead below overwrites it with the unplaced pose's rejection.
+                string placement = controller.view.mainPanel.LastRejection;
+                Canvas.ForceUpdateCanvases(); controller.TutorialPromptShown();
                 Require(controller.view.TutorialActionReady(controller.TutorialFact), "Fixture prompt was not actually visible before the action. fact=" + controller.TutorialFact
                     + " shown=" + Field<string>(controller.view, "shownFact") + " blocked=" + controller.view.mainPanel.PlacementBlocked
+                    + " placement=" + placement + " policy=" + ResearchUIPolicy.Active + " panel=" + controller.view.mainPanel.transform.position
                     + " readable=" + controller.view.mainPanel.IsReadableFromHead + " rejection=" + controller.view.mainPanel.LastRejection
                     + " flow=" + controller.Flow.State + " paused=" + controller.Flow.Paused + " record=" + controller.Record.session_state
                     + " logger=" + logger.State + " loggerError=" + logger.LastError + " error=" + controller.Error + " floor=" + controller.FloorReady
@@ -158,7 +172,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             public void Dispose()
             {
-                Set(controller, "Logger", null); logger.Dispose(); UnityEngine.Object.DestroyImmediate(root); EditorSceneManager.ClosePreviewScene(scene);
+                Set(controller, "Logger", null); logger.Dispose(); ApplyPolicy(previousPolicy); UnityEngine.Object.DestroyImmediate(inputs); UnityEngine.Object.DestroyImmediate(root); EditorSceneManager.ClosePreviewScene(scene);
             }
         }
 

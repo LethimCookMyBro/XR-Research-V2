@@ -678,7 +678,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var donor = UnityEngine.Object.FindFirstObjectByType<ResearchFlowView>();
             if (!donor || !donor.Head) throw new InvalidOperationException("Canonical donor fonts and camera required.");
             var root = new GameObject("UIRecoveryTemporalController"); root.SetActive(false);
-            GameObject ui = null;
+            GameObject ui = null; VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogger writer = null;
             var observations = new List<object>();
             string folder = Path.Combine(Path.GetFullPath(evidenceFolder), "ui-temporal-" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture)); Directory.CreateDirectory(folder);
             try
@@ -694,7 +694,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.19f, .23f, .27f); camera.cullingMask = 1 << 31;
                 camera.stereoTargetEye = StereoTargetEyeMask.None; view.Head = head.transform;
                 void Set(string property, object value) => typeof(ResearchSessionFlowController).GetProperty(property).GetSetMethod(true).Invoke(fixture, new[] { value });
-                // Geometry-only preview has no registered session/writer. Do not seed an invalid record for Pause eligibility.
+                // The recovery strip exists to offer Stop when no panel can (ResearchFlowView.StopOffered/RefreshRecoveryUtility), and
+                // Stop needs an InProgress record with a live writer, so the sequence runs inside a real isolated TEST session.
+                var registry = new ResearchParticipantRegistry(Path.Combine(folder, "g"));
+                var record = registry.StartOrResume(registry.CreateNext(ParticipantGroup.Test).participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, TaskOrder.AB);
+                writer = new VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogger(Path.Combine(folder, "l"), "None", "UIRecoveryTemporal",
+                    technicalTest: true, testData: true, phase: "ResearchSession", taskId: "session", runId: record.run_id);
+                Set("Registry", registry); Set("Record", record); Set("Logger", writer);
                 view.transform.SetParent(null, false); ui.SetActive(true); view.enabled = false;
                 head.transform.SetParent(view.transform, true);
                 foreach (var motion in ui.GetComponentsInChildren<ResearchPanelMotion>(true)) motion.enabled = false;
@@ -742,26 +748,41 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var heldPosition = view.mainPanel.transform.position; var heldRotation = view.mainPanel.transform.rotation;
                 heldField.SetValue(heldHandle, true); head.transform.position += new Vector3(1, 0, 1);
                 view.OnSpatialDiscontinuity("fixture_teleport_during_injected_hold");
-                view.RefreshRecoveryUtility(); // Explicit per-frame View lifecycle because this synthetic fixture disables Update.
-                // Quest 16 Oct glance dwell (.75 s) gates the Stop strip; this synchronous fixture backdates the dwell start once.
                 var dwell = typeof(ResearchFlowView).GetField("fallbackSince", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (!float.IsNegativeInfinity((float)dwell.GetValue(view))) { dwell.SetValue(view, Time.unscaledTime - 1f); view.RefreshRecoveryUtility(); }
-                if (!view.RecoveryCanvas.gameObject.activeSelf || view.RecoveryCanvas.GetComponent<ResearchPanelMotion>().PlacementBlocked)
-                    throw new InvalidOperationException("Interrupted held slate must preserve an independent readable recovery/Pause path. canStop=" + fixture.ParticipantCanStop
-                        + " state=" + fixture.Record?.session_state + " mainReadable=" + view.mainPanel.IsReadableFromHead + " mainBlocked=" + view.mainPanel.PlacementBlocked
-                        + " recoveryActive=" + view.RecoveryCanvas.gameObject.activeSelf + " dwell=" + dwell.GetValue(view));
+                // Lost slate: the strip must offer Recover + Stop and no Pause; Pause is the controller Menu (ResearchSessionFlowController Update).
+                string StopStrip()
+                {
+                    view.RefreshRecoveryUtility(); // Explicit per-frame View lifecycle because this synthetic fixture disables Update.
+                    // Quest 16 Oct glance dwell (.75 s) gates the Stop strip; this synchronous fixture backdates the dwell start once.
+                    if (!float.IsNegativeInfinity((float)dwell.GetValue(view))) { dwell.SetValue(view, Time.unscaledTime - 1f); view.RefreshRecoveryUtility(); }
+                    var strip = view.RecoveryCanvas.transform;
+                    bool ok = strip.gameObject.activeSelf && !strip.GetComponent<ResearchPanelMotion>().PlacementBlocked && strip.GetComponent<ResearchPanelMotion>().IsReadableFromHead
+                        && strip.Find("RecoverPanels").gameObject.activeSelf && strip.Find("Stop").gameObject.activeSelf && !strip.Find("Pause").gameObject.activeSelf;
+                    return ok ? null : " canStop=" + fixture.ParticipantCanStop + " state=" + fixture.Record?.session_state + " mainReadable=" + view.mainPanel.IsReadableFromHead
+                        + " mainBlocked=" + view.mainPanel.PlacementBlocked + " recoveryActive=" + strip.gameObject.activeSelf + " stop=" + strip.Find("Stop").gameObject.activeSelf
+                        + " pause=" + strip.Find("Pause").gameObject.activeSelf + " dwell=" + dwell.GetValue(view);
+                }
+                string lost = StopStrip();
+                if (lost != null) throw new InvalidOperationException("Interrupted held slate must keep an independent readable recovery strip with Stop." + lost);
                 if (view.mainPanel.transform.position != heldPosition || view.mainPanel.transform.rotation != heldRotation) throw new InvalidOperationException("Spatial recovery moved a held panel.");
                 Capture("InterruptedInjectedHoldUnchanged");
                 heldField.SetValue(heldHandle, false);
-                typeof(ResearchPanelMotion).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, null);
-                if (view.mainPanel.PlacementBlocked || !view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Deferred recenter failed after injected hold release.");
+                // Edit mode never advances Time.frameCount; a deferred (onlyIfNeeded) recenter applies on the next frame (frame > requestedFrame).
+                void NextFrame()
+                {
+                    typeof(ResearchPanelMotion).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, null);
+                    typeof(ResearchPanelMotion).GetMethod("TryApplyPendingRecenter", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, new object[] { true, true, true, Time.frameCount + 1 });
+                }
+                NextFrame();
+                if (view.mainPanel.PlacementBlocked || !view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Deferred recenter failed after injected hold release. pending="
+                    + view.mainPanel.RecenterPending + " blocked=" + view.mainPanel.PlacementBlocked + " rejection=" + view.mainPanel.LastRejection + " frame=" + Time.frameCount);
                 Capture("InjectedHoldReleasedDeferredRecovery");
                 foreach (float height in new[] { 1.2f, 1.65f, 1.9f })
                 {
-                    head.transform.SetPositionAndRotation(new Vector3(100, height, 100), Quaternion.identity); view.OnSpatialDiscontinuity("fixture_height");
+                    head.transform.SetPositionAndRotation(new Vector3(100, height, 100), Quaternion.identity); view.OnSpatialDiscontinuity("fixture_height"); NextFrame();
                     foreach (float turn in new[] { 45f, 90f, 180f })
                     {
-                        head.transform.rotation = Quaternion.Euler(0, turn, 0); view.OnSpatialDiscontinuity("fixture_snap"); view.RefreshRecoveryUtility();
+                        head.transform.rotation = Quaternion.Euler(0, turn, 0); view.OnSpatialDiscontinuity("fixture_snap"); NextFrame(); view.RefreshRecoveryUtility();
                         if (view.mainPanel.PlacementBlocked || !view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Turn recovery unreadable " + height + "/" + turn);
                         Capture("eye" + height.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "_turn" + turn);
                     }
@@ -769,16 +790,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     head.transform.position += head.transform.right * .12f;
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, null);
                     if (view.mainPanel.transform.position != stablePosition || view.mainPanel.transform.rotation != stableRotation) throw new InvalidOperationException("Resting slate followed an ordinary head translation.");
-                    head.transform.position += new Vector3(1.2f, 0, .8f); view.OnSpatialDiscontinuity("fixture_teleport");
+                    head.transform.position += new Vector3(1.2f, 0, .8f); view.OnSpatialDiscontinuity("fixture_teleport"); NextFrame();
                     if (view.mainPanel.PlacementBlocked || !view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Teleport recovery unreadable.");
                     Capture("eye" + height.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "_teleport");
                 }
                 // The same physical pose is deliberately viewed from its rear, then recovered without task-state mutation.
-                head.transform.SetPositionAndRotation(new Vector3(100, 1.65f, 100), Quaternion.identity); view.OnSpatialDiscontinuity("fixture_reset");
+                head.transform.SetPositionAndRotation(new Vector3(100, 1.65f, 100), Quaternion.identity); view.OnSpatialDiscontinuity("fixture_reset"); NextFrame();
                 var oldPose = view.mainPanel.transform.position; var oldRotation = view.mainPanel.transform.rotation;
                 head.transform.position = oldPose + oldRotation * Vector3.forward * .8f; head.transform.rotation = oldRotation * Quaternion.Euler(0, 180, 0);
-                typeof(ResearchPanelMotion).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, null); view.RefreshRecoveryUtility();
-                if (!view.mainPanel.PlacementBlocked || !view.RecoveryCanvas.gameObject.activeSelf || view.RecoveryCanvas.GetComponent<ResearchPanelMotion>().PlacementBlocked) throw new InvalidOperationException("Rear concealment removed the recovery/Pause path.");
+                typeof(ResearchPanelMotion).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view.mainPanel, null);
+                string concealed = StopStrip();
+                if (!view.mainPanel.PlacementBlocked || concealed != null) throw new InvalidOperationException("Rear concealment removed the recovery/Stop path." + concealed);
                 Capture("RearFaceConcealedRecoveryAvailable");
                 var stateBefore = fixture.Flow.State; view.LocalCommand("panel_recovery", "None"); view.RefreshRecoveryUtility();
                 if (fixture.Flow.State != stateBefore || view.mainPanel.PlacementBlocked || !view.mainPanel.IsReadableFromHead) throw new InvalidOperationException("Recovery changed task state or remained unreadable.");
@@ -786,7 +808,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 File.WriteAllText(Path.Combine(folder, "sequence.json"), JsonConvert.SerializeObject(new { provenance = "uGUI-only monoscopic synthetic sequence", hardware_verified = false, observations }, Formatting.Indented));
                 return "UI_TEMPORAL_PASS output=" + folder + "; measured geometry/pixels only; stereo/device/wearer excluded";
             }
-            finally { if (ui) UnityEngine.Object.DestroyImmediate(ui); UnityEngine.Object.DestroyImmediate(root); }
+            finally { writer?.Dispose(); if (ui) UnityEngine.Object.DestroyImmediate(ui); UnityEngine.Object.DestroyImmediate(root); }
         }
     }
 }

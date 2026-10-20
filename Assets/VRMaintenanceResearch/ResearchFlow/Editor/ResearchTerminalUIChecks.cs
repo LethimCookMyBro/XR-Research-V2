@@ -150,6 +150,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             });
             Case("f", f =>
             {
+                // panel_recovery recenters only panels active in the hierarchy (ResearchFlowView.LocalCommand), so the slate must be live.
+                f.ActivateView();
                 Check(f.Controller.Command("pause", "None") && f.Controller.Flow.Paused, "Actual Pause accepted before safety recovery");
                 f.View.Refresh();
                 SafetyRecovery(f, "Paused safety recovery", false, Check);
@@ -267,12 +269,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         throw new InvalidOperationException("Canonical fonts and inactive native XR are required.");
                     f = new Fixture(evidenceDirectory, id, donor, language);
                     if (f.Writer.State != HandsLabLogState.Active) throw new InvalidOperationException("Isolated writer unavailable.");
-                    // Activate only the uGUI tree. Controller remains inactive; manual refresh is explicit, with no frame simulation.
-                    f.View.gameObject.SetActive(false); f.View.enabled = false;
-                    f.View.transform.SetParent(null, false); f.View.Head.SetParent(f.View.transform, true);
-                    var camera = f.View.Head.gameObject.AddComponent<Camera>(); camera.enabled = false; camera.fieldOfView = 90; camera.aspect = 16f / 9;
-                    f.View.gameObject.SetActive(true);
-                    Field(f.View.RecoveryCanvas.GetComponent<ResearchPanelMotion>(), "environment", Array.Empty<Renderer>());
+                    f.ActivateView();
                     exercise(f);
                 }
                 catch (Exception ex) { Check(false, id + ": fixture exception", ex.ToString()); }
@@ -281,8 +278,6 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     if (f != null)
                     {
                         try { fixtures.Add(f.Evidence()); } catch (Exception ex) { Check(false, id + ": raw reopen", ex.ToString()); }
-                        // Detached visuals are owned by this fixture; never leave a running duplicate UI after a failure.
-                        if (f.View) UnityEngine.Object.DestroyImmediate(f.View.gameObject);
                         try { f.Dispose(); } catch (Exception ex) { Check(false, id + ": cleanup", ex.ToString()); }
                     }
                     foreach (var cursor in cursors) if (cursor.cursor) cursor.cursor.HoverColor = cursor.color;
@@ -312,8 +307,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 return corners.Select(camera.WorldToViewportPoint).All(p => !float.IsNaN(p.x) && !float.IsInfinity(p.x)
                     && !float.IsNaN(p.y) && !float.IsInfinity(p.y) && p.z > 0 && p.x >= .02f && p.x <= .98f && p.y >= .02f && p.y <= .98f);
             }
-            ResearchUIAction[] Offered(Fixture f) => f.View.GetComponentsInChildren<ResearchUIAction>(true)
-                .Where(a => a.command == "pause" && VisibleHit(f, a)).ToArray();
+            ResearchUIAction[] Offered(Fixture f, string command = "pause") => f.View.GetComponentsInChildren<ResearchUIAction>(true)
+                .Where(a => a.command == command && VisibleHit(f, a)).ToArray();
             ResearchUIAction One(Fixture f, string name, string expected)
             {
                 f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases(); var actions = Offered(f);
@@ -337,9 +332,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             void Caption(Fixture f, ResearchUIAction action, string expected, string name)
             {
-                if (!action) { Check(false, name + ": Pause caption has an owner"); return; }
+                if (!action) { Check(false, name + ": caption has an owner"); return; }
                 var label = action.transform.Find("Label")?.GetComponent<TMPro.TMP_Text>();
-                if (!label) { Check(false, name + ": existing Pause Label is present"); return; }
+                if (!label) { Check(false, name + ": existing Label is present"); return; }
                 label.ForceMeshUpdate(true, true);
                 var rect = (RectTransform)action.transform;
                 var glyphs = label.textInfo.characterInfo.Take(label.textInfo.characterCount).Where(c => c.isVisible).ToArray();
@@ -347,7 +342,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     .Select(p => rect.InverseTransformPoint(label.rectTransform.TransformPoint(p)))
                     .All(p => p.x >= rect.rect.xMin - 1 && p.x <= rect.rect.xMax + 1 && p.y >= rect.rect.yMin - 1 && p.y <= rect.rect.yMax + 1));
                 Check(label.gameObject.activeInHierarchy && label.text == expected && !label.isTextOverflowing
-                    && label.textInfo.lineCount == 1 && glyphsFit && VisibleHit(f, action), name + ": persistent localized Pause caption fits actual glyphs and hit surface",
+                    && label.textInfo.lineCount == 1 && glyphsFit && VisibleHit(f, action), name + ": persistent localized caption fits actual glyphs and hit surface",
                     new { expected, label.text, label.gameObject.activeInHierarchy, label.isTextOverflowing, label.textInfo.lineCount,
                         label.fontSize, glyphs_fit = glyphsFit, hit_size = new[] { rect.rect.width, rect.rect.height }, caption_rect = new[] { label.rectTransform.rect.width, label.rectTransform.rect.height } });
             }
@@ -364,8 +359,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var corners = new Vector3[4]; rect.GetWorldCorners(corners);
                 bool surfaceFits = corners.Select(canvasRect.InverseTransformPoint).All(p => p.x >= canvasRect.rect.xMin - 1
                     && p.x <= canvasRect.rect.xMax + 1 && p.y >= canvasRect.rect.yMin - 1 && p.y <= canvasRect.rect.yMax + 1);
-                string expected = ResearchStrings.Get("action.recover_panels", f.Controller.Language);
-                Check(label.gameObject.activeInHierarchy && label.enabled && label.text == expected && label.font == f.View.Font && action.labelKey == "action.recover_panels"
+                // The strip is always compact and captions RecoverPanels with recover_short (ResearchFlowView.LayoutRecoveryUtility).
+                string expected = ResearchStrings.Get("action.recover_short", f.Controller.Language);
+                Check(label.gameObject.activeInHierarchy && label.enabled && label.text == expected && label.font == f.View.Font && action.labelKey == "action.recover_short"
                     && Mathf.Approximately(label.fontSize, ResearchUITheme.Caption) && !label.enableAutoSizing && !label.isTextOverflowing
                     && label.textInfo.lineCount >= 1 && label.textInfo.lineCount <= 2 && glyphsFit && surfaceFits && VisibleHit(f, action),
                     name + ": persistent localized Recovery caption fits actual glyphs, hit target and canvas surface",
@@ -382,6 +378,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(!hint || ((!hint.label || !hint.label.gameObject.activeInHierarchy) && (!hint.background || !hint.background.activeInHierarchy)),
                     name + ": hover does not duplicate the persistent Recovery caption");
                 if (hint && hint.isActiveAndEnabled) hint.OnPointerExit(hover);
+            }
+            // No panel can show Stop: the strip offers the only Stop and never a Pause (ResearchFlowView.RefreshRecoveryUtility:
+            // LayoutRecoveryUtility(false, ..., fallbackStop)); Pause is then the controller Menu (ResearchSessionFlowController Update).
+            void StripStop(Fixture f, string name)
+            {
+                var strip = f.View.RecoveryCanvas.transform; var stops = Offered(f, "stop");
+                Check(strip.gameObject.activeInHierarchy && !strip.Find("Pause").gameObject.activeSelf && stops.Length == 1 && stops[0].transform.parent == strip,
+                    name + ": strip offers the one visible Stop and no Pause", stops.Select(a => new { owner = Role(f, a), path = a.transform.name }).ToArray());
+                Caption(f, strip.Find("Stop").GetComponent<ResearchUIAction>(), ResearchStrings.Get("action.stop_short", f.Controller.Language), name + " Stop");
+                RecoveryCaption(f, strip.Find("RecoverPanels").GetComponent<ResearchUIAction>(), name);
             }
             void InitializeInput(ResearchUIAction action)
             {
@@ -409,13 +415,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Stage(f, ResearchFlowState.Task1Active, 5, true);
                     Check(f.View.mainPanel.IsReadableFromHead && f.View.referencePanel.IsReadableFromHead,
                         selected + " peer fixture has two readable panels before ownership check");
-                    One(f, selected + " Task peer reader", "Main");
+                    // An expanded readable Reader owns Pause over Main (ResearchFlowView.RefreshRecoveryUtility referenceOwns).
+                    One(f, selected + " Task peer reader", "Reference");
                     Stage(f, ResearchFlowState.Task1Active, 5, true, true);
                     One(f, selected + " Task minimized Reference", "Main");
                     Check(f.View.referencePanel.IsReadableFromHead && !f.View.RecoveryCanvas.gameObject.activeSelf,
                         selected + " intentional Reference minimization has a readable restore pill without an extra recovery banner");
                     Check(f.View.LocalCommand("main_minimize", "None"), selected + " both panels can be intentionally minimized");
-                    One(f, selected + " both panels minimized keep one reachable Pause", "Recovery");
+                    One(f, selected + " both panels minimized leave Pause to the controller Menu", "None");
+                    StripStop(f, selected + " both panels minimized");
                     Check(f.View.LocalCommand("main_restore", "None"), selected + " Main restores before the separate Tutorial fixture");
                     Stage(f, ResearchFlowState.TutorialInteractions, 2, false);
                     One(f, selected + " Tutorial coach", "Main");
@@ -424,10 +432,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         selected + " Tutorial reader has no detached Main coach");
                     Caption(f, One(f, selected + " Tutorial expanded reader", "Reference"), caption, selected + " Reference");
                     Stage(f, ResearchFlowState.TutorialReferenceInspect, 3, true, true);
-                    Caption(f, One(f, selected + " Tutorial minimized reader", "Recovery"), caption, selected + " Recovery");
+                    One(f, selected + " Tutorial minimized reader", "None");
+                    StripStop(f, selected + " Tutorial minimized reader");
                     Stage(f, ResearchFlowState.Task1Active, 5, false);
                     Check(f.View.LocalCommand("main_minimize", "None"), selected + " Main actually minimizes before fallback");
-                    One(f, selected + " Main minimized", "Recovery");
+                    One(f, selected + " Main minimized", "None");
+                    StripStop(f, selected + " Main minimized");
                     Stage(f, ResearchFlowState.TutorialReferenceInspect, 3, true);
                     var before = f.Events(); var state = f.Controller.Flow.State; int completed = f.Controller.Flow.TutorialCompleted;
                     Click(One(f, selected + " before actual acquired click", "Reference"), 731);
@@ -446,46 +456,52 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     var canvasRect = (RectTransform)canvas.transform;
                     var restore = canvas.transform.Find("RecoverPanels").GetComponent<ResearchUIAction>();
                     var pause = canvas.transform.Find("Pause").GetComponent<ResearchUIAction>();
-                    var restoreRect = (RectTransform)restore.transform; var pauseRect = (RectTransform)pause.transform;
-                    int children = canvas.transform.childCount; var raw = f.Raw(); var state = f.Controller.Flow.State;
+                    var stopRect = (RectTransform)canvas.transform.Find("Stop");
+                    var restoreRect = (RectTransform)restore.transform;
+                    int children = canvas.transform.childCount; var before = f.Events(); var state = f.Controller.Flow.State;
                     var mainRotation = f.View.mainPanel.transform.rotation;
-                    Check(canvas.gameObject.activeInHierarchy && !pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(376, 96)
-                        && restoreRect.rect.size == new Vector2(360, 80) && restoreRect.anchoredPosition == Vector2.zero,
-                        selected + ": recovery-only strip collapses the unused Pause slot and centers its labeled action",
-                        new { canvas_size = new[] { canvasRect.rect.width, canvasRect.rect.height }, recover_x = restoreRect.anchoredPosition.x, pause_visible = pause.gameObject.activeSelf });
-                    RecoveryCaption(f, restore, selected + " recovery-only");
+                    // The strip opens only for a fallback Stop or a participant-pause recall, not for a panel out of view
+                    // (ResearchFlowView.RefreshRecoveryUtility `needed`; design_rule 4: looking away is no reason to open it).
+                    Check(!canvas.gameObject.activeInHierarchy, selected + ": Main owning Pause and Stop keeps the strip hidden for an unreadable Reader pill");
                     f.View.mainPanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
-                    Caption(f, One(f, selected + " recovery grows while already visible", "Recovery"), ResearchStrings.Get("action.pause_caption", f.Controller.Language), selected + " grown Recovery Pause");
-                    float gap = pauseRect.anchoredPosition.x - pauseRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
-                    Check(canvas.gameObject.activeInHierarchy && pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(472, 96)
-                        && restoreRect.rect.size == new Vector2(360, 80) && restoreRect.anchoredPosition == new Vector2(-48, 0)
-                        && pauseRect.rect.size == new Vector2(80, 80) && pauseRect.anchoredPosition == new Vector2(188, 0) && gap >= 16,
+                    One(f, selected + " unreadable Main and minimized Reader leave Pause to the controller Menu", "None");
+                    StripStop(f, selected + " lost Main");
+                    float gap = stopRect.anchoredPosition.x - stopRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
+                    // Compact strip: 128 x 80 RecoverPanels plus one 96 px safety slot (ResearchFlowView.LayoutRecoveryUtility).
+                    Check(canvas.gameObject.activeInHierarchy && !pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(240, 96)
+                        && restoreRect.rect.size == new Vector2(128, 80) && restoreRect.anchoredPosition == new Vector2(-48, 0)
+                        && stopRect.rect.size == new Vector2(80, 80) && stopRect.anchoredPosition == new Vector2(72, 0) && gap >= 16,
                         selected + ": fallback strip includes both actual hit targets with the intended gap", new { gap, canvas_size = new[] { canvasRect.rect.width, canvasRect.rect.height } });
-                    RecoveryCaption(f, restore, selected + " grown recovery");
                     f.View.mainPanel.transform.rotation = mainRotation;
                     One(f, selected + " recovered Main takes Pause ownership back", "Main");
-                    Check(!pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(376, 96) && restoreRect.anchoredPosition == Vector2.zero,
-                        selected + ": visible fallback strip contracts again when Pause returns to Main");
+                    Check(!canvas.gameObject.activeInHierarchy && Offered(f, "stop").Count(a => Role(f, a) == "Main") == 1,
+                        selected + ": strip hides again when Main owns Pause and Stop");
                     f.View.RefreshRecoveryUtility();
                     Check(f.View.RecoveryCanvas == canvas && canvas.transform.Find("RecoverPanels").GetComponent<ResearchUIAction>() == restore
                         && canvas.transform.Find("Pause").GetComponent<ResearchUIAction>() == pause && canvas.transform.childCount == children,
                         selected + ": strip transitions and repeated refresh reuse the same canvas, actions and hierarchy");
-                    Check(f.Controller.Flow.State == state && !f.Controller.Flow.Paused && Equal(raw, f.Raw()),
-                        selected + ": caption, hover and strip layout changes do not emit research events or alter task state");
+                    // Strip placement writes System PANEL_PLACEMENT telemetry (ResearchPanelMotion.ApplyRecenter); nothing participant-attributed.
+                    var added = f.Events().Skip(before.Length).ToArray();
+                    Check(f.Controller.Flow.State == state && !f.Controller.Flow.Paused && added.All(row => (string)row["source"] == "System"),
+                        selected + ": caption, hover and strip layout changes emit no participant event and do not alter task state", added);
                 }, selected);
             }
             Case("ph", f =>
             {
                 Stage(f, ResearchFlowState.Task1Active, 5, true);
-                var retired = Offered(f).FirstOrDefault(a => Role(f, a) == "Main");
-                if (!retired) throw new InvalidOperationException("Stale-owner fixture has no initial Main Pause.");
+                // The expanded Reader is the initial owner (referenceOwns); turning it away hands Pause back to Main.
+                var retired = Offered(f).FirstOrDefault(a => Role(f, a) == "Reference");
+                if (!retired) throw new InvalidOperationException("Stale-owner fixture has no initial Reference Pause.");
                 InitializeInput(retired);
                 var data = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { pointerId = 733 };
-                retired.OnPointerDown(data); var raw = f.Raw();
-                f.View.mainPanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
-                One(f, "Ownership handoff after acquired Main press", "Reference");
+                retired.OnPointerDown(data); var before = f.Events();
+                f.View.referencePanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
+                One(f, "Ownership handoff after acquired Reference press", "Main");
                 retired.OnPointerUp(data); retired.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
-                Check(!f.Controller.Flow.Paused && Equal(raw, f.Raw()), "Retired owner cannot release/click an acquired press after geometry-only handoff");
+                // A stale release is refused with System UI_CLICK_REJECTED telemetry (ResearchUIAction.OnPointerUp), never a Pause.
+                var added = f.Events().Skip(before.Length).ToArray();
+                Check(!f.Controller.Flow.Paused && added.All(row => (string)row["source"] == "System"),
+                    "Retired owner cannot release/click an acquired press after geometry-only handoff", added);
             });
             Case("pr", f =>
             {
@@ -493,11 +509,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var panel = f.View.mainPanel; var handle = panel.gameObject.AddComponent<ResearchDragHandle>(); handle.panel = panel; Field(handle, "dragging", true);
                 panel.transform.rotation *= Quaternion.Euler(0, 180, 0); f.View.referencePanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
                 var position = panel.transform.position; var rotation = panel.transform.rotation;
-                One(f, "Held rear Main and hidden Reference", "Recovery");
+                One(f, "Held rear Main and hidden Reference", "None");
+                // A held panel defers every placement, the strip included, so nothing moves under the ray (ResearchFlowView.PanelPlacementBusy).
+                var strip = f.View.RecoveryCanvas.GetComponent<ResearchPanelMotion>();
+                Check(f.View.PanelPlacementBusy && strip.gameObject.activeSelf && strip.RecenterPending,
+                    "Held rear Main and hidden Reference: strip is requested and placed on release", new { pending = strip.RecenterPending, active = strip.gameObject.activeSelf });
                 Check(panel.IsDragging && panel.transform.position == position && Quaternion.Angle(panel.transform.rotation, rotation) < .001f,
                     "Fallback availability leaves the injected held pose unchanged");
                 Field(handle, "dragging", false); UnityEngine.Object.DestroyImmediate(handle);
-                Check(f.Controller.Command("pause", "None"), "Safety fixture actually pauses");
+                // Edit mode never advances Time.frameCount; apply the deferred placement as the next frame would.
+                typeof(ResearchPanelMotion).GetMethod("TryApplyPendingRecenter", Flags).Invoke(strip, new object[] { true, true, true, Time.frameCount + 1 });
+                f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
+                StripStop(f, "Released rear Main and hidden Reference");
+                // With no on-screen Pause, the controller Menu is the Pause route; it calls Command("pause", "Controller").
+                Check(f.Controller.Command("pause", "Controller"), "Controller Menu pause is accepted while no panel offers Pause");
                 f.View.Refresh(); One(f, "Paused safety card", "None");
                 SafetyRecovery(f, "Paused geometry remains available", false, Check);
                 Set(f.Controller, "Error", "pause_ownership_fixture_error"); f.View.Refresh(); One(f, "Error safety card", "None");
@@ -524,13 +549,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var raw = f.Raw(); var state = f.Controller.Flow.State; int children = canvas.transform.childCount;
                 var prepare = typeof(ResearchFlowView).GetMethod("PrepareRecoveryUtility", Flags);
                 prepare.Invoke(f.View, null);
-                Caption(f, One(f, "Reused legacy Recovery after real preparation", "Recovery"), "พัก", "Reused Recovery Thai");
-                Check(restoreRect.rect.size == new Vector2(360, 80), "Reused Recovery restores the actual labeled RecoverPanels 360 x 80 hit target", new[] { restoreRect.rect.width, restoreRect.rect.height });
+                One(f, "Reused legacy Recovery after real preparation", "None");
+                StripStop(f, "Reused Recovery Thai");
+                var stopRect = (RectTransform)canvas.transform.Find("Stop");
+                Check(restoreRect.rect.size == new Vector2(128, 80), "Reused Recovery restores the actual labeled compact RecoverPanels 128 x 80 hit target", new[] { restoreRect.rect.width, restoreRect.rect.height });
                 Check(pauseRect.rect.size == new Vector2(80, 80), "Reused Recovery restores the actual Pause 80 x 80 hit target", new[] { pauseRect.rect.width, pauseRect.rect.height });
-                float gap = pauseRect.anchoredPosition.x - pauseRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
-                Check(restoreRect.anchoredPosition == new Vector2(-48, 0) && pauseRect.anchoredPosition == new Vector2(188, 0) && gap >= 16,
-                    "Reused Recovery has the intended spacing without overlapping hit targets", new { restore = new[] { restoreRect.anchoredPosition.x, restoreRect.anchoredPosition.y }, pause = new[] { pauseRect.anchoredPosition.x, pauseRect.anchoredPosition.y }, gap });
-                RecoveryCaption(f, restore, "Reused Recovery Thai");
+                float gap = stopRect.anchoredPosition.x - stopRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
+                Check(restoreRect.anchoredPosition == new Vector2(-48, 0) && stopRect.anchoredPosition == new Vector2(72, 0) && gap >= 16,
+                    "Reused Recovery has the intended spacing without overlapping hit targets", new { restore = new[] { restoreRect.anchoredPosition.x, restoreRect.anchoredPosition.y }, stop = new[] { stopRect.anchoredPosition.x, stopRect.anchoredPosition.y }, gap });
                 Check(pause.labelKey == "action.pause_caption", "Reused Recovery persists the localized Pause label key", pause.labelKey);
                 Check(icon.rectTransform.anchoredPosition == new Vector2(0, 17) && !icon.raycastTarget,
                     "Reused Recovery stacks its existing icon above the caption without a new raycast target", new[] { icon.rectTransform.anchoredPosition.x, icon.rectTransform.anchoredPosition.y });
@@ -596,9 +622,21 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     // Keep names short: Windows long-path failures must not masquerade as UI regressions.
                     Writer = new HandsLabLogger(Path.Combine(directory, "l"), "None", "IsolatedTerminalUIFixture_" + caseId,
                         technicalTest: true, testData: true, phase: "ResearchSession", taskId: "session", runId: record.run_id);
-                    Set(Controller, "Logger", Writer); View.Refresh();
+                    Set(Controller, "Logger", Writer);
+                    // S1 offers task controls only while the task clock runs (ResearchSessionFlowController.LocalUICommandsAllowed).
+                    Get<ResearchTaskTiming>(Controller, "taskTiming").Start(Writer.Timestamp);
+                    View.Refresh();
                 }
                 catch { Dispose(); throw; }
+            }
+            // Activates only the uGUI tree. Controller remains inactive; manual refresh is explicit, with no frame simulation.
+            public void ActivateView()
+            {
+                View.gameObject.SetActive(false); View.enabled = false;
+                View.transform.SetParent(null, false); View.Head.SetParent(View.transform, true);
+                var camera = View.Head.gameObject.AddComponent<Camera>(); camera.enabled = false; camera.fieldOfView = 90; camera.aspect = 16f / 9;
+                View.gameObject.SetActive(true);
+                Field(View.RecoveryCanvas.GetComponent<ResearchPanelMotion>(), "environment", Array.Empty<Renderer>());
             }
             public JObject[] Events() => ReadText(Writer.EventsPath).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToArray();
             public void RefreshController() => typeof(ResearchSessionFlowController).GetMethod("Refresh", Flags).Invoke(Controller, null);
@@ -626,6 +664,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             };
             public void Dispose()
             {
+                // A detached (activated) view is owned by this fixture; never leave a running duplicate UI after a failure.
+                if (View) UnityEngine.Object.DestroyImmediate(View.gameObject);
                 Writer?.Dispose();
                 if (Controller) Set(Controller, "Logger", null);
                 if (root) UnityEngine.Object.DestroyImmediate(root);
