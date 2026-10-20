@@ -6,14 +6,14 @@
 
 | รายการ | ค่า |
 |---|---|
-| Commit ของ source | `aedd4c8` บน `main` (ต่อจาก `f5ea522` ซึ่งต่อจาก `e2f9bb4`) |
-| APK (ตัวล่าสุด ใช้ตัวนี้) | `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_114649.apk` |
-| SHA256 | `67ad621ab20adc03da8212022e823138f0ae4e362c1568df5dbfc82be9c522ba` |
+| Commit ของ source | `063c106` บน `main` (ต่อจาก `aedd4c8`, `f5ea522`, `e2f9bb4`) |
+| APK (ตัวล่าสุด ใช้ตัวนี้) | `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261020_040226.apk` |
+| SHA256 | `407c51a78f759654c9da8233edcb1ed38b1ca7fea320afe122df59140643490f` |
 | ขนาด | 307,435,337 bytes |
 | Build | สำเร็จ, error 0, warning 359 |
-| ผูกกับ source | `S1_Unity_PC_20261011/master-20261018/build_aedd4c8/apk-binding.json` (ไฟล์ที่ยังไม่ commit = 0, drift หลัง restore = 0) |
-| ไฟล์ที่ build เขียนทับแล้วคืนค่าแล้ว | `ProjectSettings.asset` และ font atlas 4 ไฟล์ (รอบแรกคืนได้ 3 ไฟล์ แล้ว Windows ปฏิเสธการเขียน 1 ไฟล์ชั่วคราว จึงรันรอบสองคืนอีก 2 ไฟล์ หลังจากนั้น git สะอาด) |
-| APK ตัวก่อน (แทนแล้ว) | `ResearchFlowQuest3_20261018_072028.apk` จาก `f5ea522`, SHA256 `6cbe479b…8168` |
+| ผูกกับ source | `S1_Unity_PC_20261011/master-20261018/build_063c106/apk-binding.json` (ไฟล์ที่ยังไม่ commit = 0, drift หลัง restore = 0) |
+| ไฟล์ที่ build เขียนทับแล้วคืนค่าแล้ว | `ProjectSettings.asset` และ font atlas 4 ไฟล์ หลังจากนั้น git สะอาด |
+| APK ตัวก่อน (แทนแล้ว) | `ResearchFlowQuest3_20261018_114649.apk` จาก `aedd4c8` (`67ad621a…22ba`) และ `ResearchFlowQuest3_20261018_072028.apk` จาก `f5ea522` (`6cbe479b…8168`) |
 | Package / label | `th.ac.tmu.vr.researchflow.quest3.technical`, label "ResearchFlow Quest3 Technical" และ icon อยู่ทั้งที่ application และ launchable-activity (`aapt2 dump badging`) |
 | ติดตั้งบน Quest | **ยังไม่ได้ติดตั้ง** ดูข้อ 7 |
 
@@ -75,14 +75,29 @@
 - การวิ่งญี่ปุ่นที่ Task A มาเป็นงานที่สอง มีช่องว่างแบบนี้ 2 ใน 3 ครั้ง ทุกครั้งเกิดหลังการหยิบชิ้นส่วน (อีกครั้งคือ 0.35 วินาทีหลังหยิบ SATA power) ส่วนการวิ่งไทยไม่มีเลย 3 ใน 3 ครั้ง
 - ยังแยกไม่ได้ว่าเป็นอาการ Editor หน่วงเป็นครั้งคราว (เคยพบมาก่อน) หรือเป็นการกระตุกจริงตอนหยิบ = **OPEN** ต้องวัด frametime ขณะหยิบบน Quest หรือวิ่งพร้อม `ResearchFrameSpikeRecorder` ถ้าเป็นจริง ผู้สวมจะเห็นภาพค้างราว 0.4 วินาทีตอนหยิบ
 
-เมทริกซ์ TH/JA × AB/BA × P/Q 8 ช่อง:
-- วิ่งครบแล้ว 2 ช่อง คือ TH AB P (PASS) และ JA BA Q (flow ผ่าน แต่ QC ไม่ผ่าน ดูข้อ 4.1)
-- เริ่มวิ่งอีก 6 ช่องเมื่อ 18 ต.ค. 18:37 แต่มีคนใช้คอมเครื่องนี้อยู่ (idle 0 วินาที) harness จึงไม่แย่ง focus ตามที่ออกแบบไว้ ช่อง TH AB Q ผ่าน Training แล้ว ได้ `FAIL bridge:` ระหว่าง Task A ขณะ focus สลับกลับไปมา = **INCONCLUSIVE**
-- ผมหยุดชุดนี้เพื่อไม่รบกวนผู้ใช้ อีก 5 ช่องจึง **ยังไม่ได้วิ่ง** คำสั่งวิ่งต่อเมื่อเครื่องว่าง:
+เมทริกซ์ TH/JA × AB/BA × P/Q 8 ช่อง (วิ่งครบแล้วทั้ง 8 ช่อง เมื่อ 18 ต.ค. 19:12–20:06 ขณะเครื่องว่าง):
 
-```
-MATRIX_OUT=D:/VR_TMU/S1_Unity_PC_20261011/master-20261018/matrix bash S1_Unity_PC_20261011/claude-takeover-20261015/scripts/s1_matrix.sh Thai:AB:Q Thai:BA:P Thai:BA:Q Japanese:AB:P Japanese:AB:Q Japanese:BA:P
-```
+| ช่อง | Flow (Training → Task 1 → Inspect → checkpoint → Task 2 → Inspect → checkpoint → export → PC ingest) | QC ข้อมูล | ช่องว่างข้อมูลการเคลื่อนไหว (task, วินาทีหลังเริ่ม, ความยาว) |
+|---|---|---|---|
+| TH AB P | ผ่าน | PASS | ไม่มี |
+| TH AB Q | ผ่าน | FAIL | A, 4.3 s, 0.279 s |
+| TH BA P | ผ่าน | PASS | ไม่มี |
+| TH BA Q | ผ่าน | FAIL | A, 178.1 s, 0.325 s |
+| JA AB P | ผ่าน | FAIL | A, 12.8 s, 0.260 s |
+| JA AB Q | ผ่าน | FAIL | A, 11.1 s, 0.263 s |
+| JA BA P | ผ่าน | FAIL | A 92.9 s 0.373 s และ B 10.6 s 0.270 s |
+| JA BA Q | ผ่าน | FAIL ในรอบสุดท้าย (PASS ในรอบก่อน) | A, 0.403 s |
+
+หลักฐาน: `S1_Unity_PC_20261011/master-20261018/matrix2/` และ `full_*` ช่อง TH AB Q ที่เคย INCONCLUSIVE เพราะมีคนใช้เครื่อง ได้วิ่งใหม่ครบแล้ว
+
+ข้อสรุปเรื่อง QC (อนุมานจากข้อมูล ยังไม่ยืนยันบนเครื่องจริง):
+- กลไกและ flow ผ่านครบทุกช่อง สิ่งที่ไม่ผ่านคือเกณฑ์ข้อมูลการเคลื่อนไหวต่อเนื่อง ที่ห้ามขาดช่วงเกิน 0.25 วินาที
+- ช่องว่างทุกครั้งยาว 0.26–0.40 วินาที และเกิดในจังหวะที่ต่างกัน เกือบทั้งหมดอยู่ใน Task A ซึ่งวิ่งนานกว่า Task B ประมาณ 6 เท่า
+- ผมวิ่งแบบบันทึกเวลาต่อเฟรม 1 รอบ: ได้ 1 เฟรมยาว 323 ms ใน `Update.ScriptRunBehaviourUpdate` และ 1 เฟรม 188 ms ที่มี GC 27 ms ยังไม่ทราบว่า script ตัวไหนเป็นต้นเหตุ ไฟล์คือ `master-20261018/spike_taskA.csv`
+- การอ่าน registry และ hash สื่อ Reader ใช้ไม่เกิน 100 ms ต่อแพ็กเกจ จึงไม่ใช่ต้นเหตุหลัก
+- ต้องวัดบน Quest (frametime ระหว่างทำ Task A) ก่อนสรุปว่าเป็นอาการของ Editor หรือภาพค้างจริง = **OPEN**
+
+การตรวจหน้าจอแบบเดิม (legacy play check, ญี่ปุ่น) หลังปรับให้ใช้มุมกล้อง 90 องศา (ใกล้ Quest 3 แทน 60 องศาของ Editor): ผ่าน 2,806 ข้อ ผ่าน Training, Pause, Reader และเริ่ม Task A ได้ จากนั้นหยุดที่ปุ่มตรวจดูของชิ้นงาน Task A ที่หาที่วางไม่ได้ขณะ Reader เปิดอยู่ (`canvas=False`) = **OPEN**: ต้องตรวจบน Quest ว่าผู้เล่นตรวจดูชิ้นงานได้หรือไม่ขณะเปิดคู่มือค้างไว้ ถ้าไม่ได้ ต้องย่อ Reader ก่อน
 
 ชุดทดสอบเพิ่มเติมที่รันในรอบต่อ (18 ต.ค. บ่าย):
 
@@ -135,10 +150,10 @@ MATRIX_OUT=D:/VR_TMU/S1_Unity_PC_20261011/master-20261018/matrix bash S1_Unity_P
 - คำสั่งติดตั้งเมื่อพร้อม (สำรอง registry ก่อน ไม่ uninstall และไม่ล้างข้อมูล):
 
 ```
-adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_20261018_114649.apk
+adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_20261020_040226.apk
 ```
 
-  จากนั้นยืนยันว่า SHA256 ของ base.apk บนเครื่องเท่ากับ `67ad621a…22ba` และค่า `lastUpdateTime` เปลี่ยน
+  จากนั้นยืนยันว่า SHA256 ของ base.apk บนเครื่องเท่ากับ `407c51a7…490f` และค่า `lastUpdateTime` เปลี่ยน
 - รายละเอียดอยู่ที่ `Logs/S1Master20261017/icon_audit/`
 
 ## 8. Rive และมาสคอต
@@ -185,11 +200,11 @@ adb -s 2G0YC5ZHBF00FJ install -r Logs/QuestFinalQA/build/ResearchFlowQuest3_2026
 
 ## 11. รายการใน Testing Matrix ที่รอบนี้ยังไม่ได้ทดสอบ (NOT TESTED)
 
-- ข้อ 15.1: ภาพที่ Game View 1.5x และผู้ตรวจภายนอก
+- ข้อ 15.1: ภาพ 1.5x **ทำแล้ว** (compact UI 16 หน้า TH/JA ที่ 1920×1200 ผ่าน 39/39, `Logs/S1Master20261017/compact_1_5x_c`) และพบ/แก้ข้อความญี่ปุ่นบนการ์ด Task ที่เหลือ「ん。」บรรทัดเดียวกับคำในวงเล็บที่ถูกตัด ยังไม่ได้ทำ: ผู้ตรวจภายนอก
 - ข้อ 15.2: input จริงบนเครื่องสำหรับการกรอวิดีโอ, การเลื่อน, focus loss และ haptics (ใน Editor ครอบคลุมด้วย SDK จำลองบางส่วน)
 - ข้อ 15.3: ไม่ได้แยกรายงานตามความสูงตา 1.0 และ 1.65 ม. (spatial readability suite ใช้ชุดท่าของมันเอง)
-- ข้อ 15.4: ไม่ได้รัน Inspect Fail และ Timeout เป็นการวิ่งแยกในรอบนี้ (มีเฉพาะ Inspect Fail ตัวอย่างใน Training)
-- ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งครบ 2 ช่อง, 1 ช่อง INCONCLUSIVE และ 5 ช่องยังไม่ได้วิ่ง เพราะมีคนใช้เครื่อง (ดูข้อ 4)
+- ข้อ 15.4: Timeout ครอบคลุมโดย timing logic suite (73 checks รวม task ที่สองหมดเวลาใน BA) และ export lifecycle (task deadline) ส่วน Inspect Fail ใน Task ครอบคลุมโดย operator outcome และ legacy play check ช่วง Training; การวิ่ง native แบบตั้งใจให้ Inspect Fail ใน Task ยังไม่ได้ทำ
+- ข้อ 15.5: เมทริกซ์ 8 ช่องวิ่งครบแล้ว flow ผ่านทุกช่อง QC ข้อมูลผ่าน 2 ช่อง (ดูข้อ 4)
 - ข้อ 15.6: ครอบคลุมแล้วโดย export lifecycle (withdrawal, timeout), operator outcome (writer/registry/export failure), Reader wireframe (แพ็กเกจหาย, registry เสีย, หน้า PDF เสีย) และ registry checks (ไม่มีรหัสซ้ำ) **ยังไม่ได้ทดสอบ** กรณีไฟล์วิดีโอหายบนเครื่องจริง
 - ข้อ 15.8: รันครบแล้ว ดูข้อ 4
 - ข้อ 15.10–11: ทั้งการทดสอบผ่านเลนส์และการตัดสินใจของคน
