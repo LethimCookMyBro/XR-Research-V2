@@ -1472,6 +1472,17 @@ namespace VRMaintenanceResearch.ResearchFlow
         string TaskBrief(string task)
         {
             var parts = Text("task." + task + ".body").Split('\n');
+            // Japanese wraps per character: keep quoted UI terms such as 「参照資料」 whole, and each sentence's last four
+            // characters together so no line is a lone 「ん。」.
+            if (controller && controller.Language == "Japanese")
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (parts[i].Length <= 8 || parts[i].IndexOf('<') >= 0) continue;
+                    string head = parts[i].Substring(0, parts[i].Length - 4), tail = parts[i].Substring(parts[i].Length - 4);
+                    if (tail.IndexOf('」') >= 0) { head = parts[i]; tail = ""; } // a term closing the sentence is kept whole below
+                    head = System.Text.RegularExpressions.Regex.Replace(head, "「[^「」]{1,8}」", "<nobr>$0</nobr>");
+                    parts[i] = head + (tail.Length > 0 ? "<nobr>" + tail + "</nobr>" : "");
+                }
             if (parts.Length != 4) return string.Join("\n", parts);
             // Goal, then the two conditions as one group, then where the details are. Every spec sentence stays verbatim.
             string goal = Text("task.ready.goal").Split(new[] { "{0}" }, StringSplitOptions.None)[0], gap = "\n<size=45%>\n</size>";

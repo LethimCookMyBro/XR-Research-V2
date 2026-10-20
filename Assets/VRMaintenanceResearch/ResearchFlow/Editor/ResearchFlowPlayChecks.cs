@@ -365,7 +365,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static bool oldResearcherEnabled;
         private static string output, prefix, requestedLanguage;
         private static TaskOrder requestedOrder;
-        private static float originalTimeScale;
+        private static float originalTimeScale, originalFieldOfView = 60;
         private static double deadline;
         private static bool technicalSetup;
         private static bool stopAtFirstTask;
@@ -545,6 +545,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             assertions.Clear(); screenshots.Clear(); routines.Clear(); canvasCost.Clear();
             lastArrivalCaptureEvidence = null;
             originalTimeScale = Time.timeScale;
+            // Station-anchored slates are sized for Quest 3 (~96 deg per-eye vertical); the 60 deg Editor default clips them.
+            originalFieldOfView = controller.origin.Camera.fieldOfView; controller.origin.Camera.fieldOfView = 90;
             gameView = EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
             gameView.Focus(); gameView.Repaint(); fixtureFocusReadyAfter = EditorApplication.timeSinceStartup + .2d;
             oldDisplay = ReadDisplay();
@@ -749,6 +751,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Require(controller.Flow.CurrentTask == expected, "Task " + (task + 1) + " resolves to " + expected);
                 Click("task_start"); yield return Stable();
                 Click("task_start_confirm"); yield return Stable();
+                // When the card is not fully in view, the recovery strip appears after its .75 s glance dwell (Quest 16 Oct).
+                yield return AwaitPauseRoute();
                 VerifyExperimentalUI();
                 if (stopAtFirstTask) yield break;
                 if (task == 0) yield return MeasureCanvasCost("task_static_ui", 90);
@@ -762,6 +766,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 if (task == 0)
                 {
                     yield return ExerciseParticipantPause("task_" + expected);
+                    yield return AwaitPauseRoute();
                     VerifyExperimentalUI();
                 }
                 Click("reference"); yield return Stable();
@@ -782,6 +787,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Click("inspect_continue"); yield return Stable();
                 Require(controller.Flow.IsTaskActive && !controller.ReferenceOpen && !controller.Flow.InspectPassed.HasValue, "Fail Continue returns without opening Reference or hint");
                 yield return ExerciseMinimizedModal();
+                yield return AwaitPauseRoute();
                 VerifyExperimentalUI();
                 if (technicalSetup)
                 {
@@ -953,7 +959,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 yield return Stable();
                 Require(emitted.Count == 0, "Context focus and hover emit no examination event");
                 Require(controller.ReferenceOpen && targets.Count(t => t.ChipVisible) == 1 && module.ChipVisible,
-                    "Expanded Reference permits exactly one neutral component-local chip");
+                    "Expanded Reference permits exactly one neutral component-local chip: refOpen=" + controller.ReferenceOpen + " visible=" + string.Join(",", targets.Where(t => t.ChipVisible).Select(t => t.stableTarget))
+                    + " moduleAvailable=" + module.Available + " canvas=" + (module.GetComponentInParent<Canvas>() ? module.GetComponentInParent<Canvas>().enabled.ToString() : "none"));
                 Require(!ScreenBounds(controller.view.referencePanel.GetComponent<RectTransform>()).Overlaps(ScreenBounds((RectTransform)module.transform)),
                     "Reference and the real assembly Examine chip do not overlap in the participant view");
                 Require(!ScreenBounds(controller.view.mainPanel.GetComponent<RectTransform>()).Overlaps(ScreenBounds((RectTransform)module.transform)),
@@ -1553,7 +1560,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static void VerifyExperimentalUI()
         {
             Require(controller.Flow.IsTaskActive, "Experimental task active");
-            var taskBody = controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Single(t => t.text == ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".body", requestedLanguage));
+            // The card formats the S1 brief (goal, condition bullets, detail line); every authored sentence must still render verbatim.
+            var sentences = ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".body", requestedLanguage).Split('\n');
+            var taskBody = controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Single(t => { t.ForceMeshUpdate(); var shown = t.GetParsedText(); return sentences.All(s => shown.Contains(s)); });
             taskBody.ForceMeshUpdate();
             Require(taskBody.preferredHeight <= taskBody.rectTransform.rect.height, "Localized task copy fits its body area above action buttons");
             foreach (var utility in controller.view.mainPanel.GetComponentsInChildren<ResearchUIAction>(false).Where(a => a.command == "main_minimize" || a.command == "main_recenter"))
@@ -1567,7 +1576,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(!controller.view.GetComponentsInChildren<RectTransform>(false).Any(r => r.name == "TutorialDemo" || r.name == "TutorialSuccess" || r.name.StartsWith("PracticeHighlight_")),
                 "Experimental tasks get no teaching demo, success coaching or object highlight");
             var commands = ActiveCommands();
-            Require(new[] { "reference", "inspect", "pause" }.All(commands.Contains), "Reference, Inspect and Pause remain available");
+            // Pause sits on the card while the whole card is readable; otherwise the recovery strip brings it back (Menu also pauses).
+            // The Editor's 60-degree mono camera often clips the station-anchored card, so both routes count.
+            bool pauseRoute = commands.Contains("pause") || (!controller.view.mainPanel.IsReadableFromHead && commands.Contains("panel_recovery"));
+            Require(commands.Contains("reference") && commands.Contains("inspect") && pauseRoute, "Reference, Inspect and a Pause route remain available: active=" + string.Join(",", commands)
+                + " paused=" + controller.Flow.Paused + " kind=" + controller.PauseKind + " all=" + string.Join(",", controller.view.GetComponentsInChildren<ResearchUIAction>(false).Select(a => a.command + (a.GetComponent<Button>().IsInteractable() ? "" : "(off)"))));
             Require(!commands.Contains("helper"), "No experimental helper action");
             var participantText = string.Join(" ", controller.view.GetComponentsInChildren<TMP_Text>(false).Select(t => t.text));
             Require(!new[] { "H1", "H2", "H3", "H4", "DEV00", "Thai Group", "Japanese Group", "Efficiency Score" }.Any(participantText.Contains), "Participant text does not expose researcher identifiers or analytics");
@@ -1719,6 +1732,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             var moved = worldPoses.Where(p => p.Key && p.Key.localToWorldMatrix != p.Value).Select(p => p.Key.name).Take(5).ToArray();
             Require(moved.Length == 0, "Room/table/workstations stay fixed in world space after " + after + (moved.Length > 0 ? ": " + string.Join(", ", moved) : ""));
+        }
+
+        // A clipped card shows its recovery strip after the .75 s glance dwell (Quest 16 Oct); give it up to 2 s.
+        private static IEnumerator AwaitPauseRoute()
+        {
+            var start = EditorApplication.timeSinceStartup;
+            while (!ActiveCommands().Contains("pause") && !ActiveCommands().Contains("panel_recovery") && EditorApplication.timeSinceStartup - start < 2)
+            { gameView.Repaint(); yield return null; }
+            yield return Stable();
         }
 
         private static IEnumerator Stable()
@@ -2150,6 +2172,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             ResearchFlowVisualInput.Stop();
             Time.timeScale = originalTimeScale;
+            if (controller && controller.origin && controller.origin.Camera) controller.origin.Camera.fieldOfView = originalFieldOfView;
             if (researcherCanvas != null) researcherCanvas.enabled = oldResearcherEnabled;
             try { if (gameView != null) SetDisplay(oldDisplay); } catch (Exception restoreError) { if (error == null) error = restoreError; }
             Status = error == null ? "Passed" : "Failed";

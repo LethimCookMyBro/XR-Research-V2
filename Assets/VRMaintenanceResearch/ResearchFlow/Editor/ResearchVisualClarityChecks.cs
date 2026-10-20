@@ -22,6 +22,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     {
         const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
         const int PracticePointer = 73019;
+        // Master brief §15.1 asks for 1x and 1.5x renders; the framing is panel-fitted, so only resolution changes.
+        internal static float CaptureScale = 1f;
 
         public static string Run(string evidenceDirectory)
         {
@@ -569,7 +571,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             public void ReleaseSeededHold() => heldPointers.Clear();
             public object Capture(string stage, ResearchPanelMotion panel)
             {
-                const int width = 1280, height = 800;
+                int width = Mathf.RoundToInt(1280 * CaptureScale), height = Mathf.RoundToInt(800 * CaptureScale);
                 string path = Path.Combine(captureDirectory, Language + "_" + stage + ".png");
                 if (File.Exists(path)) throw new IOException("Refusing to overwrite prior pixel evidence: " + path);
                 var camera = Camera;
