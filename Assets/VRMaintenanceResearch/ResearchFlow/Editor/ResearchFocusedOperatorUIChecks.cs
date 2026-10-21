@@ -146,7 +146,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(!opened || (!dropdowns[4].interactable && dropdowns[4].value == 0), language + "/Quest controller mode locked",
                         new { dropdowns[4].interactable, dropdowns[4].value });
                     var lockedInput = setup.GetComponentsInChildren<TMP_Text>(true).FirstOrDefault(t => t.name == "QuestLockedInputMode");
-                    Check(!opened || (lockedInput && lockedInput.gameObject.activeInHierarchy && lockedInput.text == "Controller (locked)"),
+                    // The setup card speaks the session language (ResearcherSetupView.cs:39,743; ResearchStrings.cs:97).
+                    string lockedText = ResearchStrings.Get("researcher.locked_controller", language.ToString());
+                    Check(!opened || (lockedInput && lockedInput.gameObject.activeInHierarchy && !string.IsNullOrWhiteSpace(lockedText) && lockedInput.text == lockedText && !lockedInput.isTextOverflowing),
                         language + "/locked Controller mode is visible rather than a blank row", new { visible = lockedInput && lockedInput.gameObject.activeInHierarchy, text = lockedInput ? lockedInput.text : null });
                     Set("Record", record);
                     Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
@@ -166,7 +168,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(cue.gameObject.activeInHierarchy || (cue.gameObject.activeSelf && cue.transform.parent.gameObject.activeSelf),
                         language + "/last completed remains after feedback animation", new { cue.text, active = cue.transform.parent.gameObject.activeSelf });
                     var progress = view.GetComponentsInChildren<TMP_Text>(true).First(t => t.name == "TutorialProgress");
-                    Check(progress.text.Contains("13") && progress.text.Contains("1"), language + "/micro-skill progress rather than five groups", progress.text);
+                    // Training shows four presentation parts over the five recorded groups; nothing completed is part 1 (ResearchFlowView.cs:1476-1480).
+                    Check(progress.text == string.Format(ResearchStrings.Get("tutorial.part_progress", language.ToString()), 1, 4),
+                        language + "/four-part Training progress rather than five groups", progress.text);
                     var body = (TMP_Text)typeof(ResearchFlowView).GetField("body", Private).GetValue(view);
                     Check(body.text == ResearchStrings.Get(controller.TutorialInstructionKey, language.ToString()), language + "/next instruction remains distinct", body.text);
                     Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3));
@@ -182,11 +186,22 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     }
                     float[] RectValues(Rect bounds) => new[] { bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax };
                     var controls = new[] { "Pause", "Minimize", "Close" }.Select(n => expanded.Find(n)).Where(t => t && t.gameObject.activeInHierarchy).ToArray();
-                    Check(readerProgress.gameObject.activeInHierarchy && readerProgress.fontSize >= 24
+                    Rect Glyph(TMP_Text text, Vector3 min, Vector3 max)
+                    {
+                        Vector3 a = expanded.InverseTransformPoint(text.transform.TransformPoint(min)), b = expanded.InverseTransformPoint(text.transform.TransformPoint(max));
+                        return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+                    }
+                    readerProgress.ForceMeshUpdate(true, true); readerCue.ForceMeshUpdate(true, true);
+                    var progressGlyphs = Glyph(readerProgress, readerProgress.textBounds.min, readerProgress.textBounds.max);
+                    var cueGlyphs = readerCue.textInfo.characterInfo.Take(readerCue.textInfo.characterCount).Where(c => c.isVisible)
+                        .Select(c => Glyph(readerCue, c.bottomLeft, c.topRight)).ToArray();
+                    // The cue rect may grow up beside the right-aligned progress label (ResearchFlowView.cs:2097), so the rule is on rendered glyphs.
+                    Check(readerProgress.gameObject.activeInHierarchy && readerProgress.fontSize >= 24 && !readerProgress.isTextOverflowing && cueGlyphs.Length > 0
                         && controls.All(t => !Bounds(readerProgress.transform).Overlaps(Bounds(t)))
-                        && !Bounds(readerProgress.transform).Overlaps(Bounds(readerCue.transform)), language + "/reader progress owns a row clear of header controls and next instruction",
-                        new { readerProgress.text, readerProgress.fontSize, progress_bounds = RectValues(Bounds(readerProgress.transform)),
-                            cue_bounds = RectValues(Bounds(readerCue.transform)), controls = controls.Select(t => new { name = t.name, bounds = RectValues(Bounds(t)) }).ToArray() });
+                        && cueGlyphs.All(g => !g.Overlaps(progressGlyphs)), language + "/reader progress owns a row clear of header controls and next instruction",
+                        new { readerProgress.text, readerProgress.fontSize, progress_bounds = RectValues(Bounds(readerProgress.transform)), progress_glyphs = RectValues(progressGlyphs),
+                            cue_bounds = RectValues(Bounds(readerCue.transform)), cue_glyphs = cueGlyphs.Length == 0 ? null : RectValues(cueGlyphs.Aggregate((a, b) => Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax)))),
+                            cue_lines = readerCue.textInfo.lineCount, controls = controls.Select(t => new { name = t.name, bounds = RectValues(Bounds(t)) }).ToArray() });
                 }
                 catch (Exception exception) { Check(false, language + "/fixture completes", exception.ToString()); }
                 finally

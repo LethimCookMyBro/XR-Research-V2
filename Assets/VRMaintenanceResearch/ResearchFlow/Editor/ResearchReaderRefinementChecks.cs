@@ -68,6 +68,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             using (var reader = new StreamReader(new FileStream(controller.Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
                 return reader.ReadToEnd().Split('\n').Where(line => !string.IsNullOrWhiteSpace(line)).Select(JObject.Parse).ToList();
         }
+        static (int part, int parts) CaptionPart(ResearchReferenceViewer reader)
+        {
+            var metadata = JObject.FromObject(reader.Metadata);
+            return ((int?)metadata["caption_part"] ?? 1, (int?)metadata["caption_parts"] ?? 1);
+        }
         static void Flush(ResearchFlowView view)
         {
             Canvas.ForceUpdateCanvases();
@@ -78,7 +83,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
         static void Click(ResearchFlowView view, string command, PointerEventData pointer)
         {
-            var action = view.GetComponentsInChildren<ResearchUIAction>(true).Single(a => a.command == command && a.gameObject.activeInHierarchy && a.GetComponent<Button>().IsInteractable());
+            var matches = view.GetComponentsInChildren<ResearchUIAction>(true).Where(a => a.command == command).ToArray();
+            var action = matches.SingleOrDefault(a => a.gameObject.activeInHierarchy && a.GetComponent<Button>().IsInteractable());
+            if (!action) throw new InvalidOperationException("No single active interactable control for " + command + ": "
+                + string.Join(", ", matches.Select(a => a.name + " active=" + a.gameObject.activeInHierarchy + " interactable=" + a.GetComponent<Button>().IsInteractable())));
             if (Field<Button>(action, "button") == null) PrivateCall(action, "OnEnable");
             pointer.Reset(); pointer.button = PointerEventData.InputButton.Left; pointer.eligibleForClick = true;
             var owner = ExecuteEvents.ExecuteHierarchy(action.GetComponentInChildren<TMP_Text>(true).gameObject, pointer, ExecuteEvents.pointerDownHandler);
@@ -169,6 +177,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         var controller = Public<ResearchSessionFlowController>(fixture, "Controller");
                         var view = Public<ResearchFlowView>(fixture, "View"); var camera = Public<Camera>(fixture, "Camera");
                         Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
+                        // Task Reader content and controls exist only while the task clock runs (ResearchSessionFlowController.cs:116,132).
+                        Field<ResearchTaskTiming>(controller, "taskTiming").Start(controller.Logger.Timestamp);
                         Set(controller, "ReferenceOpen", true); Set(controller, "ReferenceMinimized", false); Set(controller, "ReferenceSection", "user_manual");
                         fixtureType.GetMethod("Refresh").Invoke(fixture, null); Flush(view);
                         view.referencePanel.GetComponent<Canvas>().worldCamera = camera;
@@ -236,7 +246,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             else
                             {
                                 int[] numbers = Regex.Matches(label.GetParsedText(), @"\d+").Cast<Match>().Select(match => int.Parse(match.Value)).ToArray();
-                                C(numbers.SequenceEqual(new[] { reader.PageIndex, reader.PageCount }) && (unit == null || label.GetParsedText().Contains(unit)),
+                                // An image with a long caption also shows its caption part, "· part/parts" (ResearchReferenceViewer.cs:111-114).
+                                var (part, parts) = CaptionPart(reader);
+                                var expected = new[] { reader.PageIndex, reader.PageCount }.Concat(parts > 1 ? new[] { part, parts } : new int[0]);
+                                C(numbers.SequenceEqual(expected) && (unit == null || label.GetParsedText().Contains(unit)),
                                     stage + ": localized item unit/actual index/count", label.GetParsedText());
                                 C(Size(previous.GetComponent<RectTransform>(), 64, 40) && Size(next.GetComponent<RectTransform>(), 64, 40), stage + ": compact arrow hit areas");
                             }
@@ -271,7 +284,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         GameObject pressOwner = null, dragOwner = null;
                         try
                         {
-                            C(barHit.gameObject, "restored PDF scrollbar has an actual GraphicRaycaster hit", barHits.Select(hit => hit.gameObject.name).ToArray());
+                            C(barHit.gameObject, "restored PDF scrollbar has an actual GraphicRaycaster hit", new { hits = barHits.Select(hit => hit.gameObject.name).ToArray(),
+                                bar_active = restoredBar.gameObject.activeInHierarchy, reader.CanScrollDocument, local_ui = typeof(ResearchSessionFlowController).GetProperty("LocalUICommandsAllowed", Hidden).GetValue(controller),
+                                handle = RectValues(restoredBar.handleRect), handle_raycast = EffectiveRaycast(restoredBar.handleRect.GetComponent<Graphic>()) });
                             if (barHit.gameObject)
                             {
                                 pointer.pressPosition = pointer.position; pointer.pointerPressRaycast = barHit; pointer.eligibleForClick = false;
@@ -325,9 +340,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         {
                             Click(view, "reference_tab." + format, pointer); Stable(format); Capture(format == "step_by_step" ? "Steps" : "Images");
                             Pager(format, true, format == "step_by_step" ? stepUnit : imageUnit);
-                            int index = reader.PageIndex; Click(view, "reference_next", pointer);
-                            C(reader.PageIndex == index + 1, format + ": next changes only current media item", reader.Metadata);
-                            Click(view, "reference_previous", pointer); C(reader.PageIndex == index, format + ": previous returns to original item", reader.Metadata);
+                            int index = reader.PageIndex; var (part, parts) = CaptionPart(reader); Click(view, "reference_next", pointer);
+                            // Images step through caption parts before the next image (ResearchReferenceViewer.cs:243-246).
+                            bool nextPart = part < parts;
+                            C(reader.PageIndex == (nextPart ? index : index + 1) && CaptionPart(reader).part == (nextPart ? part + 1 : 1), format + ": next changes only current media item", reader.Metadata);
+                            Click(view, "reference_previous", pointer); C(reader.PageIndex == index && CaptionPart(reader).part == part, format + ": previous returns to original item", reader.Metadata);
                             var single = JsonUtility.FromJson<ResearchReferenceViewer.Package>(originalRegistry);
                             if (format == "step_by_step") single.steps = single.steps.Take(1).ToArray(); else single.images = single.images.Take(1).ToArray();
                             FixturePackage(view, single); Pager("single " + format, false);
@@ -379,12 +396,21 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         var gripLine = grip.Find("GripLine") as RectTransform; var gripCarrier = grip.GetComponent<Graphic>();
                         C(Size(grip, 320, 80) && gripCarrier && gripCarrier.color.a < .01f && gripCarrier.raycastTarget && gripLine && Size(gripLine, 96, 6),
                             "small visible grip/transparent reachable carrier", new { carrier = RectValues(grip), visible = gripLine ? RectValues(gripLine) : null });
-                        OutsideVisualHit("grip", grip, gripLine, new Vector2(100, 0));
+                        // Fixed-position policy hides the grip; only movable policies offer drag (ResearchUIPolicy.cs:36, ResearchFlowView.cs:1465).
+                        if (ResearchUIPolicy.PanelDragAllowed) OutsideVisualHit("grip", grip, gripLine, new Vector2(100, 0));
+                        else
+                        {
+                            var gripHits = Hits(view, camera, grip, new Vector2(100, 0), pointer);
+                            C(!grip.gameObject.activeInHierarchy && !gripHits.Any(hit => hit.gameObject.transform.IsChildOf(grip)),
+                                "fixed policy: Reader grip hidden and takes no ray", new { policy = ResearchUIPolicy.Active, active = grip.gameObject.activeInHierarchy, hits = gripHits.Select(hit => hit.gameObject.name).ToArray() });
+                        }
                         var icons = view.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Where(action => action.command.StartsWith("reference_tab.")).Select(action => action.transform.Find("FormatIcon") as RectTransform).ToArray();
                         C(icons.Length == 4 && icons.All(icon => icon && Size(icon, 48, 48) && Vector3.Distance(icon.localScale, Vector3.one) < .001f),
                             "four authored 48-unit sidebar icons, not .7 shrink", icons.Select(icon => icon ? new { values = RectValues(icon), scale = icon.localScale.x } : null).ToArray());
                         var title = Field<TMP_Text>(view, "referenceTitle");
-                        C(!title.isTextOverflowing && !title.enableAutoSizing && title.GetParsedText().Contains("TEST"), "readable header keeps TEST attribution", new { text = title.GetParsedText(), title.isTextOverflowing, title.enableAutoSizing });
+                        // Participants see a localized Reader + task heading; TEST attribution lives in the events (ResearchFlowView.cs:1078-1079).
+                        string heading = ResearchStrings.Get("reference.title", language.ToString()) + " · " + ResearchStrings.Get("task.A.title", language.ToString());
+                        C(!title.isTextOverflowing && !title.enableAutoSizing && title.GetParsedText() == heading, "readable header shows the localized Reader and task title", new { text = title.GetParsedText(), heading, title.isTextOverflowing, title.enableAutoSizing });
                         var emitted = Events(controller).Skip(firstEvent).ToArray();
                         C(TaskSnapshot(controller) == task && !emitted.Any(row => new[] { "TASK_STARTED", "TASK_COMPLETED", "INSPECT_RESULT", "REPAIR_COMPLETED", "TUTORIAL_SKILL_CREDIT" }.Contains((string)row["event"])),
                             "reader actions never score repair/Inspect/Task completion", new { before = task, after = TaskSnapshot(controller), events_path = controller.Logger.EventsPath, event_count = emitted.Length });

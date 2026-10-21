@@ -163,7 +163,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         var corners = new Vector3[4]; rect.GetWorldCorners(corners);
                         var local = corners.Select(panel.InverseTransformPoint).ToArray();
                         bool inside = local.All(point => panel.rect.Contains(new Vector2(point.x, point.y)));
-                        Check(Mathf.Abs(rect.rect.width - 88) < .01f && Mathf.Abs(rect.rect.height - 48) < .01f && inside
+                        // Footer row: "100%" keeps 88 px so it never wraps, symbol buttons are 64x48 (ResearchReferenceViewer.cs:399-400).
+                        float expectedWidth = expectedCommands[i] == "zoom_reset" ? 88 : 64;
+                        Check(Mathf.Abs(rect.rect.width - expectedWidth) < .01f && Mathf.Abs(rect.rect.height - 48) < .01f && inside
                             && text.GetParsedText() == expectedLabels[i] && !text.isTextOverflowing,
                             prefix + "/zoom control label, actual hit area and panel bounds/" + expectedCommands[i],
                             new { label = text.GetParsedText(), width = rect.rect.width, height = rect.rect.height, font = text.font.name, font_size = text.fontSize,
@@ -171,6 +173,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 label_margin = new[] { text.margin.x, text.margin.y, text.margin.z, text.margin.w }, preferred_height = text.GetPreferredValues(text.text, text.rectTransform.rect.width, 10000).y,
                                 corners = local.Select(point => new[] { point.x, point.y, point.z }).ToArray() });
                     }
+                    Rect InPanel(RectTransform owner, Vector3 min, Vector3 max)
+                    {
+                        Vector3 a = panel.InverseTransformPoint(owner.TransformPoint(min)), b = panel.InverseTransformPoint(owner.TransformPoint(max));
+                        return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+                    }
+                    var zoomRects = expectedCommands.Select(c => (RectTransform)view.GetComponentsInChildren<ResearchUIAction>(false).Single(a => a.command == "reference_media." + c).transform)
+                        .Select(r => InPanel(r, r.rect.min, r.rect.max)).ToArray();
+                    var pageLabel = Field<TMPro.TMP_Text>(view, "pageLabel"); pageLabel.ForceMeshUpdate(true, true);
+                    var counter = pageLabel.gameObject.activeInHierarchy ? InPanel(pageLabel.rectTransform, pageLabel.textBounds.min, pageLabel.textBounds.max) : Rect.zero;
+                    bool apart = zoomRects.Select((r, i) => zoomRects.Skip(i + 1).All(o => !r.Overlaps(o))).All(x => x);
+                    Check(apart && pageLabel.gameObject.activeInHierarchy && zoomRects.All(r => !r.Overlaps(counter)),
+                        prefix + "/footer zoom buttons clear of each other and of the page counter glyphs",
+                        new { counter_text = pageLabel.GetParsedText(), counter = new[] { counter.xMin, counter.yMin, counter.xMax, counter.yMax },
+                            buttons = zoomRects.Select(r => new[] { r.xMin, r.yMin, r.xMax, r.yMax }).ToArray() });
                     scroll.verticalNormalizedPosition = .65f;
                     float offset = (1 - scroll.verticalNormalizedPosition) * Mathf.Max(0, scroll.content.rect.height - scroll.viewport.rect.height);
                     var images = scroll.content.GetComponentsInChildren<RawImage>().Where(image => image.name.StartsWith("PDFPage_", StringComparison.Ordinal)).ToArray();
