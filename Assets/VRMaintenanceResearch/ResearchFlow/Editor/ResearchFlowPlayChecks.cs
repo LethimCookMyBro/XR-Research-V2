@@ -924,6 +924,44 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(controller.locomotionInputRoots.All(g => !g.activeInHierarchy), label + " disables locomotion roots");
         }
 
+        // Why a Task chip found no spot: each beside-part candidate's viewport rect, and which panel it overlaps.
+        private static string ChipPlacementDiagnostic(ResearchExamineTarget target, Camera camera)
+        {
+            const BindingFlags hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+            var args = new object[] { null };
+            if (!(bool)typeof(ResearchExamineTarget).GetMethod("TryFocusBounds", hidden).Invoke(target, args))
+            {
+                var report = new List<string>();
+                foreach (var c in (Collider[])typeof(ResearchExamineTarget).GetField("focusColliders", hidden).GetValue(target))
+                {
+                    if (!c) { report.Add("null"); continue; }
+                    var off = c.GetComponentsInParent<Transform>(true).LastOrDefault(t => !t.gameObject.activeSelf);
+                    report.Add(c.name + "[enabled=" + c.enabled + " active=" + c.gameObject.activeInHierarchy + " inactiveAt=" + (off ? off.name : "none") + "]");
+                }
+                return "no focus bounds: " + string.Join(" ", report);
+            }
+            var bounds = (Bounds)args[0]; var rect = (RectTransform)target.stationCanvas.transform; var head = camera.transform;
+            var offset = (Vector3)typeof(ResearchExamineTarget).GetField("chipOffset", hidden).GetValue(target);
+            var place = typeof(ResearchExamineTarget).GetMethod("PositionBesideBounds", BindingFlags.Static | BindingFlags.NonPublic);
+            var screen = typeof(ResearchExamineTarget).GetMethod("ScreenBounds", hidden);
+            Rect Of(RectTransform r) => (Rect)screen.Invoke(target, new object[] { camera, r, Camera.MonoOrStereoscopicEye.Mono });
+            var panels = new[] { ("main", controller.view.mainPanel), ("reader", controller.view.referencePanel) };
+            var parts = new List<string> { "aspect=" + camera.aspect.ToString("F2") + " fov=" + camera.fieldOfView + " partVp=" + camera.WorldToViewportPoint(bounds.center).ToString("F2") + " partSize=" + bounds.size.ToString("F2") };
+            var pose = new Pose(rect.position, rect.rotation);
+            float half = rect.rect.width * Mathf.Abs(rect.lossyScale.x) * .5f;
+            for (int level = 0; level < 2; level++)
+                for (int side = 0; side < 2; side++)
+                {
+                    var position = (Vector3)place.Invoke(null, new object[] { bounds, side == 0 ? head.right : -head.right, head.forward, half, offset + Vector3.down * (level * .20f) });
+                    rect.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
+                    var chip = Of(rect);
+                    parts.Add("L" + level + (side == 0 ? "R" : "L") + "=" + chip.xMin.ToString("F2") + "," + chip.yMin.ToString("F2") + "-" + chip.xMax.ToString("F2") + "," + chip.yMax.ToString("F2")
+                        + string.Concat(panels.Where(p => p.Item2.GetComponent<Canvas>().enabled && chip.Overlaps(Of((RectTransform)p.Item2.transform))).Select(p => "x" + p.Item1)));
+                }
+            rect.SetPositionAndRotation(pose.position, pose.rotation);
+            return string.Join(" ", parts) + " main=" + Of((RectTransform)controller.view.mainPanel.transform) + " reader=" + Of((RectTransform)controller.view.referencePanel.transform);
+        }
+
         private static IEnumerator ExerciseContextualExamine(string taskId)
         {
             var targets = controller.GetComponentsInChildren<ResearchExamineTarget>(true);
@@ -964,7 +1002,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Require(emitted.Count == 0, "Context focus and hover emit no examination event");
                 Require(controller.ReferenceOpen && targets.Count(t => t.ChipVisible) == 1 && module.ChipVisible,
                     "Expanded Reference permits exactly one neutral component-local chip: refOpen=" + controller.ReferenceOpen + " visible=" + string.Join(",", targets.Where(t => t.ChipVisible).Select(t => t.stableTarget))
-                    + " moduleAvailable=" + module.Available + " canvas=" + (module.GetComponentInParent<Canvas>() ? module.GetComponentInParent<Canvas>().enabled.ToString() : "none"));
+                    + " moduleAvailable=" + module.Available + " canvas=" + (module.GetComponentInParent<Canvas>() ? module.GetComponentInParent<Canvas>().enabled.ToString() : "none")
+                    + " " + ChipPlacementDiagnostic(module, camera));
                 Require(!ScreenBounds(controller.view.referencePanel.GetComponent<RectTransform>()).Overlaps(ScreenBounds((RectTransform)module.transform)),
                     "Reference and the real assembly Examine chip do not overlap in the participant view");
                 Require(!ScreenBounds(controller.view.mainPanel.GetComponent<RectTransform>()).Overlaps(ScreenBounds((RectTransform)module.transform)),
