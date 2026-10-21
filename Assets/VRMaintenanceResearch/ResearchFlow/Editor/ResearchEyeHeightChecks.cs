@@ -300,6 +300,37 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             return path;
         }
 
+        // Sweeps head-relative poses for the current Main card with the production view and clearance predicates, restoring its pose.
+        // Read-only evidence for choosing seated-eye fallbacks; writes one JSON row per pose.
+        public static string SweepMainCardPoses(string path)
+        {
+            var c = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>() ?? throw new InvalidOperationException("No flow controller");
+            var panel = c.view.mainPanel; var head = c.view.Head;
+            var fits = typeof(ResearchPanelMotion).GetMethod("FitsView", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var forward = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
+            var start = new Pose(panel.transform.position, panel.transform.rotation);
+            var rows = new List<object>(); int ok = 0;
+            try
+            {
+                foreach (float angle in new[] { -75f, -55f, -35f, -20f, 0f, 20f, 35f, 55f, 75f })
+                    foreach (float distance in new[] { .6f, .7f, .8f, .9f, 1f, 1.2f, 1.4f, 1.6f })
+                        foreach (float height in new[] { -.1f, 0f, .1f, .2f, .3f, .4f, .6f })
+                        {
+                            var direction = Quaternion.AngleAxis(angle, Vector3.up) * forward;
+                            var rotation = Quaternion.LookRotation(direction, Vector3.up);
+                            var position = head.position + direction * distance + Vector3.up * height;
+                            bool view = (bool)fits.Invoke(panel, new object[] { position, rotation, 1f });
+                            bool clear = panel.PlacementClear(position, rotation);
+                            if (view && clear) ok++;
+                            rows.Add(new { angle, distance, height, view, clear, rejection = panel.LastRejection });
+                        }
+            }
+            finally { panel.transform.SetPositionAndRotation(start.position, start.rotation); }
+            File.WriteAllText(path, JsonConvert.SerializeObject(new { state = c.Flow.State.ToString(), head = XYZ(head.position), centered = panel.centered,
+                station = c.Flow.CurrentTask, ok, rows }, Formatting.Indented));
+            return "SWEEP ok=" + ok + "/" + rows.Count + " " + path;
+        }
+
         static void Fail(Stage stage, string failure) { stage.pass = false; stage.failures.Add(failure); }
         static float[] XYZ(Vector3 v) => new[] { v.x, v.y, v.z };
     }

@@ -220,14 +220,19 @@ namespace VRMaintenanceResearch.ResearchFlow
                 ? new[] { .85f, 1.0f, 1.15f, 1.3f, 1.5f }
                 : panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f };
             var candidateAngles = preferHeadRelative ? new[] { 0f, 16f, 24f, 32f, 45f } : angles;
-            if (!found) foreach (float angle in candidateAngles)
+            // A seated 1.0 m eye at the Computer bench: every right-side pose of the Ready and Task cards hit the case or bench, so the
+            // card hid and neither Start nor Inspect could be pressed. A 504-pose sweep found clear poses only 20 deg to the left,
+            // 0.2-0.4 m up (owner-20261020/sweep, 21 Oct). The mirrored pass runs only when the first found nothing.
+            bool mirrored = !preferHeadRelative && panelId != "reference" && panelId != "recovery";
+            for (int pass = 0; pass < (mirrored ? 2 : 1) && !found; pass++)
+            foreach (float angle in pass == 1 ? new[] { 20f, 28f, 35f } : candidateAngles)
             {
                 foreach (float distance in distances)
                 {
                     // At a native .99 m eye pose, no original Tutorial candidate was both visible and clear near the worktop.
-                    foreach (float height in preferHeadRelative ? new[] { -.08f, 0f, .12f, .24f } : panelId == "recovery" ? new[] { -.25f, -.4f, .2f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
+                    foreach (float height in pass == 1 ? new[] { .2f, .3f, .4f } : preferHeadRelative ? new[] { -.08f, 0f, .12f, .24f } : panelId == "recovery" ? new[] { -.25f, -.4f, .2f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
                     {
-                        var direction = Quaternion.AngleAxis(side * angle, Vector3.up) * forward;
+                        var direction = Quaternion.AngleAxis((pass == 1 ? -side : side) * angle, Vector3.up) * forward;
                         rotation = Quaternion.LookRotation(direction, Vector3.up);
                         position = view.Head.position + direction * distance + Vector3.up * height;
                         bool viewOk = preferHeadRelative && distance < 1.15f ? ReadableFromHeadForDrag(position, rotation) : FitsView(position, rotation);
