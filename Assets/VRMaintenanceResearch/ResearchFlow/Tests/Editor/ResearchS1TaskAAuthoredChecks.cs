@@ -16,7 +16,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Action<bool, string> check = (value, message) => { checks++; if (!value) throw new InvalidOperationException(message); };
             check(task.AuthoredBindingsValid(), "Authored graph invalid.");
             var initial = task.Capture();
-            check(ResearchS1TaskEvaluator.Evaluate(initial).Category == S1InspectionCategory.SystemError, "Incomplete modules cannot be participant failure.");
+            // An unassembled base is the participant's incomplete assembly, never a pass (ResearchS1TaskChecks "no RAM").
+            check(ResearchS1TaskEvaluator.Evaluate(initial).Category == S1InspectionCategory.AssemblyIncomplete, "Unassembled authored base must evaluate as AssemblyIncomplete.");
             check(initial.ram.Length == 5 && initial.ssds.Length == 3 && initial.gpus.Length == 2, "Wrong option count.");
             check(initial.ram.All(p => p.placement == S1Placement.NotInstalled), "RAM installed during authoring.");
             check(initial.ssds.All(p => p.placement == S1Placement.NotInstalled && p.trayFastener == S1ThreadState.Absent), "SSD auto fastened.");

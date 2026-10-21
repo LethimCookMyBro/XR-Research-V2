@@ -167,7 +167,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 foreach (var real in items)
                 {
                     foreach (var name in new[] { "Training_Practice_A", "Computer_TaskCase", "Fan_TaskFan" })
-                        Surfaces(real, solids, solids.Single(c => c.name == name), cases, Check, created);
+                    {
+                        var target = solids.Single(c => c.name == name);
+                        // The S1 Task A/B assemblies replaced the case and fan props, which the scene saves switched off
+                        // (ResearchS1SceneIntegration); physics never sees them, so there is no side surface to push against.
+                        if (name != "Training_Practice_A" && !target.gameObject.activeInHierarchy) { cases.Add(new { id = real.stableId + "/" + name, skipped = "prop switched off in the saved scene" }); continue; }
+                        Surfaces(real, solids, target, cases, Check, created);
+                    }
                     ThinAndCarry(real, created, cases, Check);
                 }
             }
