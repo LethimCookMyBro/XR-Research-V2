@@ -12,6 +12,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         [NonSerialized] public Vector3[] cachedPath;
         [NonSerialized] public Vector3 cachedA, cachedB, cachedDa, cachedDb, cachedSide;
         [NonSerialized] public bool cached;
+        // From the skin's bind pose, once: each bone's modelled segment in bone space (toward the next node) and its arc fraction.
+        [NonSerialized] public Vector3[] bindAxes;
+        [NonSerialized] public float[] bindFractions;
+        [NonSerialized] public bool carried;
         public Transform[] bones;
         public Quaternion[] restRotations;
         public Vector3[] restPositions;
@@ -27,6 +31,19 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string assetId;
         public S1CableSpan[] spans;
         public SkinnedMeshRenderer skin;
+        public bool sideways; // bow across the chord first, as a short lead lying over; the default arches up
+        // Drawn instead of the skinned body when the modelled lead cannot straighten (Training FX1: its coiled body sits up to
+        // 16 mm off the bone chords, so posed straight it waved and dipped 9 mm into the base). Zero radius keeps the skin.
+        public Material tubeMaterial;
+        public float tubeRadius;
+        public const int TubeSides = 8;
+        MeshFilter tube; Vector3[] tubeVertices, tubeNormals, tubeSource;
+
+        // Work surfaces the drawn cable rests on (benches and the trainer base), found by name as ResearchFlowPhysicalProbe does.
+        static readonly string[] SurfaceNames = { "Computer_Main", "Fan_Main", "Training_Practice_A", "COL_TRAINER_FX1_BASE_Body" };
+        static Collider[] surfaces;
+        // Bones sit ~4 cm apart, so a cable dropping off an edge would cut the corner unless it clears the edge by about that much.
+        const float Clearance = .005f, EdgeMargin = .03f, RigidCarriedLength = .1f;
 
         // Re-checking every bone name each frame allocated ~25 KB/frame across the 8 cables on Quest (GC every ~4 s).
         // shortcut: a pass is cached per spans array + assetId; bones destroyed in place are not re-detected (authoring never does that).
@@ -42,13 +59,29 @@ namespace VRMaintenanceResearch.ResearchFlow
             return valid;
         }
 
+        // A span whose reference pose is the skin's bind pose, for a lead built at runtime without authored rest data (Training FX1).
+        public static S1CableSpan BindSpan(Transform root, SkinnedMeshRenderer skin, Transform from, Transform[] bones, Transform to)
+        {
+            var binds = skin.sharedMesh.bindposes; var all = skin.bones;
+            Matrix4x4 Relative(Transform t) => binds[Array.IndexOf(all, from)] * binds[Array.IndexOf(all, t)].inverse;
+            var end = Relative(to); float length = 0;
+            for (int i = 0; i < bones.Length; i++) length += Vector3.Distance(Relative(bones[i]).GetColumn(3), (i + 1 < bones.Length ? Relative(bones[i + 1]) : end).GetColumn(3));
+            Vector3 exit = Relative(bones[0]).GetColumn(3), last = (end.inverse * Relative(bones[bones.Length - 1])).GetColumn(3);
+            var fromRotation = Quaternion.Inverse(root.rotation) * from.rotation;
+            return new S1CableSpan { from = from, to = to, bones = bones, length = length, fromExit = exit, fromDirection = exit.normalized, toDirection = last.normalized,
+                restToPosition = end.GetColumn(3), restToRotation = end.rotation, restFromRotation = fromRotation,
+                restPositions = bones.Select(b => (Vector3)Relative(b).GetColumn(3)).ToArray(),
+                restRotations = bones.Select(b => fromRotation * Relative(b).rotation).ToArray(), restDirections = new Vector3[bones.Length] };
+        }
+
         public bool Allows(Transform moving, Matrix4x4 proposed)
         {
             if (!AuthoredValid()) return false;
             foreach (var span in spans)
             {
                 Vector3 a = Exit(span.from, span.fromExit, moving, proposed), b = Exit(span.to, span.toExit, moving, proposed);
-                if (Rigid(span,moving,proposed)) continue;
+                Bind(span);
+                if (span.carried || Rigid(span,moving,proposed)) continue;
                 Vector3 da = Direction(span.from, span.fromDirection, moving, proposed), db = Direction(span.to, span.toDirection, moving, proposed);
                 if (Path(span,a,b,da,db) == null) return false;
             }
@@ -82,37 +115,146 @@ namespace VRMaintenanceResearch.ResearchFlow
             if(span.cached && span.cachedA==a && span.cachedB==b && span.cachedDa==da && span.cachedDb==db)return span.cachedPath;
             span.cached=true;span.cachedA=a;span.cachedB=b;span.cachedDa=da;span.cachedDb=db;span.cachedPath=null;
             // A real cable may bow in any plane. Keep the last valid plane first so the drawn cable does not flip between frames.
-            foreach(var bow in new[]{span.cachedSide,transform.up,-transform.up,transform.right,-transform.right,transform.forward,-transform.forward})
+            foreach(var bow in new[]{span.cachedSide,sideways?Vector3.Cross(transform.up,b-a):transform.up,-transform.up,transform.right,-transform.right,transform.forward,-transform.forward})
             {
                 Vector3 side=Vector3.ProjectOnPlane(bow,b-a).normalized;
                 if(side.sqrMagnitude<.5f)continue;
                 span.cachedPath=ResearchS1CablePath.Solve(a,b,da,db,span.length,side,span.minimumRadius);
-                if(span.cachedPath!=null){span.cachedSide=bow;break;}
+                if(span.cachedPath!=null){span.cachedSide=bow;KeepAbove(span.cachedPath);break;}
             }
             return span.cachedPath;
         }
+
+        // The bow solve knows nothing of the bench: laid on it, the SATA data path ran 10 mm under the top. Visual only.
+        private static void KeepAbove(Vector3[] path)
+        {
+            for (int i = 0; i < path.Length; i++) path[i].y = Mathf.Max(path[i].y, Floor(path[i]) + Clearance);
+        }
+
+        private static float Floor(Vector3 p)
+        {
+            if (surfaces == null || Array.Exists(surfaces, s => !s))
+                surfaces = FindObjectsByType<Collider>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Where(c => !c.isTrigger && Array.IndexOf(SurfaceNames, c.name) >= 0).ToArray();
+            float floor = float.NegativeInfinity;
+            foreach (var surface in surfaces)
+            {
+                var bounds = surface.bounds;
+                if (bounds.size.x > .05f && bounds.size.z > .05f && p.x >= bounds.min.x - EdgeMargin && p.x <= bounds.max.x + EdgeMargin &&
+                    p.z >= bounds.min.z - EdgeMargin && p.z <= bounds.max.z + EdgeMargin)
+                    floor = Mathf.Max(floor, bounds.max.y);
+            }
+            return floor;
+        }
+
+        private void Bind(S1CableSpan span)
+        {
+            if (span.bindAxes != null) return;
+            var binds = skin.sharedMesh.bindposes; var all = skin.bones;
+            Matrix4x4 Pose(Transform t) => binds[Array.IndexOf(all, t)];
+            int n = span.bones.Length; var lengths = new float[n]; float total = 0;
+            span.bindAxes = new Vector3[n]; span.bindFractions = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 next = (i + 1 < n ? Pose(span.bones[i + 1]) : Pose(span.to)).inverse.GetColumn(3);
+                span.bindAxes[i] = Pose(span.bones[i]).MultiplyPoint3x4(next);
+                lengths[i] = Vector3.Distance(Pose(span.bones[i]).inverse.GetColumn(3), next); total += lengths[i];
+            }
+            for (int i = 1; i < n; i++) span.bindFractions[i] = span.bindFractions[i - 1] + lengths[i - 1] / total;
+            span.carried = spans.Any(s => s.from == span.to.parent || s.to == span.to.parent);
+        }
+
+        // A connector carried by another head (SATA daisy-chain C/D, the second PCIe plug) hangs from it instead of turning
+        // rigidly with the held plug: rigid, the 30 cm SATA tail swung through the bench whenever the plug was laid flat.
+        private void Hang(S1CableSpan span, bool rigid)
+        {
+            var from = rigid || span.length < RigidCarriedLength ? span.from.localToWorldMatrix
+                : Matrix4x4.TRS(span.from.position, transform.rotation * span.restFromRotation, Vector3.one);
+            var pose = from * Matrix4x4.TRS(span.restToPosition, span.restToRotation, Vector3.one);
+            Vector3 position = pose.GetColumn(3);
+            if (!rigid) position.y = Mathf.Max(position.y, Floor(position) + 2 * Clearance);
+            span.to.SetPositionAndRotation(position, pose.rotation);
+        }
+
+        private Vector3[] Path(S1CableSpan span) => Path(span, span.from.TransformPoint(span.fromExit), span.to.TransformPoint(span.toExit),
+            span.from.TransformDirection(span.fromDirection), span.to.TransformDirection(span.toDirection));
+
         public void RefreshShape()
         {
             if (!AuthoredValid()) return;
             foreach (var span in spans)
             {
+                Bind(span);
+                if (span.carried)
+                {
+                    Hang(span, false);
+                    // Too taut to bow from the hung pose: ride on the head as authored rather than freeze in an old shape.
+                    if (!Rigid(span) && Path(span) == null) Hang(span, true);
+                }
                 if (Rigid(span))
                 {
                     for (int i = 0; i < span.bones.Length; i++) span.bones[i].SetPositionAndRotation(span.from.TransformPoint(span.restPositions[i]),
                         span.from.rotation * Quaternion.Inverse(span.restFromRotation) * span.restRotations[i]);
                     continue;
                 }
-                Vector3 a = span.from.TransformPoint(span.fromExit), b = span.to.TransformPoint(span.toExit);
-                var path=Path(span,a,b,span.from.TransformDirection(span.fromDirection),span.to.TransformDirection(span.toDirection));
-                if(path==null)continue;
+                var path = Path(span);
+                if (path == null) continue;
+                // Each bone aims its modelled segment at the next node. Aimed along the path tangent with the scene default-pose
+                // direction, segments ended up to 30 mm off the next bone and dipped the mesh 5-9 mm into the bench.
+                ResearchS1CablePath.At(path, 0, out var position, out _);
                 for (int i = 0; i < span.bones.Length; i++)
                 {
-                    Vector3 position,tangent;
-                    ResearchS1CablePath.At(path,(double)i/span.bones.Length,out position,out tangent);
-                    Quaternion rotation = Quaternion.FromToRotation(transform.TransformDirection(span.restDirections[i]), tangent) * transform.rotation * span.restRotations[i];
-                    span.bones[i].SetPositionAndRotation(position, rotation);
+                    Vector3 next = span.to.position;
+                    if (i + 1 < span.bones.Length) ResearchS1CablePath.At(path, span.bindFractions[i + 1], out next, out _);
+                    var rest = transform.rotation * span.restRotations[i];
+                    span.bones[i].SetPositionAndRotation(position, Quaternion.FromToRotation(rest * span.bindAxes[i], next - position) * rest);
+                    position = next;
+                }
+                if (tubeRadius > 0) DrawTube(span, path);
+            }
+        }
+
+        private void DrawTube(S1CableSpan span, Vector3[] path)
+        {
+            if (ReferenceEquals(tubeSource, path)) return;
+            tubeSource = path;
+            if (!tube)
+            {
+                // The coiled body folds into the bone line inside the tube; the plug housings stay skinned.
+                foreach (var bone in span.bones) bone.localScale = Vector3.zero;
+                tube = new GameObject("VIS_" + assetId + "_Tube").AddComponent<MeshFilter>();
+                tube.transform.SetParent(transform, false);
+                tube.gameObject.AddComponent<MeshRenderer>().sharedMaterial = tubeMaterial;
+                tubeVertices = new Vector3[path.Length * TubeSides]; tubeNormals = new Vector3[tubeVertices.Length];
+                var triangles = new int[(path.Length - 1) * TubeSides * 6];
+                for (int i = 0, t = 0; i < path.Length - 1; i++)
+                    for (int s = 0; s < TubeSides; s++)
+                    {
+                        int a = i * TubeSides + s, b = i * TubeSides + (s + 1) % TubeSides;
+                        triangles[t++] = a; triangles[t++] = b; triangles[t++] = a + TubeSides;
+                        triangles[t++] = b; triangles[t++] = b + TubeSides; triangles[t++] = a + TubeSides;
+                    }
+                var mesh = new Mesh { name = tube.name };
+                mesh.MarkDynamic(); mesh.vertices = tubeVertices; mesh.triangles = triangles; tube.sharedMesh = mesh;
+            }
+            var toLocal = tube.transform.worldToLocalMatrix;
+            Vector3 normal = Vector3.zero;
+            for (int i = 0; i < path.Length; i++)
+            {
+                var tangent = (path[Mathf.Min(i + 1, path.Length - 1)] - path[Mathf.Max(i - 1, 0)]).normalized;
+                // Carried from ring to ring (parallel transport) so the tube never twists.
+                normal = Vector3.ProjectOnPlane(i == 0 ? Vector3.up : normal, tangent);
+                if (normal.sqrMagnitude < 1e-8f) normal = Vector3.ProjectOnPlane(Vector3.right, tangent);
+                normal.Normalize();
+                var binormal = Vector3.Cross(tangent, normal);
+                for (int s = 0; s < TubeSides; s++)
+                {
+                    float angle = s * 2 * Mathf.PI / TubeSides;
+                    var radial = normal * Mathf.Cos(angle) + binormal * Mathf.Sin(angle);
+                    tubeVertices[i * TubeSides + s] = toLocal.MultiplyPoint3x4(path[i] + radial * tubeRadius);
+                    tubeNormals[i * TubeSides + s] = toLocal.MultiplyVector(radial);
                 }
             }
+            tube.sharedMesh.SetVertices(tubeVertices); tube.sharedMesh.SetNormals(tubeNormals); tube.sharedMesh.RecalculateBounds();
         }
         private void LateUpdate() => RefreshShape();
     }

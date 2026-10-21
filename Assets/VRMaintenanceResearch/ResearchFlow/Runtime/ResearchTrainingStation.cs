@@ -46,8 +46,6 @@ namespace VRMaintenanceResearch.ResearchFlow
             && controller.Flow.CanInteract && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
 
         Pose moduleHome, leadRest;
-        const float LeadRadius = .004f;
-        float? baseTop;
         float startYaw;
         bool wasSeated, wasConnected, wasBlocked, wasTight, wasLoose, unlockedWhileSeated;
         string lastInput = "None";
@@ -57,8 +55,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             moduleHome = new Pose(module.transform.position, module.transform.rotation);
             leadRest = new Pose(leadHead.transform.localPosition, leadHead.transform.localRotation);
             startYaw = turntable.localEulerAngles.y;
-            var body = moduleSocket.GetComponentsInChildren<Collider>(true).FirstOrDefault(c => c.name == "COL_TRAINER_FX1_BASE_Body");
-            if (body) baseTop = body.bounds.max.y + LeadRadius;
+            // The lead is drawn like the Task A cables. Moving only bone positions left each segment in its modelled zigzag
+            // orientation: joints bent up to 168 deg off the next bone (measured 20 Oct), which read as a stiff kinked lead.
+            var leadSkin = GetComponentsInChildren<SkinnedMeshRenderer>(true).First(r => r.name == "VIS_TRAINER_FX1_LEAD_LOD0");
+            Transform LeadEnd(string id) => leadSkin.bones.First(b => b.name == "B_TRAINER_FX1_LEAD_" + id);
+            var lead = gameObject.AddComponent<ResearchS1Cable>();
+            lead.assetId = "TRAINER_FX1_LEAD"; lead.skin = leadSkin; lead.sideways = true;
+            lead.tubeMaterial = leadSkin.sharedMaterials.First(m => m.name == "M_PVC_Blue"); lead.tubeRadius = .003f; // its straight J02/J03 segments sit within 3.5 mm of their chord
+            lead.spans = new[] { ResearchS1Cable.BindSpan(transform, leadSkin, LeadEnd("B1"), leadBones, LeadEnd("B2")) };
             ApplyLatch(false);
             module.PoseAllowed = ModulePoseAllowed;
             leadHead.PoseAllowed = pose => Vector3.Distance(pose.GetColumn(3), leadAnchor.position) <= leadReach;
@@ -223,19 +227,6 @@ namespace VRMaintenanceResearch.ResearchFlow
         void LateUpdate()
         {
             if (Active) ModuleAttempt();
-            if (leadBones.Length == 0 || !leadAnchor) return;
-            // Bones between the fixed end and the held plug follow a sagging curve; the lead has no physics of its own.
-            // The sag stops on the base top: unclamped it sank up to 22 mm into the base (measured 16 Oct), which reads as a
-            // cable through the table. Visual only; sockets and colliders never read the bones.
-            Vector3 a = leadAnchor.position, b = leadHead.transform.position;
-            float sag = Mathf.Max(.01f, leadReach - Vector3.Distance(a, b)) * .5f;
-            for (int i = 0; i < leadBones.Length; i++)
-            {
-                float t = (i + 1f) / (leadBones.Length + 1);
-                var p = Vector3.Lerp(a, b, t) + Vector3.down * (sag * 4 * t * (1 - t));
-                if (baseTop.HasValue) p.y = Mathf.Max(p.y, Mathf.Min(baseTop.Value, Mathf.Lerp(a.y, b.y, t)));
-                leadBones[i].position = p;
-            }
         }
 
         // Dropped parts return to their authored pose; logged as System, never credited.
