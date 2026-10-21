@@ -1514,14 +1514,19 @@ namespace VRMaintenanceResearch.ResearchFlow
                 for (int i = 0; i < parts.Length; i++)
                 {
                     if (parts[i].Length <= 8 || parts[i].IndexOf('<') >= 0) continue;
-                    string head = parts[i].Substring(0, parts[i].Length - 4), tail = parts[i].Substring(parts[i].Length - 4);
+                    int cut = parts[i].Length - 4;
+                    // A tail that starts inside a kanji word (必|要はない) would split it; start the tail at the word instead.
+                    while (cut > 0 && IsKanji(parts[i][cut]) && IsKanji(parts[i][cut - 1])) cut--;
+                    string head = parts[i].Substring(0, cut), tail = parts[i].Substring(cut);
                     if (tail.IndexOf('」') >= 0) { head = parts[i]; tail = ""; } // a term closing the sentence is kept whole below
                     head = System.Text.RegularExpressions.Regex.Replace(head, "「[^「」]{1,8}」", "<nobr>$0</nobr>");
-                    head = System.Text.RegularExpressions.Regex.Replace(head, "(?<!<nobr>「[^」]*)[ァ-ヴー]{3,}", "<nobr>$0</nobr>");
+                    // Katakana words, and the one okurigana verb the briefs use (組み立て), break mid-word otherwise.
+                    head = System.Text.RegularExpressions.Regex.Replace(head, "(?<!<nobr>「[^」]*)(?:[ァ-ヴー]{3,}|組み立て)", "<nobr>$0</nobr>");
                     parts[i] = head + (tail.Length > 0 ? "<nobr>" + tail + "</nobr>" : "");
                 }
             return parts;
         }
+        static bool IsKanji(char c) => c >= '一' && c <= '鿿';
 
         // Task card body: one row per brief line (goal, safety/scope, free choice, where the details are). The short lines show by
         // default; the toggle swaps in the verbatim S1 sentences row for row. Measured with top 0, then placed (as LayoutTechnicalCard).
