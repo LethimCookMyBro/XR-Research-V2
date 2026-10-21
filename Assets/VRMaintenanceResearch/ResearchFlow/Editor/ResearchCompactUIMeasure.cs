@@ -29,15 +29,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 if (string.IsNullOrWhiteSpace(text.text)) continue;
                 text.ForceMeshUpdate(true, true);
                 var glyphs = text.textInfo.characterInfo.Take(text.textInfo.characterCount).Where(c => c.isVisible).ToArray();
-                if (glyphs.Length > 0) inked.Add((text, GlyphBounds(content, text, glyphs)));
+                var ink = glyphs.Length > 0 ? GlyphBounds(content, text, glyphs) : default;
+                if (glyphs.Length > 0) inked.Add((text, ink));
                 bool glyphFit = glyphs.Length > 0 && glyphs.All(c => new[] {c.bottomLeft,c.topLeft,c.topRight,c.bottomRight}.All(p => Inside(text.rectTransform.rect,p)));
                 bool fit = glyphFit && !text.isTextOverflowing && !text.enableAutoSizing && text.preferredHeight <= text.rectTransform.rect.height + 1;
                 if (!fit) failures.Add(text.name + ": glyph overflow/autosizing");
+                // TMP has no Thai dictionary and Thai has no spaces inside words: a wrap between two Thai letters splits a word.
+                for (int line = 0; line < text.textInfo.lineCount - 1; line++)
+                {
+                    int last = text.textInfo.lineInfo[line].lastCharacterIndex;
+                    if (last + 1 < text.textInfo.characterCount && Thai(text.textInfo.characterInfo[last].character) && Thai(text.textInfo.characterInfo[last + 1].character))
+                        failures.Add(Path2(text) + ": Thai word split across lines at " + last);
+                }
                 var button = text.GetComponentInParent<Button>();
                 var labelBounds = button ? Bounds((RectTransform)button.transform,text.rectTransform) : default;
                 bool labelContained = !button || ContainsLabel(((RectTransform)button.transform).rect,labelBounds);
                 if (!labelContained) failures.Add(button.name + ": label rect outside button");
-                measures.Add(new {name=text.name,text=text.text,text.fontSize,text.preferredHeight,text.isTextOverflowing,glyphFit,rect=RectData(text.rectTransform.rect), button=button?button.name:null,buttonRect=button?RectData(((RectTransform)button.transform).rect):null,labelInButton=button?RectData(labelBounds):null,labelContained, minimumPointSize=glyphs.Length==0?0:glyphs.Min(c=>c.pointSize)});
+                measures.Add(new {name=Path2(text),text=text.text,text.fontSize,lines=text.textInfo.lineCount,inked=glyphs.Length>0?RectData(ink):null,text.preferredHeight,text.isTextOverflowing,glyphFit,rect=RectData(text.rectTransform.rect), button=button?button.name:null,buttonRect=button?RectData(((RectTransform)button.transform).rect):null,labelInButton=button?RectData(labelBounds):null,labelContained, minimumPointSize=glyphs.Length==0?0:glyphs.Min(c=>c.pointSize)});
             }
             // Each label can fit its own rect while two rects still collide (17 Oct JA readiness pills), so compare inked glyph boxes pairwise.
             for (int i = 0; i < inked.Count; i++)
@@ -56,6 +64,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             string json = JsonConvert.SerializeObject(new {scope="Actual Unity/TMP geometry only; not pointer, Quest, optical comfort or language approval",state=ownedFixture.controller.Flow?.State.ToString()??"setup",content=RectData(content.rect),hitTargetPanel=RectData(panelBounds),measurements=measures,failures,pass=failures.Count==0},Formatting.Indented);
             Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,json);return json;
         }
+        static bool Thai(char c)=>c>='฀'&&c<='๿';
         static object RectData(Rect r)=>new {x=r.x,y=r.y,width=r.width,height=r.height};
         static string Path2(TMP_Text t)=>(t.transform.parent?t.transform.parent.name+"/":"")+t.name;
         static Rect GlyphBounds(RectTransform root,TMP_Text text,TMP_CharacterInfo[] glyphs)

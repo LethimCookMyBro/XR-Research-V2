@@ -516,11 +516,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var tabs = visible.Where(b => b.name.StartsWith("Tab_", StringComparison.Ordinal)).ToArray();
             bool tutorial = context == "Tutorial_integrated_reader";
             Require(tutorial || context == "Task_neutral_choice" || context == "Task_selected_manual", "Unknown separation fixture context.");
-            bool expectStop = view.controller.Record != null;
-            Require(view.controller.ParticipantCanStop == expectStop, "Stop eligibility must match this explicit owned-session fixture.");
-            var expectedUtilities = expectStop ? new[] { "Stop", "Pause", "Minimize", "Close" } : new[] { "Pause", "Minimize", "Close" };
+            bool session = view.controller.Record != null;
+            Require(view.controller.ParticipantCanStop == session, "Stop eligibility must match this explicit owned-session fixture.");
+            // Owner 20 Oct: the Reader offers Pause only; an eligible Stop waits on the pause card.
+            var expectedUtilities = new[] { "Pause", "Minimize", "Close" };
             Require(utilities.Length == expectedUtilities.Length && new HashSet<string>(utilities.Select(b => b.name)).SetEquals(expectedUtilities),
-                "Actual open readable Reference utilities must own Pause and eligible Stop: " + language + "/" + context);
+                "Actual open readable Reference utilities must own Pause and show no Stop: " + language + "/" + context);
             Require(tabs.Length == 4 && new HashSet<string>(tabs.Select(b => b.GetComponent<ResearchUIAction>().command))
                 .SetEquals(ResearchReferenceScheme.Active.Select(section => "reference_tab." + section)),
                 "All four distinct format identities remain visible, including unavailable formats: " + language + "/" + context);
@@ -531,9 +532,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 "Only the actual readable owner exposes Pause: " + language + "/" + context);
             var mainStops = mainPanel.GetComponentsInChildren<Button>(true).Where(b => AuthoredVisible(b.transform, mainPanel)
                 && b.GetComponent<ResearchUIAction>() && b.GetComponent<ResearchUIAction>().command == "stop").ToArray();
-            Require(mainStops.Length == 0 && utilities.Count(b => b.name == "Stop") == (expectStop ? 1 : 0),
-                "Only the actual readable Reader owner exposes eligible Stop; no-session Stop stays absent: " + language + "/" + context);
-            measurements.Add(new { name = "utility_ownership", language = language.ToString(), context, owned_TEST_session = expectStop,
+            Require(mainStops.Length == 0 && utilities.Count(b => b.name == "Stop") == 0,
+                "Neither the readable Reader nor the Task card exposes Stop during a Task: " + language + "/" + context);
+            measurements.Add(new { name = "utility_ownership", language = language.ToString(), context, owned_TEST_session = session,
                 main_pause_count = mainPauses.Length, reference_pause_count = utilities.Count(b => b.name == "Pause"),
                 main_stop_count = mainStops.Length, reference_stop_count = utilities.Count(b => b.name == "Stop") });
             foreach (var utility in utilities.Concat(mainPauses))

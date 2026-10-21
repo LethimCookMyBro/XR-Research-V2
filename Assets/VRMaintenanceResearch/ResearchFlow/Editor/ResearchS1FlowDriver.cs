@@ -60,6 +60,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Participant Pause, then the self-resume "Continue" (both by ray), during an active task or Training.
         public static string PauseAndContinue() => Start(PauseRoutine(), 40);
 
+        // Participant Pause, then "Stop and wait for the researcher" on the pause card (both by ray); the researcher resumes from
+        // the Console (or the tester in a headset self-test).
+        public static string PauseAndStop() => Start(PauseStopRoutine(), 60);
+
         // Teardown only: ends an open DEV session through the production abort path (terminal events + partial export).
         public static string Abort(string reason = "technical_failure")
         {
@@ -390,6 +394,34 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Settle();
             Require(!controller.Flow.Paused && controller.Flow.State == state, "Continue by ray resumed the same state.");
             Detail = "paused and continued in " + state;
+        }
+
+        static string[] Offered() => controller.view.GetComponentsInChildren<ResearchUIAction>(false)
+            .Where(a => a.GetComponent<Button>().IsInteractable()).Select(a => a.command).ToArray();
+
+        static IEnumerator PauseStopRoutine()
+        {
+            var state = controller.Flow.State;
+            yield return RayClick("pause");
+            yield return Settle();
+            var offered = Offered();
+            Require(controller.Flow.Paused && controller.PauseKind == "participant" && offered.Contains("stop") && !offered.Contains("pause")
+                && offered.Contains("session_resume") == controller.ParticipantMayResume,
+                "Pause card offers Stop-and-wait beside the permitted Continue: " + string.Join(",", offered));
+            yield return Wait(.3); Capture("pause_card_" + state);
+            yield return RayClick("stop");
+            yield return Settle();
+            offered = Offered();
+            Require(controller.Flow.Paused && controller.PauseKind == "stop" && !controller.ParticipantMayResume && controller.Flow.State == state
+                && !offered.Contains("stop") && !offered.Contains("session_resume"),
+                "Stop-and-wait keeps the same task paused for the researcher with no participant Continue: " + string.Join(",", offered));
+            yield return Wait(.3); Capture("stopped_card_" + state);
+            bool tester = controller.TesterMayResumeStop;
+            if (tester) yield return RayClick("tester_resume");
+            else yield return ConsoleClick(Console(), "resume");
+            yield return Settle();
+            Require(!controller.Flow.Paused && controller.Flow.State == state, "Researcher resume returns to the same task state.");
+            Detail = "paused, stopped and resumed by " + (tester ? "tester" : "researcher console") + " in " + state;
         }
 
         static IEnumerator Settle()

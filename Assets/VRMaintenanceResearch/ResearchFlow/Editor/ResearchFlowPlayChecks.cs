@@ -885,8 +885,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(controller.Flow.Paused && !controller.Flow.CanInteract && controller.ParticipantMayResume,
                 "Technical participant pause stops interaction and permits Continue: " + label);
             RequireUiOnlySafety("Pause " + label);
-            Require(ActiveCommands().SequenceEqual(new[] { "session_resume" }),
-                "Eligible pause exposes Continue only: " + label);
+            // Owner 20 Oct: Continue plus the separate "Stop and wait for the researcher" whenever the session can be stopped.
+            var pauseChoices = controller.ParticipantCanStop ? new[] { "session_resume", "stop" } : new[] { "session_resume" };
+            Require(ActiveCommands().SequenceEqual(pauseChoices),
+                "Eligible pause exposes Continue and Stop-and-wait only: " + label + " active=" + string.Join(",", ActiveCommands()));
             Require(!controller.view.mainPanel.GetComponentsInChildren<ResearchUIAction>(true)
                 .Any(a => (a.command == "help_request" || a.command == "panel_recovery") && a.gameObject.activeInHierarchy),
                 "Removed Pause utilities have no active ray targets: " + label);
@@ -1563,11 +1565,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static void VerifyExperimentalUI()
         {
             Require(controller.Flow.IsTaskActive, "Experimental task active");
-            // The card formats the S1 brief (goal, condition bullets, detail line); every authored sentence must still render verbatim.
-            var sentences = ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".body", requestedLanguage).Split('\n');
-            var taskBody = controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Single(t => { t.ForceMeshUpdate(); var shown = t.GetParsedText(); return sentences.All(s => shown.Contains(s)); });
-            taskBody.ForceMeshUpdate();
-            Require(taskBody.preferredHeight <= taskBody.rectTransform.rect.height, "Localized task copy fits its body area above action buttons");
+            // Owner 20 Oct: the card opens with one short line per brief line; "full text" shows every authored S1 sentence verbatim.
+            TMP_Text[] Rows() => controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Where(t => t.transform.parent.name.StartsWith("Line_", StringComparison.Ordinal)).ToArray();
+            bool Shows(string suffix)
+            {
+                var lines = ResearchStrings.Get("task." + controller.Flow.CurrentTask + suffix, requestedLanguage).Split('\n'); var rows = Rows();
+                return rows.Length == lines.Length && rows.Select((t, i) => { t.ForceMeshUpdate(); return t.GetParsedText() == lines[i] && t.preferredHeight <= t.rectTransform.rect.height + 1; }).All(ok => ok);
+            }
+            Require(Shows(".summary"), "Task card opens with the short goal, safety, choice and Reference lines, each fitting its row");
+            Click("task_details");
+            Require(Shows(".body"), "Full text shows every authored S1 sentence verbatim, each fitting its row");
+            Click("task_details");
+            Require(Shows(".summary"), "The participant returns the card to the short lines");
             foreach (var utility in controller.view.mainPanel.GetComponentsInChildren<ResearchUIAction>(false).Where(a => a.command == "main_minimize" || a.command == "main_recenter"))
             {
                 Require(utility.GetComponentInChildren<ResearchUtilityIcon>(true) && !utility.transform.Find("Label").gameObject.activeSelf

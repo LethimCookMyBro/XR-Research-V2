@@ -462,7 +462,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     var mainRotation = f.View.mainPanel.transform.rotation;
                     // The strip opens only for a fallback Stop or a participant-pause recall, not for a panel out of view
                     // (ResearchFlowView.RefreshRecoveryUtility `needed`; design_rule 4: looking away is no reason to open it).
-                    Check(!canvas.gameObject.activeInHierarchy, selected + ": Main owning Pause and Stop keeps the strip hidden for an unreadable Reader pill");
+                    Check(!canvas.gameObject.activeInHierarchy, selected + ": Main owning Pause keeps the strip hidden for an unreadable Reader pill");
                     f.View.mainPanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
                     One(f, selected + " unreadable Main and minimized Reader leave Pause to the controller Menu", "None");
                     StripStop(f, selected + " lost Main");
@@ -474,8 +474,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         selected + ": fallback strip includes both actual hit targets with the intended gap", new { gap, canvas_size = new[] { canvasRect.rect.width, canvasRect.rect.height } });
                     f.View.mainPanel.transform.rotation = mainRotation;
                     One(f, selected + " recovered Main takes Pause ownership back", "Main");
-                    Check(!canvas.gameObject.activeInHierarchy && Offered(f, "stop").Count(a => Role(f, a) == "Main") == 1,
-                        selected + ": strip hides again when Main owns Pause and Stop");
+                    // Owner 20 Oct: the Task card shows Pause only; Stop waits on the pause card.
+                    Check(!canvas.gameObject.activeInHierarchy && Offered(f, "stop").Length == 0,
+                        selected + ": strip hides again when Main owns Pause, and no surface shows Stop during the Task");
                     f.View.RefreshRecoveryUtility();
                     Check(f.View.RecoveryCanvas == canvas && canvas.transform.Find("RecoverPanels").GetComponent<ResearchUIAction>() == restore
                         && canvas.transform.Find("Pause").GetComponent<ResearchUIAction>() == pause && canvas.transform.childCount == children,
@@ -484,6 +485,66 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     var added = f.Events().Skip(before.Length).ToArray();
                     Check(f.Controller.Flow.State == state && !f.Controller.Flow.Paused && added.All(row => (string)row["source"] == "System"),
                         selected + ": caption, hover and strip layout changes emit no participant event and do not alter task state", added);
+                }, selected);
+                // Owner 20 Oct: one Pause on the Task card; the pause card adds "Stop and wait for the researcher" beside a permitted
+                // Continue, a Study pause offers no Continue, and the off-view strip still carries Stop.
+                Case("ps" + (int)selected, f =>
+                {
+                    Stage(f, ResearchFlowState.Task1Active, 5, false);
+                    Check(Offered(f, "stop").Length == 0, selected + ": active Task card offers Pause without Stop");
+                    Click(One(f, selected + " Task card before pause", "Main"), 735); f.View.Refresh(); f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
+                    var stops = Offered(f, "stop");
+                    Check(f.Controller.Flow.Paused && f.Controller.ParticipantMayResume && Offered(f, "session_resume").Length == 1
+                        && stops.Length == 1 && Role(f, stops[0]) == "Main" && !f.View.RecoveryCanvas.gameObject.activeSelf,
+                        selected + ": DEV pause card offers Continue and one Stop-and-wait", f.View.GetComponentsInChildren<ResearchUIAction>(false).Select(a => a.command).ToArray());
+                    One(f, selected + " pause card", "None");
+                    if (stops.Length == 1)
+                    {
+                        var label = stops[0].transform.Find("Label").GetComponent<TMPro.TMP_Text>(); label.ForceMeshUpdate(true, true);
+                        var rect = (RectTransform)stops[0].transform;
+                        var glyphs = label.textInfo.characterInfo.Take(label.textInfo.characterCount).Where(c => c.isVisible).ToArray();
+                        bool fits = glyphs.Length > 0 && glyphs.All(c => new[] { c.bottomLeft, c.topRight }.Select(p => rect.InverseTransformPoint(label.rectTransform.TransformPoint(p)))
+                            .All(p => rect.rect.Contains(new Vector2(p.x, p.y))));
+                        Check(label.text == ResearchStrings.Get("action.stop_wait", f.Controller.Language) && !label.isTextOverflowing && label.textInfo.lineCount <= 2 && fits,
+                            selected + ": Stop-and-wait label is the localized choice and its glyphs fit the button", new { label.text, label.textInfo.lineCount, label.fontSize, fits });
+                    }
+                    // Study: the researcher resumes, so the same card keeps Stop-and-wait, drops Continue and says who is awaited.
+                    f.Controller.Record.test_data = false; f.View.Refresh(); f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
+                    Check(!f.Controller.ParticipantMayResume && Offered(f, "session_resume").Length == 0 && Offered(f, "stop").Length == 1
+                        && Get<TMPro.TMP_Text>(f.View, "waitingLabel").gameObject.activeInHierarchy,
+                        selected + ": Study pause card offers Stop-and-wait, no Continue, and names the researcher", f.View.GetComponentsInChildren<ResearchUIAction>(false).Select(a => a.command).ToArray());
+                    var rotation = f.View.mainPanel.transform.rotation;
+                    f.View.mainPanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
+                    // Edit mode does not advance unscaled time: backdate the .75 s glance dwell and the .08 s strip transition once.
+                    f.View.RefreshRecoveryUtility();
+                    Field(f.View, "fallbackSince", Time.unscaledTime - 1f); Field(f.View, "recoveryTransitionSince", Time.unscaledTime - 1f);
+                    f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
+                    StripStop(f, selected + " Study pause card out of view");
+                    f.View.mainPanel.transform.rotation = rotation; f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
+                    var before = f.Events();
+                    Click(Offered(f, "stop").FirstOrDefault(), 736); f.View.Refresh(); f.View.RefreshRecoveryUtility();
+                    var added = f.Events().Skip(before.Length).ToArray();
+                    Check(f.Controller.Flow.Paused && f.Controller.PauseKind == "stop" && f.Controller.Record.session_state == RegistryState.InProgress
+                        && added.Count(row => (string)row["event"] == "SESSION_PAUSED" && (string)row["reason"] == "participant_stop") == 1
+                        && Offered(f, "stop").Length == 0 && Offered(f, "session_resume").Length == 0,
+                        selected + ": Stop-and-wait applies the existing stop once and leaves no participant Continue", added);
+                }, selected);
+                // Owner 20 Oct: the Task card opens with the short lines; the toggle swaps in the verbatim S1 sentences and logs nothing.
+                Case("td" + (int)selected, f =>
+                {
+                    Stage(f, ResearchFlowState.Task1Active, 5, false);
+                    string[] Rows() => f.View.mainPanel.GetComponentsInChildren<TMPro.TMP_Text>(false).Where(t => t.transform.parent.name.StartsWith("Line_", StringComparison.Ordinal))
+                        .Select(t => { t.ForceMeshUpdate(true, true); return t.GetParsedText(); }).ToArray();
+                    string[] Lines(string suffix) => ResearchStrings.Get("task.A." + suffix, f.Controller.Language).Split('\n');
+                    Check(Rows().SequenceEqual(Lines("summary")), selected + ": Task card opens with the four short lines", Rows());
+                    var before = f.Events();
+                    Click(Offered(f, "task_details").FirstOrDefault(), 737);
+                    Check(Rows().SequenceEqual(Lines("body")), selected + ": full text shows every authored S1 sentence verbatim", Rows());
+                    Click(Offered(f, "task_details").FirstOrDefault(), 738);
+                    Check(Rows().SequenceEqual(Lines("summary")), selected + ": the participant returns the card to the short lines", Rows());
+                    var added = f.Events().Skip(before.Length).ToArray();
+                    Check(added.Length == 0 && !f.Controller.ReferenceOpen && !f.Controller.Flow.Paused && f.Controller.Flow.State == ResearchFlowState.Task1Active,
+                        selected + ": toggling the brief logs no event, opens no Reference and keeps the task state", added);
                 }, selected);
             }
             Case("ph", f =>

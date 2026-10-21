@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -211,8 +211,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly Vector2 ReferencePillSize = new Vector2(300, 76);
         static readonly Vector2 RecoveryButtonSize = new Vector2(360, 80);
         TMP_Text sectionHeading, waitingLabel, arrivalLabel, pageLabel, safetyLabel, tutorialProgress;
-        Button helpUtility, stopUtility;
-        bool mainPauseEligible;
+        Button helpUtility, stopUtility, taskDetails;
+        bool mainPauseEligible, mainStopChip;
+        // Task card rows; the short/full choice is the participant's and holds for the rest of that task (owner 20 Oct).
+        RectTransform taskBrief;
+        bool taskDetailsOpen;
+        string taskBriefKey;
         // Tutorial coach: one current action, animated control demo, reserved success line, practice-object rings.
         RectTransform tutorialDemo, tutorialSuccess, illustratedInstruction;
         TMP_Text successLabel, retainedLabel, referenceTutorialProgress;
@@ -790,6 +794,26 @@ namespace VRMaintenanceResearch.ResearchFlow
             stopUtility = mainContent.transform.Find("StopUtility")?.GetComponent<UnityEngine.UI.Button>();
             if (!stopUtility) stopUtility = Button(mainContent.transform, "StopUtility", Vector2.zero, new Vector2(80, 80), "", "stop", false);
             UtilityIcon(stopUtility, "stop", "action.stop_short");
+            taskBrief = mainContent.transform.Find("TaskBrief") as RectTransform;
+            if (!taskBrief)
+            {
+                taskBrief = Rect(mainContent.transform, "TaskBrief", Vector2.zero, new Vector2(612, 300));
+                // Goal, safety/scope, free choice, where the details are: an icon only where it carries meaning.
+                string[] icons = { "goal", "safety", null, "reference" };
+                for (int i = 0; i < icons.Length; i++)
+                {
+                    var row = Rect(taskBrief, "Line_" + i, Vector2.zero, new Vector2(612, 48));
+                    if (icons[i] != null) DrawIcon(row, icons[i], Vector2.zero, "LineIcon");
+                    Label(row, "Label", Vector2.zero, new Vector2(552, 48), "", 32);
+                }
+            }
+            taskDetails = mainContent.transform.Find("TaskDetails")?.GetComponent<UnityEngine.UI.Button>();
+            if (!taskDetails)
+            {
+                taskDetails = Button(mainContent.transform, "TaskDetails", Vector2.zero, new Vector2(320, 60), "", "task_details", false);
+                var chevron = Rect(taskDetails.transform, "Chevron", Vector2.zero, new Vector2(28, 28)).gameObject.AddComponent<ResearchUtilityIcon>();
+                chevron.kind = "next"; chevron.raycastTarget = false;
+            }
             // Existing kiosk becomes a small tabletop device, never a head-following card.
             helperCanvas.transform.localScale = Vector3.one * .0005f;
             foreach (var key in new[] { "Kiosk", "Face", "EyeLeft", "EyeRight" })
@@ -946,6 +970,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             else if (kind == "floor") { border.gameObject.SetActive(false); Line("Floor", new Vector2(0, -13), new Vector2(44, 4)); Line("Axis", new Vector2(0, 5), new Vector2(4, 25)); Line("ArrowA", new Vector2(-5, -3), new Vector2(4, 15), 45); Line("ArrowB", new Vector2(5, -3), new Vector2(4, 15), -45); }
             else if (kind == "inspect") { border.rectTransform.sizeDelta = new Vector2(30, 30); effect.radius = 15; Line("Handle", new Vector2(17, -17), new Vector2(4, 19), 45); }
             else if (kind == "handling") { effect.radius = 3; Line("Middle", Vector2.zero, new Vector2(4, 28)); Line("Top", new Vector2(0, 4), new Vector2(31, 4)); }
+            else if (kind == "goal") { border.rectTransform.sizeDelta = new Vector2(34, 34); border.Radius = effect.radius = 17; Round(root, "Centre", Vector2.zero, new Vector2(12, 12), color, 6); }
+            else if (kind == "safety")
+            {
+                // Warning triangle with an exclamation mark.
+                border.gameObject.SetActive(false);
+                Line("Base", new Vector2(0, -13), new Vector2(36, 4)); Line("Left", new Vector2(-9, 2), new Vector2(4, 35), -31); Line("Right", new Vector2(9, 2), new Vector2(4, 35), 31);
+                Line("Mark", new Vector2(0, 3), new Vector2(4, 10)); Line("Dot", new Vector2(0, -7), new Vector2(4, 4));
+            }
             else { border.gameObject.SetActive(false); Line("Head", new Vector2(0, 18), new Vector2(9, 9)); Line("Body", new Vector2(0, 2), new Vector2(4, 23)); Line("LeftLeg", new Vector2(-7, -15), new Vector2(4, 20), -35); Line("RightLeg", new Vector2(7, -15), new Vector2(4, 20), 35); Line("Arms", new Vector2(0, 4), new Vector2(30, 4), -20); }
         }
 
@@ -1336,9 +1368,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                     body.text = "<color=#" + ColorUtility.ToHtmlStringRGB(Ink) + ">" + Text(testerResume ? "stop.tester_body" : controller.PauseKind == "stop" ? "stop.body" : selfResume ? "pause.participant.body" : "pause.body")
                         + (!selfResume && controller.HelpRequested ? "\n" + Text("pause.help_sent") : "")
                         + "\n<size=90%>" + Text("pause.safety") + "</size></color>";
-                    if (selfResume) SetActions(("session_resume", "action.resume"));
-                    else if (testerResume) SetActions(("tester_resume", "action.resume"));
-                    else SetActions(("panel_recovery", "action.recover_short"));
+                    var next = selfResume ? ("session_resume", "action.resume") : testerResume ? ("tester_resume", "action.resume") : ("panel_recovery", "action.recover_short");
+                    // Owner 20 Oct: "Stop and wait for the researcher" is a separate secondary choice, never the temporary pause's Continue.
+                    if (StopOffered) SetActions(next, ("stop", "action.stop_wait")); else SetActions(next);
                     break;
                 case "TutorialWelcome": title.text = Text("welcome.title"); body.text = Text("welcome.body") + "\n\n" + Text(controller.TutorialUsesHands ? "welcome.hand" : "welcome.controller"); SetActions(("tutorial_start", "tutorial.start")); break;
                 case "TutorialInteractions": case "TutorialReferenceInspect":
@@ -1357,7 +1389,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (controller.TaskStartConfirmation) SetActions(("task_start_back", "action.back"), ("task_start_confirm", "task.start.confirm.action"));
                     else SetActions(("task_start", "action.start_task"));
                     break;
-                case "Task1Active": case "Task2Active": title.text = TaskName(flow); body.text = TaskBrief(flow.CurrentTask); SetActions(("reference", "action.reference"), ("inspect", "action.inspect")); break;
+                case "Task1Active": case "Task2Active":
+                    title.text = TaskName(flow); body.text = "";
+                    string briefKey = controller.Record?.run_id + "/" + flow.CurrentTask;
+                    if (briefKey != taskBriefKey) { taskBriefKey = briefKey; taskDetailsOpen = false; }
+                    SetActions(("reference", "action.reference"), ("inspect", "action.inspect")); break;
                 case "checking": title.text = Text("inspect.checking.title"); body.text = Text("inspect.checking.body"); break;
                 case "timeout": title.text = Text("task.timeout.title"); body.text = Text("task.timeout.body");
                     if (technicalTest) SetActions(("technical_resume", "technical.checkpoint_continue"));
@@ -1469,11 +1505,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         string TaskName(ResearchSessionFlow flow) =>
             System.Text.RegularExpressions.Regex.Replace(Text("task." + flow.CurrentTask + ".title"), @"[A-Z][0-9]*-[0-9]+\S*", "<nobr>$0</nobr>");
 
-        string TaskBrief(string task)
+        string[] TaskLines(string key)
         {
-            var parts = Text("task." + task + ".body").Split('\n');
-            // Japanese wraps per character: keep quoted UI terms such as 「参照資料」 whole, and each sentence's last four
-            // characters together so no line is a lone 「ん。」.
+            var parts = Text(key).Split('\n');
+            // Japanese wraps per character: keep quoted UI terms such as 「参照資料」 and katakana words such as モーター whole,
+            // and each sentence's last four characters together so no line is a lone 「ん。」.
             if (controller && controller.Language == "Japanese")
                 for (int i = 0; i < parts.Length; i++)
                 {
@@ -1481,14 +1517,52 @@ namespace VRMaintenanceResearch.ResearchFlow
                     string head = parts[i].Substring(0, parts[i].Length - 4), tail = parts[i].Substring(parts[i].Length - 4);
                     if (tail.IndexOf('」') >= 0) { head = parts[i]; tail = ""; } // a term closing the sentence is kept whole below
                     head = System.Text.RegularExpressions.Regex.Replace(head, "「[^「」]{1,8}」", "<nobr>$0</nobr>");
+                    head = System.Text.RegularExpressions.Regex.Replace(head, "(?<!<nobr>「[^」]*)[ァ-ヴー]{3,}", "<nobr>$0</nobr>");
                     parts[i] = head + (tail.Length > 0 ? "<nobr>" + tail + "</nobr>" : "");
                 }
-            if (parts.Length != 4) return string.Join("\n", parts);
-            // Goal, then the two conditions as one group, then where the details are. Every spec sentence stays verbatim.
-            string goal = Text("task.ready.goal").Split(new[] { "{0}" }, StringSplitOptions.None)[0], gap = "\n<size=45%>\n</size>";
-            return "<b>" + goal + "</b>" + parts[0] + gap + "<b>" + Text("task.conditions") + "</b>\n"
-                + "•<indent=1em>" + parts[1] + "</indent>\n•<indent=1em>" + parts[2] + "</indent>" + gap
-                + "<color=#" + ColorUtility.ToHtmlStringRGB(Muted) + ">" + parts[3] + "</color>";
+            return parts;
+        }
+
+        // Task card body: one row per brief line (goal, safety/scope, free choice, where the details are). The short lines show by
+        // default; the toggle swaps in the verbatim S1 sentences row for row. Measured with top 0, then placed (as LayoutTechnicalCard).
+        float LayoutTaskBrief(float width, float top)
+        {
+            var lines = TaskLines("task." + controller.Flow.CurrentTask + (taskDetailsOpen ? ".body" : ".summary"));
+            float inner = width - 88, left = -inner / 2, textLeft = 60, textWidth = inner - textLeft, y = 0;
+            taskBrief.anchoredPosition = Vector2.zero;
+            for (int i = 0; i < taskBrief.childCount; i++)
+            {
+                var row = (RectTransform)taskBrief.GetChild(i);
+                row.gameObject.SetActive(i < lines.Length);
+                if (i >= lines.Length) continue;
+                var label = row.Find("Label").GetComponent<TMP_Text>();
+                label.text = lines[i]; label.font = Font; label.fontSize = 32; label.color = Ink; label.fontStyle = FontStyles.Normal;
+                // Thai marks and leading consonants ink just outside the line box; the margin keeps every glyph inside the row.
+                label.alignment = TextAlignmentOptions.TopLeft; label.margin = new Vector4(2, 6, 2, 6); BodySpacing(label);
+                float height = Mathf.Ceil(label.GetPreferredValues(label.text, textWidth - 4, 1500).y) + 14;
+                row.sizeDelta = new Vector2(inner, height); row.anchoredPosition = new Vector2(0, top - y - height / 2);
+                label.rectTransform.sizeDelta = new Vector2(textWidth, height); label.rectTransform.anchoredPosition = new Vector2(left + textLeft + textWidth / 2, 0);
+                var icon = (RectTransform)row.Find("LineIcon");
+                if (icon)
+                {
+                    // Beside the first line whatever the wrap; safety keeps its status colour, the others the action blue.
+                    icon.anchoredPosition = new Vector2(left + 22, height / 2 - 6 - label.GetPreferredValues("Ag", 1000, 100).y / 2); icon.localScale = Vector3.one * .8f;
+                    foreach (var stroke in icon.GetComponentsInChildren<Graphic>(true)) stroke.color = i == 1 ? ResearchUITheme.Warning : ResearchUITheme.Blue;
+                }
+                y += height + ResearchUITheme.SpaceXS;
+            }
+            ResearchUITheme.Button(taskDetails, ResearchButtonVariant.Ghost);
+            var caption = taskDetails.transform.Find("Label").GetComponent<TMP_Text>();
+            caption.text = Text(taskDetailsOpen ? "task.details_hide" : "task.details_show"); caption.font = Font; caption.fontSize = ResearchUITheme.ButtonText;
+            caption.color = ResearchUITheme.Blue; caption.alignment = TextAlignmentOptions.MidlineLeft; caption.textWrappingMode = TextWrappingModes.NoWrap;
+            caption.rectTransform.offsetMin = new Vector2(56, 0); caption.rectTransform.offsetMax = new Vector2(-16, 0);
+            float toggleWidth = Mathf.Min(inner, Mathf.Ceil(caption.GetPreferredValues(caption.text).x) + 72);
+            var toggle = (RectTransform)taskDetails.transform;
+            toggle.sizeDelta = new Vector2(toggleWidth, 60); toggle.anchoredPosition = new Vector2(left + toggleWidth / 2, top - y - 30);
+            var chevron = taskDetails.transform.Find("Chevron").GetComponent<ResearchUtilityIcon>();
+            chevron.color = ResearchUITheme.Blue; chevron.rectTransform.anchoredPosition = new Vector2(-toggleWidth / 2 + 30, 0);
+            chevron.rectTransform.localRotation = Quaternion.Euler(0, 0, taskDetailsOpen ? 90 : -90);
+            return y + 60;
         }
 
         // Technical package only: readiness at a glance, one primary Start, options as small secondary buttons.
@@ -1559,6 +1633,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 actionLabels[i].gameObject.SetActive(true);
                 actionLabels[i].rectTransform.offsetMin = new Vector2(12, 5);
                 actionLabels[i].rectTransform.offsetMax = new Vector2(-12, -5);
+                actionLabels[i].margin = new Vector4(5, 5, 5, 5);
                 // D03: 25 px thin Thai/Japanese strokes rendered washed out in the Game View; action labels read at body-adjacent size.
                 actionLabels[i].fontSize = 30;
                 // Recall-panel on a researcher-owned Stop card is geometry recovery, not the step the system waits for (design_rule 3.1).
@@ -1578,7 +1653,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool pause = state == "pause";
             bool referenceCompact = tutorialChecklist && controller && controller.ReferenceOpen;
             compactTutorialReference = referenceCompact;
-            float width = compactTask ? 700 : referenceCompact ? 520 : tutorialChecklist ? 860 : technicalSetup ? 880 : resultState || checkpoint || pause ? 720 : 780;
+            float width = compactTask ? 760 : referenceCompact ? 520 : tutorialChecklist ? 860 : technicalSetup ? 880 : resultState || checkpoint || pause ? 720 : 780;
             title.fontSize = compactTask ? 32 : 38;
             bool coachDemo = tutorialChecklist && !referenceCompact && !tutorialDone && controller.TutorialFact != "inspect";
             float instructionWidth = width - 2 * Pad - (coachDemo ? TutorialDemoBand : 0);
@@ -1589,10 +1664,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             float textMeasureWidth = (tutorialChecklist ? instructionWidth : width - 88) - body.margin.x - body.margin.z;
             float textHeight = body.GetPreferredValues(body.text, textMeasureWidth, 1500).y + body.margin.y + body.margin.w;
             if (checkpoint) textHeight = LayoutCheckpointSteps(width);
+            if (compactTask) textHeight = LayoutTaskBrief(width, 0);
             // Measure at the width the title really gets: narrower when the Pause utility shares its row (design_rule D08).
             bool pauseInTitleRow = (mainPanel.movable || state == "checking" || state == "fail" || state == "pass") && !welcome && !tutorialDone && !referenceCompact;
-            bool stopInTitleRow = StopOffered && !referenceCompact;
-            float titleReserve = pauseInTitleRow && stopInTitleRow ? 276 : pauseInTitleRow || stopInTitleRow ? 180 : 88;
+            // Owner 20 Oct: a card that offers Pause leaves Stop to the pause card; cards without Pause keep it in the title row.
+            bool stopInTitleRow = mainStopChip = StopOffered && !referenceCompact && !pause && !pauseInTitleRow;
+            float titleReserve = pauseInTitleRow || stopInTitleRow ? 180 : 88;
             // Task: the step counter shares the Stop/Pause row, so the task name gets the full width below it.
             float titleHeight = compactTask ? TaskEyebrow + title.GetPreferredValues(title.text, width - 88, 500).y + 8
                 : Mathf.Max(64, title.GetPreferredValues(title.text, width - titleReserve, 500).y + 8);
@@ -1641,7 +1718,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 icon.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, height / 2 - 88);
                 foreach (var stroke in icon.GetComponentsInChildren<Graphic>(true)) stroke.color = icon == positiveIcon ? Positive : ResearchUITheme.Failure;
             }
-            body.gameObject.SetActive(!tutorialChecklist && !technicalSetup);
+            body.gameObject.SetActive(!tutorialChecklist && !technicalSetup && !compactTask);
+            taskBrief.gameObject.SetActive(compactTask); taskDetails.gameObject.SetActive(compactTask);
+            if (compactTask) LayoutTaskBrief(width, height / 2 - statusHeight - titleHeight - 58);
             checkpointSteps.gameObject.SetActive(checkpoint);
             checkpointSteps.anchoredPosition = body.rectTransform.anchoredPosition;
             if (checkpoint) body.gameObject.SetActive(false);
@@ -1661,19 +1740,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             UtilityIcon(helpUtility, "pause", "action.pause_short");
             stopUtility.gameObject.SetActive(stopInTitleRow);
             var stopRect = stopUtility.GetComponent<RectTransform>();
-            stopRect.sizeDelta = new Vector2(80, 80); stopRect.anchoredPosition = new Vector2(width / 2 - (mainPauseEligible ? 172 : 76), height / 2 - 56);
+            stopRect.sizeDelta = new Vector2(80, 80); stopRect.anchoredPosition = new Vector2(width / 2 - 76, height / 2 - 56);
             UtilityIcon(stopUtility, "stop", "action.stop_short");
             if (compactTask)
             {
-                // Minimize joins Stop/Pause at the header's right end, in the Reader's order, instead of floating under the panel.
+                // Minimize joins Pause at the header's right end, in the Reader's order, instead of floating under the panel.
                 var minimize = mainToolbar.transform.Find("Minimize") as RectTransform;
                 bool headerMinimize = minimize && minimize.gameObject.activeSelf;
                 if (headerMinimize)
                 {
                     minimize.anchoredPosition = new Vector2(width / 2 - 76, height / 2 - 56) - mainToolbar.GetComponent<RectTransform>().anchoredPosition;
-                    chip.anchoredPosition -= new Vector2(96, 0); stopRect.anchoredPosition -= new Vector2(96, 0);
+                    chip.anchoredPosition -= new Vector2(96, 0);
                 }
-                int chips = (headerMinimize ? 1 : 0) + (mainPauseEligible ? 1 : 0) + (stopUtility.gameObject.activeSelf ? 1 : 0);
+                int chips = (headerMinimize ? 1 : 0) + (mainPauseEligible ? 1 : 0);
                 float lane = width - 88 - chips * 96;
                 tutorialProgress.text = TaskProgress(controller.Flow); tutorialProgress.font = Font; tutorialProgress.color = Muted;
                 tutorialProgress.fontSize = 26; tutorialProgress.alignment = TextAlignmentOptions.MidlineLeft;
@@ -1682,7 +1761,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             // A centred result title sits under its status icon, not in the utility row.
             else if ((helpUtility.gameObject.activeSelf || stopUtility.gameObject.activeSelf) && statusHeight == 0)
-            { title.rectTransform.sizeDelta = new Vector2(width - titleReserve, titleHeight); title.rectTransform.anchoredPosition += new Vector2(mainPauseEligible && stopUtility.gameObject.activeSelf ? -94 : -46, 0); }
+            { title.rectTransform.sizeDelta = new Vector2(width - titleReserve, titleHeight); title.rectTransform.anchoredPosition += new Vector2(-46, 0); }
             tutorialDemo.gameObject.SetActive(coachDemo);
             highlightPractice = false;
             // Tutorial "move the panel": the Reference bar pulses; the coach card is the only written instruction. Never during Task A/B.
@@ -1771,7 +1850,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (pause)
                 {
                     label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, actionWidth - 24);
-                    label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 72);
+                    // A pause choice may wrap to two lines (EN "Stop and wait for researcher"): the label uses the full target height.
+                    label.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, ResearchUITheme.TargetHeight); label.margin = new Vector4(5, 0, 5, 0);
                     label.rectTransform.anchoredPosition = Vector2.zero;
                 }
                 if (!pause && shown[i].GetComponent<ResearchUIAction>().command == "panel_recovery")
@@ -1972,17 +2052,16 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void LayoutReferenceControls(float height)
         {
-            // Shared ownership below exposes one global Pause across the readable surfaces.
+            // Shared ownership below exposes one global Pause across the readable surfaces; Stop waits on the pause card (owner 20 Oct).
             if (!referenceExpanded.transform.Find("Pause")) Button(referenceExpanded.transform, "Pause", Vector2.zero, new Vector2(128, 56), "", "pause", false);
-            if (!referenceExpanded.transform.Find("Stop")) Button(referenceExpanded.transform, "Stop", Vector2.zero, new Vector2(80, 80), "", "stop", false);
-            string[] keys = { "Stop", "Pause", "Minimize", "Close" };
+            string[] keys = { "Pause", "Minimize", "Close" };
             for (int i = 0; i < keys.Length; i++)
             {
                 var control = referenceExpanded.transform.Find(keys[i]) as RectTransform;
                 if (!control) continue;
                 control.sizeDelta = new Vector2(80, 80);
-                control.anchoredPosition = new Vector2(218 + i * 96, height / 2 - 56);
-                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), keys[i].ToLowerInvariant(), keys[i] == "Pause" ? "action.pause_short" : keys[i] == "Stop" ? "action.stop_short" : "action." + keys[i].ToLowerInvariant());
+                control.anchoredPosition = new Vector2(314 + i * 96, height / 2 - 56);
+                UtilityIcon(control.GetComponent<UnityEngine.UI.Button>(), keys[i].ToLowerInvariant(), keys[i] == "Pause" ? "action.pause_short" : "action." + keys[i].ToLowerInvariant());
             }
         }
 
@@ -2144,11 +2223,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             return changed;
         }
 
-        // One rule for every Stop control. A stopped session cannot be stopped again (controller.Stop returns early), and the
-        // participant's own self-resume pause offers Continue only (design_rule 8.2). Tracking/application pauses keep Stop,
-        // because their Continue still waits on DeviceReady.
-        bool StopOffered => controller && controller.ParticipantCanStop
-            && !(controller.Flow.Paused && (controller.PauseKind == "stop" || (controller.PauseKind == "participant" && controller.ParticipantMayResume)));
+        // One rule for every Stop control: a stopped session cannot be stopped again (controller.Stop returns early). Owner 20 Oct
+        // (design_rule 8.2): every pause card, self-resume included, offers "Stop and wait for the researcher" beside its Continue.
+        bool StopOffered => controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop");
 
         public void RefreshRecoveryUtility()
         {
@@ -2159,23 +2236,22 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && string.IsNullOrEmpty(controller.Error) && (mainPauseEligible || controller.ReferenceOpen)
                 && (controller.Record == null || (controller.Record.session_state == RegistryState.InProgress && !SessionWriterUnavailable))
                 && (controller.Logger == null || controller.LoggerReady);
-            bool mainOwns = available && mainPauseEligible && mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
+            bool mainReadable = mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
                 && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts
                 && !mainPanel.PlacementBlocked && mainPanel.IsReadableFromHead;
+            bool mainOwns = available && mainPauseEligible && mainReadable;
             bool referenceOwns = available && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
             helpUtility.gameObject.SetActive(mainOwns && !referenceOwns);
             var referencePause = referenceExpanded.transform.Find("Pause"); if (referencePause) referencePause.gameObject.SetActive(referenceOwns);
+            // A Pause owner leads to the pause card's "Stop and wait"; Stop itself shows only in the title row of a card without Pause
+            // or on the pause card. The strip carries Stop when no readable surface offers Pause or Stop (owner 20 Oct).
             bool stopAvailable = StopOffered;
-            bool referenceStopOwns = stopAvailable && controller.ReferenceOpen && !controller.ReferenceMinimized
-                && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
-                && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
-            bool mainStopOwns = stopAvailable && !referenceStopOwns && mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
-                && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts && !mainPanel.PlacementBlocked && mainPanel.IsReadableFromHead;
-            stopUtility.gameObject.SetActive(mainStopOwns);
-            var referenceStop = referenceExpanded.transform.Find("Stop"); if (referenceStop) referenceStop.gameObject.SetActive(referenceStopOwns);
-            bool fallbackStop = stopAvailable && !mainStopOwns && !referenceStopOwns;
+            bool mainOffersStop = stopAvailable && mainReadable
+                && (mainStopChip || Array.Exists(actions, a => a.gameObject.activeSelf && a.GetComponent<ResearchUIAction>().command == "stop"));
+            stopUtility.gameObject.SetActive(mainOffersStop && mainStopChip);
+            bool fallbackStop = stopAvailable && !mainOwns && !referenceOwns && !mainOffersStop;
             // Quest 16 Oct: each glance at the table re-placed this strip (34 recentres in 2 min). A short dwell ignores glances;
             // Menu still pauses at once.
             // A minimized or closed panel is a deliberate state, not a glance: Stop appears at once there.
@@ -2282,6 +2358,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null
                         || controller.Transitioning || !string.IsNullOrEmpty(controller.Error)) return false;
                     setupDetailsRequested = !setupDetailsRequested; Refresh(); accepted = true; break;
+                case "task_details":
+                    // View state only: no event and no Reference exposure (owner 20 Oct). A taller card is re-cleared only if it now collides.
+                    if (!allowed || !compactTask || mainMinimized) return false;
+                    taskDetailsOpen = !taskDetailsOpen; Refresh(); mainPanel.EnsureClear(requireView: false); accepted = true; break;
                 case "panel_recovery":
                     // Geometry recovery also works on a paused/error card; it never changes task state or resumes a study.
                     if (!controller || controller.Flow == null || !Head || controller.Transitioning) return false;

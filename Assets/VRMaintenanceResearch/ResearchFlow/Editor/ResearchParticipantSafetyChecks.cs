@@ -139,9 +139,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 check(c.TaskEndReason == "technical_failure", name + "/original logger fault termination retained", State(c));
                             }
                             f.Refresh(); Call(f.View, "RefreshRecoveryUtility");
-                            var stop = f.Action("stop", stage == "stop_reader" ? f.View.referencePanel.transform : f.View.mainPanel.transform);
+                            // Owner 20 Oct: during a Task the card or Reader offers only Pause; Stop is the pause card's "Stop and wait".
+                            // Error cards offer no Pause and keep Stop in their title row.
+                            if (stage != "stop_error" && stage != "stop_writer_fault")
+                            {
+                                var owner = stage == "stop_reader" ? f.View.referencePanel : f.View.mainPanel;
+                                check(owner.GetComponentsInChildren<ResearchUIAction>(false).All(a => a.command != "stop"), name + "/task surface offers Pause without Stop", null);
+                                f.Click(f.Action("pause", owner.transform)); Call(f.View, "RefreshRecoveryUtility");
+                                check(c.Flow.Paused && c.PauseKind == "participant", name + "/pause card shown", State(c));
+                            }
+                            var stop = f.Action("stop", f.View.mainPanel.transform);
                             check(stop.GetComponent<Button>().IsActive() && stop.GetComponent<Button>().IsInteractable(), name + "/stop button operable", stop.name);
-                            f.Capture("before", stage == "stop_reader" ? f.View.referencePanel : f.View.mainPanel, captures, rows);
+                            f.Capture("before", f.View.mainPanel, captures, rows);
                             f.Click(stop); f.Refresh();
                             check(c.Flow.Paused && c.PauseKind == "stop" && c.Record.session_state == RegistryState.InProgress && !c.ParticipantMayResume && c.taskPorts.All(p => !p.InteractionAllowed),
                                 name + "/stop suspends without terminal registry or self resume", State(c));
