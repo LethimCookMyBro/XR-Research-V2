@@ -195,15 +195,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static Probe Build(string name, SkinnedMeshRenderer skin, IEnumerable<Transform[]> chains)
         {
             var mesh = skin.sharedMesh; var binds = mesh.bindposes; var verts = mesh.vertices; float scale = skin.transform.lossyScale.x;
-            var weights = mesh.GetAllBoneWeights(); var counts = mesh.GetBonesPerVertex();
+            var weights = mesh.GetAllBoneWeights(); var counts = mesh.GetBonesPerVertex(); var bones = skin.bones.Select(b => b.parent && b.name == "VIS_" + b.parent.name ? b.parent : b).ToArray(); // ResearchS1Cable.RestOnStubs skins a housing to a visual child of its head
             var p = new Probe { name = name, skin = skin, chains = chains.ToList(), localNext = new List<Vector3[]>(), body = new bool[verts.Length], bin = new int[verts.Length] };
             var heads = new HashSet<Transform>(p.chains.SelectMany(c => new[] { c[0], c[c.Length - 1] }));
-            var bindChains = p.chains.Select(c => c.Select(t => binds[Array.IndexOf(skin.bones, t)].inverse.MultiplyPoint3x4(Vector3.zero)).ToArray()).ToList();
+            var bindChains = p.chains.Select(c => c.Select(t => binds[Array.IndexOf(bones, t)].inverse.MultiplyPoint3x4(Vector3.zero)).ToArray()).ToList();
             var binChain = new List<int>(); var offsets = new int[bindChains.Count];
             for (int c = 0; c < bindChains.Count; c++)
             {
                 var chain = p.chains[c]; var bc = bindChains[c];
-                p.localNext.Add(Enumerable.Range(0, chain.Length - 1).Select(i => binds[Array.IndexOf(skin.bones, chain[i])].MultiplyPoint3x4(bc[i + 1])).ToArray());
+                p.localNext.Add(Enumerable.Range(0, chain.Length - 1).Select(i => binds[Array.IndexOf(bones, chain[i])].MultiplyPoint3x4(bc[i + 1])).ToArray());
                 offsets[c] = binChain.Count;
                 float length = 0; for (int i = 1; i < bc.Length; i++) length += Vector3.Distance(bc[i - 1], bc[i]) * scale;
                 binChain.AddRange(Enumerable.Repeat(c, Mathf.CeilToInt(length / Bin) + 1));
@@ -211,7 +211,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             p.binChain = binChain.ToArray(); p.bins = p.binChain.Length;
             for (int v = 0, w = 0; v < verts.Length; w += counts[v], v++)
             {
-                p.body[v] = counts[v] > 0 && !heads.Contains(skin.bones[weights[w].boneIndex]);
+                p.body[v] = counts[v] > 0 && !heads.Contains(bones[weights[w].boneIndex]);
                 float best = float.MaxValue;
                 for (int c = 0; c < bindChains.Count; c++)
                 {

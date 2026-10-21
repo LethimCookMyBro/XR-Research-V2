@@ -45,6 +45,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Bones sit ~4 cm apart, so a cable dropping off an edge would cut the corner unless it clears the edge by about that much.
         const float Clearance = .005f, EdgeMargin = .03f, RigidCarriedLength = .1f;
 
+        // The SATA power plug's side wire stubs are skinned rigid to its head but stay outside the solid collider (SATA_GAP), so laid
+        // on its side a stub dipped 3.2 mm into the bench. Mate-space boxes of that geometry from VIS_CABLE_MX_SATA3_LOD0: the exit lip
+        // and the wire stub on each side. The FBX is not Read/Write, so Quest cannot re-weight the stubs; the plug visual rests on them.
+        const string StubbedHead = "B_CABLE_MX_SATA3_B", StubbedMate = "MATE_CABLE_MX_SATA3_EndB";
+        const float StubClearance = .0005f, StubReach = .01f;
+        static readonly Bounds[] Stubs = {
+            new Bounds(new Vector3(-.0114f, -.0009f, -.007f), new Vector3(.0012f, .0059f, .014f)), new Bounds(new Vector3(-.01581f, -.0009f, -.0096f), new Vector3(.00762f, .0024f, .008f)),
+            new Bounds(new Vector3(.0114f, -.0009f, -.007f), new Vector3(.0012f, .0059f, .014f)), new Bounds(new Vector3(.014015f, -.0009f, -.0096f), new Vector3(.00403f, .0024f, .008f)) };
+        Transform stubbedVisual, stubbedMate;
+
         // Re-checking every bone name each frame allocated ~25 KB/frame across the 8 cables on Quest (GC every ~4 s).
         // shortcut: a pass is cached per spans array + assetId; bones destroyed in place are not re-detected (authoring never does that).
         S1CableSpan[] validatedSpans; string validatedId;
@@ -131,7 +141,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             for (int i = 0; i < path.Length; i++) path[i].y = Mathf.Max(path[i].y, Floor(path[i]) + Clearance);
         }
 
-        private static float Floor(Vector3 p)
+        private static float Floor(Vector3 p, float margin = EdgeMargin)
         {
             if (surfaces == null || Array.Exists(surfaces, s => !s))
                 surfaces = FindObjectsByType<Collider>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Where(c => !c.isTrigger && Array.IndexOf(SurfaceNames, c.name) >= 0).ToArray();
@@ -139,8 +149,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var surface in surfaces)
             {
                 var bounds = surface.bounds;
-                if (bounds.size.x > .05f && bounds.size.z > .05f && p.x >= bounds.min.x - EdgeMargin && p.x <= bounds.max.x + EdgeMargin &&
-                    p.z >= bounds.min.z - EdgeMargin && p.z <= bounds.max.z + EdgeMargin)
+                if (bounds.size.x > .05f && bounds.size.z > .05f && p.x >= bounds.min.x - margin && p.x <= bounds.max.x + margin &&
+                    p.z >= bounds.min.z - margin && p.z <= bounds.max.z + margin)
                     floor = Mathf.Max(floor, bounds.max.y);
             }
             return floor;
@@ -150,6 +160,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (span.bindAxes != null) return;
             var binds = skin.sharedMesh.bindposes; var all = skin.bones;
+            if (stubbedVisual) all[Array.IndexOf(all, stubbedVisual)] = stubbedVisual.parent;
             Matrix4x4 Pose(Transform t) => binds[Array.IndexOf(all, t)];
             int n = span.bones.Length; var lengths = new float[n]; float total = 0;
             span.bindAxes = new Vector3[n]; span.bindFractions = new float[n];
@@ -211,6 +222,31 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
                 if (tubeRadius > 0) DrawTube(span, path);
             }
+            RestOnStubs();
+        }
+
+        // The housing is skinned to a child of the head that rises only while a stub would sit below a work surface top, so rest,
+        // held and seated poses render exactly as before. Colliders and the grabbed head never move.
+        private void RestOnStubs()
+        {
+            if (!stubbedMate)
+            {
+                if (!Application.isPlaying || assetId != "CABLE_MX_SATA3") return;
+                var bones = skin.bones; int head = Array.FindIndex(bones, b => b.name == StubbedHead);
+                stubbedMate = bones[head].Find(StubbedMate);
+                stubbedVisual = new GameObject("VIS_" + StubbedHead).transform;
+                stubbedVisual.SetParent(bones[head], false);
+                bones[head] = stubbedVisual; skin.bones = bones;
+            }
+            float lift = 0;
+            foreach (var box in Stubs)
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    var p = stubbedMate.TransformPoint(box.center + Vector3.Scale(box.extents, new Vector3((corner & 1) * 2 - 1, (corner & 2) - 1, (corner & 4) / 2 - 1)));
+                    float top = Floor(p, 0);
+                    if (p.y < top && p.y > top - StubReach) lift = Mathf.Max(lift, top + StubClearance - p.y);
+                }
+            stubbedVisual.position = stubbedVisual.parent.position + Vector3.up * lift;
         }
 
         private void DrawTube(S1CableSpan span, Vector3[] path)
