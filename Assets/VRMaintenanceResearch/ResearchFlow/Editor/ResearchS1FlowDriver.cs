@@ -48,8 +48,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             active_seconds = activeTime, focus_wait_seconds = focusWait, focus_blocked = clockBlocked, focus_interrupted = focusInterrupted
         });
 
-        public static string BeginToFirstTask(string language = "Thai", bool orderAB = true, string layout = null) =>
-            Start(ToFirstTask(language == "Japanese" ? 1 : 0, layout == null ? 0 : (orderAB ? 1 : 3) + (layout == "Q" ? 1 : 0)), 420);
+        // eyeHeight is the synthetic HMD height above the tracking floor (master §10: also check 1.0 m).
+        public static string BeginToFirstTask(string language = "Thai", bool orderAB = true, string layout = null, float eyeHeight = 1.65f) =>
+            Start(ToFirstTask(language == "Japanese" ? 1 : 0, layout == null ? 0 : (orderAB ? 1 : 3) + (layout == "Q" ? 1 : 0), eyeHeight), 420);
 
         // Participant presses Inspect; a Fail is acknowledged with the only offered Continue.
         public static string Inspect() => Start(InspectRoutine(), 40);
@@ -235,7 +236,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static void Step(string text) { Steps.Add(EditorApplication.timeSinceStartup.ToString("F2") + " " + text); if (Steps.Count > 400) Steps.RemoveAt(0); }
 
-        static IEnumerator ToFirstTask(int languageIndex, int cell)
+        static IEnumerator ToFirstTask(int languageIndex, int cell, float eyeHeight)
         {
             Steps.Clear();
             if (controller.Record == null)
@@ -246,7 +247,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 yield return ConsoleOpened(console);
                 console.CreateNextId();
                 Step("console menu Create next ID -> " + console.SelectedId);
-                if (!ResearchFlowVisualInput.Running) ResearchFlowVisualInput.Begin(1.65f);
+                if (!ResearchFlowVisualInput.Running) ResearchFlowVisualInput.Begin(eyeHeight);
                 yield return Wait(.6);
                 yield return ConsoleClick(console, "language", languageIndex, 3);
                 yield return ConsoleClick(console, "cell", cell, 5);
@@ -263,7 +264,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             else Require(controller.Record.session_state == RegistryState.InProgress && controller.Flow.IsTutorial, "Only an open DEV tutorial session can be continued.");
             Require(string.IsNullOrEmpty(controller.Error) && controller.Record?.test_data == true, "DEV test session opened: " + controller.Error);
-            if (!ResearchFlowVisualInput.Running) ResearchFlowVisualInput.Begin(1.65f);
+            if (!ResearchFlowVisualInput.Running) ResearchFlowVisualInput.Begin(eyeHeight);
             yield return Settle();
             Require(controller.Flow.State == ResearchFlowState.TutorialWelcome, "Tutorial welcome entered.");
             yield return RayClick("tutorial_start");
