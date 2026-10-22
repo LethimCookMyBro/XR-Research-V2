@@ -35,6 +35,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         private Button back;
         private TMP_Text lockedInputLabel;
         [SerializeField] private TMP_Text setupHeading, setupScope;
+        private TMP_Text questBrand;
         [SerializeField] private TMP_Text[] setupFieldLabels = new TMP_Text[5];
         private string R(string key) => ResearchStrings.Get("researcher." + key, controller ? controller.Language : "English");
         private bool confirmAbort, confirmInvalid;
@@ -267,8 +268,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 abortLabel.text = confirmAbort ? R("cancel") : R("abort");
                 export.interactable = controller.Record != null;
                 string Badge(string value, bool ready) => "<color=#" + ColorUtility.ToHtmlStringRGB(ready ? ResearchUITheme.Success : new Color(.48f, .27f, .06f)) + ">" + value + "</color>";
-                status.text = R("training") + "  " + Badge(controller.Record?.training_status == "Passed" ? R("passed") : controller.Record?.training_status == null || controller.Record.training_status == "Pending" ? R("pending") : controller.Record.training_status, controller.Record?.training_status == "Passed")
-                    + "     " + R("device") + "  " + Badge(controller.DeviceReady ? R("ready") : R("not_ready"), controller.DeviceReady)
+                // Training is intentionally pending before a new session; displaying that as a
+                // startup readiness failure confuses the researcher. Keep it on active-session views.
+                string trainingStatus = R("training") + "  " + Badge(controller.Record?.training_status == "Passed" ? R("passed")
+                    : controller.Record?.training_status == null || controller.Record.training_status == "Pending" ? R("pending")
+                    : controller.Record.training_status, controller.Record?.training_status == "Passed");
+                status.text = (questOwner && attachedRecord == null ? "" : trainingStatus + "     ")
+                    + R("device") + "  " + Badge(controller.DeviceReady ? R("ready") : R("not_ready"), controller.DeviceReady)
                     + "     " + R("logger") + "  " + Badge(controller.LoggerReady ? R("ready") : R("not_ready"), controller.LoggerReady);
                 // Assignment goes above readiness; it must not replace the Device/Logger reasons Start depends on.
                 if (attachedRecord == null && record != null)
@@ -803,6 +809,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 reasonCaption.rectTransform.anchoredPosition = new Vector2(-340, choosing ? -342 : -282);
             }
             ApplyLocalizedCaptions(panel);
+            if (questOwner && !hasSession) LayoutQuestResearcherPreSession(panel);
             var stopLabel = stop.GetComponentInChildren<TMP_Text>(true);
             ((RectTransform)stop.transform.Find("Stop Square")).anchoredPosition = new Vector2(-stopLabel.GetPreferredValues(stopLabel.text).x / 2 - 16, 0);
             string current = amendable ? CurrentReason(record) : null;
@@ -818,6 +825,141 @@ namespace VRMaintenanceResearch.ResearchFlow
                 bool selected = amendable && ResearchParticipantRegistry.ResearcherTerminationReasons[i] == current;
                 ResearchUITheme.Button(button, choosing ? ResearchButtonVariant.Destructive : selected ? ResearchButtonVariant.Primary : ResearchButtonVariant.Secondary);
             }
+        }
+
+        // Quest technical pre-session uses the owner's researcher-reference structure: four stacked selectors
+        // with a single Start action. This is NOT a participant task surface or approval to start a Study run.
+        // Reuse the existing guarded researcher controls: no new ID/session/input state machine.
+        private void LayoutQuestResearcherPreSession(RectTransform panel)
+        {
+            if (!questOwner || controller?.Record != null) return;
+
+            panel.sizeDelta = new Vector2(920, 620);
+            if (!questBrand)
+            {
+                questBrand = Text(panel, "VR Maintenance Research", new Vector2(680, 54), new Vector2(-60, 262), 31);
+                questBrand.name = "Quest Research Brand";
+                questBrand.raycastTarget = false;
+            }
+            questBrand.gameObject.SetActive(true);
+            questBrand.text = "VR Maintenance Research";
+            questBrand.color = ResearchUITheme.Ink;
+            questBrand.fontSize = 31;
+            if (controller?.view?.englishFont) questBrand.font = controller.view.englishFont;
+            if (setupHeading)
+            {
+                setupHeading.text = R("setup");
+                setupHeading.fontSize = 23;
+                setupHeading.alignment = TextAlignmentOptions.MidlineLeft;
+                setupHeading.rectTransform.sizeDelta = new Vector2(820, 39);
+                setupHeading.rectTransform.anchoredPosition = new Vector2(0, 218);
+            }
+            if (setupScope)
+            {
+                setupScope.text = ResearchParticipantRegistry.IsTechnical(groups[group.value]) ? R("scope_quest") : R("study");
+                setupScope.fontSize = 15;
+                setupScope.alignment = TextAlignmentOptions.MidlineLeft;
+                setupScope.rectTransform.sizeDelta = new Vector2(820, 31);
+                setupScope.rectTransform.anchoredPosition = new Vector2(0, 187);
+                setupScope.gameObject.SetActive(true);
+            }
+
+            var controls = new TMP_Dropdown[] { group, participant, language, order };
+            var rows = new[] { 126f, 55f, -16f, -87f };
+            for (int i = 0; i < controls.Length; i++)
+            {
+                var control = controls[i];
+                control.gameObject.SetActive(true);
+                var rect = control.GetComponent<RectTransform>();
+                rect.anchoredPosition = new Vector2(170, rows[i]);
+                rect.sizeDelta = new Vector2(420, 54);
+                control.captionText.fontSize = 23;
+                control.captionText.textWrappingMode = TextWrappingModes.NoWrap;
+                control.captionText.rectTransform.sizeDelta = new Vector2(352, 50);
+                // The original dropdowns were 540 wide. Keep popup, scrollbar and arrow aligned
+                // with the new 420-wide controls; otherwise the v glyph floats outside the field.
+                var oldArrow = control.GetComponentsInChildren<TMP_Text>(true)
+                    .FirstOrDefault(t => t.transform.parent == control.transform && t.text == "v");
+                if (oldArrow) oldArrow.gameObject.SetActive(false);
+                var chevron = control.transform.Find("QuestChevron") as RectTransform;
+                if (!chevron)
+                {
+                    var iconGo = new GameObject("QuestChevron", typeof(RectTransform), typeof(ResearchUtilityIcon));
+                    chevron = iconGo.GetComponent<RectTransform>();
+                    chevron.SetParent(control.transform, false);
+                    var icon = iconGo.GetComponent<ResearchUtilityIcon>();
+                    icon.kind = "chevron_down";
+                    icon.raycastTarget = false;
+                }
+                chevron.sizeDelta = new Vector2(32, 32);
+                chevron.anchoredPosition = new Vector2(185, 0);
+                chevron.GetComponent<ResearchUtilityIcon>().color = ResearchUITheme.Ink;
+                if (control.template)
+                {
+                    control.template.sizeDelta = new Vector2(420, 240);
+                    var label = control.itemText;
+                    if (label) label.rectTransform.sizeDelta = new Vector2(376, 38);
+                }
+                // The researcher reference uses small, consistently stroked symbols to scan
+                // Group / ID / Language / Order. Icons are decorative only, never ray targets.
+                var iconNames = new[] { "researcher_group", "researcher_person", "researcher_globe", "researcher_order" };
+                var iconRoot = panel.Find("QuestSetupIcon_" + i) as RectTransform;
+                if (!iconRoot)
+                {
+                    var iconGo = new GameObject("QuestSetupIcon_" + i, typeof(RectTransform), typeof(ResearchUtilityIcon));
+                    iconRoot = iconGo.GetComponent<RectTransform>();
+                    iconRoot.SetParent(panel, false);
+                    iconRoot.GetComponent<ResearchUtilityIcon>().raycastTarget = false;
+                }
+                iconRoot.anchoredPosition = new Vector2(-407, rows[i]);
+                iconRoot.sizeDelta = new Vector2(42, 42);
+                var rowIcon = iconRoot.GetComponent<ResearchUtilityIcon>();
+                rowIcon.kind = iconNames[i];
+                rowIcon.color = ResearchUITheme.Blue;
+                if (setupFieldLabels[i])
+                {
+                    var label = setupFieldLabels[i];
+                    label.gameObject.SetActive(true);
+                    label.fontSize = 23;
+                    label.color = ResearchUITheme.Ink;
+                    label.alignment = TextAlignmentOptions.MidlineLeft;
+                    label.rectTransform.sizeDelta = new Vector2(270, 50);
+                    label.rectTransform.anchoredPosition = new Vector2(-225, rows[i]);
+                }
+            }
+
+            // The source has a second set of segmented choices. Do not show them under the same dropdowns.
+            foreach (var control in new TMP_Dropdown[] { language, order, input })
+            {
+                var choices = panel.Find(control.name + " Choices");
+                if (choices) choices.gameObject.SetActive(false);
+            }
+            input.gameObject.SetActive(false); // Quest input is Controller; never silently expose technical hand modes.
+            if (setupFieldLabels[4]) setupFieldLabels[4].gameObject.SetActive(false);
+            // Read-only input policy stays visible to the researcher as a small explanatory row.
+            if (lockedInputLabel)
+            {
+                lockedInputLabel.gameObject.SetActive(true);
+                lockedInputLabel.fontSize = 19;
+                lockedInputLabel.alignment = TextAlignmentOptions.Center;
+                lockedInputLabel.rectTransform.sizeDelta = new Vector2(840, 32);
+                lockedInputLabel.rectTransform.anchoredPosition = new Vector2(0, -134);
+            }
+
+            // Avoid repeating participant identity and assignment in a dense second paragraph:
+            // the four actual selectors already show those choices.
+            status.text = (status.text ?? "").Split('\n').LastOrDefault() ?? "";
+            status.fontSize = 18;
+            status.alignment = TextAlignmentOptions.Center;
+            status.rectTransform.sizeDelta = new Vector2(840, 38);
+            status.rectTransform.anchoredPosition = new Vector2(0, -172);
+            error.fontSize = 17;
+            error.rectTransform.sizeDelta = new Vector2(840, 38);
+            error.rectTransform.anchoredPosition = new Vector2(0, -211);
+            start.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -267);
+            start.GetComponent<RectTransform>().sizeDelta = new Vector2(820, 60);
+            startLabel.fontSize = 26;
+            startLabel.rectTransform.sizeDelta = new Vector2(790, 54);
         }
 
         private void ApplyLocalizedCaptions(RectTransform panel)

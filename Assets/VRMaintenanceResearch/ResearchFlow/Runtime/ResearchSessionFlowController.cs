@@ -290,6 +290,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Lost-object recovery reference: real Training room geometry, found once. Missing = disabled.
         Bounds recoveryRoom; float recoveryFloorTop; Transform recoveryEnvironment; bool recoveryReady;
         readonly Dictionary<HandsLabObject, float> lostSince = new Dictionary<HandsLabObject, float>();
+        readonly Dictionary<HandsLabObject, Vector3> authoredTrainingPositions = new Dictionary<HandsLabObject, Vector3>();
+        readonly Dictionary<HandsLabObject, string> lostReasons = new Dictionary<HandsLabObject, string>();
         readonly Collider[] recoveryHits = new Collider[8];
         string DataRoot => string.IsNullOrWhiteSpace(registryRoot) ? Path.Combine(Application.persistentDataPath, "ResearchSessionRegistry") : registryRoot;
         ResearchTaskPort CurrentPort => taskPorts.FirstOrDefault(t => t && t.taskId == Flow?.CurrentTask);
@@ -356,6 +358,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void ConfigureRecovery(Bounds room, float floorTop, Transform environment)
         {
             recoveryRoom = room; recoveryFloorTop = floorTop; recoveryEnvironment = environment;
+            authoredTrainingPositions.Clear(); lostSince.Clear(); lostReasons.Clear();
+            foreach (var item in trainingObjects) if (item) authoredTrainingPositions[item] = item.transform.position;
             // Fail closed: an authored pose that already counts as lost would reset in a loop.
             recoveryReady = trainingObjects.All(t => !t || ResearchObjectRecovery.Reason(t.transform.position, room, floorTop, false) == null);
         }
@@ -369,8 +373,32 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Optional DEV-only HTTPS sync reads completed immutable bundles; absent provisioning is a no-op.
             if (!Application.isEditor && TechnicalBuild && !GetComponent<ResearchQuestCloudUploader>())
                 gameObject.AddComponent<ResearchQuestCloudUploader>();
-            if (TechnicalSelfSetup) Refresh(); else view?.Refresh();
+            if (TechnicalSelfSetup)
+            {
+                Refresh();
+#if UNITY_ANDROID && !UNITY_EDITOR
+                // Technical Quest begins with the guarded researcher setup, not the DEV self-start card.
+                // This does not unlock Study records or change session/registry rights.
+                StartCoroutine(ShowInitialQuestResearcherSetup());
+#endif
+            }
+            else view?.Refresh();
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        IEnumerator ShowInitialQuestResearcherSetup()
+        {
+            // Quest may boot while sensors are untracked or the headset sits on a desk.
+            // Keep the safe fallback accessible, then open researcher setup as soon as the
+            // panel can be placed. Never launch a session or bypass readiness by polling.
+            yield return new WaitForSecondsRealtime(1.0f);
+            while (TechnicalSelfSetup && Record == null && Flow == null && !shuttingDown)
+            {
+                if (view && view.OpenResearcherSetup()) yield break;
+                yield return new WaitForSecondsRealtime(.75f);
+            }
+        }
+#endif
 
         void FloorReadinessChanged()
         {
@@ -1109,10 +1137,21 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!item || !item.body) continue;
                 var position = item.transform.position;
                 string reason = item.IsHeld ? null : ResearchObjectRecovery.Reason(position, recoveryRoom, recoveryFloorTop, Embedded(position));
-                if (reason == null) { lostSince.Remove(item); continue; }
+                if (reason == null && !TrainerGroup && origin && origin.Camera
+                    && authoredTrainingPositions.TryGetValue(item, out Vector3 authored)
+                    && ResearchObjectRecovery.IsUnreachableFloorDrop(position, authored, origin.Camera.transform.position,
+                        recoveryFloorTop, item.body.linearVelocity.magnitude, item.IsHeld))
+                    reason = "floor_far_from_training";
+                if (reason == null) { lostSince.Remove(item); lostReasons.Remove(item); continue; }
+                // A change of failure reason starts a new dwell, avoiding a fast reset when a
+                // just-thrown object transitions from outside the room to a settled floor pose.
+                if (!lostReasons.TryGetValue(item, out string previous) || previous != reason)
+                { lostReasons[item] = reason; lostSince[item] = now; continue; }
                 if (!lostSince.TryGetValue(item, out float since)) { lostSince[item] = now; continue; }
-                if (!ResearchObjectRecovery.Due(item.IsHeld, now - since)) continue;
-                lostSince.Remove(item);
+                float required = reason == "floor_far_from_training"
+                    ? ResearchObjectRecovery.FarFloorDwellSeconds : ResearchObjectRecovery.DwellSeconds;
+                if (item.IsHeld || now - since < required) continue;
+                lostSince.Remove(item); lostReasons.Remove(item);
                 var before = item.CaptureSnapshot();
                 string action = Logger.NewActionId();
                 item.DetachForSystem("object_recovery", action); // releases residual pointers, zeroes velocity

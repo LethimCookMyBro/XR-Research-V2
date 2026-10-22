@@ -42,6 +42,24 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Check(!ResearchObjectRecovery.Due(true, 999f), "never while held");
             Check(!ResearchObjectRecovery.Due(false, ResearchObjectRecovery.DwellSeconds - .01f), "not immediately after release");
             Check(ResearchObjectRecovery.Due(false, ResearchObjectRecovery.DwellSeconds), "due after dwell");
+            // A floor drop is not automatically lost. The optional training-only rule
+            // requires it to be far from its starting table, unheld, settled and away
+            // from the current wearer before the longer dwell can start.
+            var authored = new Vector3(9.97f, 1.02f, 4.3f);
+            var head = new Vector3(9.7f, 1.6f, 4.3f);
+            var nearFloor = new Vector3(9f, .02f, 3f);
+            var farFloor = new Vector3(5.25f, .02f, 7.95f);
+            bool Far(Vector3 point, Vector3 hmd, float speed = 0f, bool held = false) =>
+                ResearchObjectRecovery.IsUnreachableFloorDrop(point, authored, hmd, 0f, speed, held);
+            Check(!Far(nearFloor, head), "ordinary near-table floor drop remains recoverable by hand");
+            Check(Far(farFloor, head), "far settled training-only floor drop is eligible for guarded recovery");
+            Check(!Far(farFloor, new Vector3(5.3f, 1.6f, 7.9f)), "never reset floor item that the wearer has approached");
+            Check(!Far(farFloor, head, speed: .5f), "never reset flying or rolling item");
+            Check(!Far(farFloor, head, held: true), "never reset a held object");
+            Check(!Far(new Vector3(5.25f, .40f, 7.95f), head), "never reset object still above the floor");
+            Check(!Far(new Vector3(5.25f, -.6f, 7.95f), head), "below-floor recovery remains a separate reason");
+            Check(ResearchObjectRecovery.FarFloorDwellSeconds > ResearchObjectRecovery.DwellSeconds,
+                "reachable floor recovery must have a longer grace period than out-of-world recovery");
 
             ControllerFixture(room, Check);
             SceneAudit(Check);

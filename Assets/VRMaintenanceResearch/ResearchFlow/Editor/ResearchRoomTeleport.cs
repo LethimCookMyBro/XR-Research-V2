@@ -60,6 +60,33 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static string VerifyOpenDoorwayAccess() => JsonConvert.SerializeObject(AuditDoorwayAccess(SceneManager.GetActiveScene()), Formatting.Indented);
 
+        // Inspection only: measure authored marker visual and interactive footprints
+        // separately from the player's landing clearance; never scale collider/teleport range to fit an image.
+        public static string DescribeTeleportMarkers()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != ResearchFlowSceneBuilder.ScenePath) throw new InvalidOperationException("Canonical ResearchFlow scene required");
+            var controller = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<ResearchSessionFlowController>(true)).Single();
+            var targets = controller.GetComponentsInChildren<Transform>(true)
+                .Where(t => t.name.StartsWith("Destination_", StringComparison.Ordinal)
+                    || t.name.StartsWith("ResearchFlow_Station_", StringComparison.Ordinal))
+                .Where(t => t.GetComponentInChildren<Oculus.Interaction.Locomotion.TeleportInteractable>(true)).ToArray();
+            return JsonConvert.SerializeObject(new { count = targets.Length,
+                targets = targets.Select(t => new {
+                    name = t.name,
+                    position = new[] { t.position.x, t.position.y, t.position.z },
+                    markers = t.GetComponentsInChildren<Renderer>(true).Select(r => new {
+                        name = r.name, active = r.gameObject.activeInHierarchy, enabled = r.enabled,
+                        center = new[] { r.bounds.center.x, r.bounds.center.y, r.bounds.center.z },
+                        bounds_m = new[] { r.bounds.size.x, r.bounds.size.y, r.bounds.size.z }
+                    }).ToArray(),
+                    colliders = t.GetComponentsInChildren<Collider>(true).Select(c => new {
+                        name = c.name, enabled = c.enabled, trigger = c.isTrigger,
+                        size = new[] { c.bounds.size.x, c.bounds.size.y, c.bounds.size.z }
+                    }).ToArray()
+                }).ToArray(), hardware_verified = false }, Formatting.None);
+        }
+
         private static object AuditDoorwayAccess(Scene scene)
         {
             if (scene.path != ResearchFlowSceneBuilder.ScenePath) throw new InvalidOperationException("ResearchFlow scene required.");
@@ -98,6 +125,129 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     rays.Add(new { x, outward, from = new[] { from.x, from.y, from.z }, to = new[] { to.x, to.y, to.z }, unobstructed = true });
                 }
             return new { destinations = pointChecks, doorway_rays = rays, checks = pointChecks.Count + rays.Count, scope = "Editor clearance and six straight controller-height rays; native curved teleport commit and physical Quest remain separate.", hardware_verified = false };
+        }
+
+        public static string DescribeUnsavedSceneObjects()
+        {
+            var scene = SceneManager.GetActiveScene();
+            var roots = scene.GetRootGameObjects();
+            var components = roots.SelectMany(root => root.GetComponentsInChildren<Component>(true))
+                .Where(c => c && EditorUtility.IsDirty(c))
+                .Select(c => c.GetType().Name + ":" + c.gameObject.name)
+                .ToArray();
+            return JsonConvert.SerializeObject(new { scene = scene.path, scene.isDirty,
+                dirty_component_count = components.Length, components = components.Take(90).ToArray(),
+                any_non_ring = components.Any(n => !n.EndsWith(":Ring", StringComparison.Ordinal)) },
+                Formatting.Indented);
+        }
+
+        // The localization/preview captures sometimes dirty serialized TMP mesh caches in
+        // the open scene after our ring-only SaveScene. Never save those generated glyph
+        // caches into the canonical scene. Reload only when the exact known cache types
+        // are dirty and the already saved 30 ring visual changes are present on disk.
+        public static string ReloadSavedSceneAfterPreviewCaches()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != ResearchFlowSceneBuilder.ScenePath
+                || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating
+                || SceneManager.sceneCount != 1) throw new InvalidOperationException("Canonical stopped single scene required");
+            if (!scene.isDirty) return "SCENE_ALREADY_CLEAN";
+            var dirty = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Component>(true))
+                .Where(c => c && EditorUtility.IsDirty(c)).ToArray();
+            bool Generated(Component c) => c is TMPro.TMP_Text || c is RectTransform &&
+                (c.name == "Label" || c.name == "Handle") ||
+                c is MeshFilter && (c.name.EndsWith("_label", StringComparison.Ordinal) ||
+                    c.name == "Permanent neutral lab identification") ||
+                c is MeshRenderer && (c.name == "OculusCursor" || c.name == "Mesh" ||
+                    c.name == "Permanent neutral lab identification" || c.name.EndsWith("_label", StringComparison.Ordinal));
+            if (dirty.Length == 0 || dirty.Any(c => !Generated(c)))
+                throw new InvalidOperationException("Unexpected authored component dirty; refuse to discard unsaved changes.");
+            var targets = scene.GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<Transform>(true))
+                .Where(t => t.name.StartsWith("Destination_", StringComparison.Ordinal) ||
+                    t.name.StartsWith("ResearchFlow_Station_", StringComparison.Ordinal))
+                .Where(t => t.GetComponentInChildren<Oculus.Interaction.Locomotion.TeleportInteractable>(true)).ToArray();
+            if (targets.Length != 30 || targets.Any(t => Mathf.Abs(
+                Mathf.Max(t.GetComponentsInChildren<Renderer>(true).Single(r => r.name == "Ring").bounds.size.x,
+                  t.GetComponentsInChildren<Renderer>(true).Single(r => r.name == "Ring").bounds.size.z) - .78f) > .015f))
+                throw new InvalidOperationException("Ring visual changes not verified; refuse reload.");
+            string scenePath = scene.path;
+            byte[] before = File.ReadAllBytes(scenePath);
+            string report = Path.GetFullPath("Logs/QuestFinalIntegration/20261022_preview_dirty_objects.json");
+            Directory.CreateDirectory(Path.GetDirectoryName(report));
+            if (!File.Exists(report))
+                File.WriteAllText(report, JsonConvert.SerializeObject(new {
+                    dirty_types = dirty.Select(c => c.GetType().Name + ":" + c.name).ToArray(),
+                    serialized_scene_bytes = before.Length, discarded_only_generated_preview_cache = true
+                }, Formatting.Indented));
+            var reopened = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            if (reopened.isDirty || !before.SequenceEqual(File.ReadAllBytes(scenePath)))
+                throw new IOException("Canonical scene did not reload cleanly and byte-identically.");
+            return "RELOADED_SAVED_SCENE_ONLY_PREVIEW_CACHE_DISCARDED count=" + dirty.Length;
+        }
+
+        // Only the visible floor ring is enlarged. The actual teleport target, native SDK
+        // trigger collider, player landing point, rotation and movement logs never change.
+        // 0.78 m visual diameter stays inside the existing 1.0 m trigger footprint.
+        public static string EnlargeTeleportMarkerVisuals()
+        {
+            const float targetDiameterMetres = .78f;
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != ResearchFlowSceneBuilder.ScenePath
+                || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling
+                || EditorApplication.isUpdating || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
+                throw new InvalidOperationException("Canonical clean stopped Editor scene required for ring-only change.");
+            var controller = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<ResearchSessionFlowController>(true)).Single();
+            var targets = controller.GetComponentsInChildren<Transform>(true)
+                .Where(t => t.name.StartsWith("Destination_", StringComparison.Ordinal)
+                    || t.name.StartsWith("ResearchFlow_Station_", StringComparison.Ordinal))
+                .Where(t => t.GetComponentInChildren<Oculus.Interaction.Locomotion.TeleportInteractable>(true)).ToArray();
+            if (targets.Length != 30) throw new InvalidOperationException("Unexpected teleport target count: " + targets.Length);
+            var prepared = targets.Select(t => {
+                var ring = t.GetComponentsInChildren<Renderer>(true).Single(r => r.name == "Ring");
+                var collider = t.GetComponentsInChildren<Collider>(true).Single(c => c.name == "Teleport Collider");
+                if (ring.GetComponentsInChildren<Collider>(true).Length != 0 || !collider.isTrigger || !collider.enabled)
+                    throw new InvalidOperationException(t.name + " ring and native trigger ownership changed.");
+                return new { target = t, ring, collider, beforePosition = t.position,
+                    beforeColliderCenter = collider.bounds.center, beforeColliderSize = collider.bounds.size,
+                    beforeDiameter = Mathf.Max(ring.bounds.size.x, ring.bounds.size.z) };
+            }).ToArray();
+            foreach (var item in prepared)
+                if (item.beforeDiameter < .4f || item.beforeDiameter > .9f)
+                    throw new InvalidOperationException(item.target.name + " unexpected authored ring diameter " + item.beforeDiameter);
+            if (prepared.All(i => Mathf.Abs(i.beforeDiameter - targetDiameterMetres) < .003f))
+                return JsonConvert.SerializeObject(new { modified = 0, count = targets.Length,
+                    visual_diameter = prepared[0].beforeDiameter, collider_footprint_unchanged = true,
+                    landing_positions_unchanged = true, study_design_review_required = true,
+                    hardware_verified = false }, Formatting.Indented);
+            byte[] sceneBefore = File.ReadAllBytes(scene.path);
+            foreach (var item in prepared)
+            {
+                if (Mathf.Abs(item.beforeDiameter - targetDiameterMetres) < .003f) continue;
+                Undo.RecordObject(item.ring.transform, "Enlarge floor teleport ring visual only");
+                item.ring.transform.localScale *= targetDiameterMetres / item.beforeDiameter;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(item.ring.transform);
+                EditorUtility.SetDirty(item.ring.transform);
+            }
+            Physics.SyncTransforms();
+            foreach (var item in prepared)
+                if (Vector3.Distance(item.beforePosition, item.target.position) > .0001f
+                    || Vector3.Distance(item.beforeColliderCenter, item.collider.bounds.center) > .0001f
+                    || Vector3.Distance(item.beforeColliderSize, item.collider.bounds.size) > .0001f
+                    || Mathf.Abs(Mathf.Max(item.ring.bounds.size.x, item.ring.bounds.size.z) - targetDiameterMetres) > .012f)
+                    throw new InvalidOperationException(item.target.name + " visual-only proof failed before save.");
+            if (!sceneBefore.SequenceEqual(File.ReadAllBytes(scene.path)))
+                throw new IOException("Scene changed on disk concurrently; refuse to overwrite.");
+            string backup = Path.GetFullPath("Logs/QuestFinalIntegration/teleport_marker_visual_before_20261022.unity");
+            Directory.CreateDirectory(Path.GetDirectoryName(backup));
+            if (File.Exists(backup)) throw new IOException("Teleport marker snapshot already exists: " + backup);
+            File.WriteAllBytes(backup, sceneBefore);
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Teleport visual scene save failed.");
+            return JsonConvert.SerializeObject(new { backup, modified = prepared.Count(i => Mathf.Abs(i.beforeDiameter - targetDiameterMetres) > .003f),
+                count = targets.Length, visual_diameter_before = prepared[0].beforeDiameter,
+                visual_diameter_after = Mathf.Max(prepared[0].ring.bounds.size.x, prepared[0].ring.bounds.size.z),
+                collider_footprint_unchanged = true, landing_positions_unchanged = true,
+                scene = scene.path, study_design_review_required = true, hardware_verified = false }, Formatting.Indented);
         }
 
         public static string Apply()

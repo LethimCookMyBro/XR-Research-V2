@@ -197,6 +197,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                     Slot(mesh, new Vector2(200, y - 22));
                     float moduleY = stage == 0 ? y + 14 : stage == 1 ? y + 6 : wrong ? y - 4 : y - 14;
                     Module(mesh, new Vector2(200, moduleY), wrong, false);
+                    // Neutral FX1 practice only: the actual photographed module preview hides
+                    // the abstract mesh notch, so show TWO matching key markers explicitly.
+                    // Mirroring the photo for the blocked direction moves only the module mark.
+                    Ring(mesh, new Vector2(171, y - 13), 6, Blue); // slot notch
+                    Ring(mesh, new Vector2(wrong ? 230 : 170, moduleY - 4), 6, Blue); // module notch
                     if (stage == 1) Arrow(mesh, new Vector2(246, y + 22), new Vector2(246, y - 8));
                     if (wrong && stage == 2)
                     {

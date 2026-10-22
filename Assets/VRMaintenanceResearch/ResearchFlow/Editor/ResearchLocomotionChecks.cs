@@ -116,8 +116,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     typeof(ResearchSessionFlowController).GetProperty("Record").SetValue(controller,
                         new ParticipantRecord { group = ParticipantGroup.Test, test_data = true, session_state = RegistryState.InProgress });
                     var refresh = typeof(ResearchSessionFlowController).GetMethod("Refresh", flags);
+                    var taskTiming = (ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", flags).GetValue(controller);
                     foreach (var state in new[] { ResearchFlowState.Task1Active, ResearchFlowState.Task2Active })
                     {
+                        // A valid active Task always has an active task clock. The old fixture
+                        // created TaskActive without Start(), so Refresh correctly kept motion
+                        // gated and this check incorrectly blamed runtime locomotion.
+                        if (taskTiming.Started && !taskTiming.Ended) taskTiming.End("other", logger.Timestamp);
+                        taskTiming.Start(logger.Timestamp);
                         var flow = new ResearchSessionFlow(TaskOrder.AB, state, 5);
                         typeof(ResearchSessionFlowController).GetProperty("Flow").SetValue(controller, flow);
                         refresh.Invoke(controller, null);
