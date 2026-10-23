@@ -8,6 +8,12 @@ namespace VRMaintenanceResearch.ResearchFlow
     public sealed class ResearchUtilityIcon : MaskableGraphic
     {
         public string kind;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            raycastTarget = false;
+        }
         protected override void OnPopulateMesh(VertexHelper mesh)
         {
             mesh.Clear();

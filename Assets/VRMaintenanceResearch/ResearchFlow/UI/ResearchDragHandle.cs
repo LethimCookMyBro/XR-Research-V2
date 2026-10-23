@@ -107,7 +107,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 : highlight ? Color.Lerp(ResearchUITheme.Ink, ResearchUITheme.Warning, .35f + .35f * ResearchMotion.Ease(Mathf.PingPong(Time.unscaledTime / .8f, 1)))
                 : Color.Lerp(ResearchUITheme.Muted, ResearchUITheme.Ink, .65f));
             if (dragging && (!ResearchUIPolicy.PanelDragAllowed || !panel || !panel.movable || !panel.view || !panel.view.Head)) { Finish(false, "panel_unavailable"); return; }
-            // Validation is deliberately outside the per-ray visual pose update.
+            // Recheck a stationary held pose when scene geometry changes.
             if (dragging && Time.unscaledTime >= nextClearanceCheck) RememberClearPose();
         }
 
@@ -164,11 +164,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var look = Vector3.ProjectOnPlane(position - head.position, Vector3.up);
                     if (look.sqrMagnitude > .01f) rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
                 }
+                if (!panel.ReadableFromHeadForDrag(position, rotation) || !panel.PlacementClear(position, rotation))
+                { RejectedSamples++; Sample(rawStep, panel.transform.position, panel.transform.rotation, head.position, dt); return; }
                 Sample(rawStep, position, rotation, head.position, dt);
-                // ponytail: held panels may overlap geometry; release/cancel validates or restores
-                // the last clear pose. Add a profiled swept clamp only if transient overlap is unacceptable.
                 moved |= Vector3.Distance(panel.transform.position, position) > .001f || Quaternion.Angle(panel.transform.rotation, rotation) > .1f;
                 panel.transform.SetPositionAndRotation(position, rotation);
+                lastClearPosition = position; lastClearRotation = rotation; hasClearPose = true;
             }
             finally
             {

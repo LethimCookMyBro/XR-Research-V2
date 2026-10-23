@@ -6,7 +6,7 @@
     <Nullable>disable</Nullable>
     <LangVersion>9.0</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><IntermediateOutputPath>obj/$(MSBuildProjectName)/$(Configuration)/</IntermediateOutputPath><OutputPath>bin/$(MSBuildProjectName)/$(Configuration)/</OutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <DefineConstants>RESEARCH_S1_TASK_A_CHECKS</DefineConstants>
     <CoreStateSource Condition="'$(CoreStateSource)' == ''">../Core/ResearchS1TaskState.cs</CoreStateSource>
   </PropertyGroup>

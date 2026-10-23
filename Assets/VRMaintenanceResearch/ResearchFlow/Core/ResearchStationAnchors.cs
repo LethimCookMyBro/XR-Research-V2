@@ -24,7 +24,7 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// </summary>
     public static class ResearchStationAnchors
     {
-        public const string Version = "S1_STATION_ANCHORS_20261015_FAN_TASK_FALLBACK";
+        public const string Version = "S1_STATION_ANCHORS_20261023_SEATED_COMPUTER";
         public const int TrainingStation = 0, ComputerStation = 1, FanStation = 2;
         public const double MinEyeHeight = 1.0, MaxEyeHeight = 1.95, DefaultEyeHeight = 1.6;
 
@@ -33,7 +33,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly Base[][] TaskBases =
         {
             new[] { new Base(20, 1.4, .1) },
-            new[] { new Base(30, 1.8, .1), new Base(55, 1.8, .1) },
+            new[] { new Base(30, 1.8, .1), new Base(55, 1.8, .1), new Base(-20, 2.2, .8) },
             // Keep the calibrated poses first; the low-eye actual-shell sweep clears the Fan with the added .6 m base.
             new[] { new Base(30, 1.4, 0), new Base(30, 1.4, .6) },
         };
@@ -43,7 +43,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { new Base(-20, 1.5, .1) },
             new[] { new Base(-35, 1.9, 0) },
         };
-        // Bounded clearance ladder per base: raise, then step back, then both. Never toward the head and never to the other side.
+        // Each authored base keeps its side while the clearance ladder raises or steps back.
         static readonly (double up, double scale)[] Ladder = { (0, 1), (.3, 1), (0, 1.15), (.3, 1.15) };
 
         public static int CandidateCount(int station, string panelId) => Supports(station, panelId) ? Bases(station, panelId).Length * Ladder.Length : 0;

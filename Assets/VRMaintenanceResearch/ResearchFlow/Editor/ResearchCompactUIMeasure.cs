@@ -30,7 +30,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 text.ForceMeshUpdate(true, true);
                 var glyphs = text.textInfo.characterInfo.Take(text.textInfo.characterCount).Where(c => c.isVisible).ToArray();
                 var ink = glyphs.Length > 0 ? GlyphBounds(content, text, glyphs) : default;
-                if (glyphs.Length > 0) inked.Add((text, ink));
+                if (glyphs.Length > 0)
+                {
+                    var visibleInk = ink;
+                    foreach (var mask in text.GetComponentsInParent<RectMask2D>().Where(m => m.isActiveAndEnabled))
+                    {
+                        var clip = Bounds(content, (RectTransform)mask.transform);
+                        visibleInk = Rect.MinMaxRect(Mathf.Max(visibleInk.xMin, clip.xMin), Mathf.Max(visibleInk.yMin, clip.yMin),
+                            Mathf.Min(visibleInk.xMax, clip.xMax), Mathf.Min(visibleInk.yMax, clip.yMax));
+                    }
+                    if (visibleInk.width > 0 && visibleInk.height > 0) inked.Add((text, visibleInk));
+                }
                 bool glyphFit = glyphs.Length > 0 && glyphs.All(c => new[] {c.bottomLeft,c.topLeft,c.topRight,c.bottomRight}.All(p => Inside(text.rectTransform.rect,p)));
                 bool fit = glyphFit && !text.isTextOverflowing && !text.enableAutoSizing && text.preferredHeight <= text.rectTransform.rect.height + 1;
                 if (!fit) failures.Add(text.name + ": glyph overflow/autosizing");

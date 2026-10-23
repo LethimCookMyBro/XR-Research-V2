@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -45,6 +48,38 @@ namespace VRMaintenanceResearch.ResearchFlow
                         throw new InvalidOperationException("Approval acknowledgments must be actual JSON booleans or null.");
                 }
             return document.ToObject<ResearchOperatorAuthorization>(JsonSerializer.Create(new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Error }));
+        }
+
+        public static ResearchOperatorAuthorization LoadAuthorization(string directory, ParticipantRecord record, out string hash)
+        {
+            hash = null;
+            if (ResearchOperatorGuard.IsTechnical(record)) return null;
+            string path = Path.Combine(directory, "research-operator-authorization.json");
+            if (!File.Exists(path)) return null;
+            string json = ReadBounded(path, out byte[] authorizationBytes);
+            using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(authorizationBytes)).Replace("-", "").ToLowerInvariant();
+            var authorization = ResearchOperatorGuard.ParseAuthorization(json);
+            string linkPath = Path.Combine(directory, "research-operator-session-link.json");
+            if (authorization?.link_status == "pre_session" && File.Exists(linkPath))
+            {
+                var link = JsonConvert.DeserializeObject<ResearchOperatorSessionLink>(ReadBounded(linkPath, out _));
+                if (ResearchOperatorGuard.LinkMatches(link, authorization, hash, record))
+                { authorization.link_status = "linked"; authorization.session_id = link.session_id; }
+            }
+            return authorization;
+        }
+
+        internal static string ReadBounded(string path, out byte[] bytes)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (stream.Length > 16384) throw new InvalidOperationException("Local operator document exceeds 16 KiB.");
+                bytes = new byte[(int)stream.Length];
+                int offset = 0, count;
+                while (offset < bytes.Length && (count = stream.Read(bytes, offset, bytes.Length - offset)) > 0) offset += count;
+                if (offset != bytes.Length) throw new IOException("Local operator document changed while reading.");
+                return new UTF8Encoding(false, true).GetString(bytes).TrimStart('\uFEFF');
+            }
         }
 
         public static bool ValidTerminationReason(string reason) => reason == "pass" || reason == "time_limit" || reason == "withdrawal"

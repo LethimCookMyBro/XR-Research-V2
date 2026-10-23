@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Linq;
 using UnityEngine;
@@ -272,7 +272,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 SceneManager.MoveGameObjectToScene(root, donor.gameObject.scene);
                 var fixture = root.AddComponent<ResearchSessionFlowController>();
                 var view = ResearchFlowView.Build(root.transform, donor.thaiFont, donor.japaneseFont, donor.englishFont);
-                fixture.view = view; view.controller = fixture;
+                fixture.view = view; view.controller = fixture; fixture.taskPorts = donor.controller.taskPorts;
                 var head = new GameObject("SyntheticModalHead"); head.transform.SetParent(root.transform, false);
                 var camera = head.AddComponent<Camera>(); camera.CopyFrom(donorCamera); camera.enabled = false;
                 view.Head = head.transform;
@@ -318,7 +318,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     foreach (var sample in samples)
                         // Tutorial transitions belong at Training; task/result transitions belong at either task station.
                         foreach (int stationIndex in sample.state <= ResearchFlowState.TutorialComplete ? new[] { 0 } : new[] { 1, 2 })
-                            foreach (float height in new[] { 1.2f, 1.65f, 1.9f })
+                            foreach (float height in new[] { 1.0f, 1.2f, 1.65f, 1.9f })
                             {
                                 var station = donor.controller.stations[stationIndex];
                                 bool firstTask = sample.state <= ResearchFlowState.PostTask1Checkpoint;
@@ -366,7 +366,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 }
                                 if (sample.state == ResearchFlowState.ParticipantComplete && stationIndex == 2 && height == 1.2f)
                                     completionMetrics += "; " + language + " Fan completion rect=" + size + " title=" + title.preferredHeight + " body=" + body.preferredHeight;
-                                if (workingTask && Vector3.Distance(panel.transform.position, head.transform.position) > 1.8f)
+                                if (workingTask && panel.GetComponentsInChildren<ResearchDragHandle>(false).Any(h => h.isActiveAndEnabled) && Vector3.Distance(panel.transform.position, head.transform.position) > 1.8f)
                                 {
                                     var handle = panel.GetComponentsInChildren<ResearchDragHandle>(false).First(h => h.isActiveAndEnabled);
                                     var beforeDrag = panel.transform.position;

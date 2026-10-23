@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>RESEARCH_OPERATOR_APPROVAL_CHECKS</DefineConstants>
+    <DefineConstants Condition="'$(ReadinessAdapterSource)' != ''">$(DefineConstants);RESEARCH_OPERATOR_READINESS_SLICE</DefineConstants>
+    <ResearchFlowRoot Condition="'$(ResearchFlowRoot)' == ''">..</ResearchFlowRoot>
+    <OperatorSource Condition="'$(OperatorSource)' == ''">$(ResearchFlowRoot)/Core/ResearchOperatorAuthorization.cs</OperatorSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(ResearchFlowRoot)/Core/*.cs" Exclude="$(ResearchFlowRoot)/Core/ResearchMovementCollection.cs;$(ResearchFlowRoot)/Core/ResearchS1CablePath.cs;$(ResearchFlowRoot)/Core/ResearchS1FanObservations.cs;$(ResearchFlowRoot)/Core/ResearchOperatorAuthorization.cs" />
+    <Compile Include="$(OperatorSource)" /><Compile Include="ResearchOperatorApprovalChecks.cs" />
+    <Compile Include="$(ReadinessAdapterSource)" Condition="'$(ReadinessAdapterSource)' != ''" />
+    <Reference Include="Newtonsoft.Json"><HintPath>$(ResearchFlowRoot)/../../../Library/PackageCache/com.unity.nuget.newtonsoft-json@4dfd81071c64/Runtime/Newtonsoft.Json.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

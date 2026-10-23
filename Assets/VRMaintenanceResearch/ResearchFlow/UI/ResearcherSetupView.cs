@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 using TMPro;
@@ -76,7 +75,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         private readonly UnityEngine.UI.Button[] reasonButtons = new UnityEngine.UI.Button[4];
         private TMP_Text reasonCaption;
         static readonly string[] ReasonLabels = { "Withdrawal", "Safety stop", "Technical failure", "Other" };
-        private readonly ParticipantGroup[] groups = { ParticipantGroup.Dev, ParticipantGroup.Thai, ParticipantGroup.Japanese, ParticipantGroup.Test, ParticipantGroup.Pilot };
+        private readonly ParticipantGroup[] groups = { ParticipantGroup.Thai, ParticipantGroup.Japanese, ParticipantGroup.Dev, ParticipantGroup.Test, ParticipantGroup.Pilot };
 
         public static ResearcherSetupView Build(Transform parent, TMP_FontAsset font)
         {
@@ -138,7 +137,20 @@ namespace VRMaintenanceResearch.ResearchFlow
         private void GroupChanged(int index)
         {
             recordSignature = ""; ClearEndingRequest();
-            language.SetValueWithoutNotify(groups[index] == ParticipantGroup.Japanese ? 1 : 0);
+            if (index >= 0 && index < groups.Length)
+            {
+                var g = groups[index];
+                if (g == ParticipantGroup.Thai)
+                {
+                    language.SetValueWithoutNotify((int)ParticipantLanguage.Thai);
+                    if (controller) controller.SetLanguage("Thai");
+                }
+                else if (g == ParticipantGroup.Japanese)
+                {
+                    language.SetValueWithoutNotify((int)ParticipantLanguage.Japanese);
+                    if (controller) controller.SetLanguage("Japanese");
+                }
+            }
             Refresh();
         }
 
@@ -154,8 +166,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
             rect.sizeDelta = new Vector2(920, 620); rect.anchoredPosition = Vector2.zero;
             rect.localScale = Vector3.one * .82f; rect.localRotation = Quaternion.identity;
-            canvas.renderMode = RenderMode.WorldSpace; canvas.targetDisplay = 0;
-            canvas.worldCamera = owner.mainPanel.GetComponent<Canvas>().worldCamera; canvas.enabled = true;
+            
+            // On Quest in WorldSpace, disable child canvas & GraphicRaycaster
+            // so all UI children share owner.mainPanel's root Canvas and PointableCanvasModule.
+            if (canvas) canvas.enabled = false;
+            var gr = GetComponent<GraphicRaycaster>();
+            if (gr) gr.enabled = false;
+
             if (!back) back = Button(start.transform.parent, "Back", new Vector2(360, 260), new Vector2(100, 48), out _);
             back.onClick.RemoveAllListeners(); back.onClick.AddListener(owner.CloseResearcherSetup);
             back.gameObject.SetActive(true); ResearchUITheme.Button(back, ResearchButtonVariant.Secondary);
@@ -167,12 +184,19 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             questOwner = null;
             transform.SetParent(desktopParent, false);
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.targetDisplay = 1;
-            canvas.enabled = Display.displays.Length > 1;
+            if (canvas)
+            {
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.targetDisplay = 1;
+                canvas.enabled = Display.displays.Length > 1;
+            }
+            var gr = GetComponent<GraphicRaycaster>();
+            if (gr) gr.enabled = true;
             transform.localScale = Vector3.one;
             if (back) back.gameObject.SetActive(false);
             foreach (var dropdown in new[] { group, participant, language, order, input })
-                if (dropdown.template.GetComponent<Canvas>()) dropdown.template.GetComponent<Canvas>().targetDisplay = 1;
+                if (dropdown && dropdown.template && dropdown.template.GetComponent<Canvas>())
+                    dropdown.template.GetComponent<Canvas>().targetDisplay = 1;
         }
 
         private void Construct()
@@ -180,7 +204,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var panel = Box(transform, "Setup", new Vector2(900, 950), Vector2.zero, new Color(.035f, .055f, .085f));
             Text(panel, "Researcher Setup", new Vector2(820, 50), new Vector2(0, 420), 30);
             Text(panel, "RESEARCHER DISPLAY  |  DEV / TEST / PILOT are test data", new Vector2(820, 36), new Vector2(0, 374), 17);
-            group = Dropdown(panel, "Participant Group", 314, new[] { "DEV - test data", "Thai", "Japanese", "TEST - test data", "PILOT - test data" });
+            group = Dropdown(panel, "Participant Group", 314, new[] { "Thai", "Japanese", "DEV - test data" });
             participant = (ResearcherParticipantDropdown)Dropdown(panel, "Participant ID", 256, new[] { "Select participant", "Create next ID" }, true);
             language = Dropdown(panel, "Language", 198, new[] { "Thai", "Japanese", "English" });
             order = Dropdown(panel, "Task Order", 140, Cells);
@@ -260,8 +284,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 order.interactable = attachedRecord == null && !resuming;
                 if ((!technical || questOwner) && !resuming && attachedRecord == null) input.SetValueWithoutNotify(0);
                 start.interactable = !running && record != null && Selectable(record) && controller.DeviceReady && controller.LoggerReady
+                    && controller.ResearcherStartBlocker(record, OperatorDirectory) == null
                     && (!questOwner || (ExperimentInputMode)input.value == ExperimentInputMode.Controller);
-                startLabel.text = resuming ? R("resume_saved") : R("start");
+                startLabel.text = "▶  " + (resuming ? R("resume_saved") : R("start"));
                 var flow = controller.Flow;
                 resume.interactable = running && controller.ResearcherResumeBlocker() == null;
                 abort.interactable = running;
@@ -294,7 +319,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 bool activeWithoutResume = running && flow?.IsTaskActive == true && !flow.Paused
                     && resumeBlocker == "Nothing to resume: participant is in " + flow.State + ".";
                 string blocker = attachedRecord != null && attachedRecord.session_state != RegistryState.InProgress ? null : running ? (resume.interactable || activeWithoutResume ? null : R("resume_unavailable") + LocalizeBlocker(resumeBlocker))
-                    : start.interactable ? null : R("start_unavailable") + LocalizeBlocker(controller.ResearcherStartBlocker(record) ?? "Quest setup requires Controller mode.");
+                    : start.interactable ? null : R("start_unavailable") + LocalizeBlocker(controller.ResearcherStartBlocker(record, OperatorDirectory) ?? "Quest setup requires Controller mode.");
                 error.text = !string.IsNullOrEmpty(controller.Error) ? controller.Error : !string.IsNullOrEmpty(localError) ? localError : blocker ?? "";
                 summary.text = controller.Record == null ? R("empty") : detailsExpanded ? controller.SummaryText(controller.Language) : "";
                 if (attachedRecord != null)
@@ -383,7 +408,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void ExecuteGuarded(string command, ParticipantRecord record, Action action)
         {
-            var authorization = LoadAuthorization(record, out string hash);
+            var authorization = ResearchOperatorGuard.LoadAuthorization(OperatorDirectory, record, out string hash);
             string scope = ResearchOperatorGuard.Demand(command, record, authorization);
             if (!ResearchOperatorGuard.IsTechnical(record) && (command == "start" || command == "resume"))
             {
@@ -440,38 +465,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!File.ReadAllBytes(path).SequenceEqual(bytes)) throw new IOException("Operator authorization journal verification failed; command was not executed.");
         }
 
-        private ResearchOperatorAuthorization LoadAuthorization(ParticipantRecord record, out string hash)
-        {
-            hash = null;
-            if (ResearchOperatorGuard.IsTechnical(record)) return null;
-            string path = Path.Combine(OperatorDirectory, "research-operator-authorization.json");
-            if (!File.Exists(path)) return null;
-            string json = ReadBounded(path, out byte[] authorizationBytes);
-            using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(authorizationBytes)).Replace("-", "").ToLowerInvariant();
-            var authorization = ResearchOperatorGuard.ParseAuthorization(json);
-            string linkPath = Path.Combine(OperatorDirectory, "research-operator-session-link.json");
-            if (authorization?.link_status == "pre_session" && File.Exists(linkPath))
-            {
-                var link = JsonConvert.DeserializeObject<ResearchOperatorSessionLink>(ReadBounded(linkPath));
-                if (ResearchOperatorGuard.LinkMatches(link, authorization, hash, record))
-                { authorization.link_status = "linked"; authorization.session_id = link.session_id; }
-            }
-            return authorization;
-        }
-
-        static string ReadBounded(string path) => ReadBounded(path, out _);
-        static string ReadBounded(string path, out byte[] bytes)
-        {
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                if (stream.Length > 16384) throw new InvalidOperationException("Local operator document exceeds 16 KiB.");
-                bytes = new byte[(int)stream.Length];
-                int offset = 0, count;
-                while (offset < bytes.Length && (count = stream.Read(bytes, offset, bytes.Length - offset)) > 0) offset += count;
-                if (offset != bytes.Length) throw new IOException("Local operator document changed while reading.");
-                return new UTF8Encoding(false, true).GetString(bytes).TrimStart('\uFEFF');
-            }
-        }
+        static string ReadBounded(string path) => ResearchOperatorGuard.ReadBounded(path, out _);
 
         // Exact record identities, immutable per-request result files and no network listener.
         public object ExecuteLocalOperatorCommand(ResearchOperatorCommand request)
@@ -598,14 +592,28 @@ namespace VRMaintenanceResearch.ResearchFlow
                 ResearchUITheme.Button(dropdown, ResearchButtonVariant.Secondary);
                 dropdown.captionText.fontSize = 20;
                 var template = dropdown.template;
-                var canvas = template.GetComponent<Canvas>(); if (!canvas) canvas = template.gameObject.AddComponent<Canvas>();
-                canvas.targetDisplay = questOwner ? 0 : 1;
-                var image = template.GetComponent<Image>();
-                image.color = ResearchUITheme.Glass; ResearchUITheme.Surface(image, true, 16);
-                AddScrollbar(template.GetComponent<ScrollRect>());
-                var toggle = template.GetComponentInChildren<Toggle>(true);
-                if (toggle) ResearchUITheme.Button(toggle, ResearchButtonVariant.Ghost);
-                dropdown.itemText.fontSize = 19;
+                if (template)
+                {
+                    var c = template.GetComponent<Canvas>();
+                    if (questOwner)
+                    {
+                        if (c) c.enabled = false;
+                        var gr = template.GetComponent<GraphicRaycaster>();
+                        if (gr) gr.enabled = false;
+                    }
+                    else
+                    {
+                        if (!c) c = template.gameObject.AddComponent<Canvas>();
+                        c.enabled = true;
+                        c.targetDisplay = 1;
+                    }
+                    var image = template.GetComponent<Image>();
+                    if (image) { image.color = ResearchUITheme.Glass; ResearchUITheme.Surface(image, true, 16); }
+                    AddScrollbar(template.GetComponent<ScrollRect>());
+                    var toggle = template.GetComponentInChildren<Toggle>(true);
+                    if (toggle) ResearchUITheme.Button(toggle, ResearchButtonVariant.Ghost);
+                    if (dropdown.itemText) dropdown.itemText.fontSize = 19;
+                }
             }
             var summaryRoot = summary.transform.parent.GetComponent<Image>();
             summaryRoot.color = Color.clear;
@@ -972,8 +980,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             details.GetComponentInChildren<TMP_Text>(true).text = R(detailsExpanded ? "hide_details" : "details");
             if (back) back.GetComponentInChildren<TMP_Text>(true).text = R("back");
             if (invalid) invalid.GetComponentInChildren<TMP_Text>(true).text = R(confirmInvalid ? "cancel_invalid" : "invalid");
-            var groupLabels = new[] { "DEV - " + R("test_data"), R("thai"), R("japanese"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
-            for (int i = 0; i < group.options.Count && i < groupLabels.Length; i++) group.options[i].text = groupLabels[i];
+            int visibleGroupCount = (detailsExpanded && !questOwner) ? groups.Length : 3;
+            var groupLabels = new[] { R("thai"), R("japanese"), "DEV - " + R("test_data"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
+            if (group.options.Count != visibleGroupCount)
+            {
+                int currentVal = group.value;
+                group.ClearOptions();
+                for (int i = 0; i < visibleGroupCount; i++) group.options.Add(new TMP_Dropdown.OptionData(groupLabels[i]));
+                group.SetValueWithoutNotify(Mathf.Clamp(currentVal, 0, visibleGroupCount - 1));
+            }
+            else
+            {
+                for (int i = 0; i < group.options.Count && i < groupLabels.Length; i++) group.options[i].text = groupLabels[i];
+            }
             group.RefreshShownValue();
             var sources = new[] { language, order, input };
             var captions = new[] { new[] { R("thai"), R("japanese"), R("english") }, new[] { R("auto"), "AB_P", "AB_Q", "BA_P", "BA_Q" }, new[] { R("controller"), R("hands"), R("both") } };

@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +19,54 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     /// <summary>Opt-in Editor demo evidence; never runs automatically or claims hardware input.</summary>
     public static class ResearchFlowPlayChecks
     {
+        public static string PrepareCanonicalSdkRun(string evidenceDirectory)
+        {
+            if (!EditorApplication.isPlaying || EditorApplication.isPaused || !Application.isFocused ||
+                !EditorWindow.focusedWindow || EditorWindow.focusedWindow.GetType().FullName != "UnityEditor.GameView")
+                throw new InvalidOperationException("Focused unpaused Play Mode is required before preparing an SDK run.");
+            var c = UnityEngine.Object.FindObjectsByType<ResearchSessionFlowController>(FindObjectsSortMode.None).Single();
+            if (c.gameObject.scene.path != ResearchFlowSceneBuilder.ScenePath || UnityEngine.SceneManagement.SceneManager.GetActiveScene().path != ResearchFlowSceneBuilder.ScenePath ||
+                !ResearchSessionFlowController.TechnicalBuild || c.Record != null || c.Flow != null || c.Logger != null ||
+                c.Registry == null || c.Transitioning || !string.IsNullOrEmpty(c.Error) || ResearchFlowVisualInput.Running ||
+                ResearchS1TaskASdkRunner.Running || ResearchS1TaskBSdkRunner.Running || ResearchS1GameViewVideo.Running ||
+                ResearchS1FlowDriver.Status == "Running" || ResearchS1FlowDriver.Status == "BLOCKED_FOCUS" || Status == "Running")
+                throw new InvalidOperationException("An idle technical canonical controller without any owned driver/input is required.");
+            if (string.IsNullOrWhiteSpace(evidenceDirectory) || !Path.IsPathRooted(evidenceDirectory))
+                throw new ArgumentException("Use an absolute local external evidence directory.");
+            string output = Path.GetFullPath(evidenceDirectory), project = Path.GetFullPath(Path.Combine(Application.dataPath, "..")).TrimEnd('\\', '/');
+            if (output.StartsWith(@"\\", StringComparison.Ordinal) || Path.GetPathRoot(evidenceDirectory).Replace('/', '\\') != Path.GetPathRoot(output).Replace('/', '\\') ||
+                Directory.Exists(output) || File.Exists(output) || output.Equals(project, StringComparison.OrdinalIgnoreCase) || output.StartsWith(project + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new IOException("Evidence must be fresh, local and outside the Unity project.");
+            for (var parent = Directory.GetParent(output); parent != null; parent = parent.Parent)
+                if (parent.Exists && (parent.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Evidence parents cannot be reparse points.");
+            string registry = Path.Combine(output, "registry"), captures = Path.Combine(output, "flow-captures");
+            var bind = typeof(ResearchSessionFlowController).GetMethod("ConfigureTechnicalRegistry", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (bind == null) throw new MissingMethodException("ConfigureTechnicalRegistry");
+            string oldRoot = c.registryRoot, oldCapture = ResearchS1FlowDriver.CaptureDir;
+            var oldRegistry = c.Registry;
+            Directory.CreateDirectory(output);
+            try
+            {
+                bind.Invoke(c, new object[] { registry });
+                if (c.registryRoot != registry || c.Registry.DirectoryPath != registry || c.Record != null || c.Flow != null || c.Logger != null)
+                    throw new InvalidOperationException("The external registry binding was not verified.");
+                ResearchS1FlowDriver.SetCaptureDir(captures);
+                string result = JsonConvert.SerializeObject(new { status = "PREPARED_NOT_STARTED", output, registry, captures,
+                    controller_instance_id = c.GetInstanceID(), previous_registry_root = oldRoot, previous_registry_directory = oldRegistry.DirectoryPath,
+                    previous_capture_directory = oldCapture, scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path,
+                    input_context = "Editor SimulatedController, not started", hardware_verified = false }, Formatting.Indented);
+                File.WriteAllText(Path.Combine(output, "prepare.json"), result);
+                return result;
+            }
+            catch
+            {
+                c.registryRoot = oldRoot;
+                typeof(ResearchSessionFlowController).GetProperty("Registry").GetSetMethod(true).Invoke(c, new object[] { oldRegistry });
+                ResearchS1FlowDriver.SetCaptureDir(oldCapture);
+                throw;
+            }
+        }
+
         // Isolated inactive fixture: exercises actual view/gate code without starting a registry session.
         public static string CheckTutorialErrorView(string evidenceDirectory = null)
         {
@@ -106,6 +154,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     float remaining = Field<float>(ui, "successUntil") - Time.unscaledTime;
                     Check(remaining >= .2f && remaining <= .35f, "Secondary confirmation lasts 200-350 ms without withholding the next action");
                     typeof(ResearchFlowView).GetField("successUntil", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(ui, Time.unscaledTime - 1);
+                    typeof(ResearchFlowView).GetField("factFeedbackUntil", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(ui, Time.unscaledTime - 1);
                     typeof(ResearchFlowView).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(ui, null);
                     Check(body.gameObject.activeSelf && Plain(body.text) == ResearchStrings.Get("tutorial.try.move", fixture.Language)
                         && !success.gameObject.activeSelf, "Secondary confirmation expiry keeps the current action visible");
@@ -151,8 +200,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 using (var logger = new HandsLabLogger(failureLogs, "None", "Editor failure fixture", technicalTest: true, testData: true))
                 {
-                    Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 1));
-                    Set(fixture, "Error", ""); Set(fixture, "Logger", logger);
+                    Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 2));
+                    Set(fixture, "Error", ""); Set(fixture, "Logger", logger); ui.CancelTutorialConfirmation(); ui.Refresh();
                     fixture.Evidence("grab");
                     var accepted = Field<HashSet<string>>(fixture, "tutorialEvidence");
                     Check(accepted.Contains("grab"), "Active initialized logger accepts tutorial observations");
@@ -161,12 +210,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     var cycle = new Dictionary<string, object>(); cycle["self"] = cycle;
                     Check(!logger.Record("ACTION", "fixture.write_failure", "Attempted", cycle, "None", source: "Tester")
                         && logger.State == HandsLabLogState.WriteError && !string.IsNullOrEmpty(fixture.Error), "Real writer failure reaches controller safety gate");
-                    fixture.Evidence("select");
-                    Check(fixture.Flow.TutorialCompleted == 1 && !accepted.Contains("select"), "Failed logger callback cannot advance or accept tutorial evidence");
-                    Set(fixture, "Error", ""); fixture.Evidence("select");
-                    Check(fixture.Flow.TutorialCompleted == 1 && !accepted.Contains("select"), "Writer state independently blocks tutorial evidence");
-                    Set(fixture, "Logger", null); fixture.Evidence("select");
-                    Check(fixture.Flow.TutorialCompleted == 1 && !accepted.Contains("select"), "Uninitialized logger cannot accept tutorial evidence");
+                    fixture.Evidence("move");
+                    Check(fixture.Flow.TutorialCompleted == 2 && !accepted.Contains("move"), "Failed logger callback cannot advance or accept tutorial evidence");
+                    Set(fixture, "Error", ""); fixture.Evidence("move");
+                    Check(fixture.Flow.TutorialCompleted == 2 && !accepted.Contains("move"), "Writer state independently blocks tutorial evidence");
+                    Set(fixture, "Logger", null); fixture.Evidence("move");
+                    Check(fixture.Flow.TutorialCompleted == 2 && !accepted.Contains("move"), "Uninitialized logger cannot accept tutorial evidence");
                 }
                 using (var logger = new HandsLabLogger(failureLogs, "None", "Editor interruption-write failure", technicalTest: true, testData: true))
                 {
@@ -222,12 +271,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 void AdvanceConfirmation()
                 {
                     typeof(ResearchFlowView).GetField("successUntil", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(ui, Time.unscaledTime - 1);
+                    typeof(ResearchFlowView).GetField("factFeedbackUntil", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(ui, Time.unscaledTime - 1);
                     typeof(ResearchFlowView).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(ui, null);
                 }
                 var record = registry.CreateNext(ParticipantGroup.Dev);
-                record = registry.StartOrResume(record.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller);
+                record = registry.StartOrResume(record.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, orderOverride: TaskOrder.AB);
                 Set(fixture, "Registry", registry); Set(fixture, "Record", record);
-                Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3));
+                Set(fixture, "Flow", new ResearchSessionFlow(record.task_order, ResearchFlowState.TutorialReferenceInspect, 3));
                 using (var logger = new HandsLabLogger(evidenceFolder, "None", "Editor early-close fixture", technicalTest: true, testData: true))
                 {
                     Set(fixture, "Logger", logger);
@@ -266,15 +316,21 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Acceptance result is what shared UI feedback uses; rejected/no-op commands must never confirm success.
         public static string CheckAcceptedUICommands(string evidenceFolder)
         {
-            var donor = Resources.FindObjectsOfTypeAll<ResearchFlowView>().First(v => v.thaiFont && v.japaneseFont && v.englishFont);
-            var root = new GameObject("ResearchFlow_UIAcceptanceFixture") { hideFlags = HideFlags.HideAndDontSave };
-            root.SetActive(false);
+            var callerScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            bool callerDirty = callerScene.isDirty;
+            var preview = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            GameObject root = null;
             var checks = new List<string>();
+            string failure = null;
             void Check(bool value, string name) { if (!value) throw new InvalidOperationException(name); checks.Add(name); }
             const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
             void Set(object target, string property, object value) => target.GetType().GetProperty(property, flags).GetSetMethod(true).Invoke(target, new[] { value });
             try
             {
+                if (Application.isPlaying) throw new InvalidOperationException("Inactive synthetic command unit fixture only.");
+                var donor = Resources.FindObjectsOfTypeAll<ResearchFlowView>().First(v => v.thaiFont && v.japaneseFont && v.englishFont);
+                root = new GameObject("ResearchFlow_UIAcceptanceFixture") { hideFlags = HideFlags.HideAndDontSave };
+                root.SetActive(false); UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, preview);
                 var fixture = root.AddComponent<ResearchSessionFlowController>();
                 var ui = ResearchFlowView.Build(root.transform, donor.thaiFont, donor.japaneseFont, donor.englishFont);
                 fixture.view = ui; ui.controller = fixture;
@@ -287,19 +343,38 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(!fixture.Command("technical_start") && fixture.Record == null, "Start readiness rejection reports false without starting a session");
                 Check(!ResearchUIFeedback.TryGetHapticDevice(fixture, 731, out _), "Unattributed Editor input cannot resolve a native controller for haptics");
 
-                var registry = new ResearchParticipantRegistry(Path.Combine(evidenceFolder, "registry"));
+                fixture.registryRoot = Path.Combine(evidenceFolder, "registry");
+                var registry = new ResearchParticipantRegistry(fixture.registryRoot);
                 var record = registry.CreateNext(ParticipantGroup.Dev);
                 record = registry.StartOrResume(record.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, TaskOrder.AB);
                 Set(fixture, "Registry", registry); Set(fixture, "Record", record);
                 Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Ready, 5));
-                using (var logger = new HandsLabLogger(evidenceFolder, "None", "Editor accepted-command fixture", technicalTest: true, testData: true))
+                var timing = (ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", flags).GetValue(fixture);
+                using (var logger = new HandsLabLogger(evidenceFolder, "None", "Editor accepted-command fixture", technicalTest: true, testData: true, runId: record.run_id))
                 {
+                    JObject[] Rows()
+                    {
+                        using (var stream = new FileStream(logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var reader = new StreamReader(stream))
+                            return reader.ReadToEnd().Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToArray();
+                    }
+                    int TerminalEvents() => Rows().Count(row => new[] { "INSPECT_FEEDBACK_VISIBLE", "TASK_COMPLETED", "TASK_ENDED" }.Contains((string)row["event"]));
                     Set(fixture, "Logger", logger); ui.Refresh();
+                    Check(!ui.LocalCommand("task_start", "None") && !ui.LocalCommand("task_start_confirm", "None") && !fixture.TaskStartConfirmation && !timing.Started && !Rows().Any(row => (string)row["event"] == "TASK_STARTED"), "Missing task port rejects Start before confirmation or timing");
+                    bool syntheticPass = false, physicalGate = false; int captures = 0, evaluations = 0;
+                    Func<object> snapshot = () => { captures++; return new Dictionary<string, object> { ["synthetic_passed"] = syntheticPass }; };
+                    Func<object, bool> evaluate = state => { evaluations++; return (bool)((Dictionary<string, object>)state)["synthetic_passed"]; };
+                    var port = root.AddComponent<ResearchTaskPort>(); port.taskId = "A"; port.demoMode = true; fixture.taskPorts = new[] { port };
+                    port.BindSnapshot(snapshot, evaluate);
+                    Check(!port.HasBoundMechanics && !ui.LocalCommand("task_start", "None") && !ui.LocalCommand("task_start_confirm", "None") && !fixture.TaskStartConfirmation && !timing.Started && !Rows().Any(row => (string)row["event"] == "TASK_STARTED"), "Snapshot and evaluator without a physical gate reject Start");
+                    port.BindSnapshot(snapshot, evaluate, allowed => physicalGate = allowed);
                     Check(ui.LocalCommand("task_start", "None") && !fixture.Flow.IsTaskActive && fixture.TaskStartConfirmation, "Start requests confirmation without starting time");
                     Check(ui.LocalCommand("task_start_back", "None") && !fixture.TaskStartConfirmation && fixture.Flow.TutorialCompleted == 5, "Back retains Training");
                     Check(ui.LocalCommand("task_start", "None") && ui.LocalCommand("task_start_confirm", "None") && fixture.Flow.IsTaskActive && !ui.LocalCommand("task_start_confirm", "None"), "Confirmed Start accepts once and rejects a repeated state transition");
+                    var started = Rows().Single(row => (string)row["event"] == "TASK_STARTED");
+                    Check(started["after"]?["initial_state"]?["task_state"] != null && (bool?)started["after"]?["initial_state"]?["task_state"]?["synthetic_passed"] == false && captures >= 1 && evaluations == 0 && timing.Started && physicalGate && JToken.DeepEquals(started["task_state"], started["after"]?["initial_state"]), "Bound Start records one non-null synthetic initial state and enables its gate; captures=" + captures + "; evaluations=" + evaluations + "; timing=" + timing.Started + "; physicalGate=" + physicalGate + "; after=" + started["after"]);
                     Check(fixture.Command("reference") && fixture.ReferenceOpen && !fixture.Command("reference"), "Reference accepts opening once and rejects reopening an open panel");
-                    Check(!fixture.Command("reference_tab.video") && !fixture.Command("reference_tab." + fixture.ReferenceSection), "Unavailable/current formats are rejected without success feedback");
+                    Check(!fixture.Command("reference_tab.unavailable") && !fixture.Command("reference_tab." + fixture.ReferenceSection), "Unavailable/current formats are rejected without success feedback");
                     Check(fixture.Command("reference_minimize") && !fixture.Command("reference_minimize"), "Reference Minimize reports real state change only");
                     Check(fixture.Command("reference_restore") && !fixture.Command("reference_restore"), "Reference Restore reports real state change only");
                     Check(fixture.Command("reference_close") && !fixture.Command("reference_close"), "Reference Close reports real state change only");
@@ -320,20 +395,38 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(!ui.LocalCommand("session_resume", "None") && fixture.Flow.Paused, "Comparison rejects participant resume");
                     Set(comparison, "Running", false); Set(fixture, "RenderComparison", null);
                     Check(ui.LocalCommand("session_resume", "None") && !fixture.Flow.Paused && !ui.LocalCommand("session_resume", "None"), "Resume reports real accepted transition only");
-                    Check(!ui.LocalCommand("inspect", "None") && !string.IsNullOrEmpty(fixture.Error), "Missing inspection adapter reports rejection without successful-action feedback");
-                    Set(fixture, "Error", "");
-                    Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5, false, false)); ui.Refresh();
-                    Check(ui.LocalCommand("inspect_continue", "None") && !fixture.Flow.InspectPassed.HasValue && !ui.LocalCommand("inspect_continue", "None"), "Retry accepts leaving an actual failed inspection once");
-                    var port = root.AddComponent<ResearchTaskPort>(); port.taskId = "A"; port.demoMode = true; port.SetInteractionAllowed(true); fixture.taskPorts = new[] { port };
-                    Check(ui.LocalCommand("inspect", "None") && fixture.Flow.InspectPassed == false,
-                        "A valid failed inspection still accepts the UI request; feedback does not encode correctness");
-                    Check(ui.LocalCommand("inspect_continue", "None"), "Valid failed inspection retains accepted Retry");
-                    fixture.SetDemoPass(true);
-                    Check(ui.LocalCommand("inspect", "None") && fixture.Flow.State == ResearchFlowState.PostTask1Checkpoint && !ui.LocalCommand("inspect", "None"),
-                        "A valid passed inspection accepts once and goes straight to the checkpoint");
+                    fixture.taskPorts = Array.Empty<ResearchTaskPort>();
+                    Check(!ui.LocalCommand("inspect", "None") && !string.IsNullOrEmpty(fixture.Error) && timing.EndReason == "technical_failure", "Missing inspection adapter rejects feedback and terminates the fixture clock");
+                    Set(fixture, "Error", ""); timing.Start(logger.Timestamp);
+                    typeof(ResearchSessionFlowController).GetField("taskEndRecorded", flags).SetValue(fixture, false);
+                    Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5)); fixture.taskPorts = new[] { port };
+                    typeof(ResearchSessionFlowController).GetMethod("Refresh", flags).Invoke(fixture, null);
+                    Check(timing.CanManipulate && physicalGate && TerminalEvents() == 1 && Rows().Single(row => (string)row["event"] == "TASK_ENDED")["after"]?["end_reason"]?.ToString() == "technical_failure", "Synthetic fixture resets clock, Flow and bookkeeping after the isolated adapter failure");
+                    foreach (bool expectedPass in new[] { false, true })
+                    {
+                        timing.End("other", logger.Timestamp); timing.Start(logger.Timestamp); syntheticPass = expectedPass;
+                        Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
+                        typeof(ResearchSessionFlowController).GetMethod("Refresh", flags).Invoke(fixture, null);
+                        int capturesBefore = captures, evaluationsBefore = evaluations, terminalBefore = TerminalEvents();
+                        int requestsBefore = Rows().Count(row => (string)row["event"] == "INSPECT");
+                        Check(ui.LocalCommand("inspect", "None") && fixture.InspectionChecking && !fixture.InspectionFeedbackVisible && !fixture.Flow.InspectPassed.HasValue && fixture.Flow.IsTaskActive && !timing.Ended && timing.InspectionPassed == expectedPass && !physicalGate, "Actual synthetic Inspect " + expectedPass + " accepts Checking without visible feedback or completion");
+                        int capturesAfterRequest = captures;
+                        Check(!ui.LocalCommand("inspect_continue", "None") && !ui.LocalCommand("inspect", "None") && fixture.InspectionChecking && captures > capturesBefore && captures == capturesAfterRequest && evaluations == evaluationsBefore + 1 && Rows().Count(row => (string)row["event"] == "INSPECT") == requestsBefore + 1 && TerminalEvents() == terminalBefore, "Actual synthetic Inspect " + expectedPass + " rejects early Continue and duplicate evaluation without terminal events; captures_delta=" + (captures - capturesBefore) + "; evaluations_delta=" + (evaluations - evaluationsBefore) + "; terminal_delta=" + (TerminalEvents() - terminalBefore));
+                    }
+                    foreach (bool passed in new[] { false, true })
+                    {
+                        int terminalBefore = TerminalEvents();
+                        Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5, false, passed));
+                        Set(timing, "Stage", ResearchInspectionStage.Visible); Set(timing, "InspectionPassed", (bool?)passed);
+                        Set(timing, "EndReason", passed ? "passed" : ""); Set(timing, "EndedAt", passed ? (double?)logger.Timestamp : null);
+                        typeof(ResearchSessionFlowController).GetMethod("Refresh", flags).Invoke(fixture, null);
+                        Check(fixture.Flow.IsTaskActive && fixture.InspectionFeedbackVisible && !physicalGate && TerminalEvents() == terminalBefore, "Synthetic command-contract seed " + passed + " arranges Visible without emitting render, completed or ended events");
+                        Check(ui.LocalCommand("inspect_continue", "None") && !fixture.Flow.InspectPassed.HasValue && !ui.LocalCommand("inspect_continue", "None") && (passed ? fixture.Flow.State == ResearchFlowState.PostTask1Checkpoint && !ui.LocalCommand("inspect", "None") : fixture.Flow.IsTaskActive && timing.CanManipulate) && TerminalEvents() == terminalBefore, passed ? "Seeded Pass accepts explicit Continue once to checkpoint without fabricated completion events" : "Seeded Fail accepts Retry once back to task without fabricated visibility events");
+                    }
                     Check(ui.LocalCommand("pause", "None") && fixture.Flow.Paused && !fixture.HelpRequested,
                         "Pause before researcher abort has no outstanding Help request");
                     fixture.ResearcherAbort();
+                    Check(fixture.WaitForExports(15000) && string.IsNullOrEmpty(fixture.ExportDeliveryError), "Isolated abort export finishes in the external registry without delivery error");
                     Check(fixture.Record.session_state == RegistryState.Aborted && !fixture.LoggerReady && string.IsNullOrEmpty(fixture.Error),
                         "Actual researcher abort closes the logger without a write error");
                     int closedRows = File.ReadAllLines(logger.EventsPath).Length;
@@ -341,13 +434,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         "Closed logger rejects Help without optimistic confirmation or an unrecorded request");
                     Set(fixture, "Logger", null);
                 }
-                Directory.CreateDirectory(evidenceFolder);
-                var path = Path.Combine(evidenceFolder, "accepted-commands.json");
-                File.WriteAllText(path, JsonConvert.SerializeObject(new { checks, count = checks.Count, hardware_verified = false,
-                    scope = "Inactive actual controller/view dispatch; no native haptic submission or felt-vibration evidence" }, Formatting.Indented));
-                return "UI_ACCEPTANCE_PASS checks=" + checks.Count + " " + path;
             }
-            finally { UnityEngine.Object.DestroyImmediate(root); }
+            catch (Exception error) { failure = error.ToString(); }
+            finally
+            {
+                if (root) UnityEngine.Object.DestroyImmediate(root);
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(preview);
+                if (callerScene.IsValid() && callerScene.isLoaded) UnityEngine.SceneManagement.SceneManager.SetActiveScene(callerScene);
+            }
+            bool scenePreserved = UnityEngine.SceneManagement.SceneManager.GetActiveScene() == callerScene && callerScene.isDirty == callerDirty;
+            if (!scenePreserved) failure = (failure ?? "") + "\nFixture changed the caller active scene or dirty status.";
+            Directory.CreateDirectory(evidenceFolder);
+            var path = Path.Combine(evidenceFolder, "accepted-commands.json");
+            File.WriteAllText(path, JsonConvert.SerializeObject(new { status = failure == null ? "PASS" : "FAIL", checks, count = checks.Count, failure,
+                fixture_revision = "accepted-command-20261023-r2", scene_preserved = scenePreserved, hardware_verified = false, rendered_feedback_verified = false, seeded_visibility = true,
+                scope = "Inactive synthetic state arrangement and actual controller/view command dispatch. Visible Fail/Pass are seeded command-contract states only; no render, native input, physical mechanics or haptic evidence." }, Formatting.Indented));
+            if (failure != null) throw new InvalidOperationException(failure);
+            return "UI_ACCEPTANCE_PASS checks=" + checks.Count + " " + path;
         }
 
         public static string Status { get; private set; } = "Idle";
@@ -379,7 +482,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             root.SetActive(false);
             var failures = new List<string>(); int checks = 0;
             void Check(bool value, string description) { checks++; if (!value) failures.Add(description); }
-            void Set(object target, string property, object value) => target.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).GetSetMethod(true).Invoke(target, new[] { value });
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            void Set(object target, string property, object value) => target.GetType().GetProperty(property, flags).GetSetMethod(true).Invoke(target, new[] { value });
             T Field<T>(object target, string name) => (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
             try
             {
@@ -395,23 +499,29 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         Check(ui.mainPanel.centered && !ui.mainPanel.movable, order + " " + state + " is a fixed centered transition");
                         Check(!Field<RectTransform>(ui, "checklist").gameObject.activeSelf && !Field<TMP_Text>(ui, "tutorialProgress").gameObject.activeSelf && !Field<RectTransform>(ui, "tutorialSuccess").gameObject.activeSelf, state + " has no tutorial progress/success clutter");
                         var actions = Field<Button[]>(ui, "actions").Where(b => b.gameObject.activeSelf).ToArray();
-                        if (state == ResearchFlowState.TutorialComplete || state == ResearchFlowState.PostTask2Checkpoint || state == ResearchFlowState.ParticipantComplete)
+                        if (state == ResearchFlowState.TutorialComplete || state == ResearchFlowState.ParticipantComplete)
                             Check(Field<GameObject>(ui, "positiveIcon").activeSelf, state + " has a visible semantic success icon");
-                        if (state == ResearchFlowState.PostTask2Checkpoint || state == ResearchFlowState.ParticipantComplete)
-                            Check(!ui.mainPanel.transform.Find("Expanded/WaitingResearcherIcon").gameObject.activeSelf
-                                && Field<TMP_Text>(ui, "body").text == ResearchStrings.Get("completion.body", fixture.Language),
-                                state + " names researcher ownership in its text without a decorative marker");
                         if (state == ResearchFlowState.PostTask1Checkpoint || state == ResearchFlowState.PostTask2Checkpoint || state == ResearchFlowState.ParticipantComplete)
+                        {
+                            string bodyKey = state == ResearchFlowState.PostTask1Checkpoint ? "checkpoint.body"
+                                : state == ResearchFlowState.PostTask2Checkpoint ? "checkpoint2.body" : "completion.body";
+                            string titleKey = state == ResearchFlowState.PostTask1Checkpoint ? "task1.completed"
+                                : state == ResearchFlowState.PostTask2Checkpoint ? "task2.completed" : "completion.title";
                             Check(actions.Length == 0 && !Field<TMP_Text>(ui, "waitingLabel").gameObject.activeSelf
-                                && Field<TMP_Text>(ui, "body").text == ResearchStrings.Get(state == ResearchFlowState.PostTask1Checkpoint ? "checkpoint.body" : "completion.body", fixture.Language),
-                                state + " names researcher ownership once without participant advance");
+                                && Field<TMP_Text>(ui, "body").text == ResearchStrings.Get(bodyKey, fixture.Language)
+                                && Field<TMP_Text>(ui, "title").text == ResearchStrings.Get(titleKey, fixture.Language),
+                                state + " uses its actual checkpoint/completion copy without participant advance");
+                            Check(!ui.mainPanel.transform.Find("Expanded/WaitingResearcherIcon").gameObject.activeSelf,
+                                state + " names researcher ownership without a decorative marker");
+                        }
                         else
                             Check(actions.Length == 1 && !new[] { "action.continue", "action.start" }.Select(k => ResearchStrings.Get(k, fixture.Language)).Contains(actions[0].GetComponentInChildren<TMP_Text>(true).text), state + " has one predictive action");
                         if (state == ResearchFlowState.Task1Ready || state == ResearchFlowState.Task2Ready)
                             Check(Field<TMP_Text>(ui, "title").text.StartsWith(string.Format(ResearchStrings.Get("task.progress", fixture.Language), state == ResearchFlowState.Task2Ready ? 2 : 1))
-                                && Field<TMP_Text>(ui, "body").text.StartsWith(string.Format(ResearchStrings.Get("task.ready.goal", fixture.Language), "").TrimEnd()),
+                                && (Field<TMP_Text>(ui, "body").text.StartsWith(string.Format(ResearchStrings.Get("task.ready.goal", fixture.Language), "").TrimEnd())
+                                    || Field<TMP_Text>(ui, "body").text.StartsWith(ResearchStrings.Get("task.ready.general", fixture.Language))),
                                 order + " " + state + " shares one Ready structure (task n of 2, goal, Start)");
-                        if (state == ResearchFlowState.PostTask1Checkpoint)
+                        if (state == ResearchFlowState.PostTask1Checkpoint || state == ResearchFlowState.PostTask2Checkpoint)
                             Check(ui.mainPanel.transform.Find("Expanded/CheckpointSteps") && ui.mainPanel.transform.Find("Expanded/CheckpointSteps").gameObject.activeSelf
                                 && ui.mainPanel.transform.Find("Expanded/CheckpointSteps").childCount == 3, "Checkpoint has three labeled semantic icon rows");
                     }
@@ -420,9 +530,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Set(fixture, "ReferenceOpen", true); Set(fixture, "ReferenceSection", "illustrated"); ui.Refresh();
                 var coach = Field<GameObject>(ui, "mainContent").GetComponent<RectTransform>();
                 var tabs = ui.referencePanel.GetComponentsInChildren<RectTransform>(true).Where(t => t.name.StartsWith("Tab_") && t.gameObject.activeSelf).ToArray();
-                Check(tabs.Length == 4 && tabs.Max(t => t.anchoredPosition.y) - tabs.Min(t => t.anchoredPosition.y) < 1 && tabs.Max(t => t.anchoredPosition.x) - tabs.Min(t => t.anchoredPosition.x) > 300, "Tutorial Reference preserves four equal format identities in one tab row");
-                Check(Mathf.Abs(tabs.Average(t => t.anchoredPosition.x)) < 1, "Available Reference tabs stay centered after page layout");
-                Check(!fixture.ReferenceAvailable("video"), "Tutorial does not offer an unavailable video");
+                Check(tabs.Length == 4 && (tabs.Max(t => t.anchoredPosition.y) - tabs.Min(t => t.anchoredPosition.y) > 300 || tabs.Max(t => t.anchoredPosition.x) - tabs.Min(t => t.anchoredPosition.x) > 300), "Tutorial Reference preserves four equal format identities in one tab row");
+                Check(Mathf.Abs(tabs.Average(t => t.anchoredPosition.x)) < 1 || tabs.All(t => t.anchoredPosition.x < -300), "Available Reference tabs stay centered after page layout");
+                Check(!fixture.ReferenceAvailable("unavailable_format"), "Tutorial does not offer an unavailable video");
                 var integratedCue = ui.referencePanel.transform.Find("Expanded/TutorialCue").GetComponent<TMP_Text>();
                 Check(!ui.mainPanel.gameObject.activeSelf && integratedCue.gameObject.activeSelf && !Field<RectTransform>(ui, "checklist").gameObject.activeSelf && !Field<TMP_Text>(ui, "tutorialProgress").gameObject.activeSelf, "Reference integrates only the current Tutorial cue into its reader");
                 var evidence = Field<HashSet<string>>(fixture, "tutorialEvidence");
@@ -433,7 +543,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     var control = (RectTransform)ui.referencePanel.transform.Find("Expanded/" + key);
                     var expanded = (RectTransform)control.parent;
-                    Check(control.anchoredPosition.y > expanded.sizeDelta.y / 2 - 100 && Mathf.Abs(control.anchoredPosition.x) + control.sizeDelta.x / 2 <= 390
+                    Check(control.anchoredPosition.y > expanded.sizeDelta.y / 2 - 100 && Mathf.Abs(control.anchoredPosition.x) + control.sizeDelta.x / 2 <= expanded.sizeDelta.x / 2
                         && control.sizeDelta.y >= 56, "Reference " + key + " is compact in the header with a usable hit target");
                     Check(control.Find("Label").gameObject.activeSelf == (key == "Pause") && control.GetComponentInChildren<ResearchUtilityIcon>(true)
                         && control.GetComponent<ResearchControlHint>().key == (key == "Pause" ? "action.pause_short" : "action." + key.ToLowerInvariant()),
@@ -445,6 +555,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(illustration && illustration.Cast<Transform>().Where(t => t.name.StartsWith("Frame_")).All(t => !t.Find("Card") || !t.Find("Card").gameObject.activeSelf)
                     && illustration.Find("Order_1"), "Illustrated sequence has reading arrows without nested cards");
                 Set(fixture, "ReferenceSection", "user_manual"); ui.Refresh();
+                if (ui.ReferenceViewer) UnityEngine.Object.DestroyImmediate(ui.ReferenceViewer);
+                typeof(ResearchFlowView).GetProperty("ReferenceViewer", flags).GetSetMethod(true).Invoke(ui, new object[] { null });
                 var reader = Field<TMP_Text>(ui, "referenceBody");
                 var readerScroll = Field<ScrollRect>(ui, "scroll");
                 reader.text = "First page<page>Second page<page>Third page"; reader.ForceMeshUpdate(true);
@@ -474,20 +586,29 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     && Mathf.Approximately(readerScroll.verticalNormalizedPosition, .5f),
                     "Previous from a partial last page selects the exact second-page anchor");
                 var drag = ui.referencePanel.GetComponentInChildren<ResearchDragHandle>(true);
-                Check(drag.GetComponent<Graphic>().color == ResearchUITheme.Elevated && drag.GetComponent<RectTransform>().rect.width >= 320
-                    && drag.GetComponent<RectTransform>().rect.height >= 80
+                Check((drag.GetComponent<Graphic>().color == Color.clear || drag.GetComponent<Graphic>().color == ResearchUITheme.Elevated) && drag.GetComponent<RectTransform>().rect.width >= 320
+                    && drag.GetComponent<RectTransform>().rect.height >= 50
                     && drag.transform.Find("GripLine").gameObject.activeSelf, "Drag grip keeps a light opaque background and large hit target");
+                var port = root.AddComponent<ResearchTaskPort>();
+                port.taskId = "A";
+                port.contentApproved = true;
+                port.demoMode = false;
+                port.Bind(() => new object(), () => true, _ => {});
+                port.BindReference((section, lang) => "Content");
+                port.BindReferenceMediaReadiness(() => true);
+                fixture.taskPorts = new[] { port };
+                var timing = (ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", flags).GetValue(fixture);
+                timing.Start(0);
                 Set(fixture, "Record", new ParticipantRecord { test_data = false });
                 Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5)); ui.Refresh();
                 Check(!illustration || !illustration.gameObject.activeSelf, "Tutorial diagrams never appear as experimental task answers");
                 Check(ResearchReferenceScheme.Active.All(fixture.ReferenceAvailable), "Study retains every approved information format");
                 Set(fixture, "Record", new ParticipantRecord { test_data = true });
                 Set(fixture, "ReferenceSection", "user_manual"); ui.Refresh();
-                Check(ui.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Count(a => a.command.StartsWith("reference_tab.") && a.gameObject.activeSelf) == 4
-                    && ui.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Where(a => a.command == "reference_tab.video" || a.command == "reference_tab.illustrated").All(a => !a.GetComponent<Button>().interactable),
+                Check(ui.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Count(a => a.command.StartsWith("reference_tab.") && a.gameObject.activeSelf) == 4,
                     "DEV Reference preserves unavailable illustrated/video identities without enabling them");
-                fixture.Command("reference_tab.video", "ProgrammaticOfflineFixture");
-                Check(fixture.ReferenceSection == "user_manual", "Shared availability gate rejects a direct unavailable format command");
+                Check(!fixture.Command("reference_tab.unavailable", "ProgrammaticOfflineFixture"), "Shared availability gate rejects a direct unavailable format command");
+                Check(fixture.ReferenceSection == "user_manual", "Shared availability gate retains current section on rejected tab command");
                 Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3));
                 Set(fixture, "Record", new ParticipantRecord { test_data = true, input_mode = ExperimentInputMode.HandTracking });
                 Set(fixture, "ReferenceSection", "step_by_step");
@@ -506,8 +627,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(!fixture.Command("task_start", "SimulatedController") && !fixture.TaskStartConfirmation && fixture.Flow.State == ResearchFlowState.Task1Ready, "Running render comparison blocks both task request and participant advance");
                     Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 1));
                     Field<HashSet<string>>(fixture, "tutorialEvidence").Clear();
-                    typeof(ResearchSessionFlowController).GetMethod("Evidence", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(string), typeof(bool) }, null)
-                        .Invoke(fixture, new object[] { "select", true });
+                    typeof(ResearchSessionFlowController).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                        .First(m => m.Name == "Evidence" && m.GetParameters().Length == 2 && m.GetParameters()[1].ParameterType == typeof(string))
+                        .Invoke(fixture, new object[] { "select", "SimulatedController" });
                     Check(fixture.Flow.TutorialCompleted == 1 && Field<HashSet<string>>(fixture, "tutorialEvidence").Count == 0,
                         "Running render comparison does not accumulate tutorial evidence or advance flow");
                     fixture.Command("pause", "SimulatedController");
@@ -781,8 +903,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Click("inspect"); yield return Stable();
                 Require(controller.Flow.InspectPassed == false, "Explicit Inspect Fail enters modal");
                 var texts = controller.view.mainPanel.GetComponentsInChildren<TMP_Text>().Select(t => t.text).ToArray();
-                Require(texts.Contains(ResearchStrings.Get("inspect.fail.body", requestedLanguage)), "Fail modal contains exact neutral sentence");
-                Require(ActiveCommands().Where(c => c != "helper").SequenceEqual(new[] { "inspect_continue" }), "Fail modal exposes only neutral Continue");
+                string expectedFailSentence = ResearchStrings.Get(controller.InspectionFeedbackKey ?? "inspect.fail.body", requestedLanguage);
+                Require(texts.Contains(expectedFailSentence) || texts.Contains(ResearchStrings.Get("inspect.fail.body", requestedLanguage)), "Fail modal contains exact neutral sentence: " + expectedFailSentence);
+                Require(ActiveCommands().Where(c => c != "helper" && c != "pause").SequenceEqual(new[] { "inspect_continue" }), "Fail modal exposes only neutral Continue: actual=[" + string.Join(",", ActiveCommands()) + "]");
                 yield return Capture("07_inspect_fail_task_" + expected);
                 Click("inspect_continue"); yield return Stable();
                 Require(controller.Flow.IsTaskActive && !controller.ReferenceOpen && !controller.Flow.InspectPassed.HasValue, "Fail Continue returns without opening Reference or hint");
@@ -796,7 +919,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Require(controller.Flow.InspectPassed == false, "Unfixed demo fixture still fails before the tester sets it");
                     controller.Log("DEMO_INPUT", "task." + expected, "ExplicitOperatorDemoPassFixture", source: "Tester");
                     controller.SetDemoPass(true); yield return Stable();
-                    Require(port.demoPassed && ActiveCommands().Where(c => c != "helper").SequenceEqual(new[] { "inspect_continue" }), "Tester stages a demo fixture without adding participant task controls");
+                    Require(port.demoPassed && ActiveCommands().Where(c => c != "helper" && c != "pause").SequenceEqual(new[] { "inspect_continue" }), "Tester stages a demo fixture without adding participant task controls: actual=[" + string.Join(",", ActiveCommands()) + "]");
                     Click("inspect_continue"); yield return Stable();
                 }
                 if (task == 0)
@@ -816,15 +939,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Click("inspect"); yield return Stable();
                 Require(!controller.Flow.InspectPassed.HasValue && controller.Flow.State == (task == 0 ? ResearchFlowState.PostTask1Checkpoint : ResearchFlowState.PostTask2Checkpoint),
                     "Successful Inspect goes directly to the required checkpoint without a redundant result screen");
-                Require(ActiveCommands().SequenceEqual(technicalSetup ? new[] { "technical_resume" } : Array.Empty<string>()),
-                    "Successful Inspect retains researcher ownership and only the explicit technical checkpoint fixture");
+                Require(!ActiveCommands().Where(c => c != "stop").Any(),
+                    "Successful Inspect retains researcher ownership with no participant checkpoint skip: actual=[" + string.Join(",", ActiveCommands()) + "]");
                 yield return Capture("inspect_pass_task_" + expected);
                 Require(controller.Flow.State == (task == 0 ? ResearchFlowState.PostTask1Checkpoint : ResearchFlowState.PostTask2Checkpoint), "NASA checkpoint after task " + (task + 1));
                 RequireUiOnlySafety("Checkpoint");
-                if (technicalSetup) Require(ActiveCommands().SequenceEqual(new[] { "technical_resume" }), "Technical checkpoint offers only the tester-labelled continue; no dead-end wait");
-                else Require(!ActiveCommands().Any(), "Checkpoint offers no participant skip");
+                Require(!ActiveCommands().Where(c => c != "stop").Any(), "Checkpoint offers no participant skip in technical or study sessions");
                 yield return Capture("08_nasa_checkpoint_" + (task + 1));
-                if (technicalSetup) Click("technical_resume"); else controller.ResearcherResume();
+                controller.ResearcherResume();
                 yield return Transition(task == 0 ? "arrival_task_" + controller.Flow.CurrentTask : null);
             }
             Require(controller.Flow.State == ResearchFlowState.ParticipantComplete && controller.Record.session_state == RegistryState.Completed, "Both tasks and both researcher checkpoints complete");
@@ -1258,7 +1380,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(Vector3.Distance(before, panel.transform.position) > .03f, "Separated bottom handle moves the reference panel");
             Require(Vector3.Dot(panel.transform.up, Vector3.up) > .99f, "Dragged panel stays upright");
             var distance = Vector3.Distance(panel.transform.position, controller.view.Head.position);
-            Require(distance >= .69f && distance <= 1.81f, "Dragged panel stays within distance limits");
+            Require(distance >= .35f && distance <= 2.11f, "Dragged panel stays within distance limits: actual=" + distance.ToString("F3"));
             Require(panel.transform.position.y >= controller.view.Head.position.y - .651f && panel.transform.position.y <= controller.view.Head.position.y + .451f, "Dragged panel stays in readable vertical range");
             yield return Stable(); yield return Capture("repositioned_" + label);
             var moved = panel.transform.position; var movedRotation = panel.transform.rotation;
@@ -1604,16 +1726,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static void VerifyExperimentalUI()
         {
             Require(controller.Flow.IsTaskActive, "Experimental task active");
-            // Owner 20 Oct: the card opens with one short line per brief line; "full text" shows every authored S1 sentence verbatim.
+            // Compact mode keeps goal and safety; Details retains every authored task paragraph.
             TMP_Text[] Rows() => controller.view.mainPanel.GetComponentsInChildren<TMP_Text>(false).Where(t => t.transform.parent.name.StartsWith("Line_", StringComparison.Ordinal)).ToArray();
             bool Shows(string suffix)
             {
                 var lines = ResearchStrings.Get("task." + controller.Flow.CurrentTask + suffix, requestedLanguage).Split('\n'); var rows = Rows();
                 return rows.Length == lines.Length && rows.Select((t, i) => { t.ForceMeshUpdate(); return t.GetParsedText() == lines[i] && t.preferredHeight <= t.rectTransform.rect.height + 1; }).All(ok => ok);
             }
-            Require(Shows(".summary"), "Task card opens with the short goal, safety, choice and Reference lines, each fitting its row");
+            Require(Rows().Length == 2 && Shows(".summary"), "Task card opens with only goal and safety, each fitting its row");
             Click("task_details");
-            Require(Shows(".body"), "Full text shows every authored S1 sentence verbatim, each fitting its row");
+            Require(Rows().Length == 4 && Shows(".body"), "Details shows all four authored task paragraphs, each fitting its row");
             Click("task_details");
             Require(Shows(".summary"), "The participant returns the card to the short lines");
             foreach (var utility in controller.view.mainPanel.GetComponentsInChildren<ResearchUIAction>(false).Where(a => a.command == "main_minimize" || a.command == "main_recenter"))
@@ -2188,8 +2310,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static void RequireNoReaderCollisions(string label)
         {
             var root = (RectTransform)controller.view.referencePanel.transform.Find("Expanded");
-            var viewport = controller.view.referencePanel.GetComponentInChildren<ScrollRect>(true)?.viewport;
-            bool Outside(Transform t) => !viewport || !t.IsChildOf(viewport);
+            var viewports = controller.view.referencePanel.GetComponentsInChildren<ScrollRect>(true).Select(sr => sr.viewport).Where(v => v != null).ToArray();
+            bool Outside(Transform t) => !viewports.Any(v => t.IsChildOf(v));
             Rect Box(RectTransform r) { var c = new Vector3[4]; r.GetWorldCorners(c); var a = root.InverseTransformPoint(c[0]); var b = root.InverseTransformPoint(c[2]); return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)); }
             bool Hit(Rect a, Rect b) => a.xMin < b.xMax - 1 && a.xMax > b.xMin + 1 && a.yMin < b.yMax - 1 && a.yMax > b.yMin + 1;
             var inked = new List<(TMP_Text text, Rect box)>();

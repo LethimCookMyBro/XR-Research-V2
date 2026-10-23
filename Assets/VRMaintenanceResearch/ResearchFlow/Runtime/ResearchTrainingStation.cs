@@ -230,6 +230,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         // Dropped parts return to their authored pose; logged as System, never credited.
+        float moduleIdleSince;
         void Recover()
         {
             // The kinematic plug head hangs from its fixed end: released unplugged, it returns to its rest pose.
@@ -239,13 +240,26 @@ namespace VRMaintenanceResearch.ResearchFlow
                 leadHead.body.position = leadHead.transform.position; leadHead.body.rotation = leadHead.transform.rotation;
                 Log("TRAINING_LEAD", "ReturnedToRest");
             }
-            if (!module.IsHeld && moduleSocket.Occupant != module && module.transform.position.y < moduleHome.position.y - .3f)
+            if (!module.IsHeld && moduleSocket.Occupant != module)
             {
-                module.body.linearVelocity = Vector3.zero; module.body.angularVelocity = Vector3.zero;
-                module.transform.SetPositionAndRotation(moduleHome.position, moduleHome.rotation);
-                module.body.position = moduleHome.position; module.body.rotation = moduleHome.rotation;
-                controller.Log("SYSTEM_OBJECT_RECOVERY", "training.trainer.module", "ResetToAuthored", source: "System", reason: "dropped_below_table");
+                bool fallen = module.transform.position.y < moduleHome.position.y - .25f;
+                bool far = Vector3.Distance(module.transform.position, moduleHome.position) > 0.75f;
+                bool slow = module.body && module.body.linearVelocity.sqrMagnitude < 0.04f;
+                if (module.body && (fallen || (slow && far)))
+                {
+                    if (moduleIdleSince == 0) moduleIdleSince = Time.time;
+                    else if (Time.time - moduleIdleSince > 3.0f || fallen)
+                    {
+                        moduleIdleSince = 0;
+                        module.body.linearVelocity = Vector3.zero; module.body.angularVelocity = Vector3.zero;
+                        module.transform.SetPositionAndRotation(moduleHome.position, moduleHome.rotation);
+                        module.body.position = moduleHome.position; module.body.rotation = moduleHome.rotation;
+                        controller?.Log("SYSTEM_OBJECT_RECOVERY", "training.trainer.module", "ResetToAuthored", source: "System", reason: fallen ? "dropped_below_table" : "idle_far_from_station");
+                    }
+                }
+                else moduleIdleSince = 0;
             }
+            else moduleIdleSince = 0;
         }
 
         void Credit(string fact) =>

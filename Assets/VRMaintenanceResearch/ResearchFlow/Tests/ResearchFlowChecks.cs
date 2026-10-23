@@ -62,7 +62,7 @@ static class ResearchFlowChecks
                 for (int c = 0; c < ResearchStationAnchors.CandidateCount(s, panel); c++)
                 {
                     ResearchStationAnchors.TryGet(s, "P", panel, 0, 0, 0, -180, 1.6, c, out var any);
-                    sidesKept &= panel == "reference" ? any.X > 0 : any.X < 0;
+                    sidesKept &= panel == "reference" || (s == 1 && c >= 8) ? any.X > 0 : any.X < 0;
                 }
         Check(sidesKept, "every station keeps the task brief on the right and the Reader on the left for every candidate");
         double faceX = Math.Sin(mainP.YawDegrees * Math.PI / 180), faceZ = Math.Cos(mainP.YawDegrees * Math.PI / 180);
@@ -111,15 +111,19 @@ static class ResearchFlowChecks
                 && Near(extraFanTask.X, expectedX) && Near(extraFanTask.Y, expectedY) && Near(extraFanTask.Z, expectedZ),
                 "Fan Task fallback retains native-swept low-eye pose candidate=" + candidate);
         }
+        Check(ResearchStationAnchors.TryGet(1, "Q", "task_information", 0, 0, 5.35, -180, 1.0, 8, out var seatedComputer)
+            && Near(seatedComputer.X, Math.Sin(20 * Math.PI / 180) * 2.2) && Near(seatedComputer.Y, 1.8)
+            && Near(seatedComputer.Z, 5.35 - Math.Cos(20 * Math.PI / 180) * 2.2),
+            "seated Computer fallback uses the measured clear side without moving the calibrated head");
         bool alternativesSafe = true;
         int count = ResearchStationAnchors.CandidateCount(1, "task_information");
         for (int c = 0; c < count; c++)
         {
             ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, c, out var alt);
             double distance = Math.Sqrt(alt.X * alt.X + (alt.Z - 5.35) * (alt.Z - 5.35));
-            alternativesSafe &= alt.X < 0 && distance >= 1.8 - Tol && alt.Y >= mainP.Y - Tol;
+            alternativesSafe &= (c < 8 ? alt.X < 0 : alt.X > 0) && distance >= 1.8 - Tol && alt.Y >= mainP.Y - Tol;
         }
-        Check(count == 8 && alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, count, out _)
+        Check(count == 12 && alternativesSafe && !ResearchStationAnchors.TryGet(1, "P", "task_information", 0, 0, 5.35, -180, 1.6, count, out _)
             && ResearchStationAnchors.CandidateCount(1, "recovery") == 0,
             "clearance alternatives only raise, step back or widen on the same side, never approach the head");
     }

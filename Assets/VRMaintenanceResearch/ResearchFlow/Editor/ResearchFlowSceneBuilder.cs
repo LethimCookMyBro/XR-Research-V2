@@ -39,8 +39,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (scene.path != ScenePath) throw new InvalidOperationException("Open the exact ResearchFlow integration scene.");
             var transforms = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true)).ToArray();
             ApplyContextExamineSecondPass(new Dictionary<string, Transform> {
-                ["A.module"] = transforms.Single(t => t.name == "Computer_TaskCase"),
-                ["B.module"] = transforms.Single(t => t.name == "Fan_TaskFan")
+                ["A.module"] = transforms.Single(t => t.GetComponent<ResearchS1TaskAMechanics>()).GetComponent<ResearchS1TaskAMechanics>().servicePivot,
+                ["B.module"] = transforms.Single(t => t.GetComponent<ResearchS1TaskBMechanics>())
             });
         }
 
@@ -60,8 +60,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var unavailable = allTargets.Where(t => reservedIds.Contains(t.stableTarget)).ToArray();
             if (physicalTargets == null || physicalTargets.Count != ids.Length || ids.Any(id => !physicalTargets.TryGetValue(id, out var anchor) || !anchor || anchor.gameObject.scene != scene))
                 throw new InvalidOperationException("Only A.module and B.module may map to the existing physical assemblies. Connection/mount targets are unavailable.");
-            if (physicalTargets["A.module"].name != "Computer_TaskCase" || physicalTargets["B.module"].name != "Fan_TaskFan")
-                throw new InvalidOperationException("The approved second-pass mapping is restricted to the two audited assembly names.");
+            if (!physicalTargets["A.module"].GetComponentInParent<ResearchS1TaskAMechanics>()
+                || physicalTargets["A.module"] != physicalTargets["A.module"].GetComponentInParent<ResearchS1TaskAMechanics>().servicePivot || !physicalTargets["B.module"].GetComponent<ResearchS1TaskBMechanics>())
+                throw new InvalidOperationException("Examine must bind to the S1 task assemblies.");
             if (physicalTargets.Values.Distinct().Count() != ids.Length)
                 throw new InvalidOperationException("Different research targets must not silently share the same physical anchor.");
             foreach (var anchor in physicalTargets.Values)
@@ -83,6 +84,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     target.ConfigureFocus(PhysicalFocusColliders(anchor), anchor);
                     EditorUtility.SetDirty(target);
                 }
+                DisableLegacyTaskProps(scene);
                 if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Could not save contextual Examine mapping.");
                 return;
             }
@@ -142,6 +144,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach (var interaction in oldInteractions)
                 if (interaction && !oldCanvases.Any(c => interaction.transform.IsChildOf(c.transform))) Undo.DestroyObjectImmediate(interaction);
             foreach (var canvas in oldCanvases) if (canvas) Undo.DestroyObjectImmediate(canvas.gameObject);
+            DisableLegacyTaskProps(scene);
             Undo.CollapseUndoOperations(undoGroup);
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Could not save contextual Examine migration.");
@@ -156,11 +159,22 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Debug.Log("CONTEXT_EXAMINE_MIGRATION=2 assembly chips; connection/mount reserved and unavailable; no backend/session changes");
         }
 
+        static void DisableLegacyTaskProps(Scene scene)
+        {
+            foreach (var node in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true))
+                .Where(t => t.name == "Computer_TaskCase" || t.name == "Fan_TaskFan"))
+            {
+                Undo.RecordObject(node.gameObject, "Disable replaced S1 prop");
+                node.gameObject.SetActive(false);
+                EditorUtility.SetDirty(node.gameObject);
+            }
+        }
+
         static Collider[] PhysicalFocusColliders(Transform anchor)
         {
             var colliders = anchor.GetComponents<Collider>();
             if (colliders.Length > 0) return colliders;
-            if (!anchor.GetComponent<MeshFilter>()) return anchor.GetComponentsInChildren<Collider>(true);
+            if (!anchor.GetComponent<MeshFilter>()) return anchor.GetComponentsInChildren<Collider>(true).Where(c => !c.isTrigger).ToArray();
             // Match the rendered static mesh, never a larger invisible UI volume.
             var collider = Undo.AddComponent<MeshCollider>(anchor.gameObject);
             collider.sharedMesh = anchor.GetComponent<MeshFilter>().sharedMesh;
@@ -231,8 +245,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var sessionRoot = new GameObject("ResearchFlow_Session");
             var stations = new[] {
                 Station(sessionRoot.transform, "Training", new Vector3(9.72f, 0, 4.95f)),
-                Station(sessionRoot.transform, "Computer", new Vector3(0, 0, 5.35f)),
-                Station(sessionRoot.transform, "Fan", new Vector3(-9.7f, 0, 4.85f))
+                Station(sessionRoot.transform, "Computer", new Vector3(0, 0, 5.60f)),
+                Station(sessionRoot.transform, "Fan", new Vector3(-9.7f, 0, 5.15f))
             };
             var view = ResearchFlowView.Build(sessionRoot.transform, fonts[0], fonts[1], fonts[2]);
             view.Head = origin.Camera.transform;

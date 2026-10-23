@@ -6,7 +6,7 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// <summary>Equivalent participant copy. Task-specific manuals must come from the approved task content.</summary>
     public static class ResearchStrings
     {
-        public const string ContentVersion = "research-flow-th-jp-focused-recovery-draft-13";
+        public const string ContentVersion = "research-flow-th-jp-focused-recovery-draft-14";
         public const string TranslationStatus = "BILINGUAL_RESEARCHER_REVIEW_PENDING";
 
         // Each row has exactly one English, Thai, and Japanese rendition of the same message.
@@ -189,7 +189,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "examine.info.training.module", "Keyed: the cut corner must match the slot. Held by a latch.", "มีบากกันใส่ผิดด้าน: มุมบากต้องตรงช่อง ยึดด้วยสลัก", "向き合わせあり: 切り欠きの角をスロットに合わせます。ラッチで固定します。" },
             new[] { "tutorial.try.inspect", "Select Inspect.\nNo repair is needed in practice.", "เลือก “ตรวจผล”\nบทฝึกนี้ไม่ต้องซ่อมชิ้นส่วน", "「検査」を選びます。\n練習では修理は不要です。" },
             new[] { "tutorial.movement", "Movement", "เคลื่อนที่", "移動" },
-            new[] { "tutorial.movement.body", "Hold the teleport stick toward a floor marker, aim at a valid circle, then release to move. Try snap turning afterwards.", "ดันก้านโยกเทเลพอร์ตค้าง เล็งวงกลมบนพื้นที่ไปได้ แล้วปล่อยก้านเพื่อย้ายตำแหน่ง\nจากนั้นลองหมุนมุมมองทีละจังหวะ", "移動用スティックを倒したまま床の丸い目印を狙い、離すと移動します。\nその後、スナップ回転を試してください。" },
+            new[] { "tutorial.movement.body", "Hold the teleport stick toward a floor marker, aim at a valid circle, then release to move. Try snap turning afterwards.", "ดันก้านโยกเทเลพอร์ตค้าง เล็งวงกลมบนพื้นที่ไปได้ แล้วปล่อยก้านเพื่อย้ายตำแหน่ง\nจากนั้นลองหมุนมุมมองทีละจังหวะ", "移動用スティックを倒したまま\n床の丸い目印を狙い、離すと移動します。\nその後、スナップ回転を試してください。" },
             new[] { "tutorial.movement.helper", "Aim at a floor teleport circle and release the stick to move.", "เล็งวงกลมเทเลพอร์ตบนพื้น แล้วปล่อยก้านโยกเพื่อย้ายตำแหน่ง", "床の丸い移動先を狙い、スティックを離して移動してください。" },
             new[] { "tutorial.select", "Point & Select", "ชี้และเลือก", "指して選択" },
             new[] { "tutorial.select.body", "Point at the practice button and select it.", "ชี้ที่ปุ่มฝึก แล้วเลือก", "練習ボタンを指して選んでください。" },
@@ -206,16 +206,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "tutorial.helper", "Training Helper", "ผู้ช่วยฝึก", "練習ヘルパー" },
             // Participant titles carry the position in the session, not the counterbalanced A/B label.
             new[] { "task.progress", "Task {0} of 2", "งานที่ {0} จาก 2", "課題 {0} / 2" },
-            new[] { "task.A.title", "Assemble the W2 Station PC", "ประกอบคอมพิวเตอร์สถานี W2", "ステーションW2のPCを組み立てる" },
+            new[] { "task.A.title", "Assemble the W2 computer", "ประกอบคอมพิวเตอร์ W2", "W2のPCを組み立てる" },
             new[] { "task.A.body", "Assemble the provided base and parts to meet W2 memory, storage and graphics requirements. Secure and connect them, then select Inspect.\nThe base is stopped and isolated from power. Do not remove the CPU, cooler or PSU, or install an operating system.\nChoose your method and order; not all provided parts are needed.\nReference contains station requirements, part details and assembly methods.", "ประกอบชุดฐานและชิ้นส่วนที่ให้ตามข้อกำหนด W2 ด้านหน่วยความจำ หน่วยเก็บข้อมูล และกราฟิก ยึดและเชื่อมต่อให้พร้อม แล้วกด “ตรวจผล”\nชุดฐานหยุดและแยกไฟแล้ว ไม่ถอด CPU ชุดระบายความร้อน หรือ PSU และไม่ติดตั้งระบบปฏิบัติการ\nเลือกวิธีและลำดับเองได้ ไม่ต้องใช้ทุกชิ้นส่วน\nข้อกำหนดสถานี รายละเอียดชิ้นส่วน และวิธีประกอบอยู่ใน “เอกสารอ้างอิง”", "用意されたベースと部品で、メモリ・ストレージ・グラフィックスがW2の要件を満たすPCを組み立てます。固定・接続後に「検査」を選びます。\nベースは停止し、電源から切り離されています。CPU・クーラー・PSUは取り外さず、OSもインストールしません。\n方法と順序は自由です。すべての部品を使う必要はありません。\nステーションの要件・部品の詳細・組み立て方法は「参照資料」にあります。" },
-            new[] { "task.B.title", "Inspect and Repair Fan F2 (Job B-04)", "ตรวจและซ่อมพัดลม F2 — รายการ B-04", "扇風機F2の点検と修理（作業B-04）" },
-            new[] { "task.B.body", "After reassembly, the fan vibrates or knocks abnormally. Find and fix the cause, reassemble it ready for use, then select Inspect.\nCheck only the guards, blade and fastenings. Do not open the motor or electrical circuit.\nChoose where to check and how to work.\nReference contains symptoms, checking methods and fixes.", "หลังประกอบกลับ พัดลมมีเสียงสั่นหรือเสียงกระทบผิดปกติ หาสาเหตุ แก้ไข และประกอบให้พร้อมใช้ แล้วกด “ตรวจผล”\nตรวจเฉพาะตะแกรง ใบพัด และชุดยึด ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า\nเลือกจุดตรวจและวิธีทำงานเองได้\nอาการ วิธีตรวจ และวิธีแก้ไขอยู่ใน “เอกสารอ้างอิง”", "組み立て直した扇風機に振動や異常な打音があります。原因を調べて修理し、使える状態に組み立て直して「検査」を選びます。\n点検はガード・羽根・固定部品のみ。モーターや電気回路は開けません。\n点検場所と作業方法は自由です。\n症状・点検方法・修理方法は「参照資料」にあります。" },
-            // Owner 20 Oct: the Task card opens with these short lines, one per task.X.body line (goal, safety/scope, free choice,
-            // where details are); "full text" swaps in task.X.body verbatim. Translation review pending like the rows above.
-            new[] { "task.A.summary", "Build the base and parts to W2 memory, storage and graphics requirements; secure, connect, then Inspect.\nBase stopped and unpowered: keep the CPU, cooler and PSU; no OS install.\nAny method and order; not every part is needed.\nStation requirements, parts and assembly methods: Reference.", "ประกอบชุดฐานและชิ้นส่วนให้ตรง W2 ด้านหน่วยความจำ หน่วยเก็บข้อมูล กราฟิก ยึด เชื่อมต่อ แล้วกด “ตรวจผล”\nชุดฐานหยุดและแยกไฟแล้ว ไม่ถอด CPU ชุดระบายความร้อน PSU และไม่ติดตั้ง OS\nเลือกวิธีและลำดับเอง ไม่ต้องใช้ทุกชิ้น\nข้อกำหนดสถานี ชิ้นส่วน และวิธีประกอบ อยู่ใน “เอกสารอ้างอิง”", "ベースと部品をW2の要件（メモリ・ストレージ・グラフィックス）どおりに組み立て、固定・接続後に「検査」\nベースは停止し電源から切り離し済み。CPU・クーラー・PSUは外さず、OSも入れない\n方法と順序は自由。全部品を使う必要はない\n要件・部品の詳細・組み立て方法は「参照資料」" },
-            new[] { "task.B.summary", "The reassembled fan vibrates or knocks: find and fix the cause, reassemble ready for use, then Inspect.\nGuards, blade and fastenings only; do not open the motor or circuit.\nChoose where to check and how to work.\nSymptoms, checks and fixes: Reference.", "พัดลมที่ประกอบกลับ สั่นหรือมีเสียงกระทบผิดปกติ หาสาเหตุ แก้ไข ประกอบให้พร้อมใช้ แล้วกด “ตรวจผล”\nตรวจเฉพาะตะแกรง ใบพัด ชุดยึด ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า\nเลือกจุดตรวจและวิธีทำงานเอง\nอาการ วิธีตรวจ และวิธีแก้ไข อยู่ใน “เอกสารอ้างอิง”", "組み立て直した扇風機の振動・異常な打音の原因を調べて修理し、使える状態にして「検査」\n点検はガード・羽根・固定部品のみ。モーターと電気回路は開けない\n点検場所と作業方法は自由\n症状・点検方法・修理方法は「参照資料」" },
-            new[] { "task.details_show", "Show full text", "ดูข้อความเต็ม", "全文を見る" },
-            new[] { "task.details_hide", "Show summary", "ดูแบบย่อ", "要点だけ見る" },
+            new[] { "task.B.title", "Inspect and repair fan F2", "ตรวจและซ่อมพัดลม F2", "扇風機F2を点検・修理する" },
+            new[] { "task.B.body", "After reassembly, the fan vibrates or knocks abnormally. Find and fix the cause, reassemble it ready for use, then select Inspect.\nCheck only the guards, blade and fastenings. Do not open the motor or electrical circuit. Keep the fan isolated from power while handling parts. Complete the protective assembly before selecting Inspect.\nChoose where to check and how to work.\nReference contains symptoms, checking methods and fixes.", "หลังประกอบกลับ พัดลมมีเสียงสั่นหรือเสียงกระทบผิดปกติ หาสาเหตุ แก้ไข และประกอบให้พร้อมใช้ แล้วกด “ตรวจผล”\nตรวจเฉพาะตะแกรง ใบพัด และชุดยึด ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า คงการแยกไฟขณะจัดชิ้นส่วน และประกอบชุดป้องกันให้ครบก่อนกด “ตรวจผล”\nเลือกจุดตรวจและวิธีทำงานเองได้\nอาการ วิธีตรวจ และวิธีแก้ไขอยู่ใน “เอกสารอ้างอิง”", "組み立て直した扇風機に振動や異常な打音があります。原因を調べて修理し、使える状態に組み立て直して「検査」を選びます。\n点検はガード・羽根・固定部品のみ。モーターや電気回路は開けません。 部品の操作中は電源から切り離した状態を保ち、保護部品をすべて組み立ててから「検査」を選びます。\n点検場所と作業方法は自由です。\n症状・点検方法・修理方法は「参照資料」にあります。" },
+            // The compact card shows goal and safety. Details retains every task.X.body paragraph. Translation review is pending.
+            new[] { "task.A.summary", "Choose W2-compatible parts. Fit, secure and connect them, then Inspect when ready.\nPower is isolated. Do not remove the CPU, cooler or PSU.", "เลือกชิ้นส่วนตาม W2 ประกอบ ยึดและต่อสาย แล้วตรวจผล\nแยกไฟแล้ว ไม่ถอด CPU ชุดระบายความร้อน หรือ PSU", "W2に合う部品を選び、固定・配線後に「検査」。\n電源は切り離されています。CPU・クーラー・PSUは取り外さない。" },
+            new[] { "task.B.summary", "Find and fix the abnormal vibration or noise. Reassemble, then Inspect when ready.\nKeep power isolated. Do not open the motor or electrical circuit. Refit all guards before Inspect.", "หาสาเหตุของเสียงหรือการสั่นผิดปกติ แก้ไขและประกอบกลับ แล้วตรวจผลเมื่อพร้อม\nแยกไฟแล้ว ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า ใส่ตะแกรงครบก่อนตรวจผล", "異常な振動や音の原因を調べて修理し、組み立て直してから「検査」。\n電源を切り離したまま、モーター・電気回路は開けず、ガードをすべて取り付けてから検査してください。" },
+            new[] { "task.details_show", "Details", "รายละเอียด", "詳細" },
+            new[] { "task.details_hide", "Less", "ย่อรายละเอียด", "詳細を閉じる" },
             new[] { "action.stop_wait", "Stop and wait for researcher", "หยุดและรอผู้วิจัย", "停止・研究者を待つ" },
             new[] { "task.ready.general", "Select Start when ready. The task instructions, Reference and objects become available when the task timer starts.", "เมื่อพร้อม ให้เลือกเริ่มงาน\nโจทย์ ข้อมูลอ้างอิง และวัตถุจะพร้อมใช้งานพร้อมกับการเริ่มจับเวลา", "準備ができたら開始を選んでください。\n計時の開始と同時に、課題の説明、参照資料、物体を利用できます。" },
             new[] { "inspect.checking.title", "Inspecting", "กำลังตรวจผล", "検査中" },
@@ -236,10 +235,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "reference.training.component_guide", "The training object has a marked surface. You can hold and rotate it to see its surfaces.", "วัตถุฝึกมีพื้นผิวที่ทำเครื่องหมายไว้ คุณสามารถจับและหมุนเพื่อดูพื้นผิวต่าง ๆ", "練習用の物体には印の付いた面があります。持って回すと、それぞれの面を見られます。" },
             new[] { "reference.training.manual", "Panel controls\n• Use the handle below the panel to move it.\n• Try Minimize, Restore, and Recenter.\n• Select Close when finished.", "การจัดแผง\n• ใช้แถบจับใต้แผงเพื่อย้าย\n• ลอง “ย่อ” “เปิดแผง” และ “กลับมาตรงหน้า”\n• เลือก “ปิด” เมื่อเสร็จ", "パネルの操作\n• パネル下のハンドルで移動します。\n• 「最小化」「パネルを開く」「正面に戻す」を試します。\n• 終わったら「閉じる」を選びます。" },
             new[] { "reference.training.troubleshooting", "Panel position\n• Select controls by pointing and selecting.\n• Use Recenter to bring the panel in front of you.", "ตำแหน่งแผง\n• ชี้และเลือกปุ่มเพื่อใช้งาน\n• ใช้ “กลับมาตรงหน้า” เพื่อนำแผงกลับมาด้านหน้า", "パネルの位置\n• ボタンを指して選択します。\n• 「正面に戻す」でパネルを正面へ戻します。" },
-            new[] { "inspect.pass.title", "Passed", "ผ่าน", "合格" },
+            new[] { "inspect.pass.title", "Inspection passed", "ตรวจผลผ่าน", "検査に合格しました" },
             // Pass keeps the headset on; only the checkpoint/completion screen that follows says to remove it.
             new[] { "inspect.pass.body", "Keep the headset on for now.\nThe next screen explains what to do.", "ยังไม่ต้องถอดแว่น\nหน้าถัดไปจะบอกสิ่งที่ต้องทำต่อ", "まだヘッドセットを外さないでください。\n次の画面で、この後の手順を説明します。" },
-            new[] { "inspect.fail.title", "Not Passed", "ยังไม่ผ่าน", "未合格" },
+            new[] { "inspect.fail.title", "Inspection not passed", "ตรวจผลยังไม่ผ่าน", "検査は未合格です" },
             new[] { "inspect.fail.body", "The current task state does not satisfy the completion requirements.", "สถานะปัจจุบันยังไม่ตรง\nตามเงื่อนไขของงาน", "現在の状態は、\n課題の条件を満たしていません。" },
             // Spec §7 fixed outcome sentences (TH is the locked S1 text; EN/JA await human language review).
             new[] { "inspect.s1.A.AssemblyIncomplete", "Not passed: the assembly or connections are not complete.", "ยังไม่ผ่าน: การประกอบหรือการเชื่อมต่อยังไม่ครบ", "未合格：組み立てまたは接続がまだ完了していません。" },
@@ -250,12 +249,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "inspect.s1.B.Pass", "Passed: the assembly is ready and the test no longer detects the original symptom.", "ผ่าน: ชุดประกอบพร้อมและการทดสอบไม่พบอาการเดิม", "合格：組み立てが完了し、テストで元の症状は検出されませんでした。" },
             new[] { "checkpoint.title", "Break & Questionnaire", "พักและทำแบบประเมิน", "休憩と質問票への回答" },
             new[] { "checkpoint.body", "1  Remove the VR headset.\n2  Complete NASA-TLX and a symptom check with the researcher.\n3  Rest and wait for the researcher to start task 2.", "1  ถอดแว่น VR\n2  ทำ NASA-TLX และตรวจอาการกับผู้วิจัย\n3  พักและรอผู้วิจัยเริ่มงานที่ 2", "1  VRヘッドセットを外す\n2  研究者とNASA-TLXに回答し、体調を確認する\n3  休憩し、研究者が課題2を開始するまで待つ" },
+            new[] { "checkpoint2.body", "1  Remove the VR headset.\n2  Complete the final questionnaire, symptom check and interview with the researcher.\n3  Wait for the researcher to finalize the session.", "1  ถอดแว่น VR\n2  ทำแบบประเมินสุดท้าย ตรวจอาการ และสัมภาษณ์กับผู้วิจัย\n3  รอผู้วิจัยยืนยันจบเซสชัน", "1  VRヘッドセットを外す\n2  研究者と最終質問票への回答、体調確認、面接を行う\n3  研究者がセッションを終了するまで待つ" },
+            new[] { "checkpoint.technical.body", "1  This is a technical test checkpoint.\n2  Select Continue to advance.\n3  This does not certify a real questionnaire or symptom check.", "1  นี่คือจุดพักของการทดสอบระบบ\n2  เลือก “ทำต่อ” เพื่อไปขั้นถัดไป\n3  การกดนี้ไม่ใช่การรับรองว่าได้ทำแบบประเมินหรือตรวจอาการจริง", "1  ここは技術テスト用の確認画面です\n2  「続ける」で次に進みます\n3  この操作は実際の質問票への回答や体調確認の証明ではありません" },
             new[] { "checkpoint.safety", "If you feel unwell, tell the researcher immediately.", "หากรู้สึกไม่สบาย ให้แจ้งผู้วิจัยทันที", "気分が悪くなったら、\nすぐに研究者に伝えてください。" },
             new[] { "checkpoint.safety.details", "Tell the researcher about dizziness, nausea, headache, eye discomfort, imbalance, or any other discomfort.", "แจ้งผู้วิจัยหากเวียนศีรษะ คลื่นไส้ ปวดศีรษะ ไม่สบายตา เสียการทรงตัว หรือรู้สึกไม่สบายอื่น ๆ", "めまい、吐き気、頭痛、目の不快感、ふらつき、その他の不調があれば研究者に伝えてください。" },
             new[] { "pause.title", "Paused", "หยุดพัก", "一時停止中" },
-            new[] { "pause.body", "Interaction is paused. Contact the researcher. Remove the headset if needed.", "หยุดการโต้ตอบแล้ว กรุณาติดต่อผู้วิจัย ถอดแว่นได้หากจำเป็น", "操作は一時停止しています。研究者に連絡してください。必要に応じてヘッドセットを外してください。" },
+            new[] { "pause.body", "Interaction is paused. Wait for the researcher to continue. To contact them, remove the headset and tell them.", "พักการโต้ตอบไว้แล้ว รอผู้วิจัยกดทำต่อ\nหากต้องการความช่วยเหลือ ให้ถอดแว่นและแจ้งผู้วิจัย", "操作は一時停止中です。研究者が再開するまでお待ちください。\n助けが必要な場合は、ヘッドセットを外して研究者に伝えてください。" },
             new[] { "completion.title", "All VR Tasks Complete", "งาน VR เสร็จครบแล้ว", "VRでの課題がすべて終わりました" },
-            new[] { "completion.body", "Please remove the headset and wait for the researcher.\n\nNext are the final questionnaire,\na symptom check and an interview.", "กรุณาถอดแว่นและรอผู้วิจัย\n\nต่อไปคือแบบประเมินสุดท้าย\nการตรวจอาการ และการสัมภาษณ์", "ヘッドセットを外し、研究者をお待ちください。\n\n次は最後の質問票への回答、\n体調の確認とインタビューです。" },
+            new[] { "completion.body", "The researcher has confirmed the end of this session.\nPlease remove the headset. Thank you.", "ผู้วิจัยยืนยันจบเซสชันแล้ว\nกรุณาถอดแว่น ขอบคุณที่เข้าร่วม", "研究者がセッションの終了を確認しました。\nヘッドセットを外してください。ありがとうございました。" },
+            new[] { "completion.technical.body", "The session is complete.\nPlease remove the headset. Thank you.", "เซสชันจบแล้ว\nกรุณาถอดแว่น ขอบคุณ", "セッションが終了しました。\nヘッドセットを外してください。ありがとうございました。" },
             new[] { "action.go_task1", "Go to Task 1", "ไปงานที่ 1", "課題1へ進む" },
             new[] { "action.start_task", "Start Task", "เริ่มงาน", "課題を開始" },
             new[] { "action.go_checkpoint", "Go to Break and Questionnaire", "ไปช่วงพักและแบบประเมิน", "休憩と質問票へ進む" },
@@ -349,7 +351,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "reference.training.step_by_step", "Move the panel (practice)\n1. Point at the lower handle.\n2. Hold Trigger.\n3. Move the controller.\n4. Release Trigger.", "ย้ายแผง (บทฝึก)\n1. ชี้แถบจับใต้แผง\n2. กด Trigger ค้าง\n3. ขยับคอนโทรลเลอร์\n4. ปล่อย Trigger", "パネルを動かす（練習）\n1. 下のハンドルを指す\n2. トリガーを押し続ける\n3. コントローラーを動かす\n4. トリガーを離す" },
             new[] { "reference.training.step_by_step.hand", "Move the panel (practice)\n1. Point at the lower handle.\n2. Pinch and hold.\n3. Move your hand.\n4. Release the pinch.", "ย้ายแผง (บทฝึก)\n1. ชี้แถบจับใต้แผง\n2. จีบนิ้วค้าง\n3. ขยับมือ\n4. คลายนิ้ว", "パネルを動かす（練習）\n1. 下のハンドルを指す\n2. つまんだままにする\n3. 手を動かす\n4. つまむ指を離す" },
             new[] { "reference.training.illustrated", "Move the Reference panel\nFollow the pictures from 1 to 4.", "ย้ายแผงเอกสาร\nดูภาพตามลำดับ 1 ถึง 4", "参照資料パネルを動かす\n1から4の順に図を見ます。" },
-            new[] { "reference.training.video", "DEV placeholder\nA training video is not included in this technical build. Use Steps or Illustrated to practice moving the panel.", "ตัวอย่าง DEV\nยังไม่มีวิดีโอบทฝึกในเวอร์ชันทดสอบนี้\nใช้ “ทีละขั้นตอน” หรือ “ภาพประกอบ” เพื่อฝึกย้ายแผง", "DEV用の仮表示\nこの技術テスト版には練習動画がありません。\n「手順」か「図解」でパネルの移動を練習してください。" },
+            new[] { "reference.training.video", "Video unavailable\nA training video is not included in this technical build. Use Steps or Illustrated to practice moving the panel.", "วิดีโอยังไม่พร้อม\nยังไม่มีวิดีโอบทฝึกในเวอร์ชันทดสอบนี้\nใช้ “ทีละขั้นตอน” หรือ “ภาพประกอบ” เพื่อฝึกย้ายแผง", "動画は利用できません\nこの技術テスト版には練習動画がありません。\n「手順」か「図解」でパネルの移動を練習してください。" },
             new[] { "illustrated.title", "Move the panel with Trigger", "ย้ายแผงด้วย Trigger", "トリガーでパネルを動かす" },
             new[] { "illustrated.title.hand", "Move the panel with your hand", "ย้ายแผงด้วยมือ", "手でパネルを動かす" },
             new[] { "illustrated.caption.1", "Point at\nthe handle", "ชี้ที่แถบจับ\nใต้แผง", "下のハンドル\nを指す" },
@@ -368,8 +370,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "action.help", "Ask for help", "ขอความช่วยเหลือ", "ヘルプを依頼" },
             new[] { "action.stop_short", "Stop", "หยุด", "停止" },
             new[] { "stop.title", "Stopped", "หยุดแล้ว", "停止中" },
-            new[] { "stop.body", "Interaction has stopped. Wait for the researcher. Your session remains open.", "หยุดการโต้ตอบแล้ว กรุณารอผู้วิจัย เซสชันยังไม่สิ้นสุด", "操作を停止しました。研究者をお待ちください。セッションは終了していません。" },
-            new[] { "stop.tester_body", "Test stopped (technical test mode).\nChoose ‘Continue’ to return to the same step, or quit the app from the Quest menu to end the test.", "หยุดการทดสอบไว้แล้ว (โหมดทดสอบระบบ)\nเลือก ‘ทำต่อ’ เพื่อกลับไปขั้นเดิม หรือปิดแอปจากเมนู Quest เพื่อจบการทดสอบ", "テストを停止しました（技術テストモード）。\n「再開」で同じ手順に戻ります。終了するにはQuestメニューからアプリを閉じてください。" },
+            new[] { "stop.body", "Interaction has stopped. Your session remains open. Wait for the researcher to resume. Remove the headset and tell them if you need help.", "หยุดการโต้ตอบไว้แล้ว เซสชันยังไม่สิ้นสุด\nรอผู้วิจัยกดทำต่อ หากต้องการความช่วยเหลือ ให้ถอดแว่นและแจ้งผู้วิจัย", "操作を停止しています。セッションは終了していません。\n研究者による再開をお待ちください。助けが必要な場合はヘッドセットを外して研究者に伝えてください。" },
+            new[] { "stop.tester_body", "Technical test paused. Continue returns to the same step and session. Ask the researcher to end the session permanently.", "พักการทดสอบระบบไว้แล้ว\nเลือก “ทำต่อ” เพื่อกลับไปขั้นเดิมในเซสชันเดิม\nหากต้องการยุติเซสชัน ให้แจ้งผู้วิจัย", "技術テストは一時停止中です。\n「再開」で同じセッションの同じ手順に戻ります。\nセッションを終了する場合は研究者に伝えてください。" },
             new[] { "action.pause_short", "Pause", "พัก", "一時停止" },
             new[] { "action.pause_caption", "Pause", "พัก", "休憩" },
             new[] { "reference.restore_short", "Open Reference", "เปิดเอกสารอ้างอิง", "参照資料を開く" },
@@ -388,7 +390,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "technical.run_resume", "Continue", "ทำต่อ", "続きから" },
             new[] { "technical.status_ready", "Ready to start", "พร้อมเริ่ม", "開始できます" },
             new[] { "technical.status_waiting", "Waiting for {0}", "ยังไม่พร้อม: รอ{0}", "準備中：{0}" },
-            new[] { "technical.meta", "Test data · DEV", "ข้อมูลทดสอบ · DEV", "テストデータ・DEV" },
+            new[] { "technical.meta", "VR Maintenance Lab", "VR Maintenance Lab", "VR Maintenance Lab" },
             new[] { "technical.run_caption", "Start as", "เริ่มแบบ", "開始方法" },
             new[] { "technical.id_caption", "ID to use", "รหัสที่จะใช้", "使用するID" },
             new[] { "technical.id_resume", "{0} · saved point", "{0} · ต่อจากจุดที่บันทึก", "{0}・保存した所から" },
@@ -396,7 +398,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "technical.resume_note", "Saved run keeps {0} · order {1} · table layout {2}", "รอบเดิมใช้{0} · ลำดับ {1} · ผังโต๊ะ {2}", "保存した回：{0}・順番 {1}・机の配置 {2}" },
             new[] { "technical.readiness_caption", "Device readiness", "ความพร้อมของอุปกรณ์", "機器の準備状況" },
             new[] { "technical.list_separator", ", ", ", ", "、" },
-            new[] { "action.recover_short", "Panel", "เรียกแผง", "パネル" },
+            new[] { "action.recover_short", "Return to previous panel", "กลับไปยังแผงก่อนหน้า", "前のパネルに戻る" },
             new[] { "technical.start", "Start test", "เริ่มทดสอบ", "テストを開始" },
             new[] { "technical.headset", "Headset", "แว่น VR", "ヘッドセット" },
             new[] { "technical.left", "Left controller", "คอนโทรลเลอร์ซ้าย", "左コントローラー" },
@@ -410,7 +412,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             new[] { "technical.option.HandTracking", "Hand tracking", "ใช้มือ", "ハンド操作" },
             new[] { "technical.option.AB", "Order A-B", "ลำดับ A-B", "順番 A-B" },
             new[] { "technical.option.BA", "Order B-A", "ลำดับ B-A", "順番 B-A" },
-            new[] { "technical.checkpoint_continue", "DEV: researcher checkpoint test", "DEV: ทดสอบการเริ่มต่อโดยผู้วิจัย", "DEV：研究者の再開操作をテスト" },
+            new[] { "technical.checkpoint_continue", "Continue", "ทำต่อ", "続ける" },
             new[] { "technical.demo_pass", "Demo: set fixed", "เดโม: ตั้งว่าแก้แล้ว", "デモ：修正済みに" },
         };
 

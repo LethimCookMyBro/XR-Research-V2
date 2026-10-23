@@ -33,12 +33,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         public static readonly Color Hover = new Color(.22f, .55f, .94f);
         public static readonly Color Pressed = new Color(.07f, .29f, .65f);
         public static readonly Color Disabled = new Color(.48f, .55f, .63f, .55f);
+
         public static ResearchGlassEffect Surface(Graphic graphic, bool panel = false, float radius = 24)
         {
-            var effect = graphic.GetComponent<ResearchGlassEffect>(); if (!effect) effect = graphic.gameObject.AddComponent<ResearchGlassEffect>();
+            var effect = graphic.GetComponent<ResearchGlassEffect>();
+            if (!effect) effect = graphic.gameObject.AddComponent<ResearchGlassEffect>();
             effect.panel = panel; effect.radius = radius; effect.edgeAlpha = panel ? .22f : .12f;
-            graphic.SetVerticesDirty(); return effect;
+            graphic.SetVerticesDirty();
+            return effect;
         }
+
         public static void Button(Selectable control, ResearchButtonVariant variant)
         {
             if (!control || !control.targetGraphic) return;
@@ -47,10 +51,30 @@ namespace VRMaintenanceResearch.ResearchFlow
             control.targetGraphic.color = primary ? Blue : variant == ResearchButtonVariant.Destructive ? new Color(1f, .88f, .90f, 1f) : ghost ? Glass : Elevated;
             Surface(control.targetGraphic, false, variant == ResearchButtonVariant.Icon ? 28 : 18);
             var colors = control.colors;
-            colors.normalColor = Color.white; colors.highlightedColor = new Color(.82f, .91f, 1f);
-            colors.selectedColor = Color.white; // EventSystem selection persists after a press; it must not look like a recommendation (D03). colors.pressedColor = new Color(.62f, .78f, .95f);
-            colors.disabledColor = new Color(.52f, .62f, .72f, .55f); colors.fadeDuration = ResearchMotion.Micro; control.colors = colors;
-            foreach (var text in control.GetComponentsInChildren<TMP_Text>(true)) { text.color = primary ? Color.white : Ink; text.fontStyle = FontStyles.Normal; }
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(.82f, .91f, 1f);
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(.62f, .78f, .95f);
+            colors.disabledColor = new Color(.52f, .62f, .72f, .55f);
+            colors.fadeDuration = ResearchMotion.Micro;
+            control.colors = colors;
+
+            foreach (var text in control.GetComponentsInChildren<TMP_Text>(true))
+            {
+                text.color = primary ? Color.white : Ink;
+                text.fontStyle = FontStyles.Normal;
+                text.raycastTarget = false;
+            }
+
+            // In VR, controller trigger pull causes slight micro-movement (> 10px) which switches
+            // pointer state to Dragging. If dragging bubbles to a parent ScrollRect or handle,
+            // PointableCanvasModule cancels eligibleForClick and drops the click.
+            // ResearchButtonDragAbsorber absorbs drag on the button itself so pointerPress == pointerDrag
+            // and OnPointerClick fires reliably on trigger release.
+            if ((control is UnityEngine.UI.Button || control is UnityEngine.UI.Toggle) && !control.GetComponent<ResearchButtonDragAbsorber>())
+            {
+                control.gameObject.AddComponent<ResearchButtonDragAbsorber>();
+            }
         }
     }
 }

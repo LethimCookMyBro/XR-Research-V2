@@ -88,7 +88,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
             try
             {
-                PlayerSettings.productName = "ResearchFlow Quest3 Technical";
+                PlayerSettings.productName = "VR Maintenance Lab";
                 PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { appIcon }, IconKind.Any);
                 PlayerSettings.SetApplicationIdentifier(target, TechnicalApplicationId);
                 PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;

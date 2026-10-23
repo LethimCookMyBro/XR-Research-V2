@@ -467,10 +467,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     One(f, selected + " unreadable Main and minimized Reader leave Pause to the controller Menu", "None");
                     StripStop(f, selected + " lost Main");
                     float gap = stopRect.anchoredPosition.x - stopRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
-                    // Compact strip: 128 x 80 RecoverPanels plus one 96 px safety slot (ResearchFlowView.LayoutRecoveryUtility).
-                    Check(canvas.gameObject.activeInHierarchy && !pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(240, 96)
-                        && restoreRect.rect.size == new Vector2(128, 80) && restoreRect.anchoredPosition == new Vector2(-48, 0)
-                        && stopRect.rect.size == new Vector2(80, 80) && stopRect.anchoredPosition == new Vector2(72, 0) && gap >= 16,
+                    // Compact strip: 300 x 80 RecoverPanels plus one 96 px safety slot (ResearchFlowView.LayoutRecoveryUtility).
+                    Check(canvas.gameObject.activeInHierarchy && !pause.gameObject.activeSelf && canvasRect.rect.size == new Vector2(412, 96)
+                        && restoreRect.rect.size == new Vector2(300, 80) && restoreRect.anchoredPosition == new Vector2(-48, 0)
+                        && stopRect.rect.size == new Vector2(80, 80) && stopRect.anchoredPosition == new Vector2(158, 0) && gap >= 16,
                         selected + ": fallback strip includes both actual hit targets with the intended gap", new { gap, canvas_size = new[] { canvasRect.rect.width, canvasRect.rect.height } });
                     f.View.mainPanel.transform.rotation = mainRotation;
                     One(f, selected + " recovered Main takes Pause ownership back", "Main");
@@ -529,22 +529,35 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         && Offered(f, "stop").Length == 0 && Offered(f, "session_resume").Length == 0,
                         selected + ": Stop-and-wait applies the existing stop once and leaves no participant Continue", added);
                 }, selected);
-                // Owner 20 Oct: the Task card opens with the short lines; the toggle swaps in the verbatim S1 sentences and logs nothing.
-                Case("td" + (int)selected, f =>
+                foreach (string task in new[] { "A", "B" })
+                Case("td" + (int)selected + task, f =>
                 {
-                    Stage(f, ResearchFlowState.Task1Active, 5, false);
+                    f.Port.taskId = task;
+                    var state = task == "A" ? ResearchFlowState.Task1Active : ResearchFlowState.Task2Active;
+                    Stage(f, state, 5, false);
                     string[] Rows() => f.View.mainPanel.GetComponentsInChildren<TMPro.TMP_Text>(false).Where(t => t.transform.parent.name.StartsWith("Line_", StringComparison.Ordinal))
                         .Select(t => { t.ForceMeshUpdate(true, true); return t.GetParsedText(); }).ToArray();
-                    string[] Lines(string suffix) => ResearchStrings.Get("task.A." + suffix, f.Controller.Language).Split('\n');
-                    Check(Rows().SequenceEqual(Lines("summary")), selected + ": Task card opens with the four short lines", Rows());
+                    string[] Lines(string suffix) => ResearchStrings.Get("task." + task + "." + suffix, f.Controller.Language).Split('\n');
+                    Check(Rows().Length == 2 && Rows().SequenceEqual(Lines("summary")), selected + "/" + task + ": compact card shows only goal and safety", Rows());
                     var before = f.Events();
+                    var record = f.Controller.Record;
+                    string identity = record.participant_id + "/" + record.session_id + "/" + record.run_id;
+                    long revision = record.revision;
+                    var timing = Get<ResearchTaskTiming>(f.Controller, "taskTiming");
+                    double started = timing.StartedAt, active = timing.ActiveElapsed, wall = timing.WallElapsed;
                     Click(Offered(f, "task_details").FirstOrDefault(), 737);
-                    Check(Rows().SequenceEqual(Lines("body")), selected + ": full text shows every authored S1 sentence verbatim", Rows());
+                    Check(Rows().Length == 4 && Rows().SequenceEqual(Lines("body")), selected + "/" + task + ": Details shows all four authored task paragraphs", Rows());
                     Click(Offered(f, "task_details").FirstOrDefault(), 738);
-                    Check(Rows().SequenceEqual(Lines("summary")), selected + ": the participant returns the card to the short lines", Rows());
+                    Check(Rows().Length == 2 && Rows().SequenceEqual(Lines("summary")), selected + "/" + task + ": the participant collapses Details to goal and safety", Rows());
                     var added = f.Events().Skip(before.Length).ToArray();
-                    Check(added.Length == 0 && !f.Controller.ReferenceOpen && !f.Controller.Flow.Paused && f.Controller.Flow.State == ResearchFlowState.Task1Active,
-                        selected + ": toggling the brief logs no event, opens no Reference and keeps the task state", added);
+                    Check(added.All(row => ((string)row["event"] == "PANEL_PLACEMENT" || (string)row["event"] == "PANEL_PLACEMENT_BLOCKED")
+                            && (string)row["source"] == "System")
+                        && !f.Controller.ReferenceOpen && !f.Controller.Flow.Paused && !f.Controller.Flow.InspectPassed.HasValue && f.Controller.Flow.State == state,
+                        selected + "/" + task + ": Details adds only actual System placement telemetry, no information/Inspect/transition", added);
+                    var after = f.Controller.Record;
+                    Check(identity == after.participant_id + "/" + after.session_id + "/" + after.run_id && after.revision == revision
+                        && timing.StartedAt == started && timing.ActiveElapsed == active && timing.WallElapsed == wall,
+                        selected + "/" + task + ": Details keeps identity, persisted revision and the same task clock", new { identity, after.revision, timing.StartedAt, timing.ActiveElapsed, timing.WallElapsed });
                 }, selected);
             }
             Case("ph", f =>
@@ -613,10 +626,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 One(f, "Reused legacy Recovery after real preparation", "None");
                 StripStop(f, "Reused Recovery Thai");
                 var stopRect = (RectTransform)canvas.transform.Find("Stop");
-                Check(restoreRect.rect.size == new Vector2(128, 80), "Reused Recovery restores the actual labeled compact RecoverPanels 128 x 80 hit target", new[] { restoreRect.rect.width, restoreRect.rect.height });
+                Check(restoreRect.rect.size == new Vector2(300, 80), "Reused Recovery restores the actual labeled compact RecoverPanels 300 x 80 hit target", new[] { restoreRect.rect.width, restoreRect.rect.height });
                 Check(pauseRect.rect.size == new Vector2(80, 80), "Reused Recovery restores the actual Pause 80 x 80 hit target", new[] { pauseRect.rect.width, pauseRect.rect.height });
                 float gap = stopRect.anchoredPosition.x - stopRect.rect.width / 2 - (restoreRect.anchoredPosition.x + restoreRect.rect.width / 2);
-                Check(restoreRect.anchoredPosition == new Vector2(-48, 0) && stopRect.anchoredPosition == new Vector2(72, 0) && gap >= 16,
+                Check(restoreRect.anchoredPosition == new Vector2(-48, 0) && stopRect.anchoredPosition == new Vector2(158, 0) && gap >= 16,
                     "Reused Recovery has the intended spacing without overlapping hit targets", new { restore = new[] { restoreRect.anchoredPosition.x, restoreRect.anchoredPosition.y }, stop = new[] { stopRect.anchoredPosition.x, stopRect.anchoredPosition.y }, gap });
                 Check(pause.labelKey == "action.pause_caption", "Reused Recovery persists the localized Pause label key", pause.labelKey);
                 Check(icon.rectTransform.anchoredPosition == new Vector2(0, 17) && !icon.raycastTarget,

@@ -15,11 +15,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Status modals (setup, pause, tracking, error) try straight ahead first; clearance fallbacks unchanged.
         [System.NonSerialized] public bool centered;
         Renderer[] environment;
-        readonly Collider[] overlapBuffer = new Collider[64];
+        readonly Collider[] overlapBuffer = new Collider[256];
+        readonly Plane[] sightVolume = new Plane[6];
+        readonly Vector3[] sightCorners = new Vector3[4];
         readonly Vector3[] otherCorners = new Vector3[4];
         readonly List<Button> buttons = new List<Button>();
         readonly List<ResearchDragHandle> handles = new List<ResearchDragHandle>();
-        readonly List<Vector3> actionPoints = new List<Vector3>(), sightTargets = new List<Vector3>(9);
+        readonly List<Vector3> actionPoints = new List<Vector3>();
         long placementTicks;
         public int PlacementCalls { get; private set; }
         public int PlacementRejections { get; private set; }
@@ -32,9 +34,6 @@ namespace VRMaintenanceResearch.ResearchFlow
         Rect clearanceRect, clearancePeerRect;
         Vector3 clearanceScale, clearancePeerScale;
         bool deferredRetryUsed = true;
-        Pose? anchoredPose;
-        bool AtStationAnchor => anchoredPose.HasValue && ResearchUIPolicy.StationAnchoredPanels
-            && (transform.position - anchoredPose.Value.position).sqrMagnitude < 1e-8f && Quaternion.Angle(transform.rotation, anchoredPose.Value.rotation) < .01f;
         bool faceHidden;
         float faceTransitionSince = float.NegativeInfinity;
         Pose? pendingRestore;
@@ -120,13 +119,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void LateUpdate()
         {
-            if (!RecenterPending && !IsDragging && view && view.Head)
+            if (view && view.Head)
             {
                 var sight = transform.position - view.Head.position;
                 float facing = sight.sqrMagnitude > .0001f ? Vector3.Dot(transform.forward, sight.normalized) : -1;
                 bool clear = IdlePlacementClear();
-                // A station anchor is a fixed authored pose: a part the participant carries across the sight line must not move or hide it.
-                if (!clear && AtStationAnchor && LastRejection.StartsWith("occluded", System.StringComparison.Ordinal)) clear = true;
                 if (!clear) { faceHidden = false; SetPlacementBlocked(true); faceTransitionSince = float.NegativeInfinity; }
                 else
                 {
@@ -218,7 +215,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             // height/distance alternatives before turning it farther out of view.
             var distances = preferHeadRelative
                 ? new[] { .85f, 1.0f, 1.15f, 1.3f, 1.5f }
-                : panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f };
+                : panelId == "recovery" ? new[] { .9f, 1.05f, 1.2f } : centered ? new[] { .85f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2f, 2.2f } : FullMainPanel ? new[] { 1.2f, 1.4f, 1.6f, 1.8f, 2f } : panelId == "reference" ? new[] { 1.2f, 1.4f, 1.6f, 1.8f } : new[] { 1.2f };
             var candidateAngles = preferHeadRelative ? new[] { 0f, 16f, 24f, 32f, 45f } : angles;
             // A seated 1.0 m eye at the Computer bench: every right-side pose of the Ready and Task cards hit the case or bench, so the
             // card hid and neither Start nor Inspect could be pressed. A 504-pose sweep found clear poses only 20 deg to the left,
@@ -263,7 +260,6 @@ namespace VRMaintenanceResearch.ResearchFlow
             LastPlacementHeadPosition = view.Head.position;
             // Recenter directly: interpolating can sweep the panel through equipment.
             transform.SetPositionAndRotation(position, rotation);
-            anchoredPose = anchorId != null ? new Pose(position, rotation) : (Pose?)null;
             faceHidden = false; deferredRetryUsed = true; SetPlacementBlocked(false);
             if (anchorId != null)
                 view.controller?.Log("PANEL_PLACEMENT", panelId, "Anchored", before, new { pose = Pose(), anchor = anchorId, moved },
@@ -291,9 +287,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 { fallback = "anchor_unavailable:" + ResearchStationAnchors.StationName(index) + ":layout=" + (layout ?? "none"); return false; }
                 var p = new Vector3((float)pose.X, (float)pose.Y, (float)pose.Z);
                 var r = Quaternion.Euler(0, (float)pose.YawDegrees, 0);
-                // A task anchor is a fixed world pose: it must face the head and be clear, but need not be inside the current gaze.
-                // Training keeps the in-view requirement because the trainee walks/teleports between practice instructions.
-                bool viewOk = owner.Flow != null && owner.Flow.IsTutorial ? FitsView(p, r) : ReadableFace(p, r);
+                bool viewOk = FitsView(p, r);
                 if (viewOk && PlacementClear(p, r)) { position = p; rotation = r; anchorId = pose.Id; return true; }
                 fallback = pose.Id + ":" + LastRejection;
             }
@@ -345,6 +339,15 @@ namespace VRMaintenanceResearch.ResearchFlow
                         point.z <= 0 || point.x < .02f || point.x > .98f || point.y < .02f || point.y > .98f)
                     { LastRejection = "viewport:" + eye + ":" + point.x.ToString("0.00") + "," + point.y.ToString("0.00"); return false; }
                 }
+            CollectActionPoints();
+            foreach (var actionPoint in actionPoints)
+            {
+                var point = camera.WorldToViewportPoint(position + rotation * Vector3.Scale(actionPoint, RestScale), eye);
+                if (float.IsNaN(point.x) || float.IsNaN(point.y) || float.IsNaN(point.z) ||
+                    float.IsInfinity(point.x) || float.IsInfinity(point.y) || float.IsInfinity(point.z) ||
+                    point.z <= 0 || point.x < .02f || point.x > .98f || point.y < .02f || point.y > .98f)
+                { LastRejection = "action_viewport:" + eye + ":" + point.x.ToString("0.00") + "," + point.y.ToString("0.00"); return false; }
+            }
             return true;
         }
 
@@ -438,91 +441,108 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool CheckPlacement(Vector3 position, Quaternion rotation)
         {
             if (!view) return false;
-            // Recovery is closer than the reading slates: separate world planes can still cover their text/actions.
-            if (panelId == "recovery" && view.Head && view.Head.TryGetComponent<Camera>(out var camera))
+            if (panelId == "recovery" && view.Head && view.Head.TryGetComponent<Camera>(out var recoveryCamera))
             {
-                bool clear = camera.stereoEnabled
-                    ? RecoveryClearEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Left)
-                        && RecoveryClearEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Right)
-                    : RecoveryClearEye(position, rotation, camera, Camera.MonoOrStereoscopicEye.Mono);
+                bool clear = recoveryCamera.stereoEnabled
+                    ? RecoveryClearEye(position, rotation, recoveryCamera, Camera.MonoOrStereoscopicEye.Left)
+                        && RecoveryClearEye(position, rotation, recoveryCamera, Camera.MonoOrStereoscopicEye.Right)
+                    : RecoveryClearEye(position, rotation, recoveryCamera, Camera.MonoOrStereoscopicEye.Mono);
                 if (!clear) return false;
             }
-            var rect = (RectTransform)transform;
-            var half = new Vector3(Mathf.Abs(rect.rect.width * RestScale.x) * .5f + .025f,
-                Mathf.Abs(rect.rect.height * RestScale.y) * .5f + .025f, .04f);
-            var box = new Bounds(position, Vector3.zero);
+            var rect = ((RectTransform)transform).rect;
+            CollectActionPoints();
+            var min = new Vector3(rect.xMin, rect.yMin, 0);
+            var max = new Vector3(rect.xMax, rect.yMax, 0);
+            foreach (var point in actionPoints) { min = Vector3.Min(min, point); max = Vector3.Max(max, point); }
+            var localCentre = (min + max) * .5f;
+            var centre = position + rotation * Vector3.Scale(localCentre, RestScale);
+            var size = Vector3.Scale(max - min, RestScale);
+            var half = new Vector3(Mathf.Abs(size.x) * .5f + .025f, Mathf.Abs(size.y) * .5f + .025f, Mathf.Abs(size.z) * .5f + .04f);
+            var box = new Bounds(centre, Vector3.zero);
             for (int x = -1; x <= 1; x += 2)
                 for (int y = -1; y <= 1; y += 2)
                     for (int z = -1; z <= 1; z += 2)
-                        box.Encapsulate(position + rotation * Vector3.Scale(half, new Vector3(x, y, z)));
+                        box.Encapsulate(centre + rotation * Vector3.Scale(half, new Vector3(x, y, z)));
             var other = panelId == "reference" ? view.mainPanel : view.referencePanel;
-            if (other && other.gameObject.activeInHierarchy && !other.PlacementBlocked)
+            Bounds? peerBounds = null;
+            var otherGroup = other ? other.GetComponent<CanvasGroup>() : null;
+            if ((!otherGroup || otherGroup.alpha > .01f) && other && other.gameObject.activeInHierarchy && !other.PlacementBlocked && other.GetComponent<Canvas>().enabled)
             {
                 ((RectTransform)other.transform).GetWorldCorners(otherCorners);
                 var otherBox = new Bounds(otherCorners[0], Vector3.zero);
                 foreach (var corner in otherCorners) otherBox.Encapsulate(corner);
                 otherBox.Expand(.08f);
                 if (box.Intersects(otherBox)) { LastRejection = "other_panel"; return false; }
+                peerBounds = otherBox;
             }
-            int overlaps = Physics.OverlapBoxNonAlloc(position, half, overlapBuffer, rotation, ~0, QueryTriggerInteraction.Ignore);
-            // A full buffer may omit a blocking collider; fail closed rather than accept an incomplete query.
+            int overlaps = Physics.OverlapBoxNonAlloc(centre, half, overlapBuffer, rotation, ~0, QueryTriggerInteraction.Ignore);
             if (overlaps == overlapBuffer.Length) { LastRejection = "overlap_buffer_full"; return false; }
             for (int i = 0; i < overlaps; i++)
-            {
-                var collider = overlapBuffer[i];
-                if (!collider.transform.IsChildOf(view.transform) && !collider.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>()) { LastRejection = "collider:" + collider.name; return false; }
-            }
+                if (SceneCollider(overlapBuffer[i])) { LastRejection = "collider:" + overlapBuffer[i].name; return false; }
             if (environment == null)
                 environment = gameObject.scene.GetRootGameObjects().Where(g => g.name.StartsWith("Environment_") || g.name == "ResearchFlow_EnvironmentSecondPass")
                     .SelectMany(g => g.GetComponentsInChildren<Renderer>(true))
                     .Concat(view.controller ? view.controller.taskPorts.Where(p => p).SelectMany(p => p.GetComponentsInChildren<Renderer>(true)) : Enumerable.Empty<Renderer>())
                     .Distinct().ToArray();
+            foreach (var renderer in environment)
+                if (renderer && renderer.enabled && renderer.gameObject.activeInHierarchy
+                    && renderer.bounds.size.x < 4 && renderer.bounds.size.z < 4 && box.Intersects(renderer.bounds))
+                { LastRejection = "renderer:" + renderer.name; return false; }
+            if (!view.Head) return true;
+            sightCorners[0] = position + rotation * Vector3.Scale(new Vector3(min.x, min.y, localCentre.z), RestScale);
+            sightCorners[1] = position + rotation * Vector3.Scale(new Vector3(min.x, max.y, localCentre.z), RestScale);
+            sightCorners[2] = position + rotation * Vector3.Scale(new Vector3(max.x, max.y, localCentre.z), RestScale);
+            sightCorners[3] = position + rotation * Vector3.Scale(new Vector3(max.x, min.y, localCentre.z), RestScale);
+            var camera = view.Head.GetComponent<Camera>();
+            if (camera && camera.stereoEnabled)
+                return SightVolumeClear(camera.GetStereoViewMatrix(Camera.StereoscopicEye.Left).inverse.MultiplyPoint(Vector3.zero), centre, rotation, box, peerBounds)
+                    && SightVolumeClear(camera.GetStereoViewMatrix(Camera.StereoscopicEye.Right).inverse.MultiplyPoint(Vector3.zero), centre, rotation, box, peerBounds);
+            return SightVolumeClear(view.Head.position, centre, rotation, box, peerBounds);
+        }
+
+        bool SceneCollider(Collider collider) => collider && !collider.transform.IsChildOf(view.transform)
+            && !collider.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+
+        bool SightVolumeClear(Vector3 eye, Vector3 centre, Quaternion rotation, Bounds box, Bounds? peer)
+        {
+            var inside = (eye + centre) * .5f;
+            for (int i = 0; i < 4; i++)
+            {
+                var plane = new Plane(eye, sightCorners[i], sightCorners[(i + 1) % 4]);
+                if (plane.GetDistanceToPoint(inside) < 0) plane.Flip();
+                sightVolume[i] = plane;
+            }
+            sightVolume[4] = new Plane((centre - eye).normalized, eye);
+            sightVolume[5] = new Plane(-(rotation * Vector3.forward), centre);
+            if (peer.HasValue && GeometryUtility.TestPlanesAABB(sightVolume, peer.Value))
+            { LastRejection = "other_panel_occluded"; return false; }
+            var reach = box; reach.Encapsulate(eye);
+            int overlaps = Physics.OverlapBoxNonAlloc(reach.center, reach.extents, overlapBuffer, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+            if (overlaps == overlapBuffer.Length) { LastRejection = "sight_buffer_full"; return false; }
+            for (int i = 0; i < overlaps; i++)
+            {
+                var collider = overlapBuffer[i];
+                if (SceneCollider(collider) && GeometryUtility.TestPlanesAABB(sightVolume, collider.bounds))
+                { LastRejection = "occluded_collider:" + collider.name; return false; }
+            }
+            foreach (var renderer in environment)
+                if (renderer && renderer.enabled && renderer.gameObject.activeInHierarchy
+                    && renderer.bounds.size.x < 4 && renderer.bounds.size.z < 4 && reach.Intersects(renderer.bounds)
+                    && GeometryUtility.TestPlanesAABB(sightVolume, renderer.bounds))
+                { LastRejection = "occluded:" + renderer.name; return false; }
+            return true;
+        }
+
+        void CollectActionPoints()
+        {
             actionPoints.Clear();
             GetComponentsInChildren(false, buttons);
             foreach (var button in buttons)
                 if (button.isActiveAndEnabled && button.IsInteractable()) AddActionPoints((RectTransform)button.transform);
-            if (movable)
-            {
-                GetComponentsInChildren(false, handles);
-                foreach (var handle in handles)
-                    if (handle.isActiveAndEnabled) AddActionPoints((RectTransform)handle.transform);
-            }
-            // Every sight line below starts at the head and ends at a panel point, so a renderer outside the box spanning
-            // the head, the panel and its action points cannot block anything. Skipping those keeps the result identical
-            // and removed a ~10 ms main-thread hitch every 0.1 s on Quest (338 renderers x 9+ rays each check).
-            var head = view.Head;
-            var reach = box;
-            sightTargets.Clear();
-            if (head)
-            {
-                reach.Encapsulate(head.position);
-                for (int x = -1; x <= 1; x++)
-                    for (int y = -1; y <= 1; y++)
-                        sightTargets.Add(position + rotation * Vector3.Scale(new Vector3(x * rect.rect.width * .35f, y * rect.rect.height * .35f, 0), RestScale));
-                foreach (var point in actionPoints) reach.Encapsulate(position + rotation * Vector3.Scale(point, RestScale));
-            }
-            // Large room-shell bounds enclose empty space; colliders handle those surfaces.
-            foreach (var renderer in environment)
-            {
-                if (!renderer || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
-                var bounds = renderer.bounds;
-                if (bounds.size.x >= 4 || bounds.size.z >= 4 || !reach.Intersects(bounds)) continue;
-                if (box.Intersects(bounds)) { LastRejection = "renderer:" + renderer.name; return false; }
-                if (!head) continue;
-                // Keep text readable, and independently protect the actual control rects near panel edges.
-                foreach (var target in sightTargets)
-                    if (Blocks(bounds, head.position, target)) { LastRejection = "occluded:" + renderer.name; return false; }
-                foreach (var point in actionPoints)
-                    if (Blocks(bounds, head.position, position + rotation * Vector3.Scale(point, RestScale)))
-                    { LastRejection = "occluded_action:" + renderer.name; return false; }
-            }
-            return true;
-        }
-
-        static bool Blocks(Bounds bounds, Vector3 from, Vector3 to)
-        {
-            var sight = to - from;
-            return bounds.IntersectRay(new Ray(from, sight.normalized), out float hit) && hit < sight.magnitude - .08f;
+            if (!movable) return;
+            GetComponentsInChildren(false, handles);
+            foreach (var handle in handles)
+                if (handle.isActiveAndEnabled) AddActionPoints((RectTransform)handle.transform);
         }
 
         bool RecoveryClearEye(Vector3 position, Quaternion rotation, Camera camera, Camera.MonoOrStereoscopicEye eye)

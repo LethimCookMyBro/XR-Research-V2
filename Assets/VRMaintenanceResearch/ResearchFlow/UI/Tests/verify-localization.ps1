@@ -73,8 +73,11 @@ class Check
                 Require(content.ContainsKey("illustrated.caption." + panel + ".hand"), "Hand illustrated caption: " + language + " " + panel);
             }
             Require(content["reference.training.step_by_step"].Contains("1.") && content["reference.training.step_by_step"].Contains("4."), "Training steps contain actions, not format metadata: " + language);
-            Require(content["reference.training.video"].Contains("DEV"), "Video practice honestly labels missing video as DEV: " + language);
-            Require(content["technical.checkpoint_continue"].Contains("DEV"), "Technical checkpoint control visibly says DEV: " + language);
+            string unavailable = language == "Thai" ? "วิดีโอยังไม่พร้อม" : language == "Japanese" ? "動画は利用できません" : "Video unavailable";
+            Require(content["reference.training.video"].StartsWith(unavailable), "Missing practice video has an explicit unavailable status: " + language);
+            Require(content.Where(row => !row.Key.StartsWith("researcher.", StringComparison.Ordinal))
+                .All(row => !System.Text.RegularExpressions.Regex.IsMatch(row.Value, @"\bDEV(?:\s+ONLY)?\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)),
+                "Participant copy has no visible DEV label: " + language);
         }
         Require(ResearchStrings.Get("welcome.title", "TH") == ResearchStrings.Get("welcome.title", "Thai"), "TH alias");
         Require(ResearchStrings.Get("welcome.title", "ja") == ResearchStrings.Get("welcome.title", "Japanese"), "JA alias");
@@ -91,24 +94,46 @@ class Check
         }
         Require(ResearchStrings.TranslationStatus == "BILINGUAL_RESEARCHER_REVIEW_PENDING", "Human review must remain pending");
         Require(ResearchStrings.Get("status.wait_researcher", "Thai") == "กำลังรอผู้วิจัย", "Checkpoint waits for researcher");
-        Require(ResearchStrings.Get("task.A.body", "Thai") == "เปลี่ยนชิ้นส่วนที่กำหนดโดยใช้\nข้อมูลในเอกสารอ้างอิง", "Exact neutral Task A copy");
-        Require(ResearchStrings.Get("task.B.body", "Thai") == "อุปกรณ์ทำงานผิดปกติ\nใช้ข้อมูลในเอกสารอ้างอิง\nเพื่อวินิจฉัยและแก้ไขปัญหา", "Exact neutral Task B copy");
-        Require(ResearchStrings.Get("task.A.body", "Japanese") == "参照資料の情報を使い、\n指定された部品を交換してください。", "Exact neutral Japanese Task A copy");
-        Require(ResearchStrings.Get("task.B.body", "Japanese") == "機器の動作に異常があります。\n参照資料の情報を使い、\n問題を診断して修正してください。", "Exact neutral Japanese Task B copy");
-        foreach (var task in new[] { "A", "B" })
-            Require(ResearchStrings.Get("task." + task + ".body", "Japanese").Split('\n').All(line => line.Length <= 26), "Compact Japanese task lines: " + task);
+        var taskTerms = new[] {
+            new[] { "English", "A", "W2 memory, storage and graphics requirements", "stopped and isolated from power", "Do not remove the CPU, cooler or PSU", "or install an operating system", "Choose your method and order", "not all provided parts are needed" },
+            new[] { "Thai", "A", "W2 ด้านหน่วยความจำ หน่วยเก็บข้อมูล และกราฟิก", "หยุดและแยกไฟแล้ว", "ไม่ถอด CPU ชุดระบายความร้อน หรือ PSU", "ไม่ติดตั้งระบบปฏิบัติการ", "เลือกวิธีและลำดับเองได้", "ไม่ต้องใช้ทุกชิ้นส่วน" },
+            new[] { "Japanese", "A", "メモリ・ストレージ・グラフィックス", "電源から切り離されています", "CPU・クーラー・PSUは取り外さず", "OSもインストールしません", "方法と順序は自由", "すべての部品を使う必要はありません" },
+            new[] { "English", "B", "fan vibrates or knocks abnormally", "guards, blade and fastenings", "Do not open the motor or electrical circuit", "isolated from power while handling parts", "Complete the protective assembly before selecting Inspect", "Choose where to check and how to work" },
+            new[] { "Thai", "B", "เสียงสั่นหรือเสียงกระทบผิดปกติ", "ตะแกรง ใบพัด และชุดยึด", "ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า", "คงการแยกไฟขณะจัดชิ้นส่วน", "ประกอบชุดป้องกันให้ครบก่อนกด", "เลือกจุดตรวจและวิธีทำงานเองได้" },
+            new[] { "Japanese", "B", "振動や異常な打音", "ガード・羽根・固定部品のみ", "モーターや電気回路は開けません", "電源から切り離した状態を保ち", "保護部品をすべて組み立ててから", "点検場所と作業方法は自由" }
+        };
+        foreach (var row in taskTerms) {
+            string body = ResearchStrings.Get("task." + row[1] + ".body", row[0]);
+            string summary = ResearchStrings.Get("task." + row[1] + ".summary", row[0]);
+            Require(body.Split('\n').Length == 4 && row.Skip(2).All(body.Contains) && body.Split('\n')[3].Contains(ResearchStrings.Get("action.reference", row[0])), "Full task details retain authored S1 scope, safety and method choice: " + row[0] + " " + row[1]);
+            Require(summary.Split('\n').Length == 2 && summary.Contains(ResearchStrings.Get("action.inspect", row[0])), "Compact task has only goal and safety, with the real Inspect term: " + row[0] + " " + row[1]);
+        }
+        var summarySafetyTerms = new[] {
+            new[] { "English", "A", "Power is isolated", "Do not remove the CPU, cooler or PSU" },
+            new[] { "Thai", "A", "แยกไฟแล้ว", "ไม่ถอด CPU ชุดระบายความร้อน หรือ PSU" },
+            new[] { "Japanese", "A", "電源は切り離されています", "CPU・クーラー・PSUは取り外さない" },
+            new[] { "English", "B", "Keep power isolated", "Do not open the motor or electrical circuit", "Refit all guards before Inspect" },
+            new[] { "Thai", "B", "แยกไฟแล้ว", "ไม่เปิดมอเตอร์หรือวงจรไฟฟ้า", "ใส่ตะแกรงครบก่อนตรวจผล" },
+            new[] { "Japanese", "B", "電源を切り離したまま", "モーター・電気回路は開けず", "ガードをすべて取り付けてから検査" }
+        };
+        foreach (var row in summarySafetyTerms)
+            Require(row.Skip(2).All(ResearchStrings.Get("task." + row[1] + ".summary", row[0]).Contains), "Compact safety retains the authored work boundaries: " + row[0] + " " + row[1]);
         Require(ResearchStrings.Get("inspect.fail.body", "Thai") == "สถานะปัจจุบันยังไม่ตรง\nตามเงื่อนไขของงาน", "Exact neutral fail copy");
         Require(ResearchStrings.Get("checkpoint.safety", "Thai") == "หากรู้สึกไม่สบาย ให้แจ้งผู้วิจัยทันที", "Concise checkpoint safety");
         Require(ResearchStrings.Get("completion.title", "Thai") == "งาน VR เสร็จครบแล้ว", "Exact completion title");
-        Require(ResearchStrings.Get("completion.body", "Thai") == "กรุณาถอดแว่นและรอผู้วิจัย\n\nต่อไปคือแบบประเมินสุดท้าย\nการตรวจอาการ และการสัมภาษณ์", "Completion retains the final questionnaire");
-        Require(ResearchStrings.Get("completion.body", "Japanese") == "ヘッドセットを外し、研究者をお待ちください。\n\n次は最後の質問票への回答、\n体調の確認とインタビューです。", "Equivalent Japanese questionnaire completion body, pending human review");
-        // Workflow screens say what finished, what is next and who acts (2026-09-30 workflow FAIL).
-        foreach (var language in new[] { "Thai", "Japanese", "English" })
-        {
-            Require(ResearchStrings.Get("checkpoint.body", language).Split('\n').Length == 3, "Checkpoint: three numbered steps with researcher-controlled task 2: " + language);
+        var checkpointTerms = new[] {
+            new[] { "English", "researcher", "start task 2", "final questionnaire", "symptom check", "interview", "finalize the session", "researcher has confirmed the end" },
+            new[] { "Thai", "ผู้วิจัย", "เริ่มงานที่ 2", "แบบประเมินสุดท้าย", "ตรวจอาการ", "สัมภาษณ์", "ยืนยันจบเซสชัน", "ผู้วิจัยยืนยันจบเซสชันแล้ว" },
+            new[] { "Japanese", "研究者", "課題2を開始", "最終質問票", "体調確認", "面接", "セッションを終了", "研究者がセッションの終了を確認しました" }
+        };
+        foreach (var row in checkpointTerms) {
+            string language = row[0], first = ResearchStrings.Get("checkpoint.body", language), second = ResearchStrings.Get("checkpoint2.body", language);
+            Require(first.Split('\n').Length == 3 && first.Contains("NASA-TLX") && first.Contains(row[1]) && first.Contains(row[2]), "First checkpoint names external assessment and researcher-owned Task 2: " + language);
+            Require(second.Split('\n').Length == 3 && second.Contains(row[1]) && row.Skip(3).Take(4).All(second.Contains), "Second checkpoint names final assessment and researcher-owned session finalization: " + language);
+            Require(ResearchStrings.Get("completion.body", language).Contains(row[7]), "Completion follows researcher confirmation of the session end: " + language);
             Require(string.Format(ResearchStrings.Get("task.progress", language), 1).Contains("1") && ResearchStrings.Get("task.progress", language).Contains("2"), "Task n of 2: " + language);
-            Require(ResearchStrings.Get("completion.body", language).Split('\n').Length >= 4, "Completion: done, headset off, wait, outside-VR steps: " + language);
-            foreach (var task in new[] { "A", "B" }) Require(!ResearchStrings.Get("task." + task + ".title", language).Contains(task == "A" ? " A" : " B"), "Participant title has no counterbalancing letter: " + language + " " + task);
+            foreach (var task in new[] { "A", "B" })
+                Require(!System.Text.RegularExpressions.Regex.IsMatch(ResearchStrings.Get("task." + task + ".title", language), @"(?:\bTask\s+|งาน\s*|課題\s*)[AB](?![-\d])", System.Text.RegularExpressions.RegexOptions.IgnoreCase), "Participant title hides counterbalancing letters without hiding the authored job code: " + language + " " + task);
         }
         // Handling preserves reach/lift/rotate/release and Touch Grip; the helper explicitly teaches moving while held.
         Require(ResearchStrings.Get("tutorial.handling.body", "Thai") == "เข้าใกล้วัตถุ ยก หมุน แล้วปล่อย (Touch: กด Grip ด้านข้างค้างไว้เพื่อจับ)", "Thai handling and Touch Grip instructions");

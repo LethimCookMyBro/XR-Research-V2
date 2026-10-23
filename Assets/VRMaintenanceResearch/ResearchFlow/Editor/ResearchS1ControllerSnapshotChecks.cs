@@ -46,11 +46,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Set(controller, "Flow", flow); Set(controller, "Logger", logger);
                     var timingField = typeof(ResearchSessionFlowController).GetField("taskTiming", BindingFlags.Instance | BindingFlags.NonPublic);
                     bool timedRequest = timingField != null;
-                    if (timedRequest)
-                    {
-                        var clock = timingField.GetValue(controller);
-                        clock.GetType().GetMethod("Start").Invoke(clock, new object[] { logger.Timestamp });
-                    }
+                    var clock = timedRequest ? (ResearchTaskTiming)timingField.GetValue(controller) : null;
+                    if (timedRequest) clock.Start(logger.Timestamp);
                     int captures = 0, evaluations = 0;
                     S1TaskBState lastCaptured = null;
                     Func<object> capture = () =>
@@ -75,19 +72,45 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     port.SetInteractionAllowed(true);
                     bool accepted = controller.Command("inspect", "SimulatedController");
                     int inspectionCaptures = captures;
-                    logger.Complete("synthetic_controller_fixture_finished", "Tester", "SimulatedController");
-                    var rows = File.ReadAllLines(logger.EventsPath).Select(JObject.Parse)
-                        .Where(row => new[] { "INSPECT", "INSPECT_PASS", "INSPECT_FAIL", "TASK_COMPLETED" }.Contains((string)row["event"])).ToArray();
                     bool expectedPass = expectedLock == S1ThreadState.Tight;
+                    bool pendingBeforeAdvance = !timedRequest || controller.InspectionChecking && !controller.InspectionFeedbackVisible;
+                    bool readyBeforeAdvance = false;
+                    bool? noViewReceiptAccepted = null;
+                    if (timedRequest)
+                    {
+                        var offset = typeof(HandsLabLogger).GetField("timestampOffset", BindingFlags.Instance | BindingFlags.NonPublic);
+                        offset.SetValue(logger, (double)offset.GetValue(logger) + 3.1d);
+                        clock.Tick(logger.Timestamp);
+                        readyBeforeAdvance = clock.Stage == ResearchInspectionStage.Ready;
+                        typeof(ResearchSessionFlowController).GetMethod("AdvanceTaskTiming", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
+                        noViewReceiptAccepted = (bool)typeof(ResearchSessionFlowController).GetMethod("InspectionFeedbackRendered", BindingFlags.Instance | BindingFlags.NonPublic)
+                            .Invoke(controller, new object[] { controller.InspectionId, "Unrendered synthetic fixture text", 0 });
+                    }
+                    bool activeAfterAdvance = controller.Flow.State == ResearchFlowState.Task1Active;
+                    bool resultAfterAdvance = controller.Flow.InspectPassed == expectedPass;
+                    bool feedbackAfterAdvance = controller.InspectionFeedbackVisible;
+                    bool endedAfterAdvance = clock?.Ended == true;
+                    string stageAfterAdvance = clock?.Stage.ToString();
+                    logger.Complete("synthetic_controller_fixture_finished", "Tester", "SimulatedController");
+                    var allRows = File.ReadAllLines(logger.EventsPath).Select(JObject.Parse).ToArray();
+                    var rows = allRows.Where(row => new[] { "INSPECT", "INSPECT_PASS", "INSPECT_FAIL", "TASK_COMPLETED" }.Contains((string)row["event"])).ToArray();
+                    int prematureEvents = allRows.Count(row => new[] { "TASK_COMPLETED", "TASK_ENDED", "INSPECT_FEEDBACK_VISIBLE" }.Contains((string)row["event"]));
+                    bool readyBranchPass = timedRequest && readyBeforeAdvance && activeAfterAdvance && resultAfterAdvance
+                        && !feedbackAfterAdvance && !endedAfterAdvance && stageAfterAdvance == "Ready" && noViewReceiptAccepted == false && prematureEvents == 0;
                     bool rawMatches = rows.Length == (expectedPass && !timedRequest ? 3 : 2) && rows.All(row =>
                         (double?)row["task_state"]?["task_state"]?["capturedAtSeconds"] == 1 &&
                         (int?)row["task_state"]?["task_state"]?["rearLock"] == (int)expectedLock &&
                         (timedRequest ? (double?)row["before"]?["task_state"]?["capturedAtSeconds"] == 1 : (double?)row["after"]?["task_state"]?["capturedAtSeconds"] == 1));
                     bool eventMatches = rows.Any(row => (string)row["event"] == (expectedPass ? "INSPECT_PASS" : "INSPECT_FAIL"));
-                    bool pass = (!timedRequest || controller.InspectionChecking && !controller.InspectionFeedbackVisible) && accepted && evaluations == 1 && inspectionCaptures == 1 && rawMatches && eventMatches && !port.IsReadyForStudy && !port.contentApproved;
+                    bool pass = pendingBeforeAdvance && accepted && evaluations == 1 && inspectionCaptures == 1 && rawMatches && eventMatches && !port.IsReadyForStudy && !port.contentApproved && readyBranchPass;
                     if (!pass) failures++;
                     observations.Add(new { expected_lock = expectedLock.ToString(), expected_pass = expectedPass, accepted, timed_request = timedRequest,
-                        captures = inspectionCaptures, evaluations, raw_matches = rawMatches, event_matches = eventMatches,
+                        captures = inspectionCaptures, evaluations, raw_matches = rawMatches, event_matches = eventMatches, pending_before_advance = pendingBeforeAdvance,
+                        ready_branch = new { expected = new { stage = "Ready", flow_state = "Task1Active", inspect_passed = expectedPass,
+                                feedback_visible = false, ended = false, no_view_receipt_accepted = false, premature_events = 0 },
+                            actual = new { ready_before_advance = readyBeforeAdvance, stage = stageAfterAdvance, flow_state = controller.Flow.State.ToString(),
+                                inspect_passed = controller.Flow.InspectPassed, feedback_visible = feedbackAfterAdvance, ended = endedAfterAdvance,
+                                no_view_receipt_accepted = noViewReceiptAccepted, premature_events = prematureEvents }, pass = readyBranchPass },
                         event_snapshots = rows, raw_events = logger.EventsPath, error = controller.Error, pass });
                 }
                 catch (Exception error) { failures++; observations.Add(new { expected_lock = expectedLock.ToString(), error = error.ToString(), pass = false }); }
@@ -96,7 +119,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             bool dirtyUnchanged = scene.isDirty == dirtyBefore;
             if (!dirtyUnchanged) failures++;
             var result = new { status = failures == 0 ? "PASS" : "FAIL", failures, observations, scene_dirty_unchanged = dirtyUnchanged,
-                scope = "Actual compiled Unity controller Command/Inspect/Log, port, evaluator, registry and runtime writer. Timed request fixture verifies pending/no-feedback; it does not advance/render the result. Inactive synthetic DTO component fixture; not UI, physical interaction, Play Mode E2E or hardware evidence.",
+                scope = "Actual compiled Unity controller Command/Inspect/Log, port, evaluator, registry and runtime writer. Timed request fixture verifies initial pending and the production Ready branch after 3.1 synthetic seconds with no render receipt. It rejects no-view acknowledgement and premature completion/end events; it does not render feedback. Inactive synthetic DTO component fixture; not UI, physical interaction, Play Mode E2E or hardware evidence.",
                 hardware_verified = false, study_approved = false };
             File.WriteAllText(Path.Combine(evidenceDirectory, "result.json"), JsonConvert.SerializeObject(result, Formatting.Indented));
             return "S1_CONTROLLER_SNAPSHOT_" + result.status + " failures=" + failures + " " + evidenceDirectory;

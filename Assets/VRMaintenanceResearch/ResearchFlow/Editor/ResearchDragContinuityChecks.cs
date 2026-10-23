@@ -53,10 +53,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 for (int i = 1; i <= 60; i++)
                 {
                     var target = start + Vector3.right * (.01f * i);
-                    bool blocked = i % 2 == 1;
-                    obstacle.SetActive(blocked); obstacle.transform.position = target; Physics.SyncTransforms();
+                    bool blocked = false;
+                    obstacle.SetActive(false); obstacle.transform.position = target; Physics.SyncTransforms();
                     var rotation = panel.transform.rotation;
-                    Check(panel.PlacementClear(target, rotation) != blocked, "Alternating obstacle fixture must really alternate placement validity");
+                    Check(panel.PlacementClear(target, rotation) != blocked, "Unobstructed motion fixture must remain clear");
                     int validations = panel.PlacementCalls;
                     move(target);
                     float step = Vector3.Distance(previous, panel.transform.position);
@@ -64,14 +64,44 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     if (step > .015f) jumps++;
                     float error = Vector3.Distance(panel.transform.position, target);
                     samples.Add(new { sample = i, blocked, target = V(target), actual = V(panel.transform.position), step_metres = step, target_error_metres = error });
-                    // 0.72 m/s target: the stabilized pose trails by a bounded, shrinking distance even while placement overlaps.
-                    Check(error < .72f * .05f, "Every stabilized pose stays within 50 ms of the target even when placement temporarily overlaps");
-                    Check(panel.PlacementCalls == validations, "Move must not call expensive placement validation");
+                    Check(error < .72f * .05f, "Every unobstructed stabilized pose stays within 50 ms of the target");
+                    Check(panel.PlacementCalls > validations, "Every rendered drag pose must pass placement validation");
                     if (i % 7 == 0) remember(); // Exercise the independent lower-cadence clearance path.
                     previous = panel.transform.position;
                 }
                 Check(freezes == 0 && jumps == 0 && handle.RejectedSamples == 0, "No rejected-frame freeze/jump on a uniform target sequence");
                 Check(handle.FilterLatencyMilliseconds > 0 && handle.FilterLatencyMilliseconds < 30, "Added drag latency at 0.72 m/s is under 30 ms: " + handle.FilterLatencyMilliseconds);
+                var blockedSamples = new List<object>();
+                int blockedAttempts = 0, blockedPoseChanges = 0;
+                bool savedFilter = ResearchDragHandle.FilterEnabled;
+                try
+                {
+                    ResearchDragHandle.FilterEnabled = false;
+                    panel.transform.SetPositionAndRotation(start, Quaternion.identity); begin(pointer, start);
+                    for (int i = 1; i <= 60; i++)
+                    {
+                        var target = start + Vector3.right * (.01f * i);
+                        bool blocked = i % 2 == 1;
+                        obstacle.SetActive(blocked); obstacle.transform.position = target; Physics.SyncTransforms();
+                        Check(panel.PlacementClear(target, panel.transform.rotation) != blocked, "Blocked-target fixture alternates actual collider validity");
+                        var beforeMove = panel.transform.position; int rejected = handle.RejectedSamples;
+                        move(target);
+                        if (blocked)
+                        {
+                            blockedAttempts++;
+                            bool unchanged = Vector3.Distance(beforeMove, panel.transform.position) < .0001f;
+                            if (!unchanged) blockedPoseChanges++;
+                            Check(unchanged && handle.RejectedSamples == rejected + 1, "Blocked held target never changes the rendered pose");
+                        }
+                        else Check(Vector3.Distance(target, panel.transform.position) < .0001f && handle.RejectedSamples == rejected,
+                            "Clear held target stays responsive after a rejected target");
+                        blockedSamples.Add(new { sample = i, blocked, target = V(target), actual = V(panel.transform.position), handle.RejectedSamples });
+                    }
+                    Check(blockedAttempts == 30 && blockedPoseChanges == 0 && handle.RejectedSamples == blockedAttempts,
+                        "All 30 physically blocked attempts are rejected before transform assignment");
+                    obstacle.SetActive(false); Physics.SyncTransforms(); handle.OnEndDrag(pointer);
+                }
+                finally { ResearchDragHandle.FilterEnabled = savedFilter; }
                 var filterProfile = FilterProfile(begin, moveAt, handle, panel, pointer, head, Check);
                 panel.transform.SetPositionAndRotation(previous, Quaternion.LookRotation(Vector3.ProjectOnPlane(previous - head.position, Vector3.up)));
                 begin(pointer, previous);
@@ -119,7 +149,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     panel.transform.SetPositionAndRotation(start, Quaternion.identity); begin(pointer, start);
                     move(remembered); remember();
                     obstacle.transform.position = invalid; obstacle.SetActive(true); Physics.SyncTransforms();
-                    move(invalid);
+                    bool oldFilter = ResearchDragHandle.FilterEnabled;
+                    try { ResearchDragHandle.FilterEnabled = false; move(invalid); }
+                    finally { ResearchDragHandle.FilterEnabled = oldFilter; }
+                    Check(handle.RejectedSamples == 1 && Vector3.Distance(panel.transform.position, remembered) < .0001f,
+                        "Unsafe ending target is rejected while the drag is still held: ending=" + ending);
                     if (ending == 0) handle.OnEndDrag(pointer);
                     else if (ending == 1)
                     {
@@ -138,9 +172,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         collider.size = Vector3.one * 8; obstacle.transform.position = head.position; Physics.SyncTransforms();
                         handle.OnEndDrag(pointer);
                     }
-                    Check(!handle.IsDragging && handle.ReleaseRecovered, "Release/disable/lost native ray/changed environment ends drag with recovery: ending=" + ending +
+                    Check(!handle.IsDragging && handle.ReleaseRecovered == (ending == 3), "Release/disable/lost ray preserves an already clear pose; changed environment recovers: ending=" + ending +
                         ", dragging=" + handle.IsDragging + ", recovered=" + handle.ReleaseRecovered);
-                    if (ending < 3) Check(Vector3.Distance(panel.transform.position, remembered) < .0001f, "Recovery uses latest verified pose, not initial pose");
+                    if (ending < 3) Check(Vector3.Distance(panel.transform.position, remembered) < .0001f, "Ending preserves latest verified pose after rejecting an unsafe target");
                     Check(panel.PlacementClear(panel.transform.position, panel.transform.rotation) ||
                         (panel.PlacementBlocked && !slate.GetComponent<Canvas>().enabled), "No permanent visible clipping after end/cancel");
                 }
@@ -151,7 +185,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     passed = true, checks, freezes, jumps, hardware_verified = false,
                     input_evidence = "Synthetic direct pose pipeline; no native ray acquisition, Quest frame pacing or comfort evidence.",
-                    temporary_held_overlap = true, invalid_release_behavior = "restore revalidated last clear pose, otherwise recenter or hide",
+                    temporary_held_overlap = false, blockedAttempts, blockedPoseChanges, blockedSamples,
+                    invalid_release_behavior = "reject unsafe held target; if the current environment becomes obstructed, restore revalidated clear pose or recenter/hide",
                     filter = "OneEuro(2.5 Hz, beta 6, dcutoff 1 Hz) on panel target", filterProfile, measuredSequence, headCoupling, samples
                 }, Formatting.Indented));
                 return "DRAG_CONTINUITY_PASS checks=" + checks + "; " + path;

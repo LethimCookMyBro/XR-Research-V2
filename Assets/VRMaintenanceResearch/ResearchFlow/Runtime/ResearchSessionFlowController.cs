@@ -63,17 +63,32 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool IsolatedScenarioSimulated => TechnicalBuild && TryGetComponent<ResearchTechnicalScenario>(out var scenario) && scenario.Owns(this) && scenario.SimulatedPresence;
         // Inactive Editor callback fixtures have no Awake/native XR; standalone always requires the real policy.
         public bool FloorReady => FloorPolicy ? FloorPolicy.Ready : IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed;
-        public bool DeviceReady => FloorReady && ((guards.Length == 2 && guards.All(g => g && g.TrackingValid)) || IsolatedScenarioSimulated);
+        public bool DeviceReady => FloorReady && ((guards.Length == 2 && guards.All(g => g && g.TrackingValid)) || IsolatedScenarioSimulated || (guards.Length == 0 && IsTechnical && ResearchFloorPolicy.EditorFixtureAllowed));
         public bool LoggerReady => Registry != null && (Logger == null || Logger.State == HandsLabLogState.Active);
         // One reason string per researcher control so every operator surface shows the same why-not, mirroring StartSession/ResearcherResume gates.
-        public string ResearcherStartBlocker(ParticipantRecord record) =>
+        public string ResearcherStartBlocker(ParticipantRecord record, string operatorDirectory = null) =>
             Record != null ? "A session is already open: " + Record.participant_id
             : record == null ? "Select or create a participant ID."
             : record.session_state != RegistryState.Available && record.session_state != RegistryState.InProgress ? record.participant_id + " is " + record.session_state + " and stays locked."
             : !string.IsNullOrEmpty(Error) ? Error
             : !FloorReady ? "Device not ready: floor/boundary is not confirmed."
             : !DeviceReady ? "Device not ready: both controllers must be tracked."
-            : !LoggerReady ? "Data logger not ready." : null;
+            : !LoggerReady ? "Data logger not ready."
+            : !ResearchParticipantRegistry.IsTechnical(record.group) && !HasStudyApproval(record, operatorDirectory) ? "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing." : null;
+
+        public bool HasStudyApproval(ParticipantRecord record, string operatorDirectory = null)
+        {
+            if (record == null) return false;
+            if (ResearchParticipantRegistry.IsTechnical(record.group)) return true;
+            try
+            {
+                string directory = string.IsNullOrEmpty(operatorDirectory) ? Path.Combine(Application.persistentDataPath, "OperatorControl") : operatorDirectory;
+                var auth = ResearchOperatorGuard.LoadAuthorization(directory, record, out _);
+                ResearchOperatorGuard.Demand("start", record, auth);
+                return true;
+            }
+            catch { return false; }
+        }
         public string ResearcherResumeBlocker()
         {
             if (Record == null || Flow == null) return "No open session.";
@@ -96,6 +111,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         public ParticipantLanguage SetupLanguage { get; private set; } = ParticipantLanguage.Thai;
         public ExperimentInputMode SetupInput { get; private set; } = ExperimentInputMode.Controller;
         public TaskOrder SetupOrder { get; private set; } = TaskOrder.AB;
+        public void SetLanguage(string lang)
+        {
+            if (System.Enum.TryParse<ParticipantLanguage>(lang, true, out var parsed))
+                SetLanguage(parsed);
+        }
+        public void SetLanguage(ParticipantLanguage lang)
+        {
+            SetupLanguage = lang;
+            if (view) view.Refresh();
+        }
         public bool HeadsetReady
         {
             get
@@ -163,6 +188,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             public TutorialInstruction(string fact, long epoch) { this.fact = fact; this.epoch = epoch; }
         }
         TutorialInstruction tutorialInstruction;
+        string visibleTutorialFact;
         long tutorialEpoch;
         public long TutorialInstructionEpoch => tutorialInstruction?.epoch ?? tutorialEpoch;
         public string TutorialArmedFact => tutorialInstruction?.fact;
@@ -1179,6 +1205,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void Evidence(string fact)
         { Evidence(fact, "None"); }
+        bool Evidence(string fact, bool _) => Evidence(fact, "None");
 
         bool Evidence(string fact, string inputSource)
         { return TutorialActionCommitted(fact, TutorialActionEpoch(fact), Logger?.NewActionId(), inputSource); }
@@ -1209,6 +1236,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 armed_fact = TutorialArmedFact, tutorial_group = Flow.TutorialCompleted };
             if (!Log("TUTORIAL_ACTION_COMMITTED", "training." + fact, "Observed", after: diagnostic, source: source,
                 actionId: actionId, inputSource: inputSource, trackingValid: trackingValid)) return false;
+            if (view != null && !view.TutorialActionReady(fact)) InvalidateTutorialInstruction("prompt_hidden");
             bool duplicate = tutorialEvidence.Contains(fact) || TutorialFacts.Take(Flow.TutorialCompleted).Any(facts => facts.Contains(fact));
             // Reopening Reference is recovery for a pending skill, not a second mandatory credit.
             bool recovery = (fact == "reference" || fact == "restore") && tutorialInstruction?.fact == fact;
@@ -1263,13 +1291,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Flow?.IsTutorial != true) return;
             if (!TutorialInputValid) { InvalidateTutorialInstruction("safety_or_tracking_invalid"); return; }
             string fact = TutorialFact;
-            if (tutorialInstruction?.fact == fact) return;
+            if (tutorialInstruction != null && (!view || !view.TutorialActionReady(tutorialInstruction.fact)))
+                InvalidateTutorialInstruction("prompt_hidden");
+            if (tutorialInstruction?.fact == fact) { visibleTutorialFact = fact; return; }
             if (tutorialInstruction != null) InvalidateTutorialInstruction("instruction_changed");
             if (fact == null || TutorialNeedsGrab || TutorialNeedsRelease || !view || !view.TutorialPromptPresented(fact) || !TutorialControlNeutral(fact)) return;
             long epoch = ++tutorialEpoch;
             if (!Log("TUTORIAL_PROMPT_ARMED", "training." + fact, "PresentedAndArmed", after: new { fact, instruction_epoch = epoch,
                 tutorial_group = Flow.TutorialCompleted, prompt_presented = true, measurement = "panel_presentation_not_reading_or_eye_gaze" }, source: "System")) return;
             tutorialInstruction = new TutorialInstruction(fact, epoch);
+            visibleTutorialFact = fact;
             if (fact == "roomscale" && origin && origin.Camera) physicalHeadStart = origin.Camera.transform.localPosition;
             foreach (var item in trainingObjects.Where(o => o && o.IsHeld))
             {
@@ -1305,6 +1336,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void InvalidateTutorialInstruction(string reason)
         {
+            visibleTutorialFact = null;
             if (tutorialInstruction == null) return;
             var previous = tutorialInstruction; tutorialInstruction = null; ++tutorialEpoch;
             if (Flow?.IsTutorial == true && Logger?.State == HandsLabLogState.Active)

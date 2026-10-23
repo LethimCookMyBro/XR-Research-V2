@@ -60,6 +60,32 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static string VerifyOpenDoorwayAccess() => JsonConvert.SerializeObject(AuditDoorwayAccess(SceneManager.GetActiveScene()), Formatting.Indented);
 
+        public static string AdjustStationPositions()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != ResearchFlowSceneBuilder.ScenePath || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating)
+                throw new InvalidOperationException("Stable clean ResearchFlow Edit Mode required.");
+            var controller = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<ResearchSessionFlowController>(true)).Single();
+            var computer = controller.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "ResearchFlow_Station_Computer");
+            var fan = controller.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "ResearchFlow_Station_Fan");
+            if (!computer || !fan) throw new InvalidOperationException("Stations not found in scene.");
+            Undo.RecordObject(computer, "Adjust Computer station clearance");
+            computer.position = new Vector3(0, 0, 5.60f);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(computer);
+            EditorUtility.SetDirty(computer);
+
+            Undo.RecordObject(fan, "Adjust Fan station clearance");
+            fan.position = new Vector3(-9.70f, 0, 5.15f);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(fan);
+            EditorUtility.SetDirty(fan);
+
+            Physics.SyncTransforms();
+            var audit = AuditDoorwayAccess(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Scene save failed.");
+            return JsonConvert.SerializeObject(audit, Formatting.Indented);
+        }
+
         // Inspection only: measure authored marker visual and interactive footprints
         // separately from the player's landing clearance; never scale collider/teleport range to fit an image.
         public static string DescribeTeleportMarkers()

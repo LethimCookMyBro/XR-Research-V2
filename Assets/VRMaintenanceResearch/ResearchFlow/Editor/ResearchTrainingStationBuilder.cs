@@ -49,7 +49,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             // The pocket is ~65 x 42 mm for a 60 x 40 mm module and the base collider is one box over it, so nothing guides the held
             // (kinematic) module in. A 6 mm window gave 97 s of no response on Quest; 15 mm captures once the module visibly covers the
             // pocket. Turn still decides keyed vs reversed (0/180 deg, +-15).
-            moduleSocket.spec = new SeatSpec { approachMm = 25, posTolMm = 15, angTolDeg = 15, hysteresisMm = 2, hysteresisDeg = 4, seatedDepthTolMm = .5f };
+            moduleSocket.spec = new SeatSpec { approachMm = 30, posTolMm = 20, angTolDeg = 25, hysteresisMm = 3, hysteresisDeg = 5, seatedDepthTolMm = 6.0f };
             // Chamfered key: the right way seats, the reversed module stops at the entrance chamfer.
             moduleSocket.rules = new List<PairRule>
             {
@@ -60,7 +60,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var leadSocket = fixture.AddComponent<QASocket>();
             leadSocket.fixtureId = "training.trainer"; leadSocket.seatName = "E2";
             leadSocket.seat = Node(fixture, "SEAT_TRAINER_FX1_BASE_E2");
-            leadSocket.spec = new SeatSpec { approachMm = 25, posTolMm = 5, angTolDeg = 15, hysteresisMm = 2, hysteresisDeg = 4, seatedDepthTolMm = .5f };
+            leadSocket.spec = new SeatSpec { approachMm = 30, posTolMm = 15, angTolDeg = 25, hysteresisMm = 3, hysteresisDeg = 5, seatedDepthTolMm = 5.0f };
             leadSocket.rules = new List<PairRule> { new PairRule { plug = "TRAINER_FX1_LEAD", mate = "EndB2", testId = "training.lead", category = "connector", outcome = PairOutcome.Seat, turnDeg = 0 } };
 
             var module = Instance("Trainer_FX1/TRAINER_FX1_MODULE", root.transform);
