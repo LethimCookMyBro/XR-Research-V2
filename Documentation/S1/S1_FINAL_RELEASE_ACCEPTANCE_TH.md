@@ -1,50 +1,58 @@
-# Current engineering checkpoint ? 23 October 2026
+# สถานะล่าสุด — 23 ตุลาคม 2026
 
-?????: **?????? Technical Ready / ?????? Study Ready**. ?????????? DEV engineering candidate ????????.
-?????????????: `D:/VR_TMU/transaction-verification-external/s1-continue-20261023`.
-???????????????????? Historical ??????????????????? ???????????????????????????.
+**ติดตั้ง engineering DEV แล้ว แต่ยังไม่ Technical Ready / Study Ready**
 
-| Gate | Status | Evidence / ?????? |
+หลักฐาน: `D:/VR_TMU/transaction-verification-external/s1-continue-20261023`
+ส่วน Historical ด้านล่างเป็นหลักฐานเก่า ไม่ใช่การรับรองรุ่นปัจจุบัน
+
+| รายการ | สถานะ | หลักฐานและขอบเขต |
 |---|---|---|
-| Legacy / Examine | PASS_EDITOR | scene_contract.py: A.module ? ServicePivot (31 nontrigger); B.module ? ResearchS1TaskB (11); Legacy inactive; stable IDs preserved |
-| TH/JA P/Q eye 1.0/1.65 | PASS_EDITOR | delivery-seated-P/Q, delivery-standing-P/Q: 112/112 main clearance/readability; mono fixture ?????? wearer/stereo acceptance |
-| Compact single-focus / Details | PASS_EDITOR | neutral-actions-compiled/session-stages.json: 72 checks; Reference/Inspect Secondary ???????; body paragraphs ?????; ??????????????????? |
-| Localization | PASS_EDITOR | localization-delivery.txt: 392 keys ? 3; ?????? human language approval |
-| Core / approval | PASS_EDITOR | core-delivery.txt 163/163; approval-delivery-corrected.txt 38 cases/114 checks; study gate ?????? |
-| FX1 dropped recovery | PASS_EDITOR | training-recovery-results.json: falling fast recovers; flying far stays; settled far requires dwell; cloned stopped-Editor fixture ?????? grip/physics acceptance |
-| Simulator OpenXR | PASS_EDITOR | simulator-unity.json, simulator-runtime.json, simulator-game.png: active display, Head + two Touch Plus; no complete controller/task sequence |
-| Fixed-position transient occlusion | FAIL | inherited clearance_retry may select another anchor after obstruction; policy acceptance remains open; clearance guard retained |
-| Full A/B / training controller workflow | NOT_TESTED | ????? full native or wearer acceptance ???????? |
-| Reader four formats / H1?H4 / movement / host QC | NOT_TESTED | ???????? end-to-end current-build dataset acceptance |
-| APK build/install | PASS_QUEST_NATIVE | build-result.json / install-result.json / installed-recheck.json: replacement install exit 0, identical SHA256; ?????????????? package installation ?????? full workflow |
-| Native cold launch | BLOCKED | native-coldlaunch-gate.json: Guardian owns focus; no app main process; ?????? boundary ?????????? product crash proof |
-| Data preservation | PASS_QUEST_NATIVE | postinstall-data-check.json: Registry/Logs/Exports 112 files, 3,067,709,449 bytes hash unchanged before launch; ?????? research-data QC |
-| Human language / protocol / ethics / wearer | NOT_TESTED | ??????????????????????; simulator ???????????? |
+| Legacy / Examine | PASS_EDITOR | A.module → ServicePivot (31 nontrigger colliders), B.module → ResearchS1TaskB (11); ปิด legacy สองตัว; stable IDs เดิม |
+| Spatial TH/JA × P/Q × eye 1.0/1.65 | PASS_EDITOR | delivery-* 112/112 main clearance/readability; 216 active button rectangles อยู่ใน mono viewport; ไม่มี text overflow/glyph-bound flags; ไม่ใช่ stereo/wearer acceptance |
+| Compact single-focus / Details | PASS_EDITOR | neutral-actions-compiled/session-stages.json: 72 checks; Reference/Inspect เป็น Secondary เท่ากัน; Details คงเนื้อหาครบและไม่ย้ายแผง |
+| Localization | PASS_EDITOR | localization-delivery.txt: 392 keys × 3 ภาษา; ยังไม่ใช่ human language approval |
+| Core / approval | PASS_EDITOR | core-delivery.txt 163/163; approval-delivery-corrected.txt 38 cases/114 checks; เป็น pure state/disk tests; study gate ยังปิด |
+| FX1 dropped recovery | PASS_EDITOR | training-recovery-results.json: 4 กรณีผ่านใน cloned stopped-Editor fixture; ของตกเร็วถูกกู้ ของเคลื่อนด้านข้างไม่ถูกดึงกลับก่อน dwell; ไม่ใช่ native grip/physics acceptance |
+| Simulator OpenXR | PASS_EDITOR | simulator-unity.json, simulator-runtime.json, simulator-game.png: active display, Head + Touch Plus สองข้าง; ยังไม่ผ่าน full controller sequence |
+| Fixed-position transient occlusion | FAIL | inherited clearance_retry อาจเลือก anchor ใหม่หลังถูกบังชั่วคราว; ต้องรักษา clearance guard และตรวจ recovery ตาม policy |
+| Full Training / Task A/B / Controller | NOT_TESTED | ยังไม่มี current-build full native/wearer acceptance |
+| Reader / H1–H4 / Movement / Host QC | NOT_TESTED | ยังไม่มี current-build end-to-end dataset acceptance; backup hash ไม่ใช่ research QC |
+| APK replacement install | PASS_QUEST_NATIVE | install-result.json และ installed-recheck.json: exit 0 และ local/installed SHA256 ตรงกัน; รับรองเฉพาะการติดตั้ง |
+| Native cold launch | BLOCKED | native-coldlaunch-gate.json: Guardian ครอง focus และไม่มี app main process; ไม่ปิด boundary และไม่สรุปว่า product crash |
+| Data preservation | PASS_QUEST_NATIVE | postinstall-data-check.json: Registry/Logs/Exports 112 ไฟล์ รวม 3,067,709,449 bytes มี hash เดิมหลังติดตั้ง ก่อน launch |
+| Human language / protocol / ethics / wearer | NOT_TESTED | ผู้ใช้แจ้งไม่อยู่ทดสอบ; Simulator ไม่แทนผู้สวม |
 
-Root causes fixed: duplicate legacy visuals with stale Examine anchors; insufficient elevated seated computer fallback; split-width summary burden and redundant Details row; unequal Inspect emphasis; training fall recovery incorrectly gated by settled velocity.
-????????????? Task evaluator, stable IDs, Inspect timing, research criteria, furniture colliders ???? XR Origin.
+## สิ่งที่แก้และสิ่งที่รักษา
 
-Glossary for human review: Reference = ????????????? / ????; Inspect = ?????? / ??; Examine = ????????? / ?????; Pause = ??? / ????; Continue = ????? / ???. Examine ?????????? ???? Inspect ??????????? ?????????? event semantics.
-Summary copy ???? goal/action/safety; OS exclusion ???????????????????????? inline Details. Thai/Japanese semantic approval ???????????.
+แก้ legacy ซ้อนและ Examine binding, เพิ่ม elevated seated computer fallback, ลด split-card เป็น single-focus พร้อม inline Details, ทำ Reference/Inspect ให้มีน้ำหนักเท่ากัน และแยก fallen recovery ออกจากเงื่อนไข settled velocity
 
-## Installed engineering APK
+ไม่เปลี่ยน Task evaluator, stable IDs, Inspect timing, H1–H4, furniture colliders หรือ XR Origin ข้อกำหนดเต็มรวม OS exclusion ยังอยู่ใน Details
 
-- Source commit: `ff797b7caad04906c83af17c32bfb4a004371dc1` (main); no push.
-- APK: `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261023_144418.apk`.
-- SHA256 (local APK = installed base.apk): `034627064f86a8496b3613ac4943dab12052512dae8e1ded3169edf51ed4ad95`.
-- Package `th.ac.tmu.vr.researchflow.quest3.technical`, label `VR Maintenance Lab`, Activity `com.unity3d.player.UnityPlayerGameActivity`; icon extracted and visually checked white/blue.
-- Android debug certificate SHA256 `1028ed54c1dce73aed7ba0994dbd9eb5f19d60e5c299fc4416f88bb46ba6b542`; same signer as previous installed APK; apksigner verify exit 0.
-- Unity build: succeeded, 0 errors, 362 warnings, 487.14 seconds. These warnings remain in build log; success is not full acceptance.
-- DEV user 0 replacement install with `adb install -r --user 0`; no uninstall/clear; ??????????? clear/uninstall ???????? session user 10; ?????? user 10 ????????????? hash ???. Both profiles remain installed.
-- Previous APK and private app tar retained locally. Required Registry/Logs/Exports all verified against device hashes. Earlier interrupted all-files copies are incomplete and excluded from backup acceptance.
-- Build cleared dynamic TMP caches and serialized temporary settings. Five generated files were copied to external `build-generated/`, then only these build-owned changes restored from frozen commit; source returned clean except pre-existing untracked `.audit/` before this report update. Scene byte comparison remained identical.
-- Matrix: 112/112 main panel clearance/readability, 0 text overflow/glyph-bound flags, 216 active button rectangles all within mono viewport. Not stereo/native acceptance.
-- Full SDK flow fixture was not started: Simulator OpenXR already owned input; ownership guard preserved. Simulator connection/capture is not full Task acceptance.
-- Historical Hook failure provenance: NOT_TESTED. Current pstack hook exit 0; no hook disabled.
+Glossary รอ human review: Reference = เอกสารอ้างอิง / 参照資料; Inspect = ตรวจผล / 検査; Examine = ดูชิ้นงาน / 部品を見る; Pause = พัก / 一時停止; Continue = ทำต่อ / 続ける
+Examine คือการดูวัตถุ ส่วน Inspect คือการขอตรวจผล ไม่เปลี่ยน event semantics ภาษาไทย/ญี่ปุ่นยังรอ semantic approval จากมนุษย์
 
-Resume: acknowledge Guardian on Quest first, then bind fresh user/package/PID/boot/build identity for native cold-launch tests. Next source issue is fixed-panel temporary-occlusion recovery; preserve clearance and validate explicit recovery path. Complete actual Training/Task A/B, reader/lifecycle, timing/receipt and movement/host QC before Technical Ready. Obtain human language/protocol/ethics and wearer acceptance before Study Ready.
+## APK ที่ติดตั้ง
+
+- Source commit: `ff797b7caad04906c83af17c32bfb4a004371dc1` บน main; ไม่มี push
+- APK: `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261023_144418.apk`
+- Local APK = installed base.apk SHA256: `034627064f86a8496b3613ac4943dab12052512dae8e1ded3169edf51ed4ad95`
+- Package: `th.ac.tmu.vr.researchflow.quest3.technical`; label: `VR Maintenance Lab`; Activity: `com.unity3d.player.UnityPlayerGameActivity`
+- ตรวจภาพ icon ที่ extract จาก APK แล้ว เป็นขาว–ฟ้า
+- Android debug certificate SHA256: `1028ed54c1dce73aed7ba0994dbd9eb5f19d60e5c299fc4416f88bb46ba6b542`; ตรงกับ APK เดิม; apksigner exit 0
+- Unity build สำเร็จ: 0 errors, 362 warnings, 487.14 seconds; warnings ยังอยู่ใน build log และไม่ถือว่า full acceptance
+- ใช้ `adb install -r --user 0`; ไม่ uninstall/clear และไม่เปิด session user 10; ข้อมูล user 10 ยังไม่ได้ตรวจ hash แยก ทั้งสอง profile ยัง installed/stopped ณ final check
+- สำรอง APK เดิมและ private tar ไว้ในเครื่อง Registry/Logs/Exports ตรวจ hash ครบ ส่วน all-files copy ที่หยุดกลางทางไม่ถูกนับเป็น backup ที่ผ่าน
+- Build ทำให้ dynamic TMP caches ถูกล้างและบันทึก temporary settings จึงสำรอง generated state ไว้ใน `build-generated/` แล้วคืนเฉพาะ 5 ไฟล์ที่ Build เปลี่ยนจาก frozen commit; scene byte comparison เหมือนเดิม
+- Simulator 207.1 ติดตั้งแบบ per-user และทดสอบ Unity OpenXR แล้ว ค่า `XR_RUNTIME_JSON` ระดับ process คืนเป็น null; native DLL อาจยัง cache runtime จน restart Editor ไม่เปลี่ยน global OpenXR runtime
+- SDK synthetic flow fixture ไม่เริ่ม เพราะ OpenXR มี ownership ของ input อยู่แล้ว ไม่ลด guard เพื่อให้ทดสอบผ่าน
+- Hook failure เดิม: NOT_TESTED; pstack hook ครั้งนี้ exit 0 และไม่มี hook ถูกปิด
+
+## จุดทำต่อ
+
+ยืนยัน Guardian บน Quest ก่อน แล้ว bind serial/user/package/PID/boot/build ใหม่สำหรับ cold-launch/native tests แก้และทดสอบ fixed-panel temporary-occlusion recovery โดยไม่ปิด clearance จากนั้นตรวจ Training/Task A/B, reader/lifecycle, timing/feedback receipt, movement และ Host QC ให้ครบก่อน Technical Ready และผ่าน human language/protocol/ethics/wearer ก่อน Study Ready
 
 ## Historical evidence below
+
 
 # S1 final release acceptance
 
