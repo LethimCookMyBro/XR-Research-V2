@@ -16,7 +16,9 @@
 | Fixed-position transient occlusion | FAIL | inherited clearance_retry may select another anchor after obstruction; policy acceptance remains open; clearance guard retained |
 | Full A/B / training controller workflow | NOT_TESTED | ????? full native or wearer acceptance ???????? |
 | Reader four formats / H1?H4 / movement / host QC | NOT_TESTED | ???????? end-to-end current-build dataset acceptance |
-| APK build/install | NOT_TESTED | ?? build/install evidence; ???????????????????????????????????? Technical Ready |
+| APK build/install | PASS_QUEST_NATIVE | build-result.json / install-result.json / installed-recheck.json: replacement install exit 0, identical SHA256; ?????????????? package installation ?????? full workflow |
+| Native cold launch | BLOCKED | native-coldlaunch-gate.json: Guardian owns focus; no app main process; ?????? boundary ?????????? product crash proof |
+| Data preservation | PASS_QUEST_NATIVE | postinstall-data-check.json: Registry/Logs/Exports 112 files, 3,067,709,449 bytes hash unchanged before launch; ?????? research-data QC |
 | Human language / protocol / ethics / wearer | NOT_TESTED | ??????????????????????; simulator ???????????? |
 
 Root causes fixed: duplicate legacy visuals with stale Examine anchors; insufficient elevated seated computer fallback; split-width summary burden and redundant Details row; unequal Inspect emphasis; training fall recovery incorrectly gated by settled velocity.
@@ -24,6 +26,23 @@ Root causes fixed: duplicate legacy visuals with stale Examine anchors; insuffic
 
 Glossary for human review: Reference = ????????????? / ????; Inspect = ?????? / ??; Examine = ????????? / ?????; Pause = ??? / ????; Continue = ????? / ???. Examine ?????????? ???? Inspect ??????????? ?????????? event semantics.
 Summary copy ???? goal/action/safety; OS exclusion ???????????????????????? inline Details. Thai/Japanese semantic approval ???????????.
+
+## Installed engineering APK
+
+- Source commit: `ff797b7caad04906c83af17c32bfb4a004371dc1` (main); no push.
+- APK: `Logs/QuestFinalQA/build/ResearchFlowQuest3_20261023_144418.apk`.
+- SHA256 (local APK = installed base.apk): `034627064f86a8496b3613ac4943dab12052512dae8e1ded3169edf51ed4ad95`.
+- Package `th.ac.tmu.vr.researchflow.quest3.technical`, label `VR Maintenance Lab`, Activity `com.unity3d.player.UnityPlayerGameActivity`; icon extracted and visually checked white/blue.
+- Android debug certificate SHA256 `1028ed54c1dce73aed7ba0994dbd9eb5f19d60e5c299fc4416f88bb46ba6b542`; same signer as previous installed APK; apksigner verify exit 0.
+- Unity build: succeeded, 0 errors, 362 warnings, 487.14 seconds. These warnings remain in build log; success is not full acceptance.
+- DEV user 0 replacement install with `adb install -r --user 0`; no uninstall/clear; ??????????? clear/uninstall ???????? session user 10; ?????? user 10 ????????????? hash ???. Both profiles remain installed.
+- Previous APK and private app tar retained locally. Required Registry/Logs/Exports all verified against device hashes. Earlier interrupted all-files copies are incomplete and excluded from backup acceptance.
+- Build cleared dynamic TMP caches and serialized temporary settings. Five generated files were copied to external `build-generated/`, then only these build-owned changes restored from frozen commit; source returned clean except pre-existing untracked `.audit/` before this report update. Scene byte comparison remained identical.
+- Matrix: 112/112 main panel clearance/readability, 0 text overflow/glyph-bound flags, 216 active button rectangles all within mono viewport. Not stereo/native acceptance.
+- Full SDK flow fixture was not started: Simulator OpenXR already owned input; ownership guard preserved. Simulator connection/capture is not full Task acceptance.
+- Historical Hook failure provenance: NOT_TESTED. Current pstack hook exit 0; no hook disabled.
+
+Resume: acknowledge Guardian on Quest first, then bind fresh user/package/PID/boot/build identity for native cold-launch tests. Next source issue is fixed-panel temporary-occlusion recovery; preserve clearance and validate explicit recovery path. Complete actual Training/Task A/B, reader/lifecycle, timing/receipt and movement/host QC before Technical Ready. Obtain human language/protocol/ethics and wearer acceptance before Study Ready.
 
 ## Historical evidence below
 
