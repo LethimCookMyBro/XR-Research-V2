@@ -270,7 +270,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             f.view = null; f.controller = null; f.camera = null; f.head = f.root = null; f.renderedFrame = -1;
         }
         static void Rendered(ScriptableRenderContext context, Camera camera) { if (current != null && camera == current.camera) { current.renderedFrame = Time.frameCount; current.renderCount++; } }
-        static Renderer[] EnvironmentRenderers() => UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(r => r.gameObject.scene.path == "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity" && !r.GetComponentInParent<ResearchFlowView>()).OrderBy(r => r.GetInstanceID()).ToArray();
+        static Renderer[] EnvironmentRenderers() => UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(r => r.gameObject.scene.path == "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity" && !r.GetComponentInParent<ResearchFlowView>() && !r.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>()).OrderBy(r => r.GetInstanceID()).ToArray();
         static string[] EnvironmentStates() => EnvironmentRenderers().Select(r => r.GetInstanceID() + ":" + r.enabled + ":" + r.gameObject.activeSelf + ":" + r.gameObject.activeInHierarchy).ToArray();
         static string[] SceneStates() => Enumerable.Range(0, SceneManager.sceneCount).Select(i => { var s = SceneManager.GetSceneAt(i); return s.handle + ":" + s.path + ":" + s.isDirty; }).ToArray();
         static void Ready() => Require(Application.isPlaying && !Application.isBatchMode && !EditorApplication.isPaused && Application.isFocused && EditorWindow.focusedWindow

@@ -84,7 +84,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 // Default to a fresh ID; an unfinished saved session is resumed only when the researcher picks it.
                 if (!records.Any(r => r.participant_id == selectedId && (r.session_state == RegistryState.Available || r.session_state == RegistryState.InProgress)))
                     selectedId = (records.FirstOrDefault(r => r.session_state == RegistryState.Available) ?? records.FirstOrDefault(r => r.session_state == RegistryState.InProgress))?.participant_id ?? "";
-                summary = controller.Record == null ? "No session started. No real participant results are present." : controller.SummaryText();
+                if (controller.Record == null)
+                    summary = "No session started. No real participant results are present.";
+                else if (controller.Flow?.IsTaskActive != true || controller.Flow.Paused)
+                    summary = controller.SummaryText();
                 var selected = records.FirstOrDefault(r => r.participant_id == selectedId);
                 if (controller.Record != null) assignment = Assignment(controller.Record.participant_id, controller.Record.language, controller.Record.task_order, controller.Record.task_a_layout, "locked");
                 else if (selected != null && selected.session_state == RegistryState.InProgress) assignment = Assignment(selected.participant_id, selected.language, selected.task_order, selected.task_a_layout, "saved");
@@ -225,7 +228,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!string.IsNullOrEmpty(visibleError)) EditorGUILayout.HelpBox(visibleError, MessageType.Info);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Session Summary", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Session Summary (updates while paused or between tasks)", EditorStyles.boldLabel);
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.SelectableLabel(summary, EditorStyles.wordWrappedLabel, GUILayout.MinHeight(Mathf.Max(180, EditorStyles.wordWrappedLabel.CalcHeight(new GUIContent(summary), Mathf.Max(200, position.width - 40)))));
             EditorGUILayout.EndScrollView();

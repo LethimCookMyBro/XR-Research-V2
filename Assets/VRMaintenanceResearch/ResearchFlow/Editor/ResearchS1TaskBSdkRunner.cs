@@ -374,9 +374,41 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             hand_state = hand ? hand.State.ToString() : null,
             selected_target = hand && hand.Interactable ? hand.Interactable.transform.parent.name : null
         };
+        public static double WarmObservationMetadata()
+        {
+            if (Running || ResearchS1TaskASdkRunner.Running) throw new InvalidOperationException("An SDK actor owns input.");
+            var bound = UnityEngine.Object.FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single();
+            var c = bound.controller;
+            if (!EditorApplication.isPlaying || !Application.isFocused || !ResearchFlowVisualInput.Running || !c ||
+                c.Record == null || !c.Record.test_data || string.IsNullOrEmpty(c.Record.participant_id) || !c.Record.participant_id.StartsWith("DEV", StringComparison.Ordinal) ||
+                string.IsNullOrEmpty(c.Record.session_id) || string.IsNullOrEmpty(c.Record.run_id) || c.Logger == null ||
+                c.Record.run_id != c.Logger.RunId || c.Logger.State != VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogState.Active || c.Flow == null || c.Flow.Paused || c.Flow.IsTaskActive || c.Flow.CurrentTask != "B" ||
+                (c.Flow.State != ResearchFlowState.Task1Ready && c.Flow.State != ResearchFlowState.Task2Ready) || !bound.Capture().systemIntegrityValid)
+                throw new InvalidOperationException("Observation metadata requires the matching DEV TaskReady context before its clock starts.");
+            task = bound; side = 0;
+            // TaskReady disables grabbing; metadata reads the owned hand without enabling interaction.
+            hand = c.guards.Single(g => g.side == 0).interactionsRoot.GetComponentsInChildren<HandGrabInteractor>(true)
+                .Single(h => h.name == "ControllerHandGrabInteractor" && h.Hand != null && h.Hand.Handedness == Handedness.Left);
+            if (hand.State == InteractorState.Select) throw new InvalidOperationException("Release the hand before metadata preparation.");
+            var expectedSession = c.Record.session_id; var expectedRun = c.Record.run_id; var expectedState = c.Flow.State;
+            long sequence = c.Logger.LastSequence;
+            double started = EditorApplication.timeSinceStartup;
+            // Resolve cold JSON reflection/JIT before the measured task; never write a warm-up observation or research event.
+            JsonConvert.SerializeObject(ObservationRow("metadata_warmup"));
+            if (c.Record.session_id != expectedSession || c.Record.run_id != expectedRun || c.Flow.State != expectedState ||
+                c.Flow.IsTaskActive || c.Flow.Paused || c.Logger.RunId != expectedRun || c.Logger.LastSequence != sequence)
+                throw new InvalidOperationException("Read-only metadata preparation changed the session, flow, or logger.");
+            return (EditorApplication.timeSinceStartup - started) * 1000;
+        }
+
         static void Record(string observation)
         {
-            File.AppendAllText(Path.Combine(output, "observations.jsonl"), JsonConvert.SerializeObject(new
+            File.AppendAllText(Path.Combine(output, "observations.jsonl"), JsonConvert.SerializeObject(ObservationRow(observation)) + Environment.NewLine);
+        }
+
+        static object ObservationRow(string observation)
+        {
+            return new
             {
                 observation, step, frame = Time.frameCount, realtime = Time.realtimeSinceStartupAsDouble, session, run,
                 input_source = "SimulatedController", test_data = true, task_state = task.Capture(),
@@ -386,8 +418,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 sdk_movement = hand.Movement == null ? null : new { type = hand.Movement.GetType().Name, stopped = hand.Movement.Stopped,
                     position = V(hand.Movement.Pose.position), rotation = Q(hand.Movement.Pose.rotation),
                     target_position = V(hand.GetHandGrabPose().position), target_rotation = Q(hand.GetHandGrabPose().rotation) }
-            }) + Environment.NewLine);
+            };
         }
+
         static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
         static void PlayState(PlayModeStateChange state) { if (state == PlayModeStateChange.ExitingPlayMode) BeforeReload(); }
         static void BeforeReload() { if (Running) { Stop(); if (Running) Complete(); } }

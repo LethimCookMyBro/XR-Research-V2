@@ -47,7 +47,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         string name = language + "/" + stage; var c = f.Controller;
                         if(stage.StartsWith("guard_", StringComparison.Ordinal)) PrepareGuard(f, stage.Substring(6));
                         string identity = Identity(c); int credits = c.Flow.TutorialCompleted;
-                        if(stage.StartsWith("guard_", StringComparison.Ordinal)) CheckGuard(f, stage.Substring(6), name, check);
+                        if(stage == "guard_technical_resume")
+                            check(!f.View.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "technical_resume"), name + "/participant checkpoint continuation remains absent", State(c));
+                        else if(stage.StartsWith("guard_", StringComparison.Ordinal)) CheckGuard(f, stage.Substring(6), name, check);
                         else if (stage == "confirmation")
                         {
                             var start = f.Action("task_start"); f.Click(start, 2);
@@ -97,10 +99,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         else if (stage == "checkpoint")
                         {
                             f.Seed(ResearchFlowState.PostTask1Checkpoint); Set(c, "TechnicalSelfTest", true); f.Refresh();
-                            var resume = f.Action("technical_resume"); f.Click(resume, 2);
-                            check(c.Flow.State == ResearchFlowState.PostTask1Checkpoint, name + "/double checkpoint rejected", State(c));
-                            f.Down(resume); Set(c, "Error", "fixture context changed"); f.UpClick(resume);
-                            check(c.Flow.State == ResearchFlowState.PostTask1Checkpoint && Count(Read(f.Writer.EventsPath), "CHECKPOINT_COMPLETED") == 0, name + "/context change cannot confirm checkpoint", State(c));
+                            check(!f.View.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "technical_resume"), name + "/participant cannot acquire a checkpoint continuation", State(c));
+                            check(c.Flow.State == ResearchFlowState.PostTask1Checkpoint && Count(Read(f.Writer.EventsPath), "CHECKPOINT_COMPLETED") == 0, name + "/checkpoint still waits for its researcher", State(c));
                         }
                         else if (stage == "tutorial_not_counted")
                         {
@@ -188,7 +188,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             check(caller == Caller(donor.controller) && callerFiles.SequenceEqual(CallerFiles(donor.controller)), "caller controller registry and logs preserved", null);
             string report = Path.Combine(directory, "participant-safety.json");
             File.WriteAllText(report, JsonConvert.SerializeObject(new { status = failures.Count == 0 ? "PASS" : "FAIL", interaction_status = failures.All(f => f.EndsWith("/visible text overflow")) ? "PASS" : "FAIL", failures, rows, captures,
-                scope = "Stopped Editor actual Unity UI components with explicit owned OnEnable/OnDisable lifecycle (runtime scripts do not auto-initialize outside Play), EventSystem callback dispatch, real controller/core/owned registry/logger; bound technical-demo task adapters (no study content approval), seeded technical tracking and initial flow, no native SDK acquisition. Actual Unity mono preview pixels/TMP data. Reader opening is seeded only to test its Stop surface. Writer fault calls real LoggerFailed callback, not a disk fault. Training and inspect_continue begin from explicit owned snapshots (negative inspection Visible stage is seeded; no real inspection or tutorial completion claimed). Seven progression commands test actual pointer callbacks for doubleclick, orphan up, rightclick, stale context, wrong-control release and held press across pause. Inspect/checkpoint coverage is accidental rejection only. No participant data, Quest, physical interaction, wearer or language approval." }, Formatting.Indented));
+                scope = "Stopped Editor actual Unity UI components with explicit owned OnEnable/OnDisable lifecycle (runtime scripts do not auto-initialize outside Play), EventSystem callback dispatch, real controller/core/owned registry/logger; bound technical-demo task adapters (no study content approval), seeded technical tracking and initial flow, no native SDK acquisition. Actual Unity mono preview pixels/TMP data. Reader opening is seeded only to test its Stop surface. Writer fault calls real LoggerFailed callback, not a disk fault. Training and inspect_continue begin from explicit owned snapshots (negative inspection Visible stage is seeded; no real inspection or tutorial completion claimed). Six progression commands test actual pointer callbacks for doubleclick, orphan up, rightclick, stale context, wrong-control release and held press across pause. Checkpoint continuation is asserted absent from participant UI; authorized researcher continuation is covered separately. Inspect coverage is accidental rejection only. No participant data, Quest, physical interaction, wearer or language approval." }, Formatting.Indented));
             if (failures.Count != 0) throw new InvalidOperationException("PARTICIPANT_SAFETY_FAIL " + report + " | " + string.Join(" | ", failures));
             return "PARTICIPANT_SAFETY_PASS " + report;
         }
@@ -278,8 +278,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             a=f.Action(command); f.Down(a); Set(c,"Error","fixture changed context"); f.UpClick(a); Set(c,"Error",""); f.Refresh(); unchanged("stale context rejects progress");
             a=f.Action(command); f.Down(a);
             var other=f.View.GetComponentsInChildren<ResearchUIAction>(true).FirstOrDefault(x=>x!=a&&x.gameObject.activeInHierarchy&&x.GetComponent<Button>().IsInteractable());
-            if(!other) throw new InvalidOperationException("Wrong-control release requires another active button");
-            f.UpClick(other); unchanged("release on different control rejects progress"); f.CancelPress(a);
+            GameObject probe = null;
+            if(!other)
+            {
+                probe = new GameObject("OwnedWrongControlProbe", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(ResearchUIAction)) { hideFlags = HideFlags.HideAndDontSave };
+                SceneManager.MoveGameObjectToScene(probe, f.View.gameObject.scene); probe.transform.SetParent(f.View.transform, false);
+                other = probe.GetComponent<ResearchUIAction>(); other.view = f.View; other.command = "pause";
+                Call(other, "OnEnable");
+            }
+            try { f.UpClick(other); unchanged("release on different control rejects progress"); f.CancelPress(a); }
+            finally { if(probe) { Call(other, "OnDisable"); UnityEngine.Object.DestroyImmediate(probe); } }
             a=f.Action(command); f.Down(a); c.Flow.Pause(); var paused=JsonConvert.SerializeObject(State(c)); f.UpClick(a);
             check(paused==JsonConvert.SerializeObject(State(c)),name+"/held press cannot cross paused state",State(c));
         }

@@ -1,4 +1,51 @@
+# สถานะตรวจรับล่าสุด 25 ตุลาคม 2026
+
+**Final Verdict: NOT_READY — Study Verdict: NOT_READY**
+
+Runtime/APK commit `23d2cfe7eda714aaccc860e72b87b948905a110a`; APK/Installed SHA256 `b3179b7ec4e0c6d663b46766a74943eebc195caa5041b858fc91b60bd0d3a321`
+แก้เฉพาะ Editor/QA และเอกสาร ไม่เปลี่ยน Player/Scene/Raw/QC/Study rules จึงไม่ Build/Install ซ้ำ
+Reviewed source commit และ hash อยู่ `delivery/SOURCE_FREEZE.json` ใต้หลักฐานด้านล่าง
+
+| Gate | ผลเต็มขอบเขต | หลักฐานที่ผ่าน / ข้อจำกัด |
+|---|---|---|
+| A Source/APK | PASS_EDITOR | ตรวจ Player inputs เดิม, APK bytes/signing/icon เดิม; installed identity/hash เท่านั้น PASS_QUEST_NATIVE |
+| B UI | PASS_EDITOR | 112 current canonical View-fixture frames, P/Q×eye1.0/1.65m×TH/JA, full main/button bounds และ TMP; ไม่ใช่ native stereo/comprehension |
+| C Mechanics | ดู Matrix ล่าสุด | 8 bound ISDK FX1/A/B workflows ผ่าน; actual wrong-part/order variant แยกผล ไม่ใช้ pure-model แทน physical PASS; A/B authorized recovery ยังรอ policy |
+| D Workflow | BLOCKED | 8 E2E, 24 Inspect≥3s และ visible receipts ผ่าน; active-task restore fail-closed และ SDK fault/retry บางกรณียังเปิดอยู่ |
+| E Reader | NOT_TESTED เต็มขอบเขต | 16-case production fixture, TH/JA core SDK tours และ Windows decode/lifecycle แยกหลักฐาน; missing physical media และ SDK lifecycle fault ยังไม่ครบ |
+| F Data | PASS_EDITOR | 8 immutable DEV exports และ2 fresh-domain cold controls ผ่าน Host QC; 7 ชุดเดิมยังมี information-visibility warnings; historical cold FAIL ไม่ถูกแก้ข้อมูล |
+| G Quest | BLOCKED | Profile guard ปฏิเสธ foreground mismatch; ไม่มี native input/stereo/reach/performance/dataset acceptance |
+| H Human/Study | BLOCKED | ต้องมี TH/JA/media semantic review, researcher/protocol/ethics/consent และ wearer sign-off |
+
+Root fixes: observer เตรียม JSON metadata แบบ read-only ก่อน task clock โดยไม่เขียน event หรือ observation; Console ไม่ parse growing log ระหว่าง active task; Reader driver รอ queued head pose และใช้ guarded recovery; Reader fixture มี owned clock/THJA/legacy drag setup; render environment audit ไม่รวม inactive XR cursor flags; participant fixture รักษา researcher-only checkpoint และตรวจ guard ของหน้า single-Continue ได้
+Participant fixture มี 296 assertion rows จากทั้งหมด494 rows ไม่ใช่494 assertions
+
+Cold root ของ Editor observer ยืนยันแล้ว: JSON ครั้งแรก A605.4464ms/B612.9412ms จึงเตรียม metadata แบบ read-only ใน TaskReady ก่อน clock และยืนยัน2 fresh-domain SDK/Host QC controls; historical cold FAIL เก็บไว้ตามเดิม ไม่แทน Quest cold performance
+Task A/B authorized recovery/intervention ยังไม่มี implementation; active-task restart ถูกปิดไว้โดยตั้งใจ ต้องยืนยัน terminate/invalid เทียบกับ assisted recovery/resume ก่อนเปลี่ยน policy
+
+หลักฐานปัจจุบัน: `D:/VR_TMU/transaction-verification-external/s1-acceptance-resume-20261024`
+อ่าน `delivery/README_TH.md`, `delivery/COVERAGE_MATRIX.json`, `delivery/RISK_COVERAGE_FINAL.json`, `VERIFICATION.txt` และ `delivery/source-transaction/`
+ไม่มีการแก้ Raw Data, ลด QC/guards, ข้าม Guardian หรือเปิด approval gate
+
+---
+## หลักฐานเดิมด้านล่างเป็นประวัติ ไม่แทนสถานะล่าสุด
+
 # S1 — สถานะตรวจรับปัจจุบัน 24 ตุลาคม 2026
+
+## ตรวจต่อ 2026-10-24 — Japanese Reader / Foreground constraint
+
+**Final Verdict: NOT_READY. Study Verdict: NOT_READY.** Runtime/APK ยังเป็น `23d2cfe`; ไม่ Build/Install ซ้ำและไม่เปลี่ยน Runtime, Task Rules, Focus/Clearance Guards หรือ QC thresholds.
+
+- **PASS_EDITOR:** Japanese A/B Video lifecycle ผ่าน decode, timeline/seek ACK + target frame, Ended/Replay, close/reopen, error/retry, focus/pause/component cleanup และคืน Scene/XR/services ครบ (`reader-ja-A7`, `reader-ja-B2`). Pointer/lifecycle เป็น fixture; ไม่ใช่ Touch Plus/Quest หรือหลักฐานว่าดูเนื้อหาทั้งคลิปครบ.
+- แก้เฉพาะ `ResearchReaderWireframeChecks.cs`: fixture task/language binding, task-clock setup, test clock หลัง bootstrap/แต่ละ endpoint, scene-restoration callback และชื่อภาพต่อ cycle. คง native ACK/target-frame/assertions/no-overwrite และ 25/180-second limits. ตรวจ loaded assembly ก่อน run จริง ไม่ใช้ผลจาก DLL เก่า.
+- **PASS_EDITOR:** spatial readability/callback geometry, asymmetric stereo Camera API และ recorded low-eye pose replay เฉพาะกรณีที่วัด. ไม่แทน full 16 configurations หรือ native stereo/reach/controller acceptance.
+- Workflow + Host QC ครบ **1/8** โดย reuse `Thai_BA_P/matrix-v1` ที่ runtime hash ไม่เปลี่ยน. อีก7 condition **BLOCKED** เพราะเจ้าของใช้จอแรก; ไม่แย่ง Foreground และไม่ปิด Focus Guard. การเปิด Unity อีกจอไม่ได้สร้าง input focus แยก.
+- Fresh JA BA P warm-up ถูก focus loss หยุดและ Abort อย่างถูกต้อง. Actual host ingest/verify exit0 แต่ **QC FAIL**: gap B head/left/right 108.3474685–108.8131528s (0.4656843s), raw/export6ไฟล์ hash เดิม. Focus pause เกิดภายหลัง ไม่ใช้เป็นคำอธิบาย gap ก่อนหน้า; exact blocking method รอบนี้ไม่ได้ profile. ไม่แก้ข้อมูลเพื่อให้ผ่าน.
+- **PASS_QUEST_NATIVE เฉพาะ installed identity/hash:** `b3179b7ec4e0c6d663b46766a74943eebc195caa5041b858fc91b60bd0d3a321`. Fresh profile guard ยังถูก Guardian/shell foreground ขวาง. Native controller/workflow/spatial/movement/performance และผู้สวมยังไม่ผ่านการตรวจรับ.
+- **BLOCKED:** Human TH/JA content review, engineering-draft media approval, researcher/protocol/ethics/consent และ wearer acceptance. ไม่เปิด Study Gate เอง.
+
+หลักฐานปัจจุบันและคำสั่ง Resume: `D:/VR_TMU/transaction-verification-external/s1-conditions-20261024/` โดยอ่าน `COVERAGE_MATRIX.json`, `HANDOFF.md`, `delivery/README_TH.md`, `delivery/source-transaction/VERIFICATION.txt`. ส่วนสถานะเดิมด้านล่างเป็นประวัติเมื่อขัดกับส่วนนี้.
+
 
 ## สถานะล่าสุด 2026-10-24 — Movement / hidden slate capture / teardown
 

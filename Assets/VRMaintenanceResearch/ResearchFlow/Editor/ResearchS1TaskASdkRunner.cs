@@ -67,6 +67,69 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             return Audit();
         }
 
+        public static string BeginWrongRamOrder(string evidenceDirectory, string expectedSessionId, string expectedRunId, int controllerSide = 0)
+        {
+            Begin(evidenceDirectory, expectedSessionId, expectedRunId, controllerSide, "S02");
+            routines.Clear();
+            routines.Push(WrongRamOrder());
+            return Audit();
+        }
+
+        static IEnumerator WrongRamOrder()
+        {
+            var sled = task.sleds.Single(s => s.part.stableId == storage);
+            yield return InstallSled(sled);
+            var wrong = task.ram.Single(p => p.stableId == "M03");
+            var correct = task.ram.Single(p => p.stableId == "M01");
+            var second = task.ram.Single(p => p.stableId == "M02");
+            var a2 = task.ramSlots.Single(s => s.seatName == "DIMM_A2");
+            var b2 = task.ramSlots.Single(s => s.seatName == "DIMM_B2");
+            var original = new Pose(wrong.transform.position, wrong.transform.rotation);
+            yield return RamLatchWrist(a2);
+            yield return OpenLatch(a2);
+            yield return ApproachRam(wrong, a2, 0);
+            yield return Release();
+            Require(RamRetained(wrong, a2), "The wrong-capacity RAM was not physically seated and retained.");
+            yield return OpenLatch(b2);
+            yield return ApproachRam(second, b2, 0);
+            yield return Release();
+            yield return BoundedGpuAndCableInputs(sled.part);
+            var failed = ResearchS1TaskEvaluator.Evaluate(task.Capture());
+            Require(!failed.Passed, "Wrong-capacity RAM unexpectedly satisfied the bound evaluator.");
+            Phase("M03_wrong_capacity_seated_bound_evaluator_failed_" + failed.Category);
+            yield return RamLatchWrist(a2);
+            yield return OpenLatch(a2);
+            yield return Acquire(Input(wrong), false);
+            for (int mm = 0; mm <= a2.spec.approachMm + a2.spec.hysteresisMm + 10 && wrong.Socket; mm++)
+                yield return Translate(Input(wrong), -a2.seat.forward * .001f);
+            Require(!wrong.Socket && !a2.Occupant, "The unlatched wrong RAM did not leave its socket.");
+            yield return MoveRoot(Input(wrong), new Pose(OutsideCase(wrong.transform.position), wrong.transform.rotation));
+            float clearance = Mathf.Max(wrong.transform.position.y, original.position.y,
+                task.fixedAssembly[0].GetComponentsInChildren<Collider>().Where(c => c.enabled && !c.isTrigger).Max(c => c.bounds.max.y)) + .15f;
+            yield return MoveRoot(Input(wrong), new Pose(new Vector3(wrong.transform.position.x, clearance, wrong.transform.position.z), wrong.transform.rotation));
+            yield return MoveRoot(Input(wrong), new Pose(new Vector3(original.position.x, clearance, original.position.z), original.rotation));
+            yield return MoveRoot(Input(wrong), original);
+            yield return Release();
+            yield return ApproachRam(correct, a2, 0);
+            yield return Release();
+            Require(RamRetained(correct, a2) && RamRetained(second, b2) && !wrong.Socket,
+                "Wrong-to-correct replacement did not retain the actual A2/B2 assembly.");
+            Require(ResearchS1TaskEvaluator.Evaluate(task.Capture()).Passed,
+                "SSD-first assembly and actual RAM replacement did not satisfy the bound evaluator.");
+            Phase("SSD_first_wrong_RAM_replaced_by_M01_bound_evaluator_passed");
+        }
+
+        static IEnumerator RamLatchWrist(QASocket socket)
+        {
+            // The SSD thumb-screw wrist roll selects the adjacent latch; reorient only the released controller.
+            yield return Escape();
+            var pose = ResearchFlowVisualInput.ControllerWorldPose(side);
+            pose.rotation = Quaternion.LookRotation(Vector3.down, -socket.seat.forward);
+            ResearchFlowVisualInput.SetControllerWorldPose(side, pose);
+            int frame = Time.frameCount;
+            yield return AwaitObservation(() => Time.frameCount > frame + 2, "released wrist reorientation before RAM latch");
+        }
+
         static void CheckContext()
         {
             if (!EditorApplication.isPlaying || EditorApplication.isPaused || !Application.isFocused || !ResearchFlowVisualInput.Running || !task ||
@@ -690,9 +753,42 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             hand_state = hand ? hand.State.ToString() : null, selected_target = selected ? selected.stableId : null
         }, Formatting.Indented);
 
+        public static double WarmObservationMetadata()
+        {
+            if (Running || ResearchS1TaskBSdkRunner.Running) throw new InvalidOperationException("An SDK actor owns input.");
+            var bound = UnityEngine.Object.FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single();
+            var c = bound.controller;
+            if (!EditorApplication.isPlaying || !Application.isFocused || !ResearchFlowVisualInput.Running || !c ||
+                c.Record == null || !c.Record.test_data || string.IsNullOrEmpty(c.Record.participant_id) || !c.Record.participant_id.StartsWith("DEV", StringComparison.Ordinal) ||
+                string.IsNullOrEmpty(c.Record.session_id) || string.IsNullOrEmpty(c.Record.run_id) || c.Logger == null ||
+                c.Record.run_id != c.Logger.RunId || c.Logger.State != VRMaintenanceResearch.HandsLabQuest3.Logging.HandsLabLogState.Active || c.Flow == null || c.Flow.Paused || c.Flow.IsTaskActive || c.Flow.CurrentTask != "A" ||
+                (c.Flow.State != ResearchFlowState.Task1Ready && c.Flow.State != ResearchFlowState.Task2Ready) || !bound.AuthoredBindingsValid())
+                throw new InvalidOperationException("Observation metadata requires the matching DEV TaskReady context before its clock starts.");
+            task = bound; side = 0;
+            // TaskReady disables grabbing; metadata reads the owned hand without enabling interaction.
+            hand = c.guards.Single(g => g.side == 0).interactionsRoot.GetComponentsInChildren<HandGrabInteractor>(true)
+                .Single(h => h.name == "ControllerHandGrabInteractor" && h.Hand != null && h.Hand.Handedness == Handedness.Left);
+            if (hand.State == InteractorState.Select) throw new InvalidOperationException("Release the hand before metadata preparation.");
+            var expectedSession = c.Record.session_id; var expectedRun = c.Record.run_id; var expectedState = c.Flow.State;
+            long sequence = c.Logger.LastSequence;
+            double started = EditorApplication.timeSinceStartup;
+            // Resolve cold JSON reflection/JIT before the measured task; never write a warm-up observation or research event.
+            JsonConvert.SerializeObject(ObservationRow("metadata_warmup"));
+            if (c.Record.session_id != expectedSession || c.Record.run_id != expectedRun || c.Flow.State != expectedState ||
+                c.Flow.IsTaskActive || c.Flow.Paused || c.Logger.RunId != expectedRun || c.Logger.LastSequence != sequence)
+                throw new InvalidOperationException("Read-only metadata preparation changed the session, flow, or logger.");
+            return (EditorApplication.timeSinceStartup - started) * 1000;
+        }
+
         static void Record(string observation)
         {
-            observations.WriteLine(JsonConvert.SerializeObject(new
+            observations.WriteLine(JsonConvert.SerializeObject(ObservationRow(observation)));
+            observations.Flush();
+        }
+
+        static object ObservationRow(string observation)
+        {
+            return new
             {
                 observation, step, frame = Time.frameCount, realtime = Time.realtimeSinceStartupAsDouble, editor_realtime = EditorApplication.timeSinceStartup,
                 execution_environment = "Editor", input_source = "SimulatedController", expected_participant = participant, expected_session = session, expected_run = run,
@@ -712,8 +808,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 sdk_movement = hand && hand.Movement != null ? new { stopped = hand.Movement.Stopped,
                     position = V(hand.Movement.Pose.position), rotation = Q(hand.Movement.Pose.rotation),
                     target_position = V(hand.GetHandGrabPose().position), target_rotation = Q(hand.GetHandGrabPose().rotation) } : null
-            }));
-            observations.Flush();
+            };
         }
 
         static void PlayState(PlayModeStateChange state) { if (state == PlayModeStateChange.ExitingPlayMode) BeforeReload(); }

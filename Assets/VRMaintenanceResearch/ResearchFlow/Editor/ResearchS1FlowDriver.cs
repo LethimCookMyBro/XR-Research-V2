@@ -347,6 +347,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(!controller.TaskStartConfirmation && controller.Flow.TutorialCompleted == 5 && !controller.Flow.IsTaskActive, "Back preserves completed Training and does not start Task.");
             yield return RayClick("task_start");
             yield return Settle();
+            double metadataMs = controller.Flow.CurrentTask == "A" ? ResearchS1TaskASdkRunner.WarmObservationMetadata() : ResearchS1TaskBSdkRunner.WarmObservationMetadata();
+            Step("observer metadata prepared before task clock: " + metadataMs.ToString("F2") + " ms; no research events");
             yield return RayClick("task_start_confirm");
             yield return Settle();
             Require(controller.Flow.IsTaskActive, "Task active after task_start.");
@@ -934,6 +936,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Settle();
             var rect = (RectTransform)panel.transform;
             ResearchFlowVisualInput.SetHeadFacing(rect.TransformPoint(rect.rect.center));
+            yield return Settle();
+            if (panel.PlacementBlocked)
+            {
+                // shortcut: exercises seated Q recovery; add another turn only for a reproduced case.
+                var head = controller.origin.Camera.transform;
+                ResearchFlowVisualInput.SetHeadFacing(head.position + Quaternion.AngleAxis(90, Vector3.up) * head.forward);
+                yield return Wait(1.2);
+                if (panel.PlacementBlocked)
+                {
+                    yield return RayClick("panel_recovery");
+                    yield return Settle();
+                }
+            }
             yield return AwaitViewer(() => panel.IsReadableFromHead, "reference readable facing");
             foreach (var section in ResearchReferenceScheme.Active)
             {
