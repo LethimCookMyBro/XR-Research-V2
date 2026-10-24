@@ -6,13 +6,16 @@
 **Study Verdict: NOT_READY**
 
 Canonical local `main` เริ่มรอบนี้ที่ `d7d23df1001ae3f770a1dc55eb30cbb464e14912` พร้อมงานค้าง13ไฟล์ที่ hash ตรง manifest เดิมครบ13/13 ไม่ reset/clean/stash และไม่เปลี่ยน Task Rules/QC thresholds/Study approval.
-Source freeze commit, APK/installed hashes และผลติดตั้งที่ตรวจจริงให้อ่านจาก `D:/VR_TMU/transaction-verification-external/s1-movement-20261024/` โดยเฉพาะ `SOURCE_FREEZE.json`, `delivery/README_TH.md`, `VERIFICATION.txt` และ `COVERAGE_MATRIX.json` ไม่ใช้ APK เก่าเป็นหลักฐาน Source ปัจจุบัน.
+Source freeze commit, APK/installed hashes และผลติดตั้งที่ตรวจจริงให้อ่านจาก `D:/VR_TMU/transaction-verification-external/s1-movement-20261024/` โดยเฉพาะ `SOURCE_FREEZE_FINAL.json`, `delivery/README_TH.md`, `VERIFICATION.txt` และ `COVERAGE_MATRIX.json` ไม่ใช้ APK เก่าเป็นหลักฐาน Source ปัจจุบัน.
 
 ### Root causes ที่แก้และตรวจแล้ว
 - `ResearchSlateFocus.Update`: Canvas ที่ถูกซ่อนไม่ได้รับ PointerUp แต่ MonoBehaviour ยัง enabled ทำให้ held capture ค้างและขวาง Inspect Feedback. ยกเลิกเฉพาะ capture เมื่อ enclosing Canvas disabled; visible hold/exit และ physical/drag/clearance guards คงเดิม. Baseline cancelledHidden=false; regression cancelledHidden=true และ visible/exit/release ผ่าน. Actual TH AB P/Q แสดง Inspect Feedback และจบ workflow ได้จริง.
 - `ResearchS1FlowDriver.ExamineCurrentTaskRoutine`: ray ของ actor ที่ระดับตา1.0m ชนขอบโต๊ะก่อน workpieceจริง. ยกมือ SDK จริงและเล็ง collider ของชิ้นงานจริง ไม่ปิด collider หรือย้าย XR Origin.
 - `ResearchS1FlowDriver.Abort/AbortSaved`: ปิด DEV session แล้วแต่ retained BLOCKED_FOCUS routine ยังถือ owner. เพิ่ม teardown finally ที่ยกเลิก Tick/ล้าง routine; ยังปฏิเสธ Study record และไม่กลืน production abort exception. Fixture และ actual failed-trial cleanup ได้ status Aborted.
 - `ResearchFocusedOperatorUIChecks`: เพิ่ม regression สองจุดข้างต้น ไม่ลด assertion เดิม.
+
+### Build pipeline — คืน disk state ไม่ใช่เฉพาะค่าใน memory
+APK engineering รอบแรกจาก404f80b สร้างจริง0errors แต่พบ automatic TMP dynamic-font clearing และ temporary ProjectSettings ค้างบน disk แม้ restoration report เดิมเป็นtrue. เก็บ generated delta ทั้ง5ไฟล์แล้วคืน frozen bytes เฉพาะไฟล์ที่ Build แตะ. `ResearchFlowAndroidBuild` จึง snapshot ProjectSettings+font4ไฟล์, ปฏิเสธ dirty font ก่อน build, ลอง restore ทุก action แม้บาง actionล้ม และตรวจ byte equality หลังคืนไฟล์. Guard dirty-font และ owned readonly-file failure injection ผ่าน; ผล normal build หลังแก้อ่านจาก build manifest ไม่ยก engineering build เป็น accepted RC.
 
 ### Movement QC — แยก dataset เก่าที่ FAIL จากข้อมูลใหม่
 `conditions/Thai_BA_P/matrix-v1` = **PASS_EDITOR**: complete bound SDK workflow → export → actual host ingest/verify; movement_complete=true, data_complete=true, s1_analysis_complete=true, raw unchanged, verify exit0. `host-qc-result.json` ระบุ input hashes และ bundle จริง. เป็น simulated technical DEV data ไม่ใช่ native/wearer/participant acceptance.

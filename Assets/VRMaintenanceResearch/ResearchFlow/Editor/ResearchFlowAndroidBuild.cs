@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -47,6 +48,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
         }
 
+        static void TryRestore(Action action, List<Exception> errors)
+        {
+            try { action(); }
+            catch (Exception error) { errors.Add(error); }
+        }
+
         [MenuItem("VR Research/Research Flow/Build Quest APK")]
         public static void BuildApk()
         {
@@ -62,6 +69,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
             if (SceneManager.GetActiveScene().path != ScenePath) EditorSceneManager.OpenScene(ScenePath);
             SceneChecks();
+
+            var preservedFiles = new[] {
+                "ProjectSettings/ProjectSettings.asset",
+                "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_English.asset",
+                "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_Thai.asset",
+                "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_Japanese.asset",
+                "Assets/VRMaintenanceResearch/TrainingV2/UI/Fonts/NotoSansThai SDF.asset"
+            };
+            foreach (string path in preservedFiles.Skip(1))
+                if (AssetDatabase.LoadAllAssetsAtPath(path).Any(EditorUtility.IsDirty))
+                    throw new Exception("Unsaved font changes present: " + path);
+            var preservedBytes = preservedFiles.ToDictionary(path => path, File.ReadAllBytes);
 
             var target = NamedBuildTarget.Android;
 
@@ -160,7 +179,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     sizeBytes = ok && File.Exists(apk) ? new FileInfo(apk).Length : 0,
                     errors = report.steps.SelectMany(s => s.messages)
                         .Where(m => m.type == LogType.Error || m.type == LogType.Exception)
-                        .Select(m => m.content).Take(40).ToArray()
+                        .Select(m => m.content).Take(40).ToArray(),
+                    warnings = report.steps.SelectMany(s => s.messages)
+                        .Where(m => m.type == LogType.Warning).Select(m => m.content).ToArray()
                 });
 
                 if (!ok) throw new Exception("ResearchFlow Android build failed; see Logs/QuestFinalQA/build/build_result.json");
@@ -169,43 +190,55 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             finally
             {
-                File.WriteAllBytes(ProfileManifest, oldProfileManifest);
-                AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport);
-                // ---- restore ----------------------------------------------
-                PlayerSettings.productName = oldProduct;
-                PlayerSettings.SetIcons(NamedBuildTarget.Unknown, oldIcons, IconKind.Any);
-                PlayerSettings.SetApplicationIdentifier(target, oldId);
-                PlayerSettings.Android.targetSdkVersion = oldSdk;
-                PlayerSettings.Android.targetArchitectures = oldArch;
-                PlayerSettings.Android.useCustomKeystore = oldKeystore;
-                PlayerSettings.SetScriptingBackend(target, oldBackend);
-                EditorUserBuildSettings.buildAppBundle = oldBundle;
-                EditorUserBuildSettings.exportAsGoogleAndroidProject = oldExport;
-                PlayerSettings.SetPreloadedAssets(oldPreloadedAssets);
-                foreach (var pair in savedFeatures) pair.Key.enabled = pair.Value;
-                AssetDatabase.SaveAssetIfDirty(settings);
-
-                Write("build_settings_restored", new
+                var restoreErrors = new List<Exception>();
+                TryRestore(() => File.WriteAllBytes(ProfileManifest, oldProfileManifest), restoreErrors);
+                TryRestore(() => AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport), restoreErrors);
+                TryRestore(() => PlayerSettings.productName = oldProduct, restoreErrors);
+                TryRestore(() => PlayerSettings.SetIcons(NamedBuildTarget.Unknown, oldIcons, IconKind.Any), restoreErrors);
+                TryRestore(() => PlayerSettings.SetApplicationIdentifier(target, oldId), restoreErrors);
+                TryRestore(() => PlayerSettings.Android.targetSdkVersion = oldSdk, restoreErrors);
+                TryRestore(() => PlayerSettings.Android.targetArchitectures = oldArch, restoreErrors);
+                TryRestore(() => PlayerSettings.Android.useCustomKeystore = oldKeystore, restoreErrors);
+                TryRestore(() => PlayerSettings.SetScriptingBackend(target, oldBackend), restoreErrors);
+                TryRestore(() => EditorUserBuildSettings.buildAppBundle = oldBundle, restoreErrors);
+                TryRestore(() => EditorUserBuildSettings.exportAsGoogleAndroidProject = oldExport, restoreErrors);
+                TryRestore(() => PlayerSettings.SetPreloadedAssets(oldPreloadedAssets), restoreErrors);
+                foreach (var pair in savedFeatures) TryRestore(() => pair.Key.enabled = pair.Value, restoreErrors);
+                TryRestore(() => AssetDatabase.SaveAssetIfDirty(settings), restoreErrors);
+                // TMP clears dynamic font data and Unity persists temporary settings during builds.
+                foreach (var pair in preservedBytes) TryRestore(() => File.WriteAllBytes(pair.Key, pair.Value), restoreErrors);
+                foreach (string path in preservedFiles.Skip(1))
+                    TryRestore(() => AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate), restoreErrors);
+                bool sourceFilesRestored = false;
+                TryRestore(() => sourceFilesRestored = preservedBytes.All(p => File.ReadAllBytes(p.Key).SequenceEqual(p.Value)), restoreErrors);
+                TryRestore(() =>
                 {
-                    applicationIdentifier = PlayerSettings.GetApplicationIdentifier(target),
-                    originalApplicationIdentifier = oldId,
-                    applicationIdentifierRestored = PlayerSettings.GetApplicationIdentifier(target) == oldId,
-                    productName = PlayerSettings.productName,
-                    originalProductName = oldProduct,
-                    productNameRestored = PlayerSettings.productName == oldProduct,
-                    iconsRestored = PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any).SequenceEqual(oldIcons),
-                    targetSdk = PlayerSettings.Android.targetSdkVersion.ToString(),
-                    targetSdkRestored = PlayerSettings.Android.targetSdkVersion == oldSdk,
-                    architecture = PlayerSettings.Android.targetArchitectures.ToString(),
-                    architectureRestored = PlayerSettings.Android.targetArchitectures == oldArch,
-                    backend = PlayerSettings.GetScriptingBackend(target).ToString(),
-                    backendRestored = PlayerSettings.GetScriptingBackend(target) == oldBackend,
-                    customKeystoreRestored = PlayerSettings.Android.useCustomKeystore == oldKeystore,
-                    profileManifestRestored = File.ReadAllBytes(ProfileManifest).SequenceEqual(oldProfileManifest),
-                    preloadedAssetsRestored = PlayerSettings.GetPreloadedAssets().SequenceEqual(oldPreloadedAssets),
-                    featuresRestored = savedFeatures.All(p => p.Key.enabled == p.Value),
-                    sceneMutated = false
-                });
+                    Write("build_settings_restored", new
+                    {
+                        sourceFilesRestored,
+                        restorationErrors = restoreErrors.Select(e => e.ToString()).ToArray(),
+                        applicationIdentifier = PlayerSettings.GetApplicationIdentifier(target),
+                        originalApplicationIdentifier = oldId,
+                        applicationIdentifierRestored = PlayerSettings.GetApplicationIdentifier(target) == oldId,
+                        productName = PlayerSettings.productName,
+                        originalProductName = oldProduct,
+                        productNameRestored = PlayerSettings.productName == oldProduct,
+                        iconsRestored = PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any).SequenceEqual(oldIcons),
+                        targetSdk = PlayerSettings.Android.targetSdkVersion.ToString(),
+                        targetSdkRestored = PlayerSettings.Android.targetSdkVersion == oldSdk,
+                        architecture = PlayerSettings.Android.targetArchitectures.ToString(),
+                        architectureRestored = PlayerSettings.Android.targetArchitectures == oldArch,
+                        backend = PlayerSettings.GetScriptingBackend(target).ToString(),
+                        backendRestored = PlayerSettings.GetScriptingBackend(target) == oldBackend,
+                        customKeystoreRestored = PlayerSettings.Android.useCustomKeystore == oldKeystore,
+                        profileManifestRestored = File.ReadAllBytes(ProfileManifest).SequenceEqual(oldProfileManifest),
+                        preloadedAssetsRestored = PlayerSettings.GetPreloadedAssets().SequenceEqual(oldPreloadedAssets),
+                        featuresRestored = savedFeatures.All(p => p.Key.enabled == p.Value),
+                        sceneMutated = false
+                    });
+                }, restoreErrors);
+                if (!sourceFilesRestored || restoreErrors.Count > 0)
+                    throw new AggregateException("Build restoration failed; see build_settings_restored.json.", restoreErrors);
             }
         }
 
