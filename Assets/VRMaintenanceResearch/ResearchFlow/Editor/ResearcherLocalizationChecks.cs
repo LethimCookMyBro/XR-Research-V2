@@ -63,12 +63,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             researcher.controller = controller;
                             Call(owned,"Refresh");
                             if (!view.OpenResearcherSetup()) throw new InvalidOperationException("Actual owned researcher ShowOnQuest path rejected.");
+                            // This stage explicitly measures DEV; the first-launch default is now the Thai study group.
+                            Get<TMP_Dropdown>(researcher,"group").value = 2;
+                            researcher.Refresh();
                             Call(owned,"Refresh"); Canvas.ForceUpdateCanvases();
                             var actualCanvas = researcher.GetComponent<Canvas>();
                             var actualSurface = researcher.transform.Find("Setup") as RectTransform;
                             var startCaption = Get<TMP_Text>(researcher,"startLabel");
                             var groupCaption = Get<TMP_Dropdown>(researcher,"group").captionText;
                             var visibleCaptions = researcher.GetComponentsInChildren<TMP_Text>(true).Where(t=>t.gameObject.activeInHierarchy && !string.IsNullOrWhiteSpace(t.text)).ToArray();
+                            rows.Add(new { check="researcher_surface_diagnostic", actualCanvas.enabled, active=actualCanvas.gameObject.activeInHierarchy,
+                                mode=actualCanvas.renderMode.ToString(), surface=actualSurface && actualSurface.gameObject.activeInHierarchy,
+                                start=startCaption.gameObject.activeInHierarchy, group=groupCaption.text, captions=visibleCaptions.Length });
                             if (!actualCanvas || !actualCanvas.enabled || !actualCanvas.gameObject.activeInHierarchy || actualCanvas.renderMode != RenderMode.WorldSpace
                                 || !actualSurface || !actualSurface.gameObject.activeInHierarchy || !startCaption.gameObject.activeInHierarchy
                                 || !groupCaption.gameObject.activeInHierarchy || !groupCaption.text.Contains("DEV") || visibleCaptions.Length == 0)

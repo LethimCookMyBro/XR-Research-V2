@@ -17,6 +17,77 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     public static class ResearchFocusedOperatorUIChecks
     {
         const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
+
+        public static string RunAbortCleanup(string evidenceDirectory)
+        {
+            var controller = UnityEngine.Object.FindObjectsByType<ResearchSessionFlowController>(FindObjectsSortMode.None).Single();
+            if (!EditorApplication.isPlaying || !ResearchSessionFlowController.TechnicalBuild || controller.Record != null || controller.Flow != null || controller.Logger != null)
+                throw new InvalidOperationException("Abort cleanup fixture requires idle technical Play Mode without a session.");
+            var type = typeof(ResearchS1FlowDriver);
+            var status = type.GetProperty("Status");
+            var routines = (Stack<System.Collections.IEnumerator>)type.GetField("routines", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            string before = ResearchS1FlowDriver.Status;
+            if (routines.Count != 0 || before == "Running" || before == "BLOCKED_FOCUS")
+                throw new InvalidOperationException("Another driver owns a routine.");
+            string path = Path.Combine(Path.GetFullPath(evidenceDirectory), "abort-cleanup.json");
+            if (File.Exists(path)) throw new IOException("Evidence already exists: " + path);
+            bool pass;
+            try
+            {
+                status.GetSetMethod(true).Invoke(null, new object[] { "BLOCKED_FOCUS" });
+                routines.Push(new object[0].GetEnumerator());
+                ResearchS1FlowDriver.Abort("technical_failure");
+                pass = ResearchS1FlowDriver.Status == "Aborted" && routines.Count == 0 && controller.Record == null && controller.Logger == null;
+            }
+            finally
+            {
+                routines.Clear();
+                status.GetSetMethod(true).Invoke(null, new object[] { before });
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, JsonConvert.SerializeObject(new { pass, scope = "Idle Editor control-state fixture, not physical or native acceptance" }, Formatting.Indented));
+            if (!pass) throw new InvalidOperationException("ABORT_CLEANUP_FAIL " + path);
+            return "ABORT_CLEANUP_PASS " + path;
+        }
+
+        public static string RunSlateCapture(string evidenceDirectory)
+        {
+            string path = Path.Combine(Path.GetFullPath(evidenceDirectory), "slate-capture.json");
+            if (File.Exists(path)) throw new IOException("Evidence already exists: " + path);
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var preview = EditorSceneManager.NewPreviewScene();
+            GameObject root = null;
+            bool heldVisible = false, heldOutside = false, cancelledHidden = false, released = false;
+            try
+            {
+                root = new GameObject("OwnedSlateCapture", typeof(Canvas));
+                SceneManager.MoveGameObjectToScene(root, preview);
+                var canvas = root.GetComponent<Canvas>();
+                var focus = root.AddComponent<ResearchSlateFocus>();
+                var pointer = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { pointerId = 1001 };
+                focus.OnPointerDown(pointer);
+                focus.SendMessage("Update");
+                heldVisible = focus.PointerHeld;
+                focus.OnPointerExit(pointer);
+                heldOutside = focus.PointerHeld;
+                canvas.enabled = false;
+                focus.SendMessage("Update");
+                cancelledHidden = !focus.PointerHeld;
+                canvas.enabled = true;
+                focus.OnPointerDown(pointer);
+                focus.OnPointerUp(pointer);
+                released = !focus.PointerHeld;
+            }
+            finally
+            {
+                if (root) UnityEngine.Object.DestroyImmediate(root);
+                EditorSceneManager.ClosePreviewScene(preview);
+            }
+            bool pass = heldVisible && heldOutside && cancelledHidden && released;
+            File.WriteAllText(path, JsonConvert.SerializeObject(new { pass, heldVisible, heldOutside, cancelledHidden, released, scope = "Owned Editor component fixture; not native input" }, Formatting.Indented));
+            if (!pass) throw new InvalidOperationException("SLATE_CAPTURE_FAIL " + path);
+            return "SLATE_CAPTURE_PASS " + path;
+        }
         public static string RunCompletionTypography(string evidenceDirectory)
         {
             if (EditorApplication.isPlaying || !ResearchFloorPolicy.EditorFixtureAllowed)
@@ -146,8 +217,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(!opened || (!dropdowns[4].interactable && dropdowns[4].value == 0), language + "/Quest controller mode locked",
                         new { dropdowns[4].interactable, dropdowns[4].value });
                     var lockedInput = setup.GetComponentsInChildren<TMP_Text>(true).FirstOrDefault(t => t.name == "QuestLockedInputMode");
+                Check(dropdowns[3].options.Count == 5, language + "/all balancing cells available", dropdowns[3].options.Count);
+                Check(dropdowns.All(d => d.template.GetComponent<Canvas>().enabled && d.template.GetComponent<Canvas>().targetDisplay == 0), language + "/Quest popup templates enabled on primary display", dropdowns.Select(d => new { d.name, d.template.GetComponent<Canvas>().enabled, d.template.GetComponent<Canvas>().targetDisplay }).ToArray());
+                Check(!dropdowns[3].interactable && dropdowns[3].value == 0, language + "/new study uses automatic balancing", new { dropdowns[3].interactable, dropdowns[3].value });
+                view.CloseResearcherSetup();
+                Check(!opened || canvas.renderMode == RenderMode.WorldSpace, language + "/idle Back cannot expose technical fallback", canvas.renderMode.ToString());
                     // The setup card speaks the session language (ResearcherSetupView.cs:39,743; ResearchStrings.cs:97).
                     string lockedText = ResearchStrings.Get("researcher.locked_controller", language.ToString());
+                    const string approval = "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing.";
+                    string approvalText = (string)typeof(ResearcherSetupView).GetMethod("LocalizeBlocker", Private).Invoke(setup, new object[] { approval });
+                    Check(approvalText == ResearchStrings.Get("researcher.study_approval_block", language.ToString()) && approvalText != approval,
+                        language + "/Study approval reason localized without changing the gate", approvalText);
                     Check(!opened || (lockedInput && lockedInput.gameObject.activeInHierarchy && !string.IsNullOrWhiteSpace(lockedText) && lockedInput.text == lockedText && !lockedInput.isTextOverflowing),
                         language + "/locked Controller mode is visible rather than a blank row", new { visible = lockedInput && lockedInput.gameObject.activeInHierarchy, text = lockedInput ? lockedInput.text : null });
                     Set("Record", record);
@@ -173,6 +253,28 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         language + "/four-part Training progress rather than five groups", progress.text);
                     var body = (TMP_Text)typeof(ResearchFlowView).GetField("body", Private).GetValue(view);
                     Check(body.text == ResearchStrings.Get(controller.TutorialInstructionKey, language.ToString()), language + "/next instruction remains distinct", body.text);
+                    Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 2));
+                    evidence.Clear(); evidence.Add("grab"); view.Refresh();
+                    // This display-only fixture has no held object; scope the visibility predicate, not physical credit.
+                    typeof(ResearchFlowView).GetField("shownFact", Private).SetValue(view, "move");
+                    var content = (GameObject)typeof(ResearchFlowView).GetField("mainContent", Private).GetValue(view);
+                    var instructions = (CanvasGroup)typeof(ResearchFlowView).GetField("instructionGroup", Private).GetValue(view);
+                    var main = view.mainPanel.GetComponent<CanvasGroup>(); main.alpha = instructions.alpha = 1;
+                    void Block(bool value) => typeof(ResearchPanelMotion).GetMethod("SetPlacementBlocked", Private).Invoke(view.mainPanel, new object[] { value });
+                    Block(true);
+                    Check(!view.TutorialActionReady("move") && view.TutorialHeldActionOccluded("move"), language + "/placement concealment distinguishes an in-progress held motion", view.mainPanel.PlacementBlocked);
+                    Check(!(bool)typeof(ResearchSessionFlowController).GetMethod("TutorialInstructionAvailable", Private).Invoke(controller, new object[] { "move" }),
+                        language + "/occlusion cannot arm an unseen instruction", controller.TutorialArmedFact);
+                    Check(!view.TutorialHeldActionOccluded("rotate"), language + "/occlusion cannot carry credit into the next instruction", controller.TutorialFact);
+                    content.SetActive(false);
+                    Check(!view.TutorialHeldActionOccluded("move"), language + "/minimized instruction is not an occluded held action", content.activeSelf);
+                    content.SetActive(true); main.alpha = 0;
+                    Check(!view.TutorialHeldActionOccluded("move"), language + "/alpha-hidden instruction remains unavailable", main.alpha);
+                    main.alpha = 1; view.gameObject.SetActive(false);
+                    Check(!view.TutorialHeldActionOccluded("move"), language + "/inactive parent remains unavailable", view.gameObject.activeInHierarchy);
+                    view.gameObject.SetActive(true); Block(false); view.mainPanel.GetComponent<Canvas>().enabled = false;
+                    Check(!view.TutorialHeldActionOccluded("move"), language + "/manual Canvas hiding is not placement concealment", view.mainPanel.PlacementBlocked);
+                    view.mainPanel.GetComponent<Canvas>().enabled = true;
                     Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3));
                     evidence.Clear(); evidence.Add("reference"); Set("ReferenceOpen", true); Set("ReferenceMinimized", false); Set("ReferenceSection", "user_manual");
                     view.Refresh(); Canvas.ForceUpdateCanvases();

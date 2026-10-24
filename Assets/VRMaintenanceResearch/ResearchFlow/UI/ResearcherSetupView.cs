@@ -167,15 +167,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             rect.sizeDelta = new Vector2(920, 620); rect.anchoredPosition = Vector2.zero;
             rect.localScale = Vector3.one * .82f; rect.localRotation = Quaternion.identity;
             
-            // On Quest in WorldSpace, disable child canvas & GraphicRaycaster
-            // so all UI children share owner.mainPanel's root Canvas and PointableCanvasModule.
-            if (canvas) canvas.enabled = false;
+            if (canvas)
+            {
+                canvas.renderMode = RenderMode.WorldSpace;
+                canvas.targetDisplay = 0;
+                canvas.worldCamera = owner.mainPanel.GetComponent<Canvas>().worldCamera;
+                canvas.enabled = true;
+            }
             var gr = GetComponent<GraphicRaycaster>();
-            if (gr) gr.enabled = false;
+            if (gr) gr.enabled = true;
 
             if (!back) back = Button(start.transform.parent, "Back", new Vector2(360, 260), new Vector2(100, 48), out _);
             back.onClick.RemoveAllListeners(); back.onClick.AddListener(owner.CloseResearcherSetup);
-            back.gameObject.SetActive(true); ResearchUITheme.Button(back, ResearchButtonVariant.Secondary);
+            back.gameObject.SetActive(false); ResearchUITheme.Button(back, ResearchButtonVariant.Secondary);
             ApplyVisualTheme(); Refresh();
             return true;
         }
@@ -281,7 +285,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 participant.interactable = attachedRecord == null;
                 language.interactable = attachedRecord == null && !resuming && technical;
                 input.interactable = attachedRecord == null && !resuming && technical && !questOwner;
-                order.interactable = attachedRecord == null && !resuming;
+                order.interactable = attachedRecord == null && !resuming && technical;
+                if (!technical && !resuming && attachedRecord == null) order.SetValueWithoutNotify(0);
                 if ((!technical || questOwner) && !resuming && attachedRecord == null) input.SetValueWithoutNotify(0);
                 start.interactable = !running && record != null && Selectable(record) && controller.DeviceReady && controller.LoggerReady
                     && controller.ResearcherStartBlocker(record, OperatorDirectory) == null
@@ -595,18 +600,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (template)
                 {
                     var c = template.GetComponent<Canvas>();
-                    if (questOwner)
-                    {
-                        if (c) c.enabled = false;
-                        var gr = template.GetComponent<GraphicRaycaster>();
-                        if (gr) gr.enabled = false;
-                    }
-                    else
-                    {
-                        if (!c) c = template.gameObject.AddComponent<Canvas>();
-                        c.enabled = true;
-                        c.targetDisplay = 1;
-                    }
+                    if (!c) c = template.gameObject.AddComponent<Canvas>();
+                    c.enabled = true;
+                    c.targetDisplay = questOwner ? 0 : 1;
+                    var gr = template.GetComponent<GraphicRaycaster>();
+                    if (gr) gr.enabled = true;
                     var image = template.GetComponent<Image>();
                     if (image) { image.color = ResearchUITheme.Glass; ResearchUITheme.Surface(image, true, 16); }
                     AddScrollbar(template.GetComponent<ScrollRect>());
@@ -655,6 +653,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Keep the existing serialized dropdown values and resume locks as the single source of truth.
         private void EnsureChoices(TMP_Dropdown source, string[] labels)
         {
+            if (source.options.Count != labels.Length)
+            {
+                int selected = source.value;
+                source.ClearOptions();
+                source.AddOptions(labels.ToList());
+                source.SetValueWithoutNotify(selected);
+            }
             var parent = source.transform.parent;
             var row = parent.Find(source.name + " Choices") as RectTransform;
             if (!row)
@@ -1017,6 +1022,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "Device not ready: floor/boundary is not confirmed.": return R("floor_block");
                 case "Device not ready: both controllers must be tracked.": return R("tracking_block");
                 case "Data logger not ready.": return R("logger_block");
+                case "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing.": return R("study_approval_block");
                 case "No open session.": return R("no_session");
                 case "Station transition in progress.": return R("transition");
                 case "Participant app is not focused.": return R("focus");

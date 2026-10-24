@@ -555,6 +555,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && (controller.ReferenceMinimized ? fact == "restore" && referencePill.activeSelf : referenceTutorialCue && referenceTutorialCue.gameObject.activeSelf)
             : body && body.gameObject.activeSelf && mainContent.activeSelf && mainPanel.gameObject.activeSelf && !mainPanel.PlacementBlocked && mainPanel.GetComponent<Canvas>().enabled
                 && mainGroup.alpha > .01f && instructionGroup.alpha > .01f);
+        public bool TutorialHeldActionOccluded(string fact) => shownFact == fact
+            && fact == "move"
+            && mainPanel && mainPanel.PlacementBlocked && mainPanel.gameObject.activeInHierarchy
+            && body && body.gameObject.activeInHierarchy && mainContent.activeInHierarchy
+            && mainGroup.alpha > .01f && instructionGroup.alpha > .01f;
+
         public void CancelTutorialConfirmation() { successUntil = float.NegativeInfinity; tutorialSuccess.gameObject.SetActive(false); }
 
         string CompletedTutorialFact => controller && controller.TutorialCompletedFactCount > 0
@@ -1120,7 +1126,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 referenceTitleScroll.verticalScrollbar = titleBar.GetComponent<UnityEngine.UI.Scrollbar>();
                 referenceTitleScroll.verticalScrollbarVisibility = UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide;
                 referenceMetadata = referenceExpanded.transform.Find("HeaderMetadata")?.GetComponent<TMP_Text>();
-                if (!referenceMetadata) referenceMetadata = Label(referenceExpanded.transform, "HeaderMetadata", new Vector2(-176, 310), new Vector2(740, 26), "", 21);
+                if (!referenceMetadata) referenceMetadata = Label(referenceExpanded.transform, "HeaderMetadata", new Vector2(-176, 310), new Vector2(740, 34), "", 21);
                 referencePanel.GetComponent<ResearchSlateFocus>().titleScroll = referenceTitleScroll;
             }
             referenceTitle.rectTransform.anchorMin = referenceTitle.rectTransform.anchorMax = referenceTitle.rectTransform.pivot = new Vector2(.5f, 1);
@@ -1139,7 +1145,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 referenceTitleScroll.Cancel(); referenceTitleScroll.verticalNormalizedPosition = 1; referenceTitleIdentity = identity;
             }
             referenceMetadata.rectTransform.anchoredPosition = new Vector2(-176, 310);
-            referenceMetadata.rectTransform.sizeDelta = new Vector2(740, 26);
+            referenceMetadata.rectTransform.sizeDelta = new Vector2(740, 34);
             referenceMetadata.alignment = TextAlignmentOptions.MidlineLeft; referenceMetadata.font = Font; referenceMetadata.fontSize = 21;
             referenceMetadata.enableAutoSizing = referenceMetadata.richText = referenceMetadata.raycastTarget = false;
             referenceMetadata.textWrappingMode = TextWrappingModes.NoWrap; referenceMetadata.overflowMode = TextOverflowModes.Overflow;
@@ -1318,6 +1324,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void Refresh()
         {
+            language = controller ? controller.Language : language;
             if (questSetup)
             {
                 if (controller && controller.TechnicalSelfSetup && controller.Record == null && controller.Flow == null && string.IsNullOrEmpty(controller.Error))
@@ -1335,7 +1342,6 @@ namespace VRMaintenanceResearch.ResearchFlow
                 tutorialSuccess.SetParent(mainContent.transform, false); tutorialSuccess.Find("Chip").gameObject.SetActive(true);
             }
             var flow = controller ? controller.Flow : null;
-            language = controller ? controller.Language : language;
             foreach (var text in GetComponentsInChildren<TMP_Text>(true)) text.font = text.text == "−" || text.text == "×" || text.text == "?" ? englishFont : Font;
             foreach (var button in GetComponentsInChildren<ResearchUIAction>(true)) if (!string.IsNullOrEmpty(button.labelKey))
             { var label = button.GetComponentInChildren<TMP_Text>(true); label.text = Text(button.labelKey); label.font = Font; }
@@ -1404,7 +1410,6 @@ namespace VRMaintenanceResearch.ResearchFlow
             switch (state)
             {
                 case "setup":
-                    if (controller && controller.TechnicalSelfSetup) { TechnicalSetup(); break; }
                     title.text = Text("setup.title"); body.text = Text("setup.wait"); break;
                 case "error": title.text = Text("error.title"); body.text = Text("error.body") + (controller.PauseKind == "stop" ? "\n" + Text("stop.body") : ""); break;
                 case "ended": title.text = Text("session.ended.title"); body.text = Text("session.ended.body"); break;
@@ -1545,6 +1550,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void CloseResearcherSetup()
         {
             if (!questSetup) return;
+            if (controller && controller.Record == null && controller.Flow == null) return;
             var setup = questSetup; questSetup = null; setup.ReturnToDesktop();
             mainContent.SetActive(true); Refresh();
         }
@@ -1725,7 +1731,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             bool welcome = state == "TutorialWelcome";
             bool tutorialDone = state == "TutorialComplete";
-            bool technicalSetup = state == "setup" && controller && controller.TechnicalSelfSetup;
+            bool technicalSetup = state == "internal_diagnostic_setup" && controller && controller.TechnicalSelfSetup;
             bool pause = state == "pause";
             bool referenceCompact = tutorialChecklist && controller && controller.ReferenceOpen;
             compactTutorialReference = referenceCompact;
@@ -2420,9 +2426,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             Canvas.ForceUpdateCanvases(); RefreshPageControls();
             if (!wasOpen)
             {
-                if (controller.Flow.IsTaskActive && mainPanel.PlacementBlocked) mainPanel.Recenter(false, false);
-                // Fixed policy: reopen where the Reader was first placed in this task (RestorePose re-validates clearance and
-                // falls back to a logged System placement); legacy policy keeps the original head-relative placement.
+            if (controller.Flow.IsTaskActive && mainPanel.PlacementBlocked) mainPanel.EnsureClear(false);
+                // Fixed Reader pose stays hidden while obstructed; explicit recovery can place it again.
                 if (ResearchUIPolicy.ReaderPoseFixedPerTask && readerAnchorKey != null && readerAnchorKey == ReaderAnchorKey)
                     referencePanel.RestorePose(readerAnchorPosition, readerAnchorRotation);
                 else { readerCloser = false; referencePanel.Recenter(false, false, reason: ResearchUIPolicy.ReaderPoseFixedPerTask ? "fixed_reader_anchor_established" : "recenter"); }

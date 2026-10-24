@@ -124,7 +124,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Phase(storage + "_lift_20mm_observed");
             var acceptedPart = new Pose(sled.part.transform.position, sled.part.transform.rotation);
             var acceptedController = ResearchFlowVisualInput.ControllerWorldPose(side);
-            step = "unsupported-jump:S01"; Record("before");
+            step = "unsupported-jump:" + storage; Record("before");
             Send(new Pose(acceptedController.position + Vector3.up, acceptedController.rotation));
             yield return AwaitObservation(() => SdkSettled() && SamePose(sled.input.transform, acceptedPart, .0005f, .1f), "unsupported one-metre S01 jump rejected", sled.input);
             Require(sled.Tray < 0 && sled.Placement == S1Placement.NotInstalled, "Rejected S01 jump changed installation state.");
@@ -685,7 +685,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             status = Status, running = Running, step, error, output, participant, session, run, scene, layout,
             cleanup_observed = cleanupObserved, completed_phases = completed.ToArray(), observed_positive_yaw = yawPositive, observed_negative_yaw = yawNegative,
-            evidence_scope = "Editor SimulatedController bounded component interaction only. Root arranges a technical DEV active-A context. No full workflow, Inspect or hardware acceptance. S01 seating/fastening, G01 primary seating/bracket fastening and three exact-source/target cable connections are bounded mechanical observations only.",
+            evidence_scope = "Editor SimulatedController bounded component interaction only. Root arranges a technical DEV active-A context. No full workflow, Inspect or hardware acceptance. " + storage + " seating/fastening, G01 primary seating/bracket fastening and three exact-source/target cable connections are bounded mechanical observations only.",
             task_state = task ? task.Capture() : null,
             hand_state = hand ? hand.State.ToString() : null, selected_target = selected ? selected.stableId : null
         }, Formatting.Indented);
@@ -755,7 +755,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             EditorApplication.playModeStateChanged -= PlayState;
             AssemblyReloadEvents.beforeAssemblyReload -= BeforeReload;
             if (!cleanupObserved) error = (error ?? "") + "\nInput release was not observed before cleanup ended.";
-            Status = error == null ? "BOUNDED_A_YAW_RAM_S01_GPU_AND_CABLES_OBSERVED" : "FAILED";
+            Status = error == null ? "BOUNDED_A_YAW_RAM_" + storage + "_GPU_AND_CABLES_OBSERVED" : "FAILED";
             try { Record("cleanup-ended"); }
             catch (Exception failure) { error = (error ?? "") + "\nFINAL_OBSERVATION_FAILED: " + failure; Status = "FAILED"; }
             try { if (observations != null) observations.Dispose(); }

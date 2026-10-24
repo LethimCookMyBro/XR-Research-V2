@@ -28,6 +28,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         const float EndOvershoot = 6;
         public static bool Running { get; private set; }
         public static string Status { get; private set; } = "NotStarted";
+        static bool captureFrames = true;
+        public static void SetCaptureFrames(bool value)
+        {
+            if (Running) throw new InvalidOperationException("Do not change capture mode during a run.");
+            captureFrames = value;
+        }
 
         public static object Begin(string evidenceDirectory, int controllerSide = 1)
         {
@@ -221,8 +227,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 float expectedProgress = Mathf.Clamp(startProgress - sent * (part.rightHanded ? 1 : -1), 0, part.fullTurnDegrees);
                 yield return AwaitObservation(() => SdkSettled() && (part.IsThread
                     ? Mathf.Abs(part.ThreadProgressDegrees - expectedProgress) < .05f &&
-                        (expectedProgress > .01f || part.ThreadState == S1ThreadState.Absent) &&
-                        (expectedProgress < part.fullTurnDegrees - .01f || part.ThreadState == S1ThreadState.Tight)
+                    (expectedProgress > .01f || Mathf.Abs(remaining) > .001f || part.ThreadState == S1ThreadState.Absent) &&
+                    (expectedProgress < part.fullTurnDegrees - .01f || Mathf.Abs(remaining) > .001f || part.ThreadState == S1ThreadState.Tight)
                     : Mathf.Abs(Mathf.DeltaAngle(part.Pose.turnDeg, expectedTurn)) < .25f), "observed part rotation endpoint", part);
             }
             Require(Owns(part), "Selection ownership lost at rotation endpoint.");
@@ -337,6 +343,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             step = label;
             yield return AwaitObservation(() => !selected && hand.State != InteractorState.Select, "stable released capture state");
+            if (!captureFrames) { Record("capture-omitted-data-run"); yield break; }
             Record("capture-request");
             string path = Path.Combine(output, label + ".png");
             ScreenCapture.CaptureScreenshot(path);

@@ -35,6 +35,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         Vector3 clearanceScale, clearancePeerScale;
         bool deferredRetryUsed = true;
         bool faceHidden;
+        bool fixedWorkingPoseAccepted;
+        bool FixedWorkingSlate => ResearchUIPolicy.StationAnchoredPanels && !centered && view && view.controller
+            && view.controller.Flow != null && view.controller.Flow.IsTaskActive
+            && ResearchStationAnchors.Supports(view.controller.CurrentStationIndex, panelId);
         float faceTransitionSince = float.NegativeInfinity;
         Pose? pendingRestore;
         Pose? deferredViewportHead;
@@ -69,6 +73,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void Recenter(bool participant, bool animate = true, string input = "None", bool onlyIfNeeded = false, string reason = "recenter")
         {
             if (!view || !view.Head) return;
+            if (reason != "clearance_retry") fixedWorkingPoseAccepted = false;
             pendingRestore = null;
             deferredViewportHead = null;
             pendingOnlyIfNeeded = onlyIfNeeded; pendingRequireView = true;
@@ -88,7 +93,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             LastPresenceKnown = LastUserPresent = false;
             RecenterPending = true;
         }
-        void OnDisable() { RecenterPending = false; pendingRestore = null; deferredViewportHead = null; clearanceKnown = false; }
+        void OnDisable() { RecenterPending = false; pendingRestore = null; deferredViewportHead = null; clearanceKnown = false; fixedWorkingPoseAccepted = false; }
         void OnRectTransformDimensionsChange() { clearanceKnown = false; }
         void OnTransformChildrenChanged() { clearanceKnown = false; }
         bool IdlePlacementClear()
@@ -143,9 +148,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                     }
                 }
             }
-            // While concealed for clearance, keep searching the candidate poses (about once a second); a single retry could leave
-            // the panel hidden for good, e.g. Inspect feedback behind the PC case with the head still (no Continue, no Pause).
-            if (PlacementBlocked && !faceHidden && !RecenterPending && view && view.Head && Time.unscaledTime >= nextBlockedRetry)
+            // Explicit recovery may relocate a fixed slate; a temporary obstruction must not move its accepted pose.
+            if (PlacementBlocked && !faceHidden && !RecenterPending && !(FixedWorkingSlate && fixedWorkingPoseAccepted)
+                && view && view.Head && Time.unscaledTime >= nextBlockedRetry)
             { nextBlockedRetry = Time.unscaledTime + 1f; Recenter(false, false, reason: "clearance_retry"); deferredRetryUsed = true; }
             if (!RecenterPending) return;
             if (!Application.isPlaying || Application.isEditor)
@@ -177,19 +182,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (pendingRestore.HasValue)
             {
                 var pose = pendingRestore.Value; pendingRestore = null;
-                if (ReadableFace(pose.position, pose.rotation) && PlacementClear(pose.position, pose.rotation))
+                bool clear = ReadableFace(pose.position, pose.rotation) && PlacementClear(pose.position, pose.rotation);
+                if (clear || FixedWorkingSlate)
                 {
                     var before = Pose();
                     bool moved = Vector3.Distance(transform.position, pose.position) > .0001f || Quaternion.Angle(transform.rotation, pose.rotation) > .01f;
                     transform.SetPositionAndRotation(pose.position, pose.rotation);
-                    faceHidden = false; SetPlacementBlocked(false);
+                    fixedWorkingPoseAccepted = FixedWorkingSlate;
+                    faceHidden = false; SetPlacementBlocked(!clear);
                     if (moved) view.controller?.Log("PANEL_PLACEMENT", panelId, "Restored", before, Pose(), source: "System", reason: "saved_task_pose");
                     return;
                 }
             }
             if (pendingOnlyIfNeeded && ReadableFace(transform.position, transform.rotation)
                 && (!pendingRequireView || FitsView(transform.position, transform.rotation)) && PlacementClear(transform.position, transform.rotation))
-            { faceHidden = false; deferredRetryUsed = true; SetPlacementBlocked(false); return; }
+            { faceHidden = false; deferredRetryUsed = true; fixedWorkingPoseAccepted = FixedWorkingSlate; SetPlacementBlocked(false); return; }
             ApplyRecenter(pendingParticipant, pendingAnimate, pendingInput);
         }
         void ApplyRecenter(bool participant, bool animate, string input)
@@ -260,6 +267,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             LastPlacementHeadPosition = view.Head.position;
             // Recenter directly: interpolating can sweep the panel through equipment.
             transform.SetPositionAndRotation(position, rotation);
+            fixedWorkingPoseAccepted = FixedWorkingSlate;
             faceHidden = false; deferredRetryUsed = true; SetPlacementBlocked(false);
             if (anchorId != null)
                 view.controller?.Log("PANEL_PLACEMENT", panelId, "Anchored", before, new { pose = Pose(), anchor = anchorId, moved },
@@ -358,6 +366,14 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void EnsureClear(bool requireView = true)
         {
             clearanceKnown = false;
+            if (FixedWorkingSlate && fixedWorkingPoseAccepted)
+            {
+                bool clear = ReadableFace(transform.position, transform.rotation)
+                    && (!requireView || ReadableFromHeadForDrag(transform.position, transform.rotation))
+                    && PlacementClear(transform.position, transform.rotation);
+                SetPlacementBlocked(!clear);
+                return;
+            }
             if (PlacementBusy)
             {
                 if (!RecenterPending)

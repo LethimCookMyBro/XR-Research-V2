@@ -70,7 +70,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>() ?? throw new InvalidOperationException("No flow controller.");
             Require(controller.Record == null || controller.Record.test_data, "Driver only ends test sessions.");
-            if (controller.Record?.session_state == RegistryState.InProgress) controller.ResearcherAbort(false, reason);
+            try
+            {
+                if (controller.Record?.session_state == RegistryState.InProgress) controller.ResearcherAbort(false, reason);
+            }
+            finally { Stop("Aborted", reason); }
             return Report();
         }
 
@@ -83,8 +87,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(saved.session_state == RegistryState.InProgress && saved.test_data, participantId + " is an InProgress test session.");
             controller.StartSession(participantId, saved.language, saved.input_mode);
             Require(controller.Record?.participant_id == participantId, "Saved session resumed: " + controller.Error);
-            controller.ResearcherAbort(false, reason);
-            return Report();
+            return Abort(reason);
         }
 
         static string Start(IEnumerator routine, double seconds)
@@ -294,7 +297,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     case "roomscale": yield return RoomScale(); break;
                     case "select": yield return RayClick("tutorial_select"); break;
                     case "grab": yield return Grab(); break;
-                    case "move": yield return MoveHeld(Vector3.up * .16f, 0); break;
+                    case "move":
+                        yield return MoveHeld(Vector3.up * .16f, 0);
+                        // Return below the sightline so the next, not-yet-presented instruction can arm.
+                        yield return MoveHeld(Vector3.down * .16f, 0);
+                        break;
                     case "rotate": yield return MoveHeld(Vector3.zero, 45); break;
                     case "release": yield return Release(); break;
                     case "reference": yield return RayClick("reference"); break;
@@ -679,8 +686,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var pose = Hand(side); pose.position += contact + (collider.bounds.center - contact).normalized * .01f - point;
                 Drive(side, pose); yield return Wait(.05);
             }
+            if (pinch)
+            {
+                var ray = Ray(side);
+                for (int i = 0; i < 9 && ray.Candidate && ray.Candidate.GetComponentInParent<Canvas>(); i++)
+                {
+                    if (i == 0) Step("pinch ray over UI before " + part.name + ": " + ray.Candidate.name);
+                    var pose = Hand(side);
+                    var pivot = GrabPoint(side, true);
+                    var tip = Quaternion.AngleAxis(10, Vector3.Cross(pose.rotation * Vector3.forward, Vector3.up).normalized);
+                    Drive(side, new Pose(pivot + tip * (pose.position - pivot), tip * pose.rotation));
+                    yield return Wait(.08);
+                }
+                Require(!(ray.Candidate && ray.Candidate.GetComponentInParent<Canvas>()), "Aim off UI before pinching " + part.name);
+            }
             for (int i = 0; i < 20 && !held(); i++) { Drive(side, Hand(side), pinch ? 0 : 1, pinch ? 1 : 0); yield return Wait(.04); }
-            Require(held(), "SDK grab selected " + part.name + (pinch ? " (trigger pinch)" : " (grip)"));
+            Require(held(), "SDK grab selected " + part.name + (pinch ? " (trigger pinch)" : " (grip)")
+                + "; hand=" + Grabber(side).State + "; candidate=" + (Grabber(side).Interactable ? Grabber(side).Interactable.name : "none"));
         }
 
         static IEnumerator Let(int side) { Drive(side, Hand(side)); yield return Wait(.35); }
@@ -852,6 +874,33 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Participant opens Reference by ray during an active task and uses every format: PDF scroll (stick) and paging,
         // Steps/Images paging, Video play / seek / pause; then closes it. Records what the viewer reports at each stop.
         public static string ReaderTour() => Start(ReaderTourRoutine(), 180);
+
+        public static string ExamineCurrentTask() => Start(ExamineCurrentTaskRoutine(), 40);
+
+        static IEnumerator ExamineCurrentTaskRoutine()
+        {
+            Require(controller.Flow.IsTaskActive, "Examine requires an active task.");
+            var target = UnityEngine.Object.FindObjectsByType<ResearchExamineTarget>(FindObjectsSortMode.None)
+                .Single(t => t.stableTarget == controller.Flow.CurrentTask + ".module");
+            var anchor = new SerializedObject(target).FindProperty("focusAnchor").objectReferenceValue as Transform;
+            Require(target.Available && anchor, "Actual bound workpiece focus is available.");
+            var surfaces = anchor.GetComponentsInChildren<Collider>().Where(c => c.enabled && !c.isTrigger && c.gameObject.activeInHierarchy).ToArray();
+            Require(surfaces.Length > 0, "Physical workpiece surfaces are required.");
+            var aim = surfaces.OrderBy(c => Vector3.Distance(c.bounds.center, controller.origin.Camera.transform.position)).First().bounds.center;
+            var ray = Ray(1); HandNearBody(1);
+            var raised = Hand(1);
+            raised.position.y = Mathf.Max(raised.position.y, anchor.position.y + .20f);
+            Drive(1, raised);
+            yield return Wait(.15);
+            for (int i = 0; i < 40 && !target.ChipVisible; i++)
+            {
+                var pose = Hand(1);
+                pose.rotation = Quaternion.FromToRotation(ray.Forward, (aim - ray.Origin).normalized) * pose.rotation;
+                Drive(1, pose); yield return Wait(.05);
+            }
+            Require(target.ChipVisible, "Pointing at workpiece shows Examine chip.");
+            yield return RayPress((RectTransform)target.transform, "workpiece examine chip");
+        }
         public static readonly List<object> ReaderLog = new List<object>();
 
         static object ViewerState(string label)
@@ -982,7 +1031,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var console = Console();
             yield return ConsoleClick(console, "abort");
             Require(controller.Record.session_state == RegistryState.InProgress, "First Abort click only asks for confirmation.");
-            yield return ConsoleClick(console, "abort");
+            yield return ConsoleClick(console, "confirm_end");
             double until = activeTime + 10;
             while (controller.Record.session_state == RegistryState.InProgress || string.IsNullOrEmpty(controller.LastExportPath))
             { Require(activeTime < until, "Console Abort closed the session and exported."); yield return null; }

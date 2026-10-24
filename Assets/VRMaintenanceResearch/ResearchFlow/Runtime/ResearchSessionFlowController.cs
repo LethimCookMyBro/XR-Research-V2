@@ -402,29 +402,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (TechnicalSelfSetup)
             {
                 Refresh();
-#if UNITY_ANDROID && !UNITY_EDITOR
-                // Technical Quest begins with the guarded researcher setup, not the DEV self-start card.
-                // This does not unlock Study records or change session/registry rights.
                 StartCoroutine(ShowInitialQuestResearcherSetup());
-#endif
             }
             else view?.Refresh();
         }
 
-#if UNITY_ANDROID && !UNITY_EDITOR
         IEnumerator ShowInitialQuestResearcherSetup()
         {
-            // Quest may boot while sensors are untracked or the headset sits on a desk.
-            // Keep the safe fallback accessible, then open researcher setup as soon as the
-            // panel can be placed. Never launch a session or bypass readiness by polling.
-            yield return new WaitForSecondsRealtime(1.0f);
+            // Placement may wait for tracking; the waiting surface must not offer DEV self-start.
+            yield return null;
             while (TechnicalSelfSetup && Record == null && Flow == null && !shuttingDown)
             {
                 if (view && view.OpenResearcherSetup()) yield break;
                 yield return new WaitForSecondsRealtime(.75f);
             }
         }
-#endif
 
         void FloorReadinessChanged()
         {
@@ -1236,7 +1228,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 armed_fact = TutorialArmedFact, tutorial_group = Flow.TutorialCompleted };
             if (!Log("TUTORIAL_ACTION_COMMITTED", "training." + fact, "Observed", after: diagnostic, source: source,
                 actionId: actionId, inputSource: inputSource, trackingValid: trackingValid)) return false;
-            if (view != null && !view.TutorialActionReady(fact)) InvalidateTutorialInstruction("prompt_hidden");
+            if (view != null && !TutorialInstructionAvailable(fact)) InvalidateTutorialInstruction("prompt_hidden");
             bool duplicate = tutorialEvidence.Contains(fact) || TutorialFacts.Take(Flow.TutorialCompleted).Any(facts => facts.Contains(fact));
             // Reopening Reference is recovery for a pending skill, not a second mandatory credit.
             bool recovery = (fact == "reference" || fact == "restore") && tutorialInstruction?.fact == fact;
@@ -1291,7 +1283,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Flow?.IsTutorial != true) return;
             if (!TutorialInputValid) { InvalidateTutorialInstruction("safety_or_tracking_invalid"); return; }
             string fact = TutorialFact;
-            if (tutorialInstruction != null && (!view || !view.TutorialActionReady(tutorialInstruction.fact)))
+            if (tutorialInstruction != null && !TutorialInstructionAvailable(tutorialInstruction.fact))
                 InvalidateTutorialInstruction("prompt_hidden");
             if (tutorialInstruction?.fact == fact) { visibleTutorialFact = fact; return; }
             if (tutorialInstruction != null) InvalidateTutorialInstruction("instruction_changed");
@@ -1308,6 +1300,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (fact == "rotate") grabRotations[item] = item.transform.rotation;
             }
         }
+
+        // Lifting can obscure its already-presented instruction; the next instruction still needs presentation.
+        bool TutorialInstructionAvailable(string fact) => view && (view.TutorialActionReady(fact)
+            || (tutorialInstruction?.fact == fact && view.TutorialHeldActionOccluded(fact)
+                && trainingObjects.Any(item => item && item.IsHeld)));
 
         bool TutorialControlNeutral(string fact)
         {

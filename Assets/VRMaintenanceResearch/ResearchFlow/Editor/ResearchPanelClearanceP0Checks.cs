@@ -176,6 +176,65 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
                     return panel.PlacementBlocked && !panel.GetComponent<Canvas>().enabled && !panel.GetComponent<GraphicRaycaster>().enabled;
                 });
+                var acceptedFixedPose = new Pose(panel.transform.position, panel.transform.rotation);
+                rows.Add(new { name = "accepted_fixed_pose_before_obstruction_retry", diagnostic_only = true,
+                    position = XYZ(acceptedFixedPose.position), rotation = XYZ(acceptedFixedPose.rotation.eulerAngles) });
+                Check("temporary_obstruction_keeps_accepted_fixed_working_pose", () =>
+                {
+                    typeof(ResearchPanelMotion).GetField("nextBlockedRetry", Hidden).SetValue(panel, 0f);
+                    typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
+                    return panel.PlacementBlocked && !panel.RecenterPending
+                        && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) < .0001f
+                        && Quaternion.Angle(panel.transform.rotation, acceptedFixedPose.rotation) < .01f;
+                });
+                Check("cleared_obstruction_restores_same_fixed_working_pose", () =>
+                {
+                    blocker.SetActive(false); Physics.SyncTransforms();
+                    typeof(ResearchPanelMotion).GetField("clearanceKnown", Hidden).SetValue(panel, false);
+                    typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
+                    return !panel.PlacementBlocked && panel.GetComponent<Canvas>().enabled
+                        && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) < .0001f
+                        && Quaternion.Angle(panel.transform.rotation, acceptedFixedPose.rotation) < .01f;
+                });
+                Check("layout_refresh_keeps_obstructed_fixed_working_pose", () =>
+                {
+                    blocker.SetActive(false); Physics.SyncTransforms();
+                    panel.RestorePose(acceptedFixedPose.position, acceptedFixedPose.rotation);
+                    Obstacle((nominalHead + panel.transform.position) * .5f, Vector3.one * .10f, true, false);
+                    panel.EnsureClear(false);
+                    return panel.PlacementBlocked
+                        && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) < .0001f;
+                });
+                Check("reopened_fixed_reader_preserves_obstructed_saved_pose", () =>
+                {
+                    blocker.SetActive(false); Physics.SyncTransforms();
+                    panel.RestorePose(acceptedFixedPose.position, acceptedFixedPose.rotation);
+                    peer.gameObject.SetActive(true);
+                    ((RectTransform)peer.transform).sizeDelta = new Vector2(1180, 760);
+                    try
+                    {
+                        peer.Recenter(false, false, reason: "fixed_reader_anchor_established");
+                        if (peer.PlacementBlocked) throw new InvalidOperationException("Reader fixture could not establish its initial clear pose.");
+                        var saved = new Pose(peer.transform.position, peer.transform.rotation);
+                        typeof(ResearchPanelMotion).GetMethod("OnDisable", Hidden).Invoke(peer, null);
+                        Obstacle((nominalHead + peer.transform.position) * .5f, Vector3.one * .10f, true, false);
+                        peer.RestorePose(saved.position, saved.rotation);
+                        return peer.PlacementBlocked && !peer.GetComponent<Canvas>().enabled
+                            && Vector3.Distance(peer.transform.position, saved.position) < .0001f;
+                    }
+                    finally { peer.gameObject.SetActive(false); }
+                });
+                Check("explicit_recovery_can_relocate_an_obstructed_fixed_slate", () =>
+                {
+                    blocker.SetActive(false); Physics.SyncTransforms();
+                    panel.RestorePose(acceptedFixedPose.position, acceptedFixedPose.rotation);
+                    Obstacle((nominalHead + panel.transform.position) * .5f, Vector3.one * .10f, true, false);
+                    typeof(ResearchPanelMotion).GetField("clearanceKnown", Hidden).SetValue(panel, false);
+                    typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
+                    panel.Recenter(false, false, reason: "panel_recovery");
+                    return !panel.PlacementBlocked && panel.PlacementClear(panel.transform.position, panel.transform.rotation)
+                        && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) > .001f;
+                });
             }
             finally
             {

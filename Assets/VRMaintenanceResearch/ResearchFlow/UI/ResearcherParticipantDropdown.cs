@@ -13,9 +13,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         protected override GameObject CreateDropdownList(GameObject template)
         {
             createdIndex = 0;
-            foreach (var canvas in template.GetComponentsInChildren<Canvas>(true)) canvas.targetDisplay = 1;
+            int display = GetComponentInParent<Canvas>().rootCanvas.targetDisplay;
+            foreach (var canvas in template.GetComponentsInChildren<Canvas>(true)) canvas.targetDisplay = display;
             var list = base.CreateDropdownList(template);
-            foreach (var canvas in list.GetComponentsInChildren<Canvas>(true)) canvas.targetDisplay = 1;
+            foreach (var canvas in list.GetComponentsInChildren<Canvas>(true)) canvas.targetDisplay = display;
             // Popup content must occlude the form beneath it; only the outer shell keeps glass styling.
             var surface = list.GetComponent<UnityEngine.UI.Image>();
             if (surface) surface.color = new Color(ResearchUITheme.Content.r, ResearchUITheme.Content.g, ResearchUITheme.Content.b, 1);
@@ -25,7 +26,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         protected override GameObject CreateBlocker(Canvas rootCanvas)
         {
             var blocker = base.CreateBlocker(rootCanvas);
-            blocker.GetComponent<Canvas>().targetDisplay = 1;
+            blocker.GetComponent<Canvas>().targetDisplay = rootCanvas.targetDisplay;
             return blocker;
         }
 

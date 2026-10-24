@@ -26,6 +26,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         void OnDisable() { heldPointers.Clear(); pointers.Clear(); lastFocus = float.NegativeInfinity; }
         void Update()
         {
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas && !canvas.enabled) heldPointers.Clear();
             if (!view) return;
             if (!drag) drag = GetComponentInChildren<ResearchDragHandle>(true);
             bool visible = (!drag || !drag.IsDragging) && (Focused || Time.unscaledTime - lastFocus < .6f);

@@ -1,4 +1,118 @@
-# สถานะล่าสุด — 23 ตุลาคม 2026
+# S1 — สถานะตรวจรับปัจจุบัน 24 ตุลาคม 2026
+
+## สถานะล่าสุด 2026-10-24 — Movement / hidden slate capture / teardown
+
+**Final Verdict: NOT_READY — Engineering Verification เท่านั้น ไม่ใช่ Technical RC ที่ผ่านครบ**
+**Study Verdict: NOT_READY**
+
+Canonical local `main` เริ่มรอบนี้ที่ `d7d23df1001ae3f770a1dc55eb30cbb464e14912` พร้อมงานค้าง13ไฟล์ที่ hash ตรง manifest เดิมครบ13/13 ไม่ reset/clean/stash และไม่เปลี่ยน Task Rules/QC thresholds/Study approval.
+Source freeze commit, APK/installed hashes และผลติดตั้งที่ตรวจจริงให้อ่านจาก `D:/VR_TMU/transaction-verification-external/s1-movement-20261024/` โดยเฉพาะ `SOURCE_FREEZE.json`, `delivery/README_TH.md`, `VERIFICATION.txt` และ `COVERAGE_MATRIX.json` ไม่ใช้ APK เก่าเป็นหลักฐาน Source ปัจจุบัน.
+
+### Root causes ที่แก้และตรวจแล้ว
+- `ResearchSlateFocus.Update`: Canvas ที่ถูกซ่อนไม่ได้รับ PointerUp แต่ MonoBehaviour ยัง enabled ทำให้ held capture ค้างและขวาง Inspect Feedback. ยกเลิกเฉพาะ capture เมื่อ enclosing Canvas disabled; visible hold/exit และ physical/drag/clearance guards คงเดิม. Baseline cancelledHidden=false; regression cancelledHidden=true และ visible/exit/release ผ่าน. Actual TH AB P/Q แสดง Inspect Feedback และจบ workflow ได้จริง.
+- `ResearchS1FlowDriver.ExamineCurrentTaskRoutine`: ray ของ actor ที่ระดับตา1.0m ชนขอบโต๊ะก่อน workpieceจริง. ยกมือ SDK จริงและเล็ง collider ของชิ้นงานจริง ไม่ปิด collider หรือย้าย XR Origin.
+- `ResearchS1FlowDriver.Abort/AbortSaved`: ปิด DEV session แล้วแต่ retained BLOCKED_FOCUS routine ยังถือ owner. เพิ่ม teardown finally ที่ยกเลิก Tick/ล้าง routine; ยังปฏิเสธ Study record และไม่กลืน production abort exception. Fixture และ actual failed-trial cleanup ได้ status Aborted.
+- `ResearchFocusedOperatorUIChecks`: เพิ่ม regression สองจุดข้างต้น ไม่ลด assertion เดิม.
+
+### Movement QC — แยก dataset เก่าที่ FAIL จากข้อมูลใหม่
+`conditions/Thai_BA_P/matrix-v1` = **PASS_EDITOR**: complete bound SDK workflow → export → actual host ingest/verify; movement_complete=true, data_complete=true, s1_analysis_complete=true, raw unchanged, verify exit0. `host-qc-result.json` ระบุ input hashes และ bundle จริง. เป็น simulated technical DEV data ไม่ใช่ native/wearer/participant acceptance.
+Cold/warm-up datasets เดิมที่มี gaps ยังคง FAIL ไม่แก้ raw หรือผ่อน threshold. Profiler เฟรม1683 พบ Main Thread428.213ms, bridge417.061ms, Mono.JIT377.335ms ตรง acquisition gap433.9764ms; sampler due-work ในรอบก่อนสูงสุด22.1513ms. ปัญหาหลักที่ยืนยันได้คือ cold Editor actor JIT ไม่ใช่หลักฐาน writer ทำข้อมูลหล่น. โค้ด precompile สองวิธีที่ไม่ช่วยถูกถอดออก; `ResearchFlowPlayChecks.cs` กลับตรง original byte-for-byte.
+
+### Coverage ที่ยังไม่ผ่านครบ
+- 8 condition cells: TH BA P ผ่าน full workflow+Host QC; TH AB P/Q มี full bound workflow แต่ measured coverage ของชุดครบ8ยังไม่ผ่าน. Cell อื่นถูกขัดจังหวะด้วย foreground loss/minimized Unity หรือยังไม่ได้รันครบ. Passive trace จับ Explorer ForegroundStaging; native rectangle ของ canonical Unity อยู่ตำแหน่ง minimized -32000. Guard พักถูกต้อง ไม่ auto-resume/วนแย่ง focus/ปิด Guardian.
+- TH A/B×4formats ผ่าน actual SDK core tour. `reader-regression/reader-production.json` ผ่าน438 fixture rows/28mono captures สำหรับ production-path A/B TH/JA. Fixture ใช้ pointer/ScrollRect callbacks; ไม่ใช่ native acquisition หรือ video decoded-playback approval. JA SDK tour และ replay/focus/error lifecycle บางส่วนยัง BLOCKED/NOT_TESTED.
+- `placement-regression`:16/16 PASS_EDITOR; ไม่ใช่ all16 spatial/stereo/native acceptance. Human seated/standing/reach/Quest controller ยังไม่ผ่าน.
+- XR startup ถูกคืน TRUE; asset และ canonical scene clean หลังหยุด owned SDK input/Play. ไม่ save/discard scene ของผู้อื่น.
+
+Engineering APK ที่อาจสร้างจาก source freeze มีไว้ตรวจ installation/cold launch เท่านั้น. Build success ไม่ยกระดับ Gate D/E/G/H เป็น PASS และไม่เปิด Study gate. ไม่มีข้อมูลวิจัย/consent/raw video ถูก push.
+
+### การตรวจที่ยังต้องทำ
+1. ทำ Unity ให้ visible/unminimized และรักษา Game View foreground แล้วรันเฉพาะ missing conditions จาก manifest ด้วย directory ใหม่; ไม่ overwrite failed evidence และไม่ใช้ force completion.
+2. ตรวจ JA reader playback/remaining lifecycle, full standing/seated stereo/ray/reach matrix และ remaining negative paths.
+3. ตรวจ native Touch Plus, fresh native movement/export/Host QC, wearer และ performance โดยไม่ข้าม Guardian.
+4. TH/JA human content review, researcher/protocol/ethics/consent sign-off ก่อน Study.
+
+## หลักฐานรอบก่อน — historical เท่านั้น
+ข้อความต่อจากนี้เป็นสถานะก่อน continuation นี้ ให้ใช้สถานะล่าสุดและ manifest ข้างบนตัดสิน ไม่รวมจำนวน PASS เป็นการรับรอง hardware/Study.
+
+
+**Technical verdict: NOT_READY · Study verdict: NOT_READY**
+
+Source: `main`, HEAD `d7d23df1001ae3f770a1dc55eb30cbb464e14912` + งานแก้ที่ยังอยู่ใน working tree
+
+หลักฐานปัจจุบัน: `D:/VR_TMU/transaction-verification-external/s1-release-20261024`
+
+Build/Install รุ่นใหม่: **NOT_TESTED** — Gate C–F ยังไม่ครบ จึงยังไม่มี final source freeze หรือ APK รุ่นใหม่จากชุดนี้ APK SHA256 ที่รายงานในหัวข้อเก่าเป็นรุ่นก่อนแก้ First-launch ไม่ใช่ APK ของ working tree ปัจจุบัน
+
+## Acceptance matrix ปัจจุบัน
+
+| Gate | ผลจริง | หลักฐาน / สิ่งที่ยังค้าง |
+|---|---|---|
+| A Source/Build | PASS_EDITOR เฉพาะ compilation/targeted checks; final Build NOT_TESTED | Source เดิมเก็บครบ, scene contract exit0, canonical scene clean; commit/freeze/new APK/signing/install hash ยังค้าง |
+| B UX/UI | PASS_EDITOR เฉพาะส่วนที่ตรวจ | Setup SDK ray/trigger และ Welcome render, safe Resume identity 3/3; UI checks 64/64, Reader render 28 states, anchor regression 16/16; TH/JA semantic approval ยังรอคน |
+| C Mechanics | PASS_EDITOR แบบจำกัด; full matrix BLOCKED | `Thai_AB_P/verified` ทำ A(S02)/B และ FX1 ผ่าน actual bound SDK simulation; seated Lift/Rotate/Release และ FX1 cable connect/disconnect มีหลักฐานเพิ่ม; ทั้ง 8 cells ยังไม่ผ่านครบ |
+| D Workflow | PASS_EDITOR หนึ่ง DEV E2E; coverage ที่เหลือ NOT_TESTED/BLOCKED | Task1→Inspect→Checkpoint→Task2→Completion→Export ผ่านหนึ่งรอบ; มี initial B fail/retry, pause/stop/tracking recovery; comprehensive normal/error matrix ยังไม่ครบ |
+| E Media | PASS_EDITOR asset integrity/render; interaction coverage ยังไม่ครบ | 16 task-format cells + 8 Training cells ตรวจ resource/hash/text, MP4 6 ตัว decodeผ่าน; B_TH มี playback/seek/pause/replay จริงใน Editor; runtime lifecycle ของชุดอื่นยังค้าง; ทุก package ยังเป็น ENGINEERING_DRAFT |
+| F Research data | **FAIL** | completed DEV export นำเข้า/verify hash ได้, global sequence ไม่มีช่องว่าง, S1 analysis complete; movement coverage ขาดช่วงเกิน 0.25s จึง data_complete=false; raw ไม่ถูกแก้ |
+| G Quest hardware | **BLOCKED** | `adb-final-devices.txt` มีเพียง `List of devices attached`; native controller/installed-current hash/standing-seated/performance/wearer ยังไม่รับรอง |
+| H Human study | **BLOCKED** | bilingual language review, researcher/protocol/ethics/consent approvals ยังเป็น human gates; ไม่มีการเปิด Study approval เอง |
+
+## Root causes และการแก้เฉพาะจุด
+
+| ประเด็น | ก่อน / root cause | เปลี่ยนไฟล์และพฤติกรรม | หลัง / regression |
+|---|---|---|---|
+| Working slate ย้ายเองเมื่อถูกบัง | late retry, EnsureClear และ RestorePose เลือก anchor ใหม่หลังยอมรับตำแหน่งแล้ว | `ResearchPanelMotion.cs`, blocked Reader reopen ใน `ResearchFlowView.cs`, fixture `ResearchPanelClearanceP0Checks.cs`: คง accepted working pose แต่ยังซ่อน Canvas/raycast เมื่อ guard ปฏิเสธ; explicit Recall ยังตรวจ clearance | `anchor-baseline`, `anchor-refresh-baseline` มี FAIL; `anchor-final/result.json` 16/16 PASS_EDITOR; guards/colliders/XR Origin คงเดิม |
+| Reader metadata ตัดอักษร | rect สูง26 แต่ TH/JA preferred height มากกว่า30 | `ResearchFlowView.cs`: HeaderMetadata rect26→34 ทั้ง Build/live path; font/center/content เดิม | `reader-production` FAIL28; `reader-final/reader-production.json` PASS28 actual rendered fixture states |
+| Seated Lift ทำถูกแต่ไม่ได้เครดิต | วัตถุที่กำลังยกบังคำสั่งที่เคยแสดงแล้ว ทำให้ epoch ถูก invalidate | Controller ใช้ shared `TutorialInstructionAvailable`; View `TutorialHeldActionOccluded` จำกัด **move เท่านั้น**, ต้องเป็น fact เดิมที่ armed แล้ว, object ยัง held, placement blocked และ content/alpha/parent ยัง active; initial arm, safety/tracking/logger/epoch/physical threshold เดิม | ก่อน `seated-training-move-repro.json` ยก0.18277mแต่ค้าง; หลัง raw `heldforeground`, `seatedready`, `liftdata` ให้ Lift ครั้งเดียว; Rotate ที่ยังไม่แสดงยังไม่ armed; focused UI64 checksผ่าน |
+| Training actor pinch ไปโดน UI | หลังขันสกรู Ray ค้างบน ParticipantPanel; trigger จึงถูก UI-priority guard กัน grab | `ResearchS1FlowDriver.Acquire`: ใช้ pivot ข้อมือหลบ UI แบบเดียวกับ Task A runner โดยรักษา pinch point; ไม่แก้ collider/grab tolerance | `pinchdata` steps ระบุ `pinch ray over UI before TrainingLeadHead`; จากนั้น actual socket Guided/Seat และ disconnect Empty ผ่าน; ชุดนี้ภายหลัง BLOCKED_FOCUS จึงไม่ใช่ full E2E PASS |
+| B runner รอ terminal state ก่อนส่ง overshoot | progress ใกล้0 แต่ยังเหลือ6องศาตามแผน | `ResearchS1TaskBSdkRunner`: รอ terminal state เมื่อส่งส่วนที่เหลือหมดจริง; production kinematics เดิม | full bound B ใน `Thai_AB_P/verified` ผ่าน; ไม่ขยาย tolerance/ให้ state credit |
+| Setup blocker หลุดอังกฤษ / legacy labels | canonical approval reason ไม่มี localized mapping; scope textยังแสดง TEST/PILOT | `ResearcherSetupView`, `ResearchStrings`: localized reason, scopeบอกเฉพาะ DEV; Registry compatibility/stable IDs/approval guardเดิม | localization393×3ผ่าน; UI semantic reviewยังรอมนุษย์ |
+| Gallery DEV fixture เลือกกลุ่มผิด | fixture คาด DEV แต่ค่าเริ่มต้นใหม่เป็นกลุ่มไทย | `ResearcherLocalizationChecks`: เลือก DEV ใน owned display fixture อย่างชัดเจน; visibility assertionsเดิม | ก่อน Thai gallery FAIL; หลัง TH/JA galleryผ่านและเปิดภาพตรวจแล้ว; ไม่ใช่ native interaction |
+
+First-launch patch เดิมยังคงอยู่: Researcher Setup เป็นทางเข้าหลัก, ไม่ dispatch TechnicalSetup เป็น default, popup/display0, one main Start, study Auto balancing, identity freeze และ researcher checkpoint guards คงเดิม
+
+## Coverage และข้อมูลที่ต้องตีความตรงตาม Contract
+
+- `conditions/Thai_AB_P/verified`: **PASS_EDITOR workflow/mechanics เท่านั้น**; Host QC **FAIL movement**. ห้ามนำจำนวน checks มาประกาศ Technical Ready
+- Thai_AB_Q: basic handling และ FX1 ส่วนที่ระบุมี actual input evidence; full E2E **BLOCKED**. อีก6 condition cells **NOT_TESTED**. `condition-matrix-clean8*-results.json` เป็น precondition/foreground failures ไม่ใช่8ผลผ่าน
+- Standing/seated render เก่า112 states มีอยู่ในชุด continue; delta accepted-pose มี targeted16 checks แต่ full stereo/native spatial matrix หลังแก้ยังค้าง
+- `media-integrity-matrix.json`: 24 cells เป็น **asset integrity only**, ไม่ใช่การกด/scroll/video lifecycleครบ24ครั้งและไม่ใช่ content approval
+- H1 A เป็น `action_first` แม้มี Examine ก่อนได้ตาม Locked TaskSpec §14: Examine แยกจาก Reference ใน denominator. ห้ามแปลว่าไม่มีการหาข้อมูลเลย หรือแก้ derived label ให้ดูผ่าน
+- H1–H4 ใช้ rawจริงของ DEV simulation; head/left/right เกิด gapพร้อมกันระหว่าง frame_id ต่อเนื่อง. มีสอง B gaps คร่อม screenshot request→written; สาเหตุทุก gap ยังไม่ยืนยัน จึงคง FAIL โดยไม่เติมแถว/ลด threshold
+- Managed tracking FaultTour เป็น PASS_EDITOR; OpenXR/native tracking loss, Touch Plus click, actual wearer และ Guardian acceptance ยังไม่ผ่าน
+
+## Environment checkpoint / งานถัดไป
+
+Unity หยุด Play, canonical scene `isDirty=false`, `XRGeneralSettings.InitManagerOnStart=true`, XR asset dirty=false หลังคืนค่าจาก managed simulation scope (`final-editor-restored.json`). ไม่มีการ Save/Discard scene, ปิด Guardian, เปลี่ยน Android user, Clear Data หรือ Uninstall
+
+ชุด clean data run ถูกบล็อกที่การได้ real Game View foreground (`Measured Game View point is covered` / native focus acquisition); ไม่มีการแก้ `Application.isFocused` หรือปิด focus guard เพื่อทำ PASS. รอบถัดไปต้องให้ Unity Game View มี focusจริงและกันกิจกรรมควบคุม desktop อื่นออกจากช่วงวัด แล้วรัน fresh attempt ผ่าน `run_clean_matrix.py`; ตรวจ Host QC ก่อน build
+
+ลำดับที่ยังต้องปิด: clean 8-condition E2E + movement/profiler attribution → full spatial/native input → remaining Reader/Training lifecycle/error paths → reviewed freeze/commit/build → fresh Quest binding/backup/install/hash/native acceptance → human approvals
+
+เอกสารด้านล่างเป็นหลักฐานย้อนหลัง ต้องใช้ขอบเขตและสถานะปัจจุบันข้างบนตัดสินความพร้อม
+
+---
+
+# First-launch P0 — 23 ตุลาคม 2026 (หลังชุดติดตั้งเดิม)
+
+Source patch นี้ยังไม่ Build/Install และไม่ใช่ Technical Ready / Study Ready.
+หลักฐาน: `D:/VR_TMU/transaction-verification-external/s1-first-launch-20261023`
+
+| รายการ | สถานะ | หลักฐานและขอบเขต |
+|---|---|---|
+| เปิด Researcher Setup แทน DEV fallback | PASS_EDITOR | `fresh-entry-settled.json`, `fresh-thai.png`; actual Editor Play + Meta XR Simulator |
+| เปลี่ยนกลุ่มเป็นญี่ปุ่น / ภาษาอัตโนมัติ | PASS_EDITOR | `japanese.json`, `fresh-japanese.png`; UI Toggle callback ไม่ใช่ native controller click หรือ Japanese cold launch แยกครั้ง |
+| Dropdown popup / blocker Display 0 | PASS_EDITOR | `group-popup.json`, `id-popup.json`, `order-popup.json`; actual generated popups; Language popup ตรวจด้วย MCP |
+| Auto balancing / idle Back | PASS_EDITOR | `balancing-back.json`: DEV cell 4 กลับเป็น study Auto 0; idle Back ไม่คืน Technical Setup |
+| Start → TutorialWelcome | PASS_EDITOR | `start-callback.json`; callback บน isolated DEV registry เท่านั้น; ภาพหลัง Start ทันทีเป็นสีดำระหว่าง transition จึงยังไม่รับรอง Welcome rendered |
+| Focused regression / core | PASS_EDITOR | `focused-dropdown/operator-ui.json` 43 checks; `core-final.txt` 163/163 pure state/disk checks |
+| Tracking Not Ready | NOT_TESTED | `tracking-not-ready.json`: ปิด active controllers ผ่าน Simulator แล้ว DeviceReady ยัง true; ยังสร้าง tracking-loss ที่ยืนยันได้ไม่สำเร็จ |
+| Quest cold launch / native click / Resume / wearer | BLOCKED | Quest user 0 ยังอยู่ Guardian; ไม่มี native acceptance ของ patch นี้; Resume และ wearer ยังไม่ทดสอบ |
+
+Root causes: startup coroutine ถูกจำกัดเฉพาะ Android, idle setup dispatch ไป DEV card, mounted child Canvas ถูกปิด, popup template ถูกปิดและ custom dropdown hardcode Display 2, serialized balancing options มีเพียง 3 แทน 5.
+ยังคง Start/Consent/Readiness/Study gates เดิมและไม่แก้ Session ID, task rules หรือข้อมูลวิจัยเดิม.
+
+# สถานะชุดติดตั้งก่อนหน้า — 23 ตุลาคม 2026
 
 **ติดตั้ง engineering DEV แล้ว แต่ยังไม่ Technical Ready / Study Ready**
 
