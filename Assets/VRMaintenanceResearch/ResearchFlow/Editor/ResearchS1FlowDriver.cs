@@ -18,7 +18,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     // participant UI is pressed by aiming the SDK controller ray and pulling the trigger, Training is performed with
     // native grip/stick/head input, and researcher steps are mouse clicks on the drawn Researcher Console buttons.
     // No onClick.Invoke, DemoTutorialEvidence or direct ResearcherResume. Not Quest/wearer evidence.
-    public static class ResearchS1FlowDriver
+    public static partial class ResearchS1FlowDriver
     {
         static readonly Stack<IEnumerator> routines = new Stack<IEnumerator>();
         static ResearchSessionFlowController controller;
@@ -51,6 +51,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // eyeHeight is the synthetic HMD height above the tracking floor (master §10: also check 1.0 m).
         public static string BeginToFirstTask(string language = "Thai", bool orderAB = true, string layout = null, float eyeHeight = 1.65f) =>
             Start(ToFirstTask(language == "Japanese" ? 1 : 0, layout == null ? 0 : (orderAB ? 1 : 3) + (layout == "Q" ? 1 : 0), eyeHeight), 420);
+        public static string BeginBoundaryToFirstTask(string language = "Thai", bool orderAB = true, string layout = null, float eyeHeight = 1.65f) =>
+            Start(ToFirstTask(language == "Japanese" ? 1 : 0, layout == null ? 0 : (orderAB ? 1 : 3) + (layout == "Q" ? 1 : 0), eyeHeight, true), 420);
 
         // Participant presses Inspect; a Fail is acknowledged with the only offered Continue.
         public static string Inspect() => Start(InspectRoutine(), 40);
@@ -162,6 +164,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static void Stop(string status, string detail)
         {
+            try { ClearSdkTrace(); ClearOwnedExportFault(); }
+            catch (Exception cleanup) { status = "Failed"; detail = (detail ?? "") + "\nOwned export fault cleanup: " + cleanup; }
             EditorApplication.update -= Tick; routines.Clear();
             Status = status; Detail = detail ?? Detail;
             Debug.Log("RESEARCH_S1_FLOW_DRIVER " + Report());
@@ -239,7 +243,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static void Step(string text) { Steps.Add(EditorApplication.timeSinceStartup.ToString("F2") + " " + text); if (Steps.Count > 400) Steps.RemoveAt(0); }
 
-        static IEnumerator ToFirstTask(int languageIndex, int cell, float eyeHeight)
+        static IEnumerator ToFirstTask(int languageIndex, int cell, float eyeHeight, bool duplicateStart = false)
         {
             Steps.Clear();
             if (controller.Record == null)
@@ -274,7 +278,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Training();
             yield return RayClick("tutorial_continue");
             yield return Settle();
-            yield return StartTask();
+            yield return StartTask(duplicateStart);
         }
 
         static IEnumerator Training()
@@ -336,7 +340,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
         }
 
-        static IEnumerator StartTask()
+        static IEnumerator StartTask(bool duplicateStart = false)
         {
             Require(controller.Flow.State == ResearchFlowState.Task1Ready || controller.Flow.State == ResearchFlowState.Task2Ready, "Task ready screen expected.");
             yield return Wait(.3); Capture(controller.Flow.State.ToString());
@@ -349,19 +353,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Settle();
             double metadataMs = controller.Flow.CurrentTask == "A" ? ResearchS1TaskASdkRunner.WarmObservationMetadata() : ResearchS1TaskBSdkRunner.WarmObservationMetadata();
             Step("observer metadata prepared before task clock: " + metadataMs.ToString("F2") + " ms; no research events");
-            yield return RayClick("task_start_confirm");
+            yield return RayClick("task_start_confirm", duplicateStart ? 2 : 1);
             yield return Settle();
             Require(controller.Flow.IsTaskActive, "Task active after task_start.");
+            if (duplicateStart) Require(!controller.ReferenceOpen && Offered().Contains("inspect"), "Double Start did not trigger adjacent Reference or Inspect.");
             ParkControllers();
             yield return Wait(.5); Capture(controller.Flow.State + "_" + controller.Flow.CurrentTask);
             Detail = "task " + controller.Flow.CurrentTask + " active";
         }
 
-        static IEnumerator InspectRoutine()
+        static IEnumerator InspectRoutine(bool duplicate = false)
         {
             Require(controller.Flow.IsTaskActive, "Inspect needs an active task.");
             var state = controller.Flow.State;
-            yield return RayClick("inspect");
+            yield return RayClick("inspect", duplicate ? 2 : 1);
             double until = activeTime + 8;
             while (controller.Flow.State == state && !controller.Flow.InspectPassed.HasValue)
             {
@@ -376,9 +381,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             bool passed = controller.Flow.InspectPassed == true;
             Detail = (passed ? "inspect_pass:" : "inspect_fail:") + controller.InspectionFeedbackKey;
-            yield return RayClick("inspect_continue");
+            yield return RayClick("inspect_continue", duplicate ? 2 : 1);
             yield return Settle();
             yield return AwaitViewerless(() => !controller.InspectionFeedbackVisible || controller.Flow.State != state, "Continue dismisses the Inspect feedback", 8);
+            if (duplicate) Require(passed ? (controller.Flow.State == ResearchFlowState.PostTask1Checkpoint || controller.Flow.State == ResearchFlowState.PostTask2Checkpoint) && !Offered().Contains("technical_resume") : Offered().Contains("inspect"), "Duplicate Continue did not bypass researcher checkpoint or start another Inspect.");
             Detail += " -> " + controller.Flow.State;
         }
 
@@ -494,7 +500,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // Aim the right SDK controller ray until it hits the visible button, then press and release the trigger.
-        static IEnumerator RayClick(string command)
+        static IEnumerator RayClick(string command, int cycles = 1)
         {
             double until = activeTime + 10;
             ResearchUIAction action;
@@ -524,10 +530,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 onTarget = ray.isActiveAndEnabled && ray.State == InteractorState.Hover && ray.CollisionInfo.HasValue && Inside(rect, ray.CollisionInfo.Value.Point);
             }
             Require(onTarget, "SDK ray hovers " + command + ": state=" + ray.State + " hit=" + (ray.CollisionInfo.HasValue ? ray.CollisionInfo.Value.Point.ToString("F3") : "none"));
-            Drive(1, Hand(1), trigger: 1);
-            yield return Wait(.15);
-            Drive(1, Hand(1));
-            yield return Wait(.25);
+            if (cycles > 1) TraceSdkControl(action);
+            for (int cycle = 0; cycle < cycles; cycle++)
+            {
+                Drive(1, Hand(1), trigger: 1); yield return Wait(cycles == 1 ? .15 : .03);
+                Drive(1, Hand(1)); yield return Wait(cycles == 1 ? .25 : .03);
+                if (cycles > 1) FaultRows.Add(new { kind = "trigger_cycle", command, cycle, frame = Time.frameCount, logger_sequence = controller.Logger.LastSequence });
+            }
+            ClearSdkTrace();
             Step("ray click " + command);
         }
 
@@ -856,14 +866,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // Aim the right ray onto a visible rect and pull/release the trigger.
-        static IEnumerator RayPress(RectTransform rect, string label)
+        static IEnumerator RayPress(RectTransform rect, string label, float horizontal = .5f)
         {
             var ray = Ray(1);
             bool onTarget = false;
             for (int i = 0; i < 40 && !onTarget; i++)
             {
                 var pose = Hand(1);
-                pose.rotation = Quaternion.FromToRotation(ray.Forward, (rect.TransformPoint(rect.rect.center) - ray.Origin).normalized) * pose.rotation;
+                var point = horizontal == .5f ? rect.TransformPoint(rect.rect.center) : rect.TransformPoint(new Vector2(Mathf.Lerp(rect.rect.xMin, rect.rect.xMax, horizontal), rect.rect.center.y));
+                pose.rotation = Quaternion.FromToRotation(ray.Forward, (point - ray.Origin).normalized) * pose.rotation;
                 Drive(1, pose); yield return Wait(.04);
                 onTarget = ray.State == InteractorState.Hover && ray.CollisionInfo.HasValue && Inside(rect, ray.CollisionInfo.Value.Point);
             }
