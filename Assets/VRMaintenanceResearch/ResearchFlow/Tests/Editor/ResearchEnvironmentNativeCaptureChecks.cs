@@ -15,6 +15,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     public static class ResearchEnvironmentNativeCaptureChecks
     {
         [MenuItem("VR Research/Research Flow/Check Native ENV Capture Guards")]
+        static void RunFromMenu() => Run();
+
         public static void Run(string outputPath = null)
         {
             var checks=new List<object>();
