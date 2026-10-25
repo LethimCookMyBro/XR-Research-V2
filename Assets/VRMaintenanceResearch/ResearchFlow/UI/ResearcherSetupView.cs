@@ -722,7 +722,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     label.color = ResearchUITheme.Muted;
                     label.rectTransform.anchoredPosition = i < 2 ? new Vector2(i == 0 ? -285 : 145, 181) : new Vector2(-285, 45 - (i - 2) * 65);
                 }
-                source.gameObject.SetActive(!hasSession && i < 2);
+                source.gameObject.SetActive(!hasSession && (i < 2 || (questOwner && i < 4)));
                 if (i < 2)
                 {
                     var rect = source.GetComponent<RectTransform>();

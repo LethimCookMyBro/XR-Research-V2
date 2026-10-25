@@ -1,5 +1,5 @@
-"""Synthetic-only protocol tests. No network, Google Drive or participant data."""
-import base64,hashlib,json,os,tempfile,threading,unittest,urllib.error,urllib.request
+"""Synthetic-only protocol tests. Loopback network only; no Google Drive or participant data."""
+import base64,hashlib,http.client,json,os,socket,tempfile,threading,time,unittest,urllib.error,urllib.request
 from pathlib import Path
 from http.server import ThreadingHTTPServer
 from receiver import Store,Handler,sha,FILES
@@ -73,6 +73,143 @@ class StoreTests(unittest.TestCase):
             self.store.chunk(id,"../session",0,chunk,sha(chunk))
         with self.assertRaises(ValueError):
             self.store.finish(id)
+
+    def test_health_auth_configuration_consistency(self):
+        names = ("S1_RELAY_TOKEN_SHA256", "S1_RELAY_DEVICE_TOKENS_JSON")
+        old = {name: os.environ.get(name) for name in names}
+        token = "FixtureOnlyHealthMatrix12345678901234567890"
+        hashed = sha(token.encode())
+        cases = [
+            (None, None, False, 401),
+            (hashed, None, True, 200),
+            ("invalid", None, False, 401),
+            (None, json.dumps({"DEV_HEALTH": hashed}), True, 200),
+            (None, json.dumps({"DEV_HEALTH": ""}), False, 401),
+            (None, "{}", False, 401),
+            (None, "{", False, 401),
+            (None, "[]", False, 401),
+            (None, json.dumps({"DEV_HEALTH": 123}), False, 401),
+            (None, json.dumps({"OTHER_DEVICE": hashed}), True, 401),
+            (None, json.dumps({"INVALID/DEVICE": hashed}), False, 401),
+            (hashed, "{}", False, 401),
+        ]
+        Handler.store = self.store
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_port}"
+        try:
+            for legacy, registry, enabled, status in cases:
+                for name, value in zip(names, (legacy, registry)):
+                    if value is None:
+                        os.environ.pop(name, None)
+                    else:
+                        os.environ[name] = value
+                with urllib.request.urlopen(url + "/health", timeout=3) as response:
+                    self.assertEqual(json.load(response)["upload_enabled"], enabled)
+                body = json.dumps(payload()[2]).encode() if status == 200 else b""
+                request = urllib.request.Request(url + "/v1/bundles", method="POST", data=body,
+                    headers={"Authorization": "Bearer " + token, "X-Device-Id": "DEV_HEALTH"})
+                try:
+                    with urllib.request.urlopen(request, timeout=3) as response:
+                        observed = response.status
+                except urllib.error.HTTPError as error:
+                    observed = error.code
+                self.assertEqual(observed, status)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+            for name, value in old.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+
+    def test_unauthorized_response_survives_delayed_request_body(self):
+        Handler.store = self.store
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with socket.create_connection(server.server_address, timeout=3) as client:
+                client.sendall(b"POST /v1/bundles HTTP/1.1\r\nHost: localhost\r\nContent-Length: 149999\r\nConnection: close\r\n\r\n")
+                headers = bytearray()
+                for _ in range(8192):
+                    byte = client.recv(1)
+                    self.assertTrue(byte, "Connection ended before response headers")
+                    headers.extend(byte)
+                    if headers.endswith(b"\r\n\r\n"):
+                        break
+                self.assertTrue(headers.startswith(b"HTTP/1.0 401 "))
+                self.assertTrue(headers.endswith(b"\r\n\r\n"))
+                client.sendall(b"x" * 149999)
+                body = bytearray()
+                for _ in range(24):
+                    byte = client.recv(24 - len(body))
+                    if not byte:
+                        break
+                    body.extend(byte)
+                    if len(body) == 24:
+                        break
+                self.assertEqual(body, b'{"error":"unauthorized"}')
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+
+    def test_unauthorized_slow_body_has_absolute_cleanup_deadline(self):
+        Handler.store = self.store
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with socket.create_connection(server.server_address, timeout=3) as client:
+                client.sendall(b"POST /v1/bundles HTTP/1.1\r\nHost: localhost\r\nContent-Length: 149999\r\nConnection: close\r\n\r\n")
+                response = http.client.HTTPResponse(client)
+                response.begin()
+                self.assertEqual(response.status, 401)
+                self.assertEqual(response.read(), b'{"error":"unauthorized"}')
+                client.settimeout(.05)
+                start = time.monotonic()
+                closed = False
+                for _ in range(15):
+                    try:
+                        client.sendall(b"x")
+                        time.sleep(.2)
+                        if client.recv(1) == b"":
+                            closed = True
+                            break
+                    except socket.timeout:
+                        continue
+                    except OSError:
+                        closed = True
+                        break
+                self.assertTrue(closed, "Slow progress retained an unauthorized connection")
+                self.assertLess(time.monotonic() - start, 2)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+
+    def test_unauthorized_malformed_and_oversized_lengths_still_deny(self):
+        Handler.store = self.store
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            for length in ("bad", "-1", "150001", "99999999999999999999999999"):
+                with self.subTest(length=length), socket.create_connection(server.server_address, timeout=3) as client:
+                    client.sendall(("POST /v1/bundles HTTP/1.1\r\nHost: localhost\r\nContent-Length: " + length + "\r\nConnection: close\r\n\r\n").encode())
+                    response = http.client.HTTPResponse(client)
+                    response.begin()
+                    self.assertEqual(response.status, 401)
+                    self.assertEqual(response.read(), b'{"error":"unauthorized"}')
+            self.assertEqual(list(Path(self.tmp.name).iterdir()), [])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
 
     def test_http_bearer(self):
         m,files,p=payload()

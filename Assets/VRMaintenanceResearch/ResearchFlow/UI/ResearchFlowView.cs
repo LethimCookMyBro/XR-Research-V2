@@ -526,8 +526,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (key == noticeKey && Time.unscaledTime < noticeUntil) { noticeUntil = Time.unscaledTime + NoticeSeconds; return; }
             noticeKey = key; noticeUntil = Time.unscaledTime + NoticeSeconds;
             noticeText = Text(key);
-            successLabel.font = Font; successLabel.color = FeedbackColor; successLabel.text = noticeText;
-            tutorialSuccess.gameObject.SetActive(true); tutorialSuccess.Find("Checkmark").gameObject.SetActive(false);
+            ShowTutorialConfirmation();
             controller.Log(evt, "training." + fact, "RendererTextApplied",
                 after: new { fact, reason, text = noticeText, frame = Time.frameCount, human_seen = (bool?)null }, source: "System");
         }
@@ -575,8 +574,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Completed-action feedback stays in its reserved secondary line; the next instruction remains visible.
             successLabel.font = Font; successLabel.fontSize = 25; successLabel.color = FeedbackColor;
             successLabel.text = CompletionText();
+            FitTutorialFeedback();
             tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(FeedbackCheckmark);
             RecordTutorialFeedbackApplied();
+        }
+
+        void FitTutorialFeedback()
+        {
+            if (tutorialSuccess.parent != mainContent.transform) return;
+            var size = tutorialSuccess.sizeDelta;
+            float height = Mathf.Max(48, successLabel.GetPreferredValues(successLabel.text, successLabel.rectTransform.rect.width, 0).y + 12);
+            // Keep the reserved bottom edge fixed when feedback grows or shrinks.
+            tutorialSuccess.anchoredPosition += new Vector2(0, (height - size.y) / 2);
+            tutorialSuccess.sizeDelta = new Vector2(size.x, height);
+            tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = tutorialSuccess.sizeDelta;
+            successLabel.rectTransform.sizeDelta = new Vector2(successLabel.rectTransform.sizeDelta.x, height);
         }
 
         void RecordTutorialFeedbackApplied()
@@ -1901,18 +1913,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = new Vector2(inner, 48);
                 tutorialSuccess.Find("Checkmark").GetComponent<RectTransform>().anchoredPosition = new Vector2(-inner / 2 + 30, 0);
                 successLabel.rectTransform.sizeDelta = new Vector2(inner - 72, 48); successLabel.rectTransform.anchoredPosition = new Vector2(24, 0);
-                successLabel.font = Font; successLabel.color = FeedbackColor;
-                successLabel.text = CompletionText();
-                // A practice result sentence may wrap; grow the chip upward to its text instead of shrinking the font.
-                float chipHeight = Mathf.Max(48, successLabel.GetPreferredValues(successLabel.text, inner - 72, 0).y + 12);
-                if (chipHeight > 48)
-                {
-                    tutorialSuccess.sizeDelta = new Vector2(inner, chipHeight); tutorialSuccess.anchoredPosition += new Vector2(0, (chipHeight - 48) / 2);
-                    tutorialSuccess.Find("Chip").GetComponent<RectTransform>().sizeDelta = new Vector2(inner, chipHeight);
-                    successLabel.rectTransform.sizeDelta = new Vector2(inner - 72, chipHeight);
-                }
-                tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(FeedbackCheckmark);
-            RecordTutorialFeedbackApplied();
+                ShowTutorialConfirmation();
                 retainedLabel.font = Font; retainedLabel.color = Muted;
                 retainedLabel.text = Text("tutorial.retained");
                 retainedLabel.rectTransform.sizeDelta = new Vector2(inner, 48);

@@ -5,7 +5,7 @@ GET /v1/bundles/<id>, PUT /v1/bundles/<id>/chunk (X-File, X-Offset, X-Chunk-SHA2
 POST /v1/bundles/<id>/finalize. All /v1 endpoints require a device Bearer token.
 Persistent DATA_ROOT volume required when deployed. No study traffic without separate approval.
 """
-import base64, hashlib, hmac, json, os, re, threading
+import base64, hashlib, hmac, json, os, re, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -33,6 +33,21 @@ def safe(value):
     if not isinstance(value, str) or not TOKEN.fullmatch(value):
         raise ValueError("Invalid identifier")
     return value
+
+
+def configured_tokens():
+    registry = os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON", "")
+    if registry:
+        try:
+            tokens = json.loads(registry)
+        except (ValueError, TypeError):
+            return {}
+        if not isinstance(tokens, dict):
+            return {}
+        return {key: value for key, value in tokens.items()
+                if TOKEN.fullmatch(key) and isinstance(value, str) and HEX.fullmatch(value)}
+    legacy = os.environ.get("S1_RELAY_TOKEN_SHA256", "")
+    return {"": legacy} if HEX.fullmatch(legacy) else {}
 
 
 class Store:
@@ -168,19 +183,35 @@ class Handler(BaseHTTPRequestHandler):
         supplied = self.headers.get("Authorization", "")
         if not supplied.startswith("Bearer "):
             return False
-        expected = os.environ.get("S1_RELAY_TOKEN_SHA256", "")  # single-device DEV fallback
-        registry = os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON", "")
-        if registry:
-            try:
-                device_id = safe(self.headers.get("X-Device-Id"))
-                expected = json.loads(registry).get(device_id, "")
-            except (ValueError, TypeError, json.JSONDecodeError):
-                return False
-        return bool(HEX.fullmatch(expected)) and hmac.compare_digest(expected, sha(supplied[7:].encode()))
+        try:
+            device_id = safe(self.headers.get("X-Device-Id")) if os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON") else ""
+        except ValueError:
+            return False
+        expected = configured_tokens().get(device_id, "")
+        return bool(expected) and hmac.compare_digest(expected, sha(supplied[7:].encode()))
 
     def api(self):
         if not self.allowed():
             self.send(401, {"error": "unauthorized"})
+            # Drain accepted-size bodies before close so clients receive the denial instead of a reset.
+            timeout = self.connection.gettimeout()
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                if 0 < length <= (MAX_CHUNK if self.command == "PUT" else 150_000):
+                    deadline = time.monotonic() + 1
+                    while length > 0:
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            break
+                        self.connection.settimeout(remaining)
+                        data = self.rfile.read1(min(length, 65536))
+                        if not data:
+                            break
+                        length -= len(data)
+            except (ValueError, OSError):
+                pass
+            finally:
+                self.connection.settimeout(timeout)
             return
         pieces = [p for p in urlsplit(self.path).path.split("/") if p]
         if pieces[:2] != ["v1", "bundles"]:
@@ -213,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            self.send(200, {"status": "ok", "upload_enabled": bool(os.environ.get("S1_RELAY_TOKEN_SHA256"))})
+            self.send(200, {"status": "ok", "upload_enabled": bool(configured_tokens())})
         else:
             self.api()
 

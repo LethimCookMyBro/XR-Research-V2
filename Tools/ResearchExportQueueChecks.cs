@@ -16,8 +16,8 @@ static class ResearchExportQueueChecks
         using(var logger=new HandsLabLogger(Path.Combine(root,"Logs"),"SimulatedController","Fixture",phase:"ResearchSession",taskId:"session",runId:record.run_id))
         {
             logger.Record("TASK_STARTED","task.A","Started",new{components=new{one="original"}},"None",phaseOverride:"Experiment",taskIdOverride:"A");
-            string first=ResearchExportQueue.Snapshot(root,logger,record,"task_A_complete","task_finalized",JObject.FromObject(new{fixture=true,simulated_presence=false,hardware_verified=false}));
-            string repeated=ResearchExportQueue.Snapshot(root,logger,record,"task_A_complete","task_finalized",JObject.FromObject(new{fixture=true,simulated_presence=false,hardware_verified=false}));
+            string first=ResearchExportQueue.Snapshot(root,logger,record,"task_A_complete","task_finalized",JObject.FromObject(new{fixture=true,simulated_presence=false,hardware_verified=false})).GetAwaiter().GetResult();
+            string repeated=ResearchExportQueue.Snapshot(root,logger,record,"task_A_complete","task_finalized",JObject.FromObject(new{fixture=true,simulated_presence=false,hardware_verified=false})).GetAwaiter().GetResult();
             Check(first==repeated,"Repeated identical snapshot created duplicate");
             Check(ReadShared(logger.EventsPath).SequenceEqual(File.ReadAllBytes(Path.Combine(first,"raw/events.jsonl"))),"Raw events changed");
             Check(ReadShared(logger.MovementPath).SequenceEqual(File.ReadAllBytes(Path.Combine(first,"raw/movement.csv"))),"Raw movement changed");
@@ -28,25 +28,25 @@ static class ResearchExportQueueChecks
             string queue=Directory.GetFiles(Path.Combine(root,"ExportQueue"),"*.json").Single();
             Check((string)JObject.Parse(File.ReadAllText(queue))["status"]=="queued","Not visibly queued");
             bool rejected=false;record.run_id="wrong_run";
-            try{ResearchExportQueue.Snapshot(root,logger,record,"wrong_identity","partial");}catch(InvalidDataException){rejected=true;}
+            try{ResearchExportQueue.Snapshot(root,logger,record,"wrong_identity","partial").GetAwaiter().GetResult();}catch(InvalidDataException){rejected=true;}
             Check(rejected,"Wrong run accepted");record.run_id=logger.RunId;
-            rejected=false;try{ResearchExportQueue.Snapshot(root,logger,record,"premature","finalized");}catch(InvalidOperationException){rejected=true;}
+            rejected=false;try{ResearchExportQueue.Snapshot(root,logger,record,"premature","finalized").GetAwaiter().GetResult();}catch(InvalidOperationException){rejected=true;}
             Check(rejected,"Active logger labeled finalized");
             Check(logger.Complete(),"Logger failed completion");
-            string final=ResearchExportQueue.Snapshot(root,logger,record,"session_complete","finalized");
+            string final=ResearchExportQueue.Snapshot(root,logger,record,"session_complete","finalized").GetAwaiter().GetResult();
             Check(final!=first,"Finalized snapshot reused partial bytes");
             Check(Directory.GetFiles(Path.Combine(root,"ExportQueue"),"*.json").Length==2,"Queue not immutable/deduplicated");
             // Missing source bytes must retain staging diagnostics and never publish a COMPLETE export.
             File.Move(logger.MovementPath,logger.MovementPath+".preserved");
-            rejected=false;try{ResearchExportQueue.Snapshot(root,logger,record,"missing_source","finalized");}catch(IOException){rejected=true;}
+            rejected=false;try{ResearchExportQueue.Snapshot(root,logger,record,"missing_source","finalized").GetAwaiter().GetResult();}catch(IOException){rejected=true;}
             Check(rejected,"Missing source accepted");
             using(var large=new HandsLabLogger(Path.Combine(root,"Logs"),"SimulatedController","Fixture",phase:"ResearchSession",taskId:"session",runId:"fixture_large"))
             {
                 Check(large.Complete(),"Large fixture logger closure");record.run_id=large.RunId;
                 using(var data=new FileStream(large.MovementPath,FileMode.Append,FileAccess.Write)){var chunk=new byte[65536];for(int i=0;i<256;i++)data.Write(chunk,0,chunk.Length);}
-                long before=GC.GetAllocatedBytesForCurrentThread();
-                string copied=ResearchExportQueue.Snapshot(root,large,record,"large_copy_memory","finalized");
-                long allocated=GC.GetAllocatedBytesForCurrentThread()-before;
+                long before=GC.GetTotalAllocatedBytes(true);
+                string copied=ResearchExportQueue.Snapshot(root,large,record,"large_copy_memory","finalized").GetAwaiter().GetResult();
+                long allocated=GC.GetTotalAllocatedBytes(true)-before;
                 Check(allocated<2*1024*1024,"Snapshot allocated entire large raw file: "+allocated);
                 Check(new FileInfo(Path.Combine(copied,"raw/movement.csv")).Length==new FileInfo(large.MovementPath).Length,"Large raw copy length mismatch");
                 Console.WriteLine("Large-copy allocation expected <2097152 bytes; actual="+allocated+"; synthetic malformed raw fixture, not movement evidence.");

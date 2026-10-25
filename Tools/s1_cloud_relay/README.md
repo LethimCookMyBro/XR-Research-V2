@@ -15,7 +15,7 @@ The current .technical APK records ResearchSessionRegistry snapshots locally fir
 
 ## Deploy relay safely
 
-Railway: build Dockerfile from Tools/s1_cloud_relay; attach persistent volume at /data, set S1_RELAY_DATA_ROOT=/data, bind PORT. With no S1_RELAY_TOKEN_SHA256, all upload APIs return 401. /health is safe.
+Railway: build Dockerfile from Tools/s1_cloud_relay; attach persistent volume at /data, set S1_RELAY_DATA_ROOT=/data, bind PORT. Without a valid enrolled device registry or legacy DEV token, all upload APIs return 401. /health reports authentication configuration readiness, not provider delivery.
 For a DEV device, generate 32+ random characters, provision SHA256 lowercase hash in S1_RELAY_TOKEN_SHA256, and add plaintext token to the **device's app-private configuration only**. Keep provider OAuth in server environment:
 
 S1_GOOGLE_ENABLED=true
