@@ -338,12 +338,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!arrival)
             {
                 var rt = Rect(transform, "ArrivalCue", Vector2.zero, new Vector2(620, 84)); rt.localScale = Vector3.one * .001f;
-                var canvas = rt.gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace; canvas.sortingOrder = 8;
+                var canvas = rt.gameObject.AddComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace;
                 var glass = Round(rt, "Surface", Vector2.zero, rt.sizeDelta, Background, 40); ResearchUITheme.Surface(glass, false, 40);
                 arrivalLabel = Label(rt, "Title", Vector2.zero, new Vector2(570, 65), "", 32); arrivalLabel.alignment = TextAlignmentOptions.Center;
                 arrivalGroup = rt.gameObject.AddComponent<CanvasGroup>(); arrival = rt;
             }
             else { arrivalGroup = arrival.GetComponent<CanvasGroup>(); arrivalLabel = arrival.GetComponentInChildren<TMP_Text>(); }
+            // Transient location feedback must stay behind opaque participant cards.
+            arrivalGroup.GetComponent<Canvas>().sortingOrder = -1;
             arrivalGroup.alpha = 0; arrivalGroup.blocksRaycasts = false;
             PrepareSecondPassSurfaces();
             PrepareSpatialSlates();
