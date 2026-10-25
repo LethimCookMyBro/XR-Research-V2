@@ -874,9 +874,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             {
                 var pose = Hand(1);
                 var point = horizontal == .5f ? rect.TransformPoint(rect.rect.center) : rect.TransformPoint(new Vector2(Mathf.Lerp(rect.rect.xMin, rect.rect.xMax, horizontal), rect.rect.center.y));
-                pose.rotation = Quaternion.FromToRotation(ray.Forward, (point - ray.Origin).normalized) * pose.rotation;
+                var forward = ray.Forward;
+                var direction = (point - ray.Origin).normalized;
+                var correction = Quaternion.FromToRotation(forward, direction);
+                if (horizontal != .5f && correction.x == 0f && correction.y == 0f && correction.z == 0f && correction.w == 1f)
+                {
+                    var axis = Vector3.Cross(forward, direction);
+                    float axisLength = axis.magnitude;
+                    float dot = Vector3.Dot(forward, direction);
+                    // Keep small off-center corrections when the native helper returns exact identity.
+                    if (axisLength > 0f && !float.IsInfinity(axisLength) && dot > 0f && !float.IsInfinity(dot))
+                        correction = Quaternion.AngleAxis(Mathf.Atan2(axisLength, dot) * Mathf.Rad2Deg, axis / axisLength);
+                }
+                pose.rotation = correction * pose.rotation;
                 Drive(1, pose); yield return Wait(.04);
                 onTarget = ray.State == InteractorState.Hover && ray.CollisionInfo.HasValue && Inside(rect, ray.CollisionInfo.Value.Point);
+                if (onTarget && horizontal != .5f)
+                {
+                    var hit = rect.InverseTransformPoint(ray.CollisionInfo.Value.Point);
+                    onTarget = Mathf.Abs(Mathf.InverseLerp(rect.rect.xMin, rect.rect.xMax, hit.x) - horizontal) <= .001f;
+                }
             }
             Require(onTarget, "SDK ray hovers " + label);
             Drive(1, Hand(1), trigger: 1); yield return Wait(.15);
