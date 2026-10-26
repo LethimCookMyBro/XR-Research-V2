@@ -819,6 +819,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             EndReading("error"); error = message ?? "Unknown media error"; state = MediaState.Error;
             if (player) player.Pause(); if (videoAudio) videoAudio.mute = true;
+            if (videoImage) videoImage.enabled = false;
             statusLabel.text = Local("อ่านสื่อไม่ได้: ", "メディアを読み込めません: ", "Media error: ") + error;
             statusLabel.gameObject.SetActive(true);
             RefreshVideoControls(); RefreshScrollbar(); Event("REFERENCE_VIEWER_ERROR", "System");

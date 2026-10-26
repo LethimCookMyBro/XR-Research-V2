@@ -62,6 +62,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
                 throw new Exception("ResearchFlow build requires the active build target to already be Android");
 
+            ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
+
             // Preserve unsaved work rather than silently saving it.
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 if (SceneManager.GetSceneAt(i).isDirty)
@@ -72,14 +74,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
             var preservedFiles = new[] {
                 "ProjectSettings/ProjectSettings.asset",
+                ResearchBuildIntegrityChecks.LocalServicesSettingsPath,
                 "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_English.asset",
                 "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_Thai.asset",
                 "Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/ResearchFlow_Japanese.asset",
                 "Assets/VRMaintenanceResearch/TrainingV2/UI/Fonts/NotoSansThai SDF.asset"
             };
-            foreach (string path in preservedFiles.Skip(1))
+            foreach (string path in preservedFiles.Where(path => path.StartsWith("Assets/", StringComparison.Ordinal)))
                 if (AssetDatabase.LoadAllAssetsAtPath(path).Any(EditorUtility.IsDirty))
                     throw new Exception("Unsaved font changes present: " + path);
+            ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
             var preservedBytes = preservedFiles.ToDictionary(path => path, File.ReadAllBytes);
 
             var target = NamedBuildTarget.Android;
@@ -207,8 +211,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 TryRestore(() => AssetDatabase.SaveAssetIfDirty(settings), restoreErrors);
                 // TMP clears dynamic font data and Unity persists temporary settings during builds.
                 foreach (var pair in preservedBytes) TryRestore(() => File.WriteAllBytes(pair.Key, pair.Value), restoreErrors);
-                foreach (string path in preservedFiles.Skip(1))
+                foreach (string path in preservedFiles.Where(path => path.StartsWith("Assets/", StringComparison.Ordinal)))
                     TryRestore(() => AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate), restoreErrors);
+                bool localServicesRestored = false;
+                TryRestore(() =>
+                {
+                    ResearchBuildIntegrityChecks.RestoreLocalServicesDisabled(preservedBytes[ResearchBuildIntegrityChecks.LocalServicesSettingsPath]);
+                    localServicesRestored = true;
+                }, restoreErrors);
                 bool sourceFilesRestored = false;
                 TryRestore(() => sourceFilesRestored = preservedBytes.All(p => File.ReadAllBytes(p.Key).SequenceEqual(p.Value)), restoreErrors);
                 TryRestore(() =>
@@ -216,6 +226,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Write("build_settings_restored", new
                     {
                         sourceFilesRestored,
+                        localServicesRestored,
                         restorationErrors = restoreErrors.Select(e => e.ToString()).ToArray(),
                         applicationIdentifier = PlayerSettings.GetApplicationIdentifier(target),
                         originalApplicationIdentifier = oldId,
@@ -237,7 +248,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         sceneMutated = false
                     });
                 }, restoreErrors);
-                if (!sourceFilesRestored || restoreErrors.Count > 0)
+                if (!sourceFilesRestored || !localServicesRestored || restoreErrors.Count > 0)
                     throw new AggregateException("Build restoration failed; see build_settings_restored.json.", restoreErrors);
             }
         }
