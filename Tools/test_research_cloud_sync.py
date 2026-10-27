@@ -68,6 +68,13 @@ class CloudSyncChecks(unittest.TestCase):
         again=cs.sync(self.data,c)['bundles'][0]
         self.assertEqual(again['status'],'cloud_folder_verified');self.assertEqual(again['files_copied'],1);rx.verify(self.remote(again))
 
+    def test_damaged_remote_receipt_is_restored_from_local_record(self):
+        c=self.config();first=cs.sync(self.data,c)['bundles'][0]
+        receipt=self.remote(first).parent/(self.remote(first).name+'.cloud_receipt.json');original=receipt.read_bytes()
+        receipt.write_bytes(original.replace(b'DEV900',b'DEV9O0'))
+        self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
+        self.assertEqual(receipt.read_bytes(),original)
+
     def test_failed_copy_backs_off_and_force_retries(self):
         c=self.config();t=cs.now()
         with patch.object(cs.shutil,'copyfile',side_effect=OSError('auth expired / server denied')):r=cs.sync(self.data,c,t=t)['bundles'][0]

@@ -107,6 +107,8 @@ def sync_bundle(root,c,bundle,force,t):
             previous=rx.load(local)
             if previous.get('manifest_sha256')!=receipt['manifest_sha256'] or previous.get('remote_path')!=receipt['remote_path']:raise ValueError('Immutable cloud receipt identity changed')
             if not copied:
+                remote=dest.parent/(dest.name+'.cloud_receipt.json');stored=local.read_bytes()
+                if not remote.is_file() or remote.read_bytes()!=stored:atomic_write(remote,stored)
                 pending.unlink(missing_ok=True)
                 return dict(base,status='already_cloud_verified',remote_path=receipt['remote_path'])
         data=rx.canonical(receipt)
