@@ -46,10 +46,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         public static void RequireLocalServicesDisabled()
         {
-            if (ServicesEnabled || CrashReportingSettings.enabled || AnalyticsSettings.enabled)
-                throw new InvalidOperationException("Research APK requires local services, Cloud Diagnostics and analytics disabled; inspect serialized APK before installation");
+            if (ServicesEnabled || CrashReportingSettings.enabled || AnalyticsSettings.enabled || HardwareStatisticsEnabled)
+                throw new InvalidOperationException("Research APK requires local services, Cloud Diagnostics, analytics and hardware statistics disabled; inspect serialized APK before installation");
             ValidateDisabledLocalServicesBytes(File.ReadAllBytes(LocalServicesSettingsPath));
         }
+
+        // Player Settings "Disable HW Statistics" has no public API; a missing member fails the build closed.
+        static bool HardwareStatisticsEnabled => (bool)(typeof(PlayerSettings).GetProperty("submitAnalytics", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new MissingMemberException(nameof(PlayerSettings), "submitAnalytics")).GetValue(null);
 
         static void ValidateDisabledLocalServicesBytes(byte[] bytes)
         {
