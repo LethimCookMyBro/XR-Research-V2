@@ -36,6 +36,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool deferredRetryUsed = true;
         bool faceHidden;
         bool placementAccepted;
+        bool IgnoreMovableParts => panelId == "task_information" && placementAccepted && FixedWorkingSlate;
         bool FixedWorkingSlate => ResearchUIPolicy.StationAnchoredPanels && !centered && view && view.controller
             && view.controller.Flow != null && view.controller.Flow.IsTaskActive
             && ResearchStationAnchors.Supports(view.controller.CurrentStationIndex, panelId);
@@ -542,7 +543,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             int overlaps = Physics.OverlapBoxNonAlloc(centre, half, overlapBuffer, rotation, ~0, QueryTriggerInteraction.Ignore);
             if (overlaps == overlapBuffer.Length) { LastRejection = "overlap_buffer_full"; return false; }
             for (int i = 0; i < overlaps; i++)
-                if (SceneCollider(overlapBuffer[i])) { LastRejection = "collider:" + overlapBuffer[i].name; return false; }
+                if (Blocks(overlapBuffer[i])) { LastRejection = "collider:" + overlapBuffer[i].name; return false; }
             if (environment == null)
                 environment = gameObject.scene.GetRootGameObjects().Where(g => g.name.StartsWith("Environment_") || g.name == "ResearchFlow_EnvironmentSecondPass")
                     .SelectMany(g => g.GetComponentsInChildren<Renderer>(true))
@@ -550,7 +551,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     .Distinct().ToArray();
             foreach (var renderer in environment)
                 if (renderer && renderer.enabled && renderer.gameObject.activeInHierarchy
-                    && renderer.bounds.size.x < 4 && renderer.bounds.size.z < 4 && box.Intersects(renderer.bounds))
+                    && renderer.bounds.size.x < 4 && renderer.bounds.size.z < 4 && box.Intersects(renderer.bounds) && !MovablePart(renderer))
                 { LastRejection = "renderer:" + renderer.name; return false; }
             if (!view.Head) return true;
             sightCorners[0] = position + rotation * Vector3.Scale(new Vector3(min.x, min.y, localCentre.z), RestScale);
@@ -566,6 +567,9 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         bool SceneCollider(Collider collider) => collider && !collider.transform.IsChildOf(view.transform)
             && !collider.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+        bool Blocks(Collider collider) => SceneCollider(collider) && !(IgnoreMovableParts && collider.attachedRigidbody);
+        bool MovablePart(Renderer renderer) => IgnoreMovableParts
+            && (renderer.GetComponentInParent<Rigidbody>() || renderer.GetComponentInParent<ResearchS1Cable>());
 
         bool SightVolumeClear(Vector3 eye, Vector3 centre, Quaternion rotation, Bounds box, Bounds? peer)
         {
@@ -586,13 +590,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             for (int i = 0; i < overlaps; i++)
             {
                 var collider = overlapBuffer[i];
-                if (SceneCollider(collider) && GeometryUtility.TestPlanesAABB(sightVolume, collider.bounds))
+                if (Blocks(collider) && GeometryUtility.TestPlanesAABB(sightVolume, collider.bounds))
                 { LastRejection = "occluded_collider:" + collider.name; return false; }
             }
             foreach (var renderer in environment)
                 if (renderer && renderer.enabled && renderer.gameObject.activeInHierarchy
                     && renderer.bounds.size.x < 4 && renderer.bounds.size.z < 4 && reach.Intersects(renderer.bounds)
-                    && GeometryUtility.TestPlanesAABB(sightVolume, renderer.bounds))
+                    && GeometryUtility.TestPlanesAABB(sightVolume, renderer.bounds) && !MovablePart(renderer))
                 { LastRejection = "occluded:" + renderer.name; return false; }
             return true;
         }

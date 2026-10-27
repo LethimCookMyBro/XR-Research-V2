@@ -294,7 +294,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (!guard.InputNeutral) return true;
                     if (guard.Mode != HandsLabInputGuard.InputMode.Controller || !(guard.controllerReference is Oculus.Interaction.Input.IController input)) continue;
                     var value = input.ControllerInput;
-                    if (value.Primary2DAxis.sqrMagnitude >= .04f || value.Secondary2DAxis.sqrMagnitude >= .04f
+                    var stick = value.Primary2DAxis;
+                    bool aimsTeleport = stick.y > Mathf.Abs(stick.x);
+                    bool readerOwnsStick = (ReferenceOpen && !ReferenceMinimized) || referenceNavigationHeld;
+                    bool stickBusy = stick.sqrMagnitude >= .04f && (aimsTeleport || readerOwnsStick);
+                    if (stickBusy || value.Secondary2DAxis.sqrMagnitude >= .04f
                         || value.Trigger >= guard.analogReleaseThreshold || value.Grip >= guard.analogReleaseThreshold
                         || value.PrimaryButton || value.SecondaryButton || value.TriggerButton || value.GripButton
                         || value.MenuButton || value.Primary2DAxisClick) return true;
