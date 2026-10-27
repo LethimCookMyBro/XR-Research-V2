@@ -107,8 +107,11 @@ def sync_bundle(root,c,bundle,force,t):
             previous=rx.load(local)
             if previous.get('manifest_sha256')!=receipt['manifest_sha256'] or previous.get('remote_path')!=receipt['remote_path']:raise ValueError('Immutable cloud receipt identity changed')
             if not copied:
-                remote=dest.parent/(dest.name+'.cloud_receipt.json');stored=local.read_bytes()
-                if not remote.is_file() or remote.read_bytes()!=stored:atomic_write(remote,stored)
+                remote=dest.parent/(dest.name+'.cloud_receipt.json')
+                try:held=json.loads(remote.read_bytes())
+                except (OSError,ValueError):held=None
+                # Another PC's valid receipt for the same bundle differs only in verified_utc; repair damage, never ping-pong.
+                if not isinstance(held,dict) or any(held.get(k)!=receipt[k] for k in receipt if k!='verified_utc'):atomic_write(remote,local.read_bytes())
                 pending.unlink(missing_ok=True)
                 return dict(base,status='already_cloud_verified',remote_path=receipt['remote_path'])
         data=rx.canonical(receipt)

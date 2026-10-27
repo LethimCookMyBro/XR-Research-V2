@@ -75,6 +75,14 @@ class CloudSyncChecks(unittest.TestCase):
         self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
         self.assertEqual(receipt.read_bytes(),original)
 
+    def test_valid_receipt_from_another_pc_is_left_alone(self):
+        c=self.config();first=cs.sync(self.data,c)['bundles'][0]
+        receipt=self.remote(first).parent/(self.remote(first).name+'.cloud_receipt.json')
+        other=json.loads(receipt.read_text());other['verified_utc']='2099-01-01T00:00:00Z'
+        receipt.write_text(json.dumps(other))
+        self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
+        self.assertEqual(json.loads(receipt.read_text())['verified_utc'],'2099-01-01T00:00:00Z')
+
     def test_failed_copy_backs_off_and_force_retries(self):
         c=self.config();t=cs.now()
         with patch.object(cs.shutil,'copyfile',side_effect=OSError('auth expired / server denied')):r=cs.sync(self.data,c,t=t)['bundles'][0]
