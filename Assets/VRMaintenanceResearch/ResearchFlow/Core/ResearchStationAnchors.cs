@@ -24,7 +24,7 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// </summary>
     public static class ResearchStationAnchors
     {
-        public const string Version = "S1_STATION_ANCHORS_20261023_SEATED_COMPUTER";
+        public const string Version = "S1_STATION_ANCHORS_20261027_READER_CLEARANCE";
         public const int TrainingStation = 0, ComputerStation = 1, FanStation = 2;
         public const double MinEyeHeight = 1.0, MaxEyeHeight = 1.95, DefaultEyeHeight = 1.6;
 
@@ -40,7 +40,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly Base[][] ReaderBases =
         {
             new[] { new Base(-20, 1.8, 0) },
-            new[] { new Base(-20, 1.5, .1) },
+            new[] { new Base(-20, 1.5, .1), new Base(-30, 1.2, .6), new Base(-60, 1.8, .6) },
             new[] { new Base(-35, 1.9, 0) },
         };
         // Each authored base keeps its side while the clearance ladder raises or steps back.

@@ -115,6 +115,15 @@ static class ResearchFlowChecks
             && Near(seatedComputer.X, Math.Sin(20 * Math.PI / 180) * 2.2) && Near(seatedComputer.Y, 1.8)
             && Near(seatedComputer.Z, 5.35 - Math.Cos(20 * Math.PI / 180) * 2.2),
             "seated Computer fallback uses the measured clear side without moving the calibrated head");
+        foreach (double eye in new[] { 1.0, 1.65 })
+        {
+            ResearchStationAnchors.TryGet(1, "P", "reference", 0, 0, 5.6, 180, eye, 4, out var readerP);
+            ResearchStationAnchors.TryGet(1, "Q", "reference", 0, 0, 5.6, 180, eye, 4, out var readerQ);
+            Check(Near(readerP.X, .6) && Near(readerP.Y, eye + .6) && Near(readerP.Z, 4.5607695)
+                && Near(readerP.X, readerQ.X) && Near(readerP.Y, readerQ.Y) && Near(readerP.Z, readerQ.Z),
+                "Computer Reader clearance candidate preserves calibrated P/Q equivalence eye=" + eye);
+        }
+        Check(ResearchStationAnchors.CandidateCount(1, "reference") == 12, "Computer Reader has bounded authored clearance candidates");
         bool alternativesSafe = true;
         int count = ResearchStationAnchors.CandidateCount(1, "task_information");
         for (int c = 0; c < count; c++)

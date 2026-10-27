@@ -454,7 +454,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var logRoot = Path.Combine(DataRoot, "Logs");
                 Logger = new HandsLabLogger(logRoot, "None", "UnityXR / OpenXR", executionEnvironment: Application.isEditor ? "Editor" : "QuestStandalone",
                     phase: "ResearchSession", taskId: "session", contentVersion: "research.flow.1", technicalTest: Record.test_data, testData: Record.test_data,
-                    runId: Record.run_id, resume: resume);
+                    runId: Record.run_id, resume: resume,
+                protocolVersions: new { station_anchor_version = ResearchStationAnchors.Version, reader_ui_version = ResearchFlowView.ReaderFeedbackVersion });
                 Logger.WriteFailed += LoggerFailed;
                 if (Logger.State != HandsLabLogState.Active) throw new IOException(Logger.LastError);
                 if (resume && Record.ui_policy == null)
@@ -470,7 +471,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     recorded_ui_policy = Record.ui_policy, protocol_version = Record.protocol_version ?? ResearchUIPolicy.ProtocolFor(ResearchUIPolicy.Active),
                     training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
                     layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
-                    panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
+                    station_anchor_version = ResearchStationAnchors.Version, reader_ui_version = ResearchFlowView.ReaderFeedbackVersion,
+                panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
                     reader_distance_preset = ResearchUIPolicy.ReaderDistanceAllowed(IsTechnical) ? ResearchUIPolicy.ReaderDistanceVersion : null,
                     tutorial_facts = TutorialFacts, attribution = policyAttribution }, source: "System", reason: policyAttribution);
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
@@ -784,6 +786,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Flow == null || Transitioning || !string.IsNullOrEmpty(Error)) return;
             string checkpointTask = Flow.CurrentTask;
             // Headset removal may pause a checkpoint; the same researcher confirmation completes it.
+            if (Flow.Paused && ResearcherResumeBlocker() == null) view?.RecoverBlockedReaderForResearcher();
             if (Flow.Paused && !Resume("ResearcherResumed", "System", "None")) return;
             if (!Flow.ResearcherResumeCheckpoint()) return;
             Log("CHECKPOINT_COMPLETED", "questionnaire", "ResearcherConfirmed", source: "System", phaseOverride: "Checkpoint", taskIdOverride: checkpointTask);

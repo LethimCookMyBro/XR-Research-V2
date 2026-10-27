@@ -18,7 +18,9 @@ def runtime_input(name):
             name.startswith("Assets/VRMaintenanceResearch/ResearchFlow/")
             and "/Editor/" not in name and "/Tests/" not in name
             and Path(name).suffix.lower() not in {".md", ".ps1", ".txt"}) or name in {
-                "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity",
+                "Assets/VRMaintenanceResearch/HandsLabQuest3/Runtime/HandsLabLogger.cs",
+        "Assets/VRMaintenanceResearch/HandsLabQuest3/Runtime/HandsLabLogger.cs.meta",
+        "Assets/VRMaintenanceResearch/Scenes/V2/VRResearch_ResearchFlow_V2.unity",
                 "Packages/manifest.json", "Packages/packages-lock.json",
                 "ProjectSettings/ProjectVersion.txt", "ProjectSettings/QualitySettings.asset"}
 

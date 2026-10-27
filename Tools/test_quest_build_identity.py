@@ -23,7 +23,9 @@ class BuildIdentityTests(unittest.TestCase):
                      "Assets/StreamingAssets/ResearchReaderDemo/test.mp4",
                      "Assets/StreamingAssets/ResearchReaderDemo/source.pdf.meta",
                      "Assets/StreamingAssets/ResearchReaderDemo/test.mp4.meta",
-                     "Assets/StreamingAssets/ResearchReaderDemo.meta"]
+                     "Assets/StreamingAssets/ResearchReaderDemo.meta",
+                "Assets/VRMaintenanceResearch/HandsLabQuest3/Runtime/HandsLabLogger.cs",
+                "Assets/VRMaintenanceResearch/HandsLabQuest3/Runtime/HandsLabLogger.cs.meta"]
             files = {}
             for name in names:
                 path = root / name

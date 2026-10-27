@@ -71,7 +71,7 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Logging
 
         public HandsLabLogger(string rootPath, string inputSource, string runtime, double sampleRateHz = 20, string executionEnvironment = "Unknown", bool hardwareVerified = false, double maxPoseAgeSeconds = .25,
             string phase="HandsLab",string taskId="handslab",string contentVersion=ContentVersion,bool technicalTest=true,bool testData=true,
-            string runId=null,bool resume=false)
+            string runId=null,bool resume=false,object protocolVersions=null)
         {
             if(string.IsNullOrWhiteSpace(inputSource) || string.IsNullOrWhiteSpace(runtime))throw new ArgumentException("Explicit input source and runtime are required");
             CheckInputSource(inputSource);
@@ -94,6 +94,7 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Logging
                 movementWriter.Flush();
                 using(var metadata=Create(MetadataPath))metadata.Write(JsonConvert.SerializeObject(new {
                     run_id=RunId,phase,task_id=taskId,technical_test=technicalTest,test_data=testData,hardware_verified=hardwareVerified,
+                protocol_versions=protocolVersions,
                     schema_version=SchemaVersion,content_version=contentVersion,initial_input_source=inputSource,runtime,execution_environment=executionEnvironment,
                     started_utc=DateTime.UtcNow.ToString("O",CultureInfo.InvariantCulture),clock="Stopwatch monotonic seconds shared by events and movement",
                     seq_scope="global across events.jsonl and movement.csv",movement_configured_max_hz=sampleRateHz,

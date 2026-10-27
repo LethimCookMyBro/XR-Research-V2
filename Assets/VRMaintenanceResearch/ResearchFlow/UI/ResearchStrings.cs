@@ -6,12 +6,19 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// <summary>Equivalent participant copy. Task-specific manuals must come from the approved task content.</summary>
     public static class ResearchStrings
     {
-        public const string ContentVersion = "research-flow-th-jp-focused-recovery-draft-14";
+        public const string ContentVersion = "research-flow-th-jp-reader-feedback-draft-15";
         public const string TranslationStatus = "BILINGUAL_RESEARCHER_REVIEW_PENDING";
 
         // Each row has exactly one English, Thai, and Japanese rendition of the same message.
         private static readonly string[][] Rows =
         {
+            new[] { "reference.placement_blocked", "Reader unavailable. Pause and ask the researcher.", "แสดงคู่มือไม่ได้ พักและแจ้งผู้วิจัย", "資料を表示できません。中断して研究者に知らせてください。" },
+            new[] { "reference.direction_left", "Reader is to your left", "คู่มืออยู่ทางซ้าย", "資料は左側にあります" },
+            new[] { "reference.direction_right", "Reader is to your right", "คู่มืออยู่ทางขวา", "資料は右側にあります" },
+            new[] { "reference.direction_up", "Reader is above", "คู่มืออยู่ด้านบน", "資料は上にあります" },
+            new[] { "reference.direction_down", "Reader is below", "คู่มืออยู่ด้านล่าง", "資料は下にあります" },
+            new[] { "reference.direction_behind", "Reader is behind you", "คู่มืออยู่ด้านหลัง", "資料は後ろにあります" },
+            new[] { "reference.direction_ahead", "Reader is ahead", "คู่มืออยู่ด้านหน้า", "資料は前にあります" },
             new[] { "researcher.state_completed", "Completed", "เสร็จสิ้น", "完了" },
             new[] { "researcher.state_aborted", "Ended early", "จบก่อนกำหนด", "途中終了" },
             new[] { "researcher.state_invalid", "Invalid data", "ข้อมูลใช้ไม่ได้", "無効データ" },

@@ -952,20 +952,145 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             while (!ready()) { Require(activeTime < until, "Reader never reached: " + what + " (" + controller.view.ReferenceViewer.Status + ")"); yield return null; }
         }
 
-        static IEnumerator ReaderTourRoutine()
+        public static string ReaderNaturalPoseTour() => Start(ReaderTourRoutine(true), 240);
+
+        public static string ReaderPlacementFailureTour() => Start(ReaderPlacementFailureRoutine(), 90);
+
+        static IEnumerator ReaderPlacementFailureRoutine()
+        {
+            Require(controller.Flow.IsTaskActive && controller.Record.test_data, "Placement fault injection requires an active DEV task.");
+            var station = controller.stations[controller.CurrentStationIndex];
+            ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
+            ResearchFlowVisualInput.SetHeadFacing(station.position + station.forward * 2f + Vector3.up * (float)controller.StationEyeHeight);
+            yield return Settle();
+            yield return RayClick("reference");
+            yield return Settle();
+            var panel = controller.view.referencePanel;
+            Require(!panel.PlacementBlocked && panel.HasAcceptedPose, "Fault fixture requires accepted Reader.");
+            var pose = new Pose(panel.transform.position, panel.transform.rotation);
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            Require((string)typeof(ResearchFlowView).GetField("readerAnchorKey", flags).GetValue(controller.view) == "task:" + controller.Flow.CurrentTask,
+                "First accepted fixed Reader caches its pose before any close.");
+            ParkControllers();
+            yield return Wait(.1);
+            Drive(1, Hand(1), trigger: 1);
+            yield return Wait(.1);
+            var heldObstacle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                heldObstacle.name = "ReaderHeldInputFault_Owned";
+                heldObstacle.transform.SetPositionAndRotation(pose.position, pose.rotation);
+                heldObstacle.transform.localScale = new Vector3(.3f, .3f, .3f);
+                Physics.SyncTransforms();
+                yield return Wait(.3);
+                Require(panel.PlacementBlocked && controller.view.ReaderPlacementFeedbackVisible
+                    && typeof(ResearchFlowView).GetField("readerFeedback", flags).GetValue(controller.view).ToString() != "Direction",
+                    "Held input never leaves a direction cue pointing to a concealed Reader.");
+                Require(Vector3.Distance(pose.position, panel.transform.position) < .005f, "Held-input obstruction does not move Reader.");
+                Capture("reader_held_obstruction_feedback");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(heldObstacle); Drive(1, Hand(1)); }
+            yield return Settle();
+            typeof(ResearchPanelMotion).GetField("placementAccepted", flags).SetValue(panel, false);
+            typeof(ResearchPanelMotion).GetMethod("SetPlacementBlocked", flags).Invoke(panel, new object[] { true });
+            yield return Wait(.3);
+            Require(panel.PlacementClear(pose.position, pose.rotation) && panel.PlacementBlocked && !panel.GetComponent<Canvas>().enabled,
+                "Clear stale transform stays hidden without an accepted authored pose.");
+            panel.RestorePose(pose.position, pose.rotation);
+            yield return Settle();
+            ResearchFlowVisualInput.SetHeadFacing(((RectTransform)panel.transform).TransformPoint(((RectTransform)panel.transform).rect.center));
+            yield return Settle();
+            yield return RayClick("reference_tab.user_manual");
+            yield return AwaitViewer(() => controller.view.IsReferenceActuallyVisible, "Visible content before geometry fault");
+            ParkControllers();
+            yield return Wait(.1);
+            Drive(1, Hand(1), trigger: 1);
+            yield return Wait(.1);
+            panel.Recenter(false, false, reason: "fixture_native_pose_pending");
+            typeof(ResearchPanelMotion).GetMethod("TryApplyPendingRecenter", flags).Invoke(panel, new object[] { false, true, true, Time.frameCount + 1 });
+            Require(panel.RecenterPending && !panel.HasAcceptedPose && !panel.GetComponent<Canvas>().enabled && !controller.view.IsReferenceActuallyVisible,
+                "Pending untracked native pose conceals old content and exposure.");
+            Require(Vector3.Distance(pose.position, panel.transform.position) < .005f, "Held input does not move Reader.");
+            Drive(1, Hand(1));
+            yield return Settle();
+            yield return AwaitViewer(() => controller.view.IsReferenceActuallyVisible, "Visibility resumes only after accepted pose");
+            GameObject obstacle = null;
+            try
+            {
+                obstacle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                obstacle.name = "ReaderPlacementFault_Owned";
+                obstacle.transform.SetPositionAndRotation(pose.position, pose.rotation);
+                obstacle.transform.localScale = new Vector3(.3f, .3f, .3f);
+                Physics.SyncTransforms();
+                yield return Wait(.3);
+                Require(panel.PlacementBlocked && panel.PlacementFailureKind == "geometry" && !controller.view.IsReferenceActuallyVisible,
+                    "Geometry obstruction conceals Reader and ends exposure.");
+                ResearchFlowVisualInput.SetHeadFacing(station.position + station.forward * 2f + Vector3.up * (float)controller.StationEyeHeight);
+                yield return Settle();
+                Require(controller.view.ReaderPlacementFeedbackVisible, "Geometry failure has visible neutral recovery feedback.");
+                Capture("reader_geometry_failure_feedback");
+                Require(Vector3.Distance(pose.position, panel.transform.position) < .005f, "Blocked Reader does not silently move.");
+                yield return RayClick("pause");
+                yield return Settle();
+                Require(controller.Flow.Paused, "Recovery goes through workflow pause.");
+                UnityEngine.Object.DestroyImmediate(obstacle); obstacle = null;
+                yield return ConsoleClick(Console(), "resume");
+                yield return Settle();
+                Require(!controller.Flow.Paused && !controller.ReferenceOpen, "Researcher recovery does not automatically open Reference.");
+                yield return RayClick("reference");
+                yield return Settle();
+                Require(!panel.PlacementBlocked && Vector3.Distance(pose.position, panel.transform.position) < .005f,
+                    "Participant reopens at the recovered authored pose.");
+                ResearchFlowVisualInput.SetHeadFacing(((RectTransform)panel.transform).TransformPoint(((RectTransform)panel.transform).rect.center));
+                yield return Settle();
+                yield return RayClick("reference_close");
+                ReaderLog.Add(new { label = "placement_failure_recovery", stale_pose_hidden = true, geometry_concealed = true,
+                    feedback_visible = true, researcher_recovery = true, automatic_reference_open = false });
+            }
+            finally { if (obstacle) UnityEngine.Object.DestroyImmediate(obstacle); }
+        }
+
+
+        static IEnumerator ReaderTourRoutine(bool natural = false)
         {
             ReaderLog.Clear();
             Require(controller.Flow.IsTaskActive, "Reader tour needs an active task.");
+            if (natural)
+            {
+                var station = controller.stations[controller.CurrentStationIndex];
+                ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
+                ResearchFlowVisualInput.SetHeadFacing(station.position + station.forward * 2f + Vector3.up * (float)controller.StationEyeHeight);
+                yield return Settle();
+            }
+            var requestedHead = controller.view.Head.rotation;
             yield return RayClick("reference");
             yield return Settle();
             var viewer = controller.view.ReferenceViewer;
             var panel = controller.view.referencePanel;
+            if (natural)
+            {
+                Require(Quaternion.Angle(requestedHead, controller.view.Head.rotation) < .1f, "Natural open must not turn the head before or during the click.");
+                ReaderLog.Add(new { label = "natural_open", geometry_clear = !panel.PlacementBlocked && panel.PlacementClear(panel.transform.position, panel.transform.rotation),
+                    viewport_readable = panel.IsReadableFromHead, panel = panel.Pose(), head = controller.view.Head.forward.ToString("F3"),
+                    anchor_version = ResearchStationAnchors.Version, feedback_version = ResearchFlowView.ReaderFeedbackVersion,
+                    environment_visible = true, native_verified = false });
+                yield return Wait(.5);
+                Capture("reader_natural_feedback_probe");
+                yield return Wait(.1);
+                Require(panel.IsReadableFromHead || controller.view.ReaderPlacementFeedbackVisible,
+                    "Natural open needs visible feedback; main=" + controller.view.mainPanel.PlacementBlocked + "/" + controller.view.mainPanel.LastRejection
+                    + "; recovery=" + controller.view.RecoveryCanvas.GetComponent<ResearchPanelMotion>().LastRejection);
+                ReaderLog.Add(new { label = "natural_feedback", visible = controller.view.ReaderPlacementFeedbackVisible });
+                Capture("reader_natural_open");
+                Require(!panel.PlacementBlocked, "Natural Reader open geometry: " + panel.LastRejection);
+            }
+            var openedPose = new Pose(panel.transform.position, panel.transform.rotation);
             ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
             yield return Settle();
             var rect = (RectTransform)panel.transform;
             ResearchFlowVisualInput.SetHeadFacing(rect.TransformPoint(rect.rect.center));
             yield return Settle();
-            if (panel.PlacementBlocked)
+            if (panel.PlacementBlocked && !natural)
             {
                 // shortcut: exercises seated Q recovery; add another turn only for a reproduced case.
                 var head = controller.origin.Camera.transform;
@@ -1024,6 +1149,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return RayClick("reference_close");
             yield return Settle();
             Require(!controller.ReferenceOpen, "Reference closed by ray.");
+            if (natural)
+            {
+                yield return Settle();
+                var station = controller.stations[controller.CurrentStationIndex];
+                ResearchFlowVisualInput.SetHeadFacing(station.position + station.forward * 2f + Vector3.up * (float)controller.StationEyeHeight);
+                yield return Settle();
+                yield return RayClick("reference");
+                yield return Settle();
+                Require(!panel.PlacementBlocked && Vector3.Distance(openedPose.position, panel.transform.position) < .005f
+                    && Quaternion.Angle(openedPose.rotation, panel.transform.rotation) < .1f, "Reopen keeps the accepted station pose.");
+                Capture("reader_natural_reopen");
+                ResearchFlowVisualInput.SetHeadFacing(((RectTransform)panel.transform).TransformPoint(((RectTransform)panel.transform).rect.center));
+                yield return Settle();
+                yield return PauseRoutine();
+                Require(controller.Flow.IsTaskActive && !controller.Flow.Paused, "Reader tour returns to the active task after pause/resume.");
+                ReaderLog.Add(new { label = "natural_lifecycle", stable_reopen = true, pause_resume = true, task_active = true });
+            }
             ResearchFlowVisualInput.SetHeadMotion(Vector3.zero, 0);
             yield return Settle();
             Detail = JsonConvert.SerializeObject(ReaderLog);

@@ -328,6 +328,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     panel.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
                     var group = panel.GetComponent<CanvasGroup>(); group.alpha = 1;
                 }
+            // Ownership fixtures inject clear poses; placement failure tests exercise the authored solver separately.
+            foreach (var panel in new[] { f.View.mainPanel, f.View.referencePanel })
+            {
+                if (!panel.PlacementClear(panel.transform.position, panel.transform.rotation))
+                    throw new InvalidOperationException("Ownership fixture pose is not clear: " + panel.name);
+                Set(panel, "RecenterPending", false);
+                typeof(ResearchPanelMotion).GetMethod("AcceptPose", Flags).Invoke(panel, null);
+                var position = panel.transform.position; var rotation = panel.transform.rotation;
+                panel.EnsureClear(false);
+                if (!panel.HasAcceptedPose || panel.RecenterPending || panel.PlacementBlocked || !panel.GetComponent<Canvas>().enabled
+                    || !panel.IsReadableFromHead || panel.transform.position != position || Quaternion.Angle(panel.transform.rotation, rotation) > .001f)
+                    throw new InvalidOperationException("Ownership fixture did not retain its accepted readable pose: " + panel.name);
+            }
                 f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
             }
             void Caption(Fixture f, ResearchUIAction action, string expected, string name)
@@ -346,7 +359,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     new { expected, label.text, label.gameObject.activeInHierarchy, label.isTextOverflowing, label.textInfo.lineCount,
                         label.fontSize, glyphs_fit = glyphsFit, hit_size = new[] { rect.rect.width, rect.rect.height }, caption_rect = new[] { label.rectTransform.rect.width, label.rectTransform.rect.height } });
             }
-            void RecoveryCaption(Fixture f, ResearchUIAction action, string name)
+            void RecoveryCaption(Fixture f, ResearchUIAction action, string name, bool readerFeedback = false)
             {
                 var label = action.transform.Find("Label").GetComponent<TMPro.TMP_Text>();
                 var rect = (RectTransform)action.transform;
@@ -359,9 +372,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var corners = new Vector3[4]; rect.GetWorldCorners(corners);
                 bool surfaceFits = corners.Select(canvasRect.InverseTransformPoint).All(p => p.x >= canvasRect.rect.xMin - 1
                     && p.x <= canvasRect.rect.xMax + 1 && p.y >= canvasRect.rect.yMin - 1 && p.y <= canvasRect.rect.yMax + 1);
-                // The strip is always compact and captions RecoverPanels with recover_short (ResearchFlowView.LayoutRecoveryUtility).
-                string expected = ResearchStrings.Get("action.recover_short", f.Controller.Language);
-                Check(label.gameObject.activeInHierarchy && label.enabled && label.text == expected && label.font == f.View.Font && action.labelKey == "action.recover_short"
+                // The ordinary strip captions RecoverPanels with recover_short (ResearchFlowView.LayoutRecoveryUtility).
+                string key = readerFeedback ? "action.pause_caption" : "action.recover_short";
+                string expected = ResearchStrings.Get(key, f.Controller.Language);
+                Check(action.command == (readerFeedback ? "pause" : "panel_recovery") && label.gameObject.activeInHierarchy && label.enabled && label.text == expected && label.font == f.View.Font && action.labelKey == key
                     && Mathf.Approximately(label.fontSize, ResearchUITheme.Caption) && !label.enableAutoSizing && !label.isTextOverflowing
                     && label.textInfo.lineCount >= 1 && label.textInfo.lineCount <= 2 && glyphsFit && surfaceFits && VisibleHit(f, action),
                     name + ": persistent localized Recovery caption fits actual glyphs, hit target and canvas surface",
@@ -379,15 +393,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     name + ": hover does not duplicate the persistent Recovery caption");
                 if (hint && hint.isActiveAndEnabled) hint.OnPointerExit(hover);
             }
-            // No panel can show Stop: the strip offers the only Stop and never a Pause (ResearchFlowView.RefreshRecoveryUtility:
-            // LayoutRecoveryUtility(false, ..., fallbackStop)); Pause is then the controller Menu (ResearchSessionFlowController Update).
-            void StripStop(Fixture f, string name)
+            // The strip keeps Stop separate; Reader feedback replaces RecoverPanels with Pause.
+            void StripStop(Fixture f, string name, bool readerFeedback = false)
             {
                 var strip = f.View.RecoveryCanvas.transform; var stops = Offered(f, "stop");
                 Check(strip.gameObject.activeInHierarchy && !strip.Find("Pause").gameObject.activeSelf && stops.Length == 1 && stops[0].transform.parent == strip,
-                    name + ": strip offers the one visible Stop and no Pause", stops.Select(a => new { owner = Role(f, a), path = a.transform.name }).ToArray());
+                    name + ": strip offers one visible Stop without a duplicate Pause button", stops.Select(a => new { owner = Role(f, a), path = a.transform.name }).ToArray());
                 Caption(f, strip.Find("Stop").GetComponent<ResearchUIAction>(), ResearchStrings.Get("action.stop_short", f.Controller.Language), name + " Stop");
-                RecoveryCaption(f, strip.Find("RecoverPanels").GetComponent<ResearchUIAction>(), name);
+                RecoveryCaption(f, strip.Find("RecoverPanels").GetComponent<ResearchUIAction>(), name, readerFeedback);
             }
             void InitializeInput(ResearchUIAction action)
             {
@@ -570,7 +583,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var data = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { pointerId = 733 };
                 retired.OnPointerDown(data); var before = f.Events();
                 f.View.referencePanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
-                One(f, "Ownership handoff after acquired Reference press", "Main");
+                One(f, "Reader feedback handoff after acquired Reference press", "Recovery");
                 retired.OnPointerUp(data); retired.GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
                 // A stale release is refused with System UI_CLICK_REJECTED telemetry (ResearchUIAction.OnPointerUp), never a Pause.
                 var added = f.Events().Skip(before.Length).ToArray();
@@ -583,20 +596,28 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var panel = f.View.mainPanel; var handle = panel.gameObject.AddComponent<ResearchDragHandle>(); handle.panel = panel; Field(handle, "dragging", true);
                 panel.transform.rotation *= Quaternion.Euler(0, 180, 0); f.View.referencePanel.transform.rotation *= Quaternion.Euler(0, 180, 0);
                 var position = panel.transform.position; var rotation = panel.transform.rotation;
+                var strip = f.View.RecoveryCanvas.GetComponent<ResearchPanelMotion>();
+                var stripPosition = strip.transform.position; var stripRotation = strip.transform.rotation;
+                var stripSize = ((RectTransform)strip.transform).sizeDelta;
+                var readerPosition = f.View.referencePanel.transform.position; var readerRotation = f.View.referencePanel.transform.rotation;
                 One(f, "Held rear Main and hidden Reference", "None");
                 // A held panel defers every placement, the strip included, so nothing moves under the ray (ResearchFlowView.PanelPlacementBusy).
-                var strip = f.View.RecoveryCanvas.GetComponent<ResearchPanelMotion>();
-                Check(f.View.PanelPlacementBusy && strip.gameObject.activeSelf && strip.RecenterPending,
-                    "Held rear Main and hidden Reference: strip is requested and placed on release", new { pending = strip.RecenterPending, active = strip.gameObject.activeSelf });
+                Check(f.View.PanelPlacementBusy && !strip.gameObject.activeSelf && !strip.RecenterPending,
+                    "Held rear Main and hidden Reference: fallback layout waits for release", new { pending = strip.RecenterPending, active = strip.gameObject.activeSelf });
                 Check(panel.IsDragging && panel.transform.position == position && Quaternion.Angle(panel.transform.rotation, rotation) < .001f,
                     "Fallback availability leaves the injected held pose unchanged");
+                Check(strip.transform.position == stripPosition && Quaternion.Angle(strip.transform.rotation, stripRotation) < .001f
+                    && ((RectTransform)strip.transform).sizeDelta == stripSize && f.View.referencePanel.transform.position == readerPosition
+                    && Quaternion.Angle(f.View.referencePanel.transform.rotation, readerRotation) < .001f,
+                    "Held feedback preserves Reader and recovery geometry");
                 Field(handle, "dragging", false); UnityEngine.Object.DestroyImmediate(handle);
                 // Edit mode never advances Time.frameCount; apply the deferred placement as the next frame would.
                 typeof(ResearchPanelMotion).GetMethod("TryApplyPendingRecenter", Flags).Invoke(strip, new object[] { true, true, true, Time.frameCount + 1 });
                 f.View.RefreshRecoveryUtility(); Canvas.ForceUpdateCanvases();
-                StripStop(f, "Released rear Main and hidden Reference");
-                // With no on-screen Pause, the controller Menu is the Pause route; it calls Command("pause", "Controller").
-                Check(f.Controller.Command("pause", "Controller"), "Controller Menu pause is accepted while no panel offers Pause");
+                StripStop(f, "Released rear Main and hidden Reference", true);
+                One(f, "Released Reader feedback owns Pause", "Recovery");
+                // The controller Menu remains an independent Pause route; it calls Command("pause", "Controller").
+                Check(f.Controller.Command("pause", "Controller"), "Controller Menu pause remains accepted alongside Reader feedback");
                 f.View.Refresh(); One(f, "Paused safety card", "None");
                 SafetyRecovery(f, "Paused geometry remains available", false, Check);
                 Set(f.Controller, "Error", "pause_ownership_fixture_error"); f.View.Refresh(); One(f, "Error safety card", "None");

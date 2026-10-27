@@ -27,16 +27,25 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
             try
             {
-                c.OpenReference("Controller");
+                var timing = (ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(c);
+            timing.Start(logger.Timestamp);
+            if (!c.FloorReady || !timing.CanManipulate) throw new System.InvalidOperationException("Hidden Reader fixture must permit the open request.");
+            c.OpenReference("Controller");
+            if (!c.ReferenceOpen) throw new System.InvalidOperationException("Hidden Reader test did not open the Reader.");
                 logger.Dispose();
-                int opens = 0;
+                int opens = 0, requests = 0;
                 foreach (var line in File.ReadAllLines(logger.EventsPath))
-                    if ((string)JObject.Parse(line)["event"] == "INFORMATION_OPEN") opens++;
+                    {
+                    var row = JObject.Parse(line);
+                    if ((string)row["event"] == "INFORMATION_OPEN") opens++;
+                    if ((string)row["event"] == "REFERENCE_OPEN") requests++;
+                }
                 File.WriteAllText(Path.Combine(evidence, "hidden-exposure.json"), new JObject {
                     ["expected_opens"] = 0, ["actual_opens"] = opens,
                     ["reference_open"] = c.ReferenceOpen, ["rendered_reader"] = false,
                     ["test_data"] = true }.ToString());
-                if (opens != 0) throw new InvalidOperationException("Hidden/nonexistent reader counted as information exposure: " + opens);
+                if (requests != 1) throw new System.InvalidOperationException("Expected one accepted REFERENCE_OPEN request.");
+            if (opens != 0) throw new InvalidOperationException("Hidden/nonexistent reader counted as information exposure: " + opens);
                 if (c.ReferenceSection != "") throw new InvalidOperationException("Task silently defaults to " + c.ReferenceSection + " before deliberate choice.");
                 return "EXPOSURE_PASS hidden_opens=0; task_choice=neutral";
             }

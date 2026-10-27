@@ -124,14 +124,17 @@ namespace VRMaintenanceResearch.ResearchFlow
             ReferenceViewer = referencePanel.gameObject.AddComponent<ResearchReferenceViewer>();
             ReferenceViewer.Initialize(scroll, referenceBody, this);
         }
+        bool ReferenceSurfaceVisible => controller && controller.ReferenceOpen && !controller.ReferenceMinimized
+            && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
+            && referencePanel && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
+            && referencePanel.HasAcceptedPose && !referencePanel.RecenterPending && !referencePanel.PlacementBlocked
+            && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f && ReaderReadable;
+
         void SyncReaderVisibility()
         {
-            if (!ReferenceViewer) return;
-            ReferenceViewer.SetVisible(controller && controller.ReferenceOpen && !controller.ReferenceMinimized
-                && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
-                && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
-                && referenceGroup.alpha > .01f && !referencePanel.PlacementBlocked && ReaderReadable);
+            if (ReferenceViewer) ReferenceViewer.SetVisible(ReferenceSurfaceVisible);
         }
+
         // A DEV Reader pulled close is wider than the view; its central 75% must still face the head inside both eyes.
         bool ReaderReadable => referencePanel.IsReadableFromHead || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable
             && referencePanel.ReadableFromHeadForDrag(referencePanel.transform.position, referencePanel.transform.rotation));
@@ -157,24 +160,58 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public event Action<bool, string> ReferenceVisibilityChanged;
         bool observedReferenceVisible;
-        public bool IsReferenceActuallyVisible => controller && controller.ReferenceOpen && !controller.ReferenceMinimized
-            && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
-            && referencePanel && referencePanel.gameObject.activeInHierarchy && !referencePanel.PlacementBlocked
-            && ReaderReadable
+        public const string ReaderFeedbackVersion = "S1_READER_FEEDBACK_20261027";
+        enum ReaderFeedback { None, Blocked, Direction }
+        ReaderFeedback readerFeedback;
+        TMP_Text readerFeedbackLabel, readerMainFeedbackLabel;
+        bool taskBriefHiddenForReaderFeedback;
+        bool MainCanShowReaderFeedback => controller && controller.Flow?.IsTaskActive == true && !controller.Flow.InspectPassed.HasValue
+            && taskBriefScroll && taskBriefScroll.gameObject.activeInHierarchy && mainContent.activeInHierarchy && mainPanel.gameObject.activeInHierarchy
+            && mainPanel.GetComponent<Canvas>().enabled && !mainPanel.PlacementBlocked && FeedbackRectFits(taskBriefScroll.viewport) && mainGroup.alpha >= .99f;
+        readonly Vector3[] feedbackCorners = new Vector3[4];
+        bool FeedbackRectFits(RectTransform rect)
+        {
+            if (!Head || !rect || !Head.TryGetComponent<Camera>(out var camera) || !camera.isActiveAndEnabled) return false;
+            if ((camera.cullingMask & (1 << rect.gameObject.layer)) == 0) return false;
+            rect.GetWorldCorners(feedbackCorners);
+            bool Fits(Camera.MonoOrStereoscopicEye eye)
+            {
+                foreach (var corner in feedbackCorners)
+                {
+                    var p = camera.WorldToViewportPoint(corner, eye);
+                    if (!(p.z > 0 && p.x >= .02f && p.x <= .98f && p.y >= .02f && p.y <= .98f)) return false;
+                }
+                return true;
+            }
+            return camera.stereoEnabled ? Fits(Camera.MonoOrStereoscopicEye.Left) && Fits(Camera.MonoOrStereoscopicEye.Right) : Fits(Camera.MonoOrStereoscopicEye.Mono);
+        }
+        public bool ReaderPlacementFeedbackVisible => readerFeedback != ReaderFeedback.None
+            && ((taskBriefHiddenForReaderFeedback && readerMainFeedbackLabel && readerMainFeedbackLabel.isActiveAndEnabled && MainCanShowReaderFeedback)
+                || (RecoveryCanvas && RecoveryCanvas.gameObject.activeInHierarchy && RecoveryCanvas.enabled && readerFeedbackLabel.isActiveAndEnabled
+                    && !recoveryPanel.PlacementBlocked && !recoveryPanel.RecenterPending && recoveryPanel.IsReadableFromHead));
+        float readerCueUntil;
+        public bool IsReferenceActuallyVisible => ReferenceSurfaceVisible
             && !string.IsNullOrEmpty(controller.ReferenceSection) && controller.ReferenceAvailable(controller.ReferenceSection)
-            && ReferenceViewer && ReferenceViewer.IsReady && ReferenceViewer.Status != "Blocked"
-            && referencePanel.GetComponent<Canvas>().enabled && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f;
+            && ReferenceViewer && ReferenceViewer.IsReady && ReferenceViewer.Status != "Blocked";
         public void NotifyReferenceVisibility(string reason)
         {
             bool visible = IsReferenceActuallyVisible;
             if (visible == observedReferenceVisible) return;
-            observedReferenceVisible = visible; ReferenceVisibilityChanged?.Invoke(visible, reason);
+            observedReferenceVisible = visible;
+            controller?.Log("REFERENCE_VISIBILITY_CHANGED", "reference", visible ? "Visible" : "Hidden",
+                after: new { content_visible = visible, reference_open = controller.ReferenceOpen,
+                    geometry_blocked = referencePanel && referencePanel.PlacementBlocked && referencePanel.PlacementFailureKind == "geometry" }, source: "System", reason: reason);
+            ReferenceVisibilityChanged?.Invoke(visible, reason);
         }
         public void OnSpatialDiscontinuity(string reason)
         {
             if (mainPanel && mainPanel.gameObject.activeInHierarchy) mainPanel.Recenter(false, false, onlyIfNeeded: true, reason: reason);
             if (controller && controller.ReferenceOpen && referencePanel && referencePanel.gameObject.activeInHierarchy)
-                referencePanel.Recenter(false, false, onlyIfNeeded: true, reason: reason);
+            {
+                if (ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && controller.Flow?.IsTaskActive == true && referencePanel.HasAcceptedPose)
+                    referencePanel.EnsureClear(false);
+                else referencePanel.Recenter(false, false, onlyIfNeeded: true, reason: reason);
+            }
             NotifyReferenceVisibility(reason);
         }
         [SerializeField] TMP_Text title, body, helperText, referenceTitle, referenceBody, pillText;
@@ -279,6 +316,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             readerAnchorRotation = rotation;
             readerAnchorKey = ReaderAnchorKey;
         }
+        public void RecoverBlockedReaderForResearcher()
+        {
+            if (controller?.Flow?.Paused != true || !referencePanel || !referencePanel.WorldPlacementBlocked) return;
+            readerAnchorKey = null;
+            controller.Log("PANEL_PLACEMENT_RECOVERY_REQUESTED", "reference", "RetryOnParticipantOpen",
+                source: "System", reason: "researcher_resume");
+        }
+
         Vector2 expandedMainSize = new Vector2(1000, 620);
         void Awake()
         {
@@ -2291,6 +2336,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             recoveryPanel = RecoveryCanvas.GetComponent<ResearchPanelMotion>();
             recoveryPanel.view = this; recoveryPanel.panelId = "recovery"; recoveryPanel.centered = true; recoveryPanel.movable = false;
+            if (!readerFeedbackLabel)
+            {
+                readerFeedbackLabel = RecoveryCanvas.transform.Find("ReaderFeedback")?.GetComponent<TMP_Text>();
+                if (!readerFeedbackLabel) readerFeedbackLabel = Label(RecoveryCanvas.transform, "ReaderFeedback",
+                    new Vector2(0, 48), new Vector2(620, 72), "", 32);
+                readerFeedbackLabel.alignment = TextAlignmentOptions.Center;
+                readerFeedbackLabel.gameObject.SetActive(false);
+            }
             LayoutRecoveryUtility(false, compact: true);
             if (ParticipantCanvases != null && Array.IndexOf(ParticipantCanvases, RecoveryCanvas) < 0)
             { var canvases = new List<Canvas>(ParticipantCanvases) { RecoveryCanvas }; ParticipantCanvases = canvases.ToArray(); }
@@ -2302,19 +2355,26 @@ namespace VRMaintenanceResearch.ResearchFlow
             var recoverSize = compact ? new Vector2(300, 80) : RecoveryButtonSize;
             int safetyActions = (fallbackPause ? 1 : 0) + (fallbackStop ? 1 : 0);
             var size = recoverSize + new Vector2(16 + 96 * safetyActions, 16);
+            bool feedback = readerFeedback != ReaderFeedback.None;
+            if (feedback) size = new Vector2(Mathf.Max(size.x, 660), 190);
             bool changed = rect.sizeDelta != size;
             rect.sizeDelta = size;
             RecoveryCanvas.transform.Find("Surface").GetComponent<RectTransform>().sizeDelta = size;
             var recover = RecoveryCanvas.transform.Find("RecoverPanels").GetComponent<RectTransform>();
             recover.sizeDelta = recoverSize;
-            recover.anchoredPosition = new Vector2(-48 * safetyActions, 0);
+            recover.anchoredPosition = new Vector2(-48 * safetyActions, feedback ? -44 : 0);
             var pause = RecoveryCanvas.transform.Find("Pause").GetComponent<RectTransform>();
-            pause.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1), 0);
+            pause.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1), feedback ? -44 : 0);
             pause.gameObject.SetActive(fallbackPause);
             var stop = RecoveryCanvas.transform.Find("Stop").GetComponent<RectTransform>();
-            stop.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1) + (fallbackPause ? 96 : 0), 0);
+            stop.anchoredPosition = new Vector2(recoverSize.x / 2 + 8 - 48 * (safetyActions - 1) + (fallbackPause ? 96 : 0), feedback ? -44 : 0);
             stop.gameObject.SetActive(fallbackStop);
-            if (changed) UtilityIcon(recover.GetComponent<UnityEngine.UI.Button>(), "recenter", compact ? "action.recover_short" : "action.recover_panels");
+            string command = feedback ? "pause" : "panel_recovery";
+            var action = recover.GetComponent<ResearchUIAction>();
+            if (changed || action.command != command)
+                UtilityIcon(recover.GetComponent<UnityEngine.UI.Button>(), feedback ? "pause" : "recenter",
+                    feedback ? "action.pause_short" : compact ? "action.recover_short" : "action.recover_panels");
+            action.command = command;
             return changed;
         }
 
@@ -2322,9 +2382,56 @@ namespace VRMaintenanceResearch.ResearchFlow
         // (design_rule 8.2): every pause card, self-resume included, offers "Stop and wait for the researcher" beside its Continue.
         bool StopOffered => controller && controller.ParticipantCanStop && !(controller.Flow.Paused && controller.PauseKind == "stop");
 
+        void RefreshReaderFeedback()
+        {
+            if (!readerFeedbackLabel) return;
+            var previous = readerFeedback;
+            readerFeedback = ReaderFeedback.None;
+            string key = null;
+            if (controller && controller.ReferenceOpen && !controller.ReferenceMinimized && controller.Flow?.Paused == false
+                && !controller.Transitioning && controller.FloorReady && string.IsNullOrEmpty(controller.Error) && referencePanel)
+            {
+                if (referencePanel.PlacementBlocked && !referencePanel.RecenterPending)
+                { readerFeedback = ReaderFeedback.Blocked; key = "reference.placement_blocked"; }
+                else if (Time.unscaledTime < readerCueUntil && referencePanel.HasAcceptedPose
+                    && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
+                    && referenceGroup.alpha > .01f && !referencePanel.PlacementBlocked && !ReaderReadable)
+                {
+                    readerFeedback = ReaderFeedback.Direction;
+                    var direction = Head.InverseTransformPoint(referencePanel.transform.position);
+                    key = "reference.direction_" + (direction.z < 0 ? "behind" :
+                        Mathf.Abs(direction.x) > Mathf.Abs(direction.y) ? (direction.x < 0 ? "left" : "right") :
+                        direction.y > .1f ? "up" : direction.y < -.1f ? "down" : "ahead");
+                }
+            }
+            if (previous != readerFeedback) controller?.Log("REFERENCE_PLACEMENT_FEEDBACK", "reference", readerFeedback.ToString(),
+                after: new { message_key = key, placement_accepted = referencePanel && referencePanel.HasAcceptedPose }, source: "System");
+            bool onMain = readerFeedback != ReaderFeedback.None && MainCanShowReaderFeedback;
+            if (onMain && !readerMainFeedbackLabel)
+                readerMainFeedbackLabel = Label(taskBriefScroll.viewport, "ReaderPlacementFeedback", Vector2.zero, Vector2.zero, "", 32);
+            if (readerMainFeedbackLabel)
+            {
+                readerMainFeedbackLabel.gameObject.SetActive(onMain);
+                if (onMain)
+                {
+                    var target = readerMainFeedbackLabel.rectTransform;
+                    target.anchorMin = target.anchorMax = target.pivot = new Vector2(.5f, .5f);
+                    target.sizeDelta = taskBriefScroll.viewport.rect.size; target.anchoredPosition3D = Vector3.zero;
+                    target.localRotation = Quaternion.identity; target.localScale = Vector3.one;
+                    readerMainFeedbackLabel.font = Font; readerMainFeedbackLabel.fontSize = 32;
+                    readerMainFeedbackLabel.text = Text(key); readerMainFeedbackLabel.alignment = TextAlignmentOptions.Center;
+                }
+            }
+            if (onMain) { taskBrief.gameObject.SetActive(false); taskBriefHiddenForReaderFeedback = true; }
+            else if (taskBriefHiddenForReaderFeedback) { taskBrief.gameObject.SetActive(compactTask); taskBriefHiddenForReaderFeedback = false; }
+            readerFeedbackLabel.gameObject.SetActive(readerFeedback != ReaderFeedback.None && !onMain);
+            if (key != null) { readerFeedbackLabel.font = Font; readerFeedbackLabel.text = Text(key); }
+        }
+
         public void RefreshRecoveryUtility()
         {
             if (!RecoveryCanvas || !Head || !gameObject.activeInHierarchy) return;
+            RefreshReaderFeedback();
             RecoveryCanvas.worldCamera = Head.GetComponent<Camera>();
             // Match Command("pause") safety gates; floor readiness and render comparisons do not block Pause.
             bool available = controller && controller.Flow != null && !controller.Flow.Paused && !controller.Transitioning
@@ -2334,12 +2441,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool mainReadable = mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
                 && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts
                 && !mainPanel.PlacementBlocked && mainPanel.IsReadableFromHead;
-            bool mainOwns = available && mainPauseEligible && mainReadable;
+            bool mainOwns = available && mainPauseEligible && (mainReadable || (taskBriefHiddenForReaderFeedback
+                && MainCanShowReaderFeedback && FeedbackRectFits(helpUtility.GetComponent<RectTransform>())));
             bool referenceOwns = available && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
                 && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
-            helpUtility.gameObject.SetActive(mainOwns && !referenceOwns);
+            bool FeedbackOwnsPause() => readerFeedback != ReaderFeedback.None && RecoveryCanvas.gameObject.activeInHierarchy
+                && RecoveryCanvas.enabled && !recoveryPanel.PlacementBlocked && !recoveryPanel.RecenterPending && recoveryPanel.IsReadableFromHead;
+            helpUtility.gameObject.SetActive(mainOwns && !referenceOwns && !FeedbackOwnsPause());
             var referencePause = referenceExpanded.transform.Find("Pause"); if (referencePause) referencePause.gameObject.SetActive(referenceOwns);
+            if (PanelPlacementBusy) return;
             // A Pause owner leads to the pause card's "Stop and wait"; Stop itself shows only in the title row of a card without Pause
             // or on the pause card. The strip carries Stop when no readable surface offers Pause or Stop (owner 20 Oct).
             bool stopAvailable = StopOffered && !(mainReadable && controller.Flow?.InspectPassed.HasValue == true);
@@ -2359,7 +2470,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Includes the self-resume pause: with Stop hidden there, this strip is its only recall when the card is out of view.
             bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant"
                 && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
-            bool needed = fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
+            bool needed = (readerFeedback != ReaderFeedback.None && !taskBriefHiddenForReaderFeedback) || fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
                 || (recoveryWasNeeded && mainPanel.RecenterPending)));
             if (!paused || mainPanel.PlacementBlocked || needed == recoveryWasNeeded)
                 recoveryTransitionSince = float.NegativeInfinity;
@@ -2372,6 +2483,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (needed && (!recoveryWasNeeded || layoutChanged) && (layoutChanged || !recoveryPlaced || !recoveryPanel.IsReadableFromHead))
             { recoveryPanel.Recenter(false, false); recoveryPlaced = true; }
             recoveryWasNeeded = needed;
+            if (FeedbackOwnsPause()) helpUtility.gameObject.SetActive(false);
         }
 
         public void ShowHelper()
@@ -2414,6 +2526,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (referenceClose != null) { StopCoroutine(referenceClose); referenceClose = null; }
             bool wasOpen = referencePanel.gameObject.activeSelf;
+            if (!wasOpen) readerCueUntil = Time.unscaledTime + 4f;
             referencePanel.gameObject.SetActive(true); referencePanel.movable = true;
             referenceGroup.blocksRaycasts = referenceGroup.interactable = true;
             bool minimized = controller.ReferenceMinimized;
@@ -2466,7 +2579,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (controller.Flow.Paused && controller.PauseKind == "participant")
                     { hasTaskPose = false; recoverTaskOnResume = controller.Flow.IsTaskActive; }
                     if (mainPanel && mainPanel.gameObject.activeInHierarchy) mainPanel.Recenter(false, false, input, reason: "explicit_panel_recovery");
-                    if (controller.ReferenceOpen && referencePanel && referencePanel.gameObject.activeInHierarchy)
+                    if (ResearchUIPolicy.Active != ResearchUIPolicy.FixedDemo && controller.ReferenceOpen && referencePanel && referencePanel.gameObject.activeInHierarchy)
                         referencePanel.Recenter(false, false, input, reason: "explicit_panel_recovery");
                     controller.Log("PANEL_RECENTER", "all_visible_panels", "RecoveryRequested", inputSource: input);
                     accepted = true; break;
