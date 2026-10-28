@@ -198,6 +198,26 @@ class ProfileChecks(unittest.TestCase):
             client.request(dict(command='state'))
         self.assertIsNone(device.request)
 
+    def test_slow_host_snapshot_does_not_expire_command_before_dispatch(self):
+        device = Device(); client = self.client(device)
+        clock = [1000]
+        identity = device.identity
+        run = device.run
+        check = client.check
+        device.identity = lambda: dict(identity(), elapsed_ms=clock[0])
+        def slow_check():
+            check()
+            clock[0] += 16000
+        def timed_run(args, **kwargs):
+            command = shlex.split(args[-1])
+            if '--method' in command and command[command.index('--method') + 1] == 'dispatch':
+                payload = json.loads(command[command.index('--arg') + 1])
+                self.assertGreater(payload['deadline_elapsed_ms'], clock[0])
+            return run(args, **kwargs)
+        client.check = slow_check
+        client.runner = timed_run
+        self.assertTrue(client.request(dict(command='state'))['ok'])
+
     def test_arg_json_keeps_colons_quotes_backslashes_and_unicode_and_rejects_dual_payload(self):
         device = Device(); client = self.client(device)
         body = dict(command='state', note="a:b 'quote' \\ path\nภาษาไทย")

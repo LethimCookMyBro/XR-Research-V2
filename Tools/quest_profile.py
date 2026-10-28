@@ -207,13 +207,15 @@ class Client:
         return result.get('data')
 
     def request(self, body):
-        identity = self.call('identity')
+        self.check()
+        identity = self.call('identity', binding=False)
         self.scope_equal(identity)
         binding = dict(self.bound)
         request = dict(body, request_id=str(uuid.uuid4()), binding=binding,
                        deadline_elapsed_ms=identity['elapsed_ms'] + 15000)
         self.request_log.append(dict(method=body.get('command'), request_id=request['request_id'], binding=binding))
-        self.call('dispatch', request)
+        # The provider rechecks the binding; another host snapshot would age the 15-second lease before dispatch.
+        self.call('dispatch', request, binding=False)
         # The device accepts a request only within 15 s; the reply can take longer while a large export snapshot is written.
         until = time.monotonic() + RESPONSE_WAIT_SECONDS
         while time.monotonic() < until:
