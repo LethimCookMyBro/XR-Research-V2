@@ -18,29 +18,35 @@ namespace VRMaintenanceResearch.ResearchFlow
         // User decision 17 Oct 2026: DEV/technical sessions restore participant-initiated panel drag and recenter
         // with station-anchored defaults and no compulsory drag training lesson. Study sessions remain FixedDemo until approved.
         public const string DevMovable = "S1_DEV_MOVABLE_UI_20261017";
+        // Owner direction 28 Oct 2026 (Documentation/S1/OWNER_UI_DIRECTION_20261028.md): new sessions of every group restore the
+        // single-grip panel drag of DevMovable. Recorded sessions keep the policy they started with.
+        public const string OwnerMovable = "S1_MOVABLE_UI_20261028";
 
         public const string ProtocolBaseline = "S1_LOCKED_TH_BASELINE";
         public const string ProtocolFixedDemo = "S1_LOCKED_TH_BASELINE+ADVISOR_UI_AMENDMENT_20261014";
         public const string ProtocolDevMovable = "S1_LOCKED_TH_BASELINE+DEV_MOVABLE_UI_20261017";
+        public const string ProtocolOwnerMovable = "S1_LOCKED_TH_BASELINE+OWNER_MOVABLE_UI_20261028";
         public const string TrainingBaseline = "S1_TRAINING_BASELINE_DRAG_LESSON";
         // 20261015: practice-station order builds toward 'ready' without repeated insert/latch/tighten (no session used 20261014).
         public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261015";
         // Table/station/Task A P/Q geometry is unchanged from the Q5 source in this revision.
         public const string LayoutVersion = "S1_LAYOUT_ENV_V2_FAN_TASK_FALLBACK_20261015";
 
-        public const string Default = FixedDemo;
+        public const string Default = OwnerMovable;
 
         /// <summary>Policy of the open session (or the default before a session). Set only by the session controller.</summary>
         public static string Active { get; private set; } = Default;
 
-        public static bool PanelDragAllowed => Active == LegacyMovable || Active == DevMovable;
-        public static bool ParticipantRecenterAllowed => Active == LegacyMovable || Active == DevMovable;
-        public static bool ReaderPoseFixedPerTask => Active == FixedDemo || Active == DevMovable;
+        /// <summary>DevMovable and its successor OwnerMovable: station-anchored defaults the participant may drag or recenter.</summary>
+        public static bool AnchoredMovable => Active == DevMovable || Active == OwnerMovable;
+        public static bool PanelDragAllowed => Active == LegacyMovable || AnchoredMovable;
+        public static bool ParticipantRecenterAllowed => Active == LegacyMovable || AnchoredMovable;
+        public static bool ReaderPoseFixedPerTask => Active == FixedDemo || AnchoredMovable;
         public static bool TrainingIncludesPanelDrag => Active == LegacyMovable;
         /// <summary>Working slates use station anchors (ResearchStationAnchors) before any head-relative fallback.</summary>
-        public static bool StationAnchoredPanels => Active == FixedDemo || Active == DevMovable;
+        public static bool StationAnchoredPanels => Active == FixedDemo || AnchoredMovable;
 
-        public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable || policy == DevMovable;
+        public static bool IsKnown(string policy) => policy == FixedDemo || policy == LegacyMovable || policy == DevMovable || policy == OwnerMovable;
 
         // User request 16 Oct 2026: the fixed Reader (~1.8 m, PDF ~19 deg wide) is hard to read. One control toggles between the
         // station anchor and a nearer validated pose; no free drag. Technical sessions only until the researcher approves it
@@ -55,8 +61,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         /// </summary>
         public static string ForRecord(string recordedPolicy) => string.IsNullOrEmpty(recordedPolicy) ? LegacyMovable : recordedPolicy;
 
-        public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : policy == DevMovable ? ProtocolDevMovable : ProtocolBaseline;
-        public static string TrainingFor(string policy) => policy == FixedDemo || policy == DevMovable ? TrainingFixedDemo : TrainingBaseline;
+        public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : policy == DevMovable ? ProtocolDevMovable
+            : policy == OwnerMovable ? ProtocolOwnerMovable : ProtocolBaseline;
+        public static string TrainingFor(string policy) => policy == FixedDemo || policy == DevMovable || policy == OwnerMovable ? TrainingFixedDemo : TrainingBaseline;
 
         /// <summary>Accepts the ids above plus short operator aliases ("fixed", "dev_movable", "legacy_movable").</summary>
         public static string Parse(string value)
@@ -65,6 +72,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             string v = value.Trim();
             if (string.Equals(v, "fixed", StringComparison.OrdinalIgnoreCase)) return FixedDemo;
             if (string.Equals(v, "dev_movable", StringComparison.OrdinalIgnoreCase)) return DevMovable;
+            if (string.Equals(v, "movable", StringComparison.OrdinalIgnoreCase)) return OwnerMovable;
             if (string.Equals(v, "legacy_movable", StringComparison.OrdinalIgnoreCase)) return LegacyMovable;
             if (IsKnown(v)) return v;
             throw new ArgumentException("Unknown UI policy: " + value);

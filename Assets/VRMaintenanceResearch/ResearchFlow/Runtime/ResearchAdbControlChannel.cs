@@ -232,7 +232,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (parts.Length == 2) layout = parts[1];
             }
 
-            // Participant UI policy: DEV defaults to DevMovable; Study defaults to FixedDemo; "legacy_movable" for regression.
+            // Participant UI policy: new sessions default to OwnerMovable; "fixed", "dev_movable", "legacy_movable" for regression.
             string rawPolicy = (string)request["ui_policy"];
             string uiPolicy = null;
             if (!string.IsNullOrWhiteSpace(rawPolicy))

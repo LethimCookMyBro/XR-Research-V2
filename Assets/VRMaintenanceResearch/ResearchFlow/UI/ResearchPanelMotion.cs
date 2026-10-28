@@ -29,18 +29,25 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool canvasEnabledBeforeBlock, raycasterEnabledBeforeBlock;
         float nextBlockedRetry;
         float nextClearanceCheck;
-        bool clearanceKnown, clearanceValue, clearancePeerVisible;
-        Pose clearanceHead, clearancePanel, clearancePeer;
-        Rect clearanceRect, clearancePeerRect;
-        Vector3 clearanceScale, clearancePeerScale;
+        bool clearanceKnown, clearanceValue;
+        Pose clearanceHead, clearancePanel;
+        Rect clearanceRect;
+        Vector3 clearanceScale;
         bool deferredRetryUsed = true;
         bool faceHidden;
         bool placementAccepted;
-        bool IgnoreMovableParts => panelId == "task_information" && placementAccepted && FixedWorkingSlate;
+        // Idle re-checks of an accepted pose: a held part or the other panel crossing the line of sight is ordinary occlusion, not a
+        // placement fault. Treating it as one hid the Canvas/Raycaster and let Main and Reader conceal each other in turn (flicker).
+        // New placements (recenter, drag release) still test peers and movable parts.
+        bool idleCheck;
+        bool IgnoreMovableParts => idleCheck || (panelId == "task_information" && placementAccepted && FixedWorkingSlate);
         bool FixedWorkingSlate => ResearchUIPolicy.StationAnchoredPanels && !centered && view && view.controller
             && view.controller.Flow != null && view.controller.Flow.IsTaskActive
             && ResearchStationAnchors.Supports(view.controller.CurrentStationIndex, panelId);
         float faceTransitionSince = float.NegativeInfinity;
+        // Re-show only after the accepted pose stays clear this long; input stays off while waiting.
+        const float RecoverDwellSeconds = .25f;
+        float clearSince = float.NegativeInfinity;
         Pose? pendingRestore;
         Pose? deferredViewportHead;
         bool pendingOnlyIfNeeded, pendingRequireView = true;
@@ -115,26 +122,18 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool IdlePlacementClear()
         {
             var rect = ((RectTransform)transform).rect;
-            var peer = panelId == "reference" ? view.mainPanel : view.referencePanel;
-            bool peerVisible = peer && peer.gameObject.activeInHierarchy && !peer.PlacementBlocked;
-            var peerRect = peerVisible ? ((RectTransform)peer.transform).rect : default;
             bool changed = !clearanceKnown || Vector3.Distance(clearanceHead.position, view.Head.position) >= .005f
                 || Quaternion.Angle(clearanceHead.rotation, view.Head.rotation) >= .5f
                 || clearancePanel.position != transform.position || clearancePanel.rotation != transform.rotation
-                || clearanceRect != rect || clearanceScale != RestScale || clearancePeerVisible != peerVisible
-                || (peerVisible && (clearancePeer.position != peer.transform.position || clearancePeer.rotation != peer.transform.rotation
-                    || clearancePeerRect != peerRect || clearancePeerScale != peer.transform.lossyScale));
+                || clearanceRect != rect || clearanceScale != RestScale;
             if (!changed && Time.unscaledTime < nextClearanceCheck) return clearanceValue;
             clearanceHead = new Pose(view.Head.position, view.Head.rotation);
             clearancePanel = new Pose(transform.position, transform.rotation);
-            clearanceRect = rect; clearanceScale = RestScale; clearancePeerVisible = peerVisible;
-            if (peerVisible)
-            {
-                clearancePeer = new Pose(peer.transform.position, peer.transform.rotation);
-                clearancePeerRect = peerRect; clearancePeerScale = peer.transform.lossyScale;
-            }
+            clearanceRect = rect; clearanceScale = RestScale;
             nextClearanceCheck = Time.unscaledTime + .1f;
-            clearanceValue = PlacementClear(transform.position, transform.rotation);
+            idleCheck = true;
+            try { clearanceValue = PlacementClear(transform.position, transform.rotation); }
+            finally { idleCheck = false; }
             clearanceKnown = true;
             return clearanceValue;
         }
@@ -145,10 +144,15 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var sight = transform.position - view.Head.position;
                 float facing = sight.sqrMagnitude > .0001f ? Vector3.Dot(transform.forward, sight.normalized) : -1;
                 bool clear = IdlePlacementClear();
-                if (!clear) { faceHidden = false; SetPlacementBlocked(true); faceTransitionSince = float.NegativeInfinity; }
+                if (!clear) { faceHidden = false; SetPlacementBlocked(true); faceTransitionSince = clearSince = float.NegativeInfinity; }
                 else
                 {
-                    if (PlacementBlocked && !faceHidden && facing >= .58f) SetPlacementBlocked(false);
+                    if (PlacementBlocked && !faceHidden && facing >= .58f)
+                    {
+                        if (float.IsNegativeInfinity(clearSince)) clearSince = Time.unscaledTime;
+                        if (Time.unscaledTime - clearSince >= RecoverDwellSeconds) { SetPlacementBlocked(false); clearSince = float.NegativeInfinity; }
+                    }
+                    else clearSince = float.NegativeInfinity;
                     bool change = faceHidden ? facing >= .58f : facing < .52f;
                     if (!change) faceTransitionSince = float.NegativeInfinity;
                     else
@@ -230,7 +234,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool found = false;
             // Fixed Readers accept authored geometry; content exposure still requires both eye viewports.
             string anchorId = null, anchorFallback = null;
-            bool preferHeadRelative = participant && ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable;
+            bool preferHeadRelative = participant && ResearchUIPolicy.AnchoredMovable;
             if (!preferHeadRelative)
                 found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
             // A low eye pose or tall assembly can block the slate. Try bounded
@@ -361,7 +365,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!ReadableFace(position, rotation)) return false;
             if (!view || !view.Head) return false;
             // A slate pulled close may be wider than the view, but its central 75 % must stay inside both eyes' viewports.
-            return FitsView(position, rotation, ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable
+            return FitsView(position, rotation, ResearchUIPolicy.AnchoredMovable
                 && Vector3.Distance(position, view.Head.position) < 1.25f ? .75f : 1f);
         }
 
@@ -531,7 +535,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var other = panelId == "reference" ? view.mainPanel : view.referencePanel;
             Bounds? peerBounds = null;
             var otherGroup = other ? other.GetComponent<CanvasGroup>() : null;
-            if ((!otherGroup || otherGroup.alpha > .01f) && other && other.gameObject.activeInHierarchy && !other.PlacementBlocked && other.GetComponent<Canvas>().enabled)
+            if (!idleCheck && (!otherGroup || otherGroup.alpha > .01f) && other && other.gameObject.activeInHierarchy && !other.PlacementBlocked && other.GetComponent<Canvas>().enabled)
             {
                 ((RectTransform)other.transform).GetWorldCorners(otherCorners);
                 var otherBox = new Bounds(otherCorners[0], Vector3.zero);

@@ -69,7 +69,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         Package package;
         MediaState state;
         string key, format, fallback, error, packageHash, pauseInput, registryResource = PackageResource;
-        bool visible, demoAllowed, suppressScroll, resumeAfterSeek, appFocused = true, appPaused, awaitingPreview, seekCompletedSeen, seekFrameSeen;
+        bool visible, readable, demoAllowed, suppressScroll, resumeAfterSeek, appFocused = true, appPaused, awaitingPreview, seekCompletedSeen, seekFrameSeen;
         int generation, index = 1;
         // Capture C02: video loading must never sit at "Loading" with no way out. After StallSeconds the Retry control is offered
         // while loading continues; each phase is logged so Android prepare/first-frame stalls can be diagnosed per build.
@@ -122,7 +122,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             caption_layout = format == "images" ? ResearchCaptionParts.Version : null, normalized_offset = scroll ? scroll.verticalNormalizedPosition : 1,
             time_seconds = player && player.isPrepared ? player.time : Saved.time,
             seek_target_seconds = state == MediaState.Seeking ? seekTarget : (double?)null,
-            status = Status, visible, active_reading = visible && IsReady, error,
+            status = Status, visible, in_view = readable, active_reading = readable && IsReady, error,
             cached_pages = CachedPageCount, semantic_token = SemanticToken,
             decoded_frames = decodedFrames, first_decoded_frame = firstDecodedFrame, timeline_held = TimelineHeld
         };
@@ -213,11 +213,21 @@ namespace VRMaintenanceResearch.ResearchFlow
             Render(); Event("REFERENCE_VIEWER_BOUND", "System");
         }
 
-        public void SetVisible(bool show)
+        // show = the Reader surface is rendered and accepts input; inView = it is also fully inside both eyes, so it counts as reading.
+        // A head turn that only moves a corner out of view must not disable controls or tear down the video decoder.
+        public void SetVisible(bool show) => SetPresentation(show, true);
+        public void SetPresentation(bool show, bool inView)
         {
             show &= appFocused && !appPaused;
-            if (visible == show) return;
-            visible = show;
+            bool read = show && inView;
+            if (visible == show && readable == read) return;
+            if (visible == show)
+            {
+                readable = read;
+                if (read) BeginReading(); else EndReading("out_of_view");
+                Event("REFERENCE_VIEWER_VISIBILITY", "System"); return;
+            }
+            visible = show; readable = read;
             if (!show)
             {
                 if (state == MediaState.Seeking) Saved.time = seekTarget; else SavePosition();
@@ -791,7 +801,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         void BeginReading()
         {
-            if (readingSince >= 0 || !visible || !IsReady) return;
+            if (readingSince >= 0 || !readable || !IsReady) return;
             readingSince = Time.realtimeSinceStartup; Event("REFERENCE_VIEWER_ACTIVE_BEGIN", "System");
         }
         void EndReading(string reason)

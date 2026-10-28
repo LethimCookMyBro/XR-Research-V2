@@ -151,7 +151,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 var doc = Read(); var record = Find(doc, participantId);
                 bool technical = IsTechnical(record.group);
-                string resolvedPolicy = uiPolicy ?? (record.group == ParticipantGroup.Dev ? ResearchUIPolicy.DevMovable : ResearchUIPolicy.Default);
+                string resolvedPolicy = uiPolicy ?? ResearchUIPolicy.Default;
                 if (!ResearchUIPolicy.IsKnown(resolvedPolicy)) throw new ArgumentException("Invalid session settings");
                 var effectiveInput = record.session_state == RegistryState.InProgress ? record.input_mode : inputMode;
                 if (!technical && effectiveInput != ExperimentInputMode.Controller)

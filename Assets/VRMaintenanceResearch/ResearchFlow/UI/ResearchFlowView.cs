@@ -124,19 +124,20 @@ namespace VRMaintenanceResearch.ResearchFlow
             ReferenceViewer = referencePanel.gameObject.AddComponent<ResearchReferenceViewer>();
             ReferenceViewer.Initialize(scroll, referenceBody, this);
         }
-        bool ReferenceSurfaceVisible => controller && controller.ReferenceOpen && !controller.ReferenceMinimized
+        bool ReferenceSurfaceShown => controller && controller.ReferenceOpen && !controller.ReferenceMinimized
             && controller.Flow?.Paused == false && controller.FloorReady && string.IsNullOrEmpty(controller.Error)
             && referencePanel && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
             && referencePanel.HasAcceptedPose && !referencePanel.RecenterPending && !referencePanel.PlacementBlocked
-            && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f && ReaderReadable;
+            && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f;
+        bool ReferenceSurfaceVisible => ReferenceSurfaceShown && ReaderReadable;
 
         void SyncReaderVisibility()
         {
-            if (ReferenceViewer) ReferenceViewer.SetVisible(ReferenceSurfaceVisible);
+            if (ReferenceViewer) { bool shown = ReferenceSurfaceShown; ReferenceViewer.SetPresentation(shown, shown && ReaderReadable); }
         }
 
         // A DEV Reader pulled close is wider than the view; its central 75% must still face the head inside both eyes.
-        bool ReaderReadable => referencePanel.IsReadableFromHead || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable
+        bool ReaderReadable => referencePanel.IsReadableFromHead || (ResearchUIPolicy.AnchoredMovable
             && referencePanel.ReadableFromHeadForDrag(referencePanel.transform.position, referencePanel.transform.rotation));
         ResearchPanelMotion recoveryPanel;
         bool recoveryWasNeeded, recoveryPlaced;
@@ -1432,7 +1433,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             positiveIcon.SetActive(state == "pass" || state == "TutorialComplete" || state == "ParticipantComplete" || state == "ResearcherSummary");
             negativeIcon.SetActive(state == "fail");
             mainPanel.movable = (tutorialChecklist && !controller.ReferenceOpen) || state.Contains("Active")
-                || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable && (state == "pass" || state == "fail"));
+                || (ResearchUIPolicy.AnchoredMovable && (state == "pass" || state == "fail"));
             // Owner 28 Oct: a compact task must retain its move grip when the recorded policy allows dragging.
             // Hiding this parent defeated PanelDragAllowed even though the child DragHandle was enabled.
             mainToolbar.SetActive(mainPanel.movable && (!compactTask || ResearchUIPolicy.PanelDragAllowed) && state != "pass" && state != "fail");

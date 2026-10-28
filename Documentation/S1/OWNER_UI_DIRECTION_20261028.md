@@ -29,3 +29,10 @@ The focused correction keeps the Task grip available when the session's policy a
 - Validate drag/scroll/button ray ownership, safe placement and Reference reopen with real Quest input before claiming the installed application fixed.
 
 Frozen RC7 delivery and its installed APK are not modified by this source-only patch. Build and install a separately verified candidate only after the affected regression and native tests are ready.
+
+## Second change, 28 October 2026 (after 828c971)
+
+- New policy `S1_MOVABLE_UI_20261028` (`ResearchUIPolicy.OwnerMovable`) is the default for every new session, Study and DEV alike. It behaves like `S1_DEV_MOVABLE_UI_20261017`: station-anchored first pose, single-grip drag, participant recenter, no compulsory drag lesson. Its protocol id is `S1_LOCKED_TH_BASELINE+OWNER_MOVABLE_UI_20261028`. Recorded sessions keep their recorded policy; `fixed`, `dev_movable` and `legacy_movable` remain selectable for regression. Study approval gates are unchanged.
+- Flicker source fixed in `ResearchPanelMotion`: the per-frame idle clearance test also failed whenever the other panel or a held/movable part crossed the line of sight. That disabled the Canvas and GraphicRaycaster, and Main and Reader could conceal each other in turn. Idle re-checks of an accepted pose now ignore the peer panel and movable parts. Static geometry, facing and new placements (recenter, drag release) are checked as before. A blocked panel is re-shown only after its pose stays clear for 0.25 s, with input off while it waits.
+- Reader input fixed in `ResearchReferenceViewer`: "surface shown" and "fully inside both eye viewports" were one flag. A corner of the 1.04 m Reader leaving either eye made every Reader command return false and cancelled the video decoder, which reloaded on the next frame back in view. `SetPresentation(shown, inView)` keeps controls and media alive while the surface is shown. Only `active_reading` and exposure still require the full in-view test, so out-of-view time is never counted as reading.
+- Not yet proven on a Quest: whether these were the root causes the owner saw. Native repro and after-check are still pending.

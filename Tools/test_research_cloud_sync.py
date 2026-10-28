@@ -1,4 +1,4 @@
-import json,shutil,sys,tempfile,unittest
+import json,shutil,sqlite3,sys,tempfile,unittest,uuid
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
@@ -120,5 +120,59 @@ class CloudSyncChecks(unittest.TestCase):
     def test_retention_is_a_dry_run(self):
         r=cs.retention(self.data,'2999-01-01');self.assertTrue(r['dry_run']);self.assertEqual(len(r['due']),1);self.assertTrue(self.dev.exists())
         self.assertEqual(cs.retention(self.data,'2000-01-01')['due'],[])
+
+class DriveFolderChecks(CloudSyncChecks):
+    """Pinned Drive folder: a fake Drive-for-desktop metadata DB stands in for the client and fetch() for Google's servers."""
+    FOLDER='1SyntheticDriveFolderIdForTests0'
+    def setUp(self):
+        super().setUp();self.cloud=self.base/'G'/'My Drive'/'VR_Research_Data'/'research_s1';self.cloud.mkdir(parents=True)
+        acct=self.base/'DriveFS'/'1234';acct.mkdir(parents=True);self.db=sqlite3.connect(acct/'metadata_sqlite_db')
+        self.db.executescript('create table items(stable_id integer primary key,id text,local_title text,is_folder int,trashed int default 0,is_tombstone int default 0);'
+                              'create table stable_parents(item_stable_id int,parent_stable_id int);')
+        self.add(None,'root_id','My Drive',1);self.add(1,'parent_id','VR_Research_Data',1);self.add(2,self.FOLDER,'research_s1',1);self.db.commit()
+        self.acct=acct
+    def tearDown(self):self.db.close();super().tearDown()
+    def add(self,parent,cid,title,folder):
+        sid=self.db.execute('insert into items(id,local_title,is_folder) values(?,?,?)',(cid,title,folder)).lastrowid
+        if parent:self.db.execute('insert into stable_parents values(?,?)',(sid,parent))
+        return sid
+    def config(self,**extra):return super().config(drive_folder_id=self.FOLDER,drivefs_account_dir=str(self.acct),**extra)
+    def mirror(self,result,server=None):
+        """Record every synced file under the pinned folder as the Drive client would after upload; returns id->bytes."""
+        server={} if server is None else server
+        def walk(local,sid):
+            for child in sorted(local.iterdir()):
+                cid='srv_'+uuid.uuid4().hex;new=self.add(sid,cid,child.name,child.is_dir())
+                if child.is_dir():walk(child,new)
+                else:server[cid]=child.read_bytes()
+        walk(cs.target_root(dict(target_root=str(self.cloud))),3);self.db.commit();return server
+
+    def test_pinned_folder_has_no_second_research_s1_level(self):
+        r=cs.sync(self.data,self.config())['bundles'][0]
+        self.assertTrue(r['remote_path'].startswith('site_TMU/cohort_DEV/participant_DEV900/'),r['remote_path'])
+        receipt=json.loads((self.remote(r).parent/(self.remote(r).name+'.cloud_receipt.json')).read_text())
+        self.assertEqual(receipt['target_folder_id'],self.FOLDER)
+
+    def test_upload_reads_back_every_hash_and_repeat_is_idempotent(self):
+        c=self.config();r=cs.sync(self.data,c)['bundles'][0];self.assertEqual(r['status'],'cloud_folder_verified')
+        self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
+
+    def test_provider_pending_until_server_ids_exist_then_verified_by_download(self):
+        c=self.config();cs.sync(self.data,c)
+        self.assertIn('provider_pending',cs.provider_verify(self.data,c)['bundles'][0]['reason'])
+        server=self.mirror(None)
+        with patch.object(cs,'fetch',side_effect=lambda i:server[i]):v=cs.provider_verify(self.data,c)['bundles'][0]
+        self.assertEqual(v['status'],'provider_verified');self.assertEqual(cs.status(self.data,c)[0]['cloud'],'provider_verified')
+        with patch.object(cs,'fetch',side_effect=AssertionError):self.assertEqual(cs.provider_verify(self.data,c)['bundles'][0]['status'],'already_provider_verified')
+
+    def test_corrupt_server_bytes_and_revoked_access_never_pass(self):
+        c=self.config();cs.sync(self.data,c);server=self.mirror(None)
+        with patch.object(cs,'fetch',side_effect=lambda i:server[i]+b'x'):self.assertEqual(cs.provider_verify(self.data,c)['bundles'][0]['status'],'provider_mismatch')
+        with patch.object(cs,'fetch',side_effect=OSError('HTTP Error 403')):r=cs.provider_verify(self.data,c)['bundles'][0]
+        self.assertEqual(r['status'],'cloud_folder_verified');self.assertIn('403',r['reason'])
+
+    def test_target_root_must_map_to_the_folder_id(self):
+        self.cloud=self.base/'G'/'My Drive'/'elsewhere';self.cloud.mkdir(parents=True);c=self.config();cs.sync(self.data,c)
+        with self.assertRaisesRegex(ValueError,'does not map'):cs.provider_verify(self.data,c)
 
 if __name__=='__main__':unittest.main()

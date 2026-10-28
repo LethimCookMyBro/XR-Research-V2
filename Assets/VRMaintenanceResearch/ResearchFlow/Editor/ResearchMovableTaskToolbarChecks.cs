@@ -36,7 +36,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Directory.CreateDirectory(directory);
             try
             {
-                foreach (var policy in new[] { ResearchUIPolicy.DevMovable, ResearchUIPolicy.LegacyMovable, ResearchUIPolicy.FixedDemo })
+                foreach (var policy in new[] { ResearchUIPolicy.OwnerMovable, ResearchUIPolicy.DevMovable, ResearchUIPolicy.LegacyMovable, ResearchUIPolicy.FixedDemo })
                 foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
                 {
                     IDisposable owner = null;

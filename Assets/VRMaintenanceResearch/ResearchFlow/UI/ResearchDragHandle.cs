@@ -159,7 +159,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 float rawStep = hasRaw ? Vector3.Distance(lastRaw, raw) : 0;
                 var position = Stabilize(raw, dt);
                 var rotation = dragRotation;
-                if (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable && Vector3.Distance(raw, startPanelPosition) > .02f)
+                if (ResearchUIPolicy.AnchoredMovable && Vector3.Distance(raw, startPanelPosition) > .02f)
                 {
                     var look = Vector3.ProjectOnPlane(position - head.position, Vector3.up);
                     if (look.sqrMagnitude > .01f) rotation = Quaternion.LookRotation(look.normalized, Vector3.up);

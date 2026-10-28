@@ -193,8 +193,8 @@ static class ResearchFlowChecks
         catch (Newtonsoft.Json.JsonException) { legacyReads = false; }
         Check(legacyReads, "a Q4/Q5-era strict reader still opens the registry after new-build sessions (rollback stays possible)");
         var sidecar = JObject.Parse(File.ReadAllText(r.ProtocolPath));
-        Check((string)sidecar["sessions"][th.session_id]["ui_policy"] == ResearchUIPolicy.FixedDemo
-            && new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.participant_id == th.participant_id).ui_policy == ResearchUIPolicy.FixedDemo,
+        Check((string)sidecar["sessions"][th.session_id]["ui_policy"] == ResearchUIPolicy.OwnerMovable
+            && new ResearchParticipantRegistry(root).List(ParticipantGroup.Thai).Single(p => p.participant_id == th.participant_id).ui_policy == ResearchUIPolicy.OwnerMovable,
             "sidecar keyed by session_id restores the recorded policy on read");
         Check(!((JObject)sidecar["sessions"]).Properties().Any(p => r.List(ParticipantGroup.Thai).Concat(r.List(ParticipantGroup.Japanese)).Any(x => x.session_id == p.Name && x.session_state == RegistryState.Available)),
             "available IDs carry no policy");
@@ -291,9 +291,9 @@ static class ResearchFlowChecks
             var overrideLanguage = r.StartOrResume("TH05", ParticipantLanguage.Japanese, ExperimentInputMode.Controller, technicalOverride: true);
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
             // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
-            Check(th.ui_policy == ResearchUIPolicy.FixedDemo && th.protocol_version == ResearchUIPolicy.ProtocolFixedDemo
+            Check(th.ui_policy == ResearchUIPolicy.OwnerMovable && th.protocol_version == ResearchUIPolicy.ProtocolOwnerMovable
                 && th.training_version == ResearchUIPolicy.TrainingFixedDemo && th.layout_version == ResearchUIPolicy.LayoutVersion,
-                "new study session records fixed UI policy, protocol, training and layout versions");
+                "new study session records the 28 Oct movable UI policy, protocol, training and layout versions");
             Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
             var legacyDev = r.CreateNext(ParticipantGroup.Dev);
             legacyDev = r.StartOrResume(legacyDev.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable);
@@ -307,11 +307,15 @@ static class ResearchFlowChecks
             Check(File.ReadAllText(r.RegistryPath) == policyBefore, "rejected UI policy reserves nothing");
             Check(ResearchUIPolicy.ForRecord(null) == ResearchUIPolicy.LegacyMovable && ResearchUIPolicy.ForRecord(ResearchUIPolicy.FixedDemo) == ResearchUIPolicy.FixedDemo,
                 "records predating the policy field are attributed to the movable-panel UI");
-            Check(ResearchUIPolicy.Parse(null) == ResearchUIPolicy.FixedDemo && ResearchUIPolicy.Parse("fixed") == ResearchUIPolicy.FixedDemo
+            Check(ResearchUIPolicy.Parse(null) == ResearchUIPolicy.OwnerMovable && ResearchUIPolicy.Parse("fixed") == ResearchUIPolicy.FixedDemo
+                && ResearchUIPolicy.Parse("movable") == ResearchUIPolicy.OwnerMovable
                 && ResearchUIPolicy.Parse("legacy_movable") == ResearchUIPolicy.LegacyMovable, "operator policy aliases parse");
             Reject(() => ResearchUIPolicy.Parse("free"), "unknown operator policy alias rejected");
-            Check(ResearchUIPolicy.Active == ResearchUIPolicy.FixedDemo && !ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed
-                && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy disables participant drag/recenter and the drag lesson");
+            Check(ResearchUIPolicy.Active == ResearchUIPolicy.OwnerMovable && ResearchUIPolicy.PanelDragAllowed && ResearchUIPolicy.ParticipantRecenterAllowed
+                && !ResearchUIPolicy.TrainingIncludesPanelDrag && ResearchUIPolicy.ReaderPoseFixedPerTask, "default policy allows participant drag/recenter without a compulsory drag lesson");
+            ResearchUIPolicy.Apply(ResearchUIPolicy.FixedDemo);
+            Check(!ResearchUIPolicy.PanelDragAllowed && !ResearchUIPolicy.ParticipantRecenterAllowed, "recorded fixed-UI sessions keep drag/recenter disabled");
+            ResearchUIPolicy.Reset();
             StationAnchorChecks();
             CaptionPartChecks();
             VideoLoadRuleChecks();
