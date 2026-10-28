@@ -55,11 +55,21 @@ def bundles(root):
         if any(part.startswith('.') for part in b.relative_to(root).parts) or b.parent.name=='raw':continue
         yield b
 
+def device_folder(manifest):
+    # Each headset numbers its own participants (TH01...), so two headsets at one site need separate trees (owner, 28 Oct).
+    serial=((manifest.get('transport_provenance') or {}).get('profile') or {}).get('serial')
+    return 'device_'+rx.token(serial) if serial else 'device_unbound'
+
 def remote_dir(c,manifest):
     i=manifest['identity'];group=i['group']
     cohort='TH' if group=='Thai' else 'JP' if group=='Japanese' else group.upper()
-    return Path(*(() if c.get('drive_folder_id') else ('research_s1',)),'site_'+c['site_code'],'cohort_'+cohort,'participant_'+rx.token(i['participant_code']),
+    return Path(*(() if c.get('drive_folder_id') else ('research_s1',)),'site_'+c['site_code'],device_folder(manifest),'cohort_'+cohort,'participant_'+rx.token(i['participant_code']),
                 'session_'+rx.token(i['session_id']),'run_'+rx.token(i['run_id']),'bundle_'+rx.token(manifest['bundle_id']))
+
+def bundle_remote_dir(root,c,manifest):
+    # A bundle already in the cloud keeps the path its immutable receipt recorded (pre-device-folder layout included).
+    local=state_dir(root,c)/(manifest['bundle_id']+'.json')
+    return Path(rx.load(local)['remote_path']) if local.exists() else remote_dir(c,manifest)
 
 def target_root(c):
     # Real synced folders plus session/run/bundle ids pass Windows' 260-char path limit (WinError 206 on a DEV bundle).
@@ -101,7 +111,7 @@ def sync_bundle(root,c,bundle,force,t):
         if datetime.fromisoformat(p['next_attempt_utc'].replace('Z','+00:00'))>t:return dict(base,status='cloud_queued_backoff',**p)
     target=target_root(c)
     if not target.is_dir():return dict(base,status='cloud_queued_offline',reason='target folder unavailable')
-    rel=remote_dir(c,manifest);dest=target/rel
+    rel=bundle_remote_dir(root,c,manifest);dest=target/rel
     files=dict(manifest['files'],**{n:dict(bytes=(bundle/n).stat().st_size,sha256=rx.file_digest(bundle/n)) for n in ('manifest.json','COMPLETE.json')})
     try:
         copied=[n for n,meta in sorted(files.items(),key=lambda kv:(kv[0]=='COMPLETE.json',kv[1]['bytes'],kv[0])) if copy_verified(bundle/n,dest/n,meta)]
@@ -226,7 +236,7 @@ def withdraw(root,config,participant,execute=False):
     for b in bundles(root):
         m=rx.load(b/'manifest.json')
         if m['identity']['participant_code']!=participant:continue
-        rel=remote_dir(c,m);dest=target_root(c)/rel
+        rel=bundle_remote_dir(root,c,m);dest=target_root(c)/rel
         targets.append(dict(bundle_id=m['bundle_id'],local=str(b),remote=str(dest),remote_exists=dest.exists()))
         if execute and dest.exists():
             shutil.rmtree(dest);(dest.parent/(dest.name+'.cloud_receipt.json')).unlink(missing_ok=True)

@@ -44,13 +44,32 @@ class CloudSyncChecks(unittest.TestCase):
     def test_upload_reads_back_every_hash_and_repeat_is_idempotent(self):
         c=self.config();r=cs.sync(self.data,c)['bundles'][0]
         self.assertEqual(r['status'],'cloud_folder_verified')
-        self.assertTrue(r['remote_path'].startswith('research_s1/site_TMU/cohort_DEV/participant_DEV900/session_fixture_session_AB/run_fixture_run_AB/bundle_v1_'))
+        self.assertTrue(r['remote_path'].startswith('research_s1/site_TMU/device_unbound/cohort_DEV/participant_DEV900/session_fixture_session_AB/run_fixture_run_AB/bundle_v1_'))
         manifest=rx.verify(self.remote(r));self.assertEqual(manifest,rx.verify(self.dev))
         receipt=json.loads((self.remote(r).parent/(self.remote(r).name+'.cloud_receipt.json')).read_text())
         self.assertFalse(receipt['provider_upload_confirmed']);self.assertNotRegex(json.dumps(receipt),cs.SECRET_KEYS)
         self.assertEqual(cs.sync(self.data,c)['bundles'][0]['status'],'already_cloud_verified')
         self.assertEqual(cs.status(self.data,c)[0]['cloud'],'cloud_folder_verified')
         self.assertEqual(list(self.cloud.rglob('*.partial')),[])
+
+    def test_each_headset_has_its_own_cloud_tree(self):
+        c=dict(site_code='TMU',drive_folder_id='folder')
+        def m(serial):return dict(bundle_id='b',identity=dict(group='Thai',participant_code='TH01',session_id='s',run_id='r'),
+                                  transport_provenance=dict(profile=dict(serial=serial)) if serial else None)
+        one,two=cs.remote_dir(c,m('2G0YC5ZHBF00FJ')),cs.remote_dir(c,m('2G0YC5ZHBF0077'))
+        self.assertEqual(one.parts[:2],('site_TMU','device_2G0YC5ZHBF00FJ'))
+        self.assertNotEqual(one.parent.parent,two.parent.parent,'TH01 on two headsets never shares a participant folder')
+        self.assertEqual(cs.remote_dir(c,m(None)).parts[1],'device_unbound')
+
+    def test_bundle_uploaded_before_device_folders_keeps_its_path(self):
+        c=self.config();r=cs.sync(self.data,c)['bundles'][0]
+        legacy=Path(*[p for p in Path(r['remote_path']).parts if p!='device_unbound'])
+        (self.cloud/legacy).parent.mkdir(parents=True,exist_ok=True);shutil.move(str(self.remote(r)),str(self.cloud/legacy))
+        receipt=cs.state_dir(self.data,cs.load_config(c))/(rx.verify(self.dev)['bundle_id']+'.json')
+        old=json.loads(receipt.read_text());old['remote_path']=legacy.as_posix();receipt.write_bytes(rx.canonical(old))
+        again=cs.sync(self.data,c)['bundles'][0]
+        self.assertEqual((again['status'],again['remote_path']),('already_cloud_verified',legacy.as_posix()))
+        self.assertFalse(self.remote(r).exists(),'not copied a second time under the new layout')
 
     def test_long_synced_folder_path_still_copies(self):
         self.cloud=self.base/('OneDrive - Tokyo Metropolitan University Research Data Workspace '+'x'*120)/'S1';self.cloud.mkdir(parents=True)
@@ -149,7 +168,7 @@ class DriveFolderChecks(CloudSyncChecks):
 
     def test_pinned_folder_has_no_second_research_s1_level(self):
         r=cs.sync(self.data,self.config())['bundles'][0]
-        self.assertTrue(r['remote_path'].startswith('site_TMU/cohort_DEV/participant_DEV900/'),r['remote_path'])
+        self.assertTrue(r['remote_path'].startswith('site_TMU/device_unbound/cohort_DEV/participant_DEV900/'),r['remote_path'])
         receipt=json.loads((self.remote(r).parent/(self.remote(r).name+'.cloud_receipt.json')).read_text())
         self.assertEqual(receipt['target_folder_id'],self.FOLDER)
 
