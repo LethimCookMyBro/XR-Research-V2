@@ -224,9 +224,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(!opened || canvas.renderMode == RenderMode.WorldSpace, language + "/idle Back cannot expose technical fallback", canvas.renderMode.ToString());
                     // The setup card speaks the session language (ResearcherSetupView.cs:39,743; ResearchStrings.cs:97).
                     string lockedText = ResearchStrings.Get("researcher.locked_controller", language.ToString());
-                    const string approval = "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing.";
+                    string approval = ResearchSessionFlowController.StudyAuthorizationPrefix + "file missing";
                     string approvalText = (string)typeof(ResearcherSetupView).GetMethod("LocalizeBlocker", Private).Invoke(setup, new object[] { approval });
-                    Check(approvalText == ResearchStrings.Get("researcher.study_approval_block", language.ToString()) && approvalText != approval,
+                    Check(approvalText == string.Format(ResearchStrings.Get("researcher.study_authorization_block", language.ToString()), "file missing") && approvalText != approval,
                         language + "/Study approval reason localized without changing the gate", approvalText);
                     Check(!opened || (lockedInput && lockedInput.gameObject.activeInHierarchy && !string.IsNullOrWhiteSpace(lockedText) && lockedInput.text == lockedText && !lockedInput.isTextOverflowing),
                         language + "/locked Controller mode is visible rather than a blank row", new { visible = lockedInput && lockedInput.gameObject.activeInHierarchy, text = lockedInput ? lockedInput.text : null });

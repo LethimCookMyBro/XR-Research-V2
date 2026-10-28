@@ -74,20 +74,42 @@ namespace VRMaintenanceResearch.ResearchFlow
             : !FloorReady ? "Device not ready: floor/boundary is not confirmed."
             : !DeviceReady ? "Device not ready: both controllers must be tracked."
             : !LoggerReady ? "Data logger not ready."
-            : !ResearchParticipantRegistry.IsTechnical(record.group) && !HasStudyApproval(record, operatorDirectory) ? "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing." : null;
+            : StudyApprovalBlocker(record, operatorDirectory) is string approval ? StudyAuthorizationPrefix + approval : null;
+        public const string StudyAuthorizationPrefix = "Study start authorization: ";
 
-        public bool HasStudyApproval(ParticipantRecord record, string operatorDirectory = null)
+        public bool HasStudyApproval(ParticipantRecord record, string operatorDirectory = null) =>
+            record != null && StudyApprovalBlocker(record, operatorDirectory) == null;
+
+        // Reader content is shown to technical test data, or to a Study session whose own linked authorization records
+        // consent, content and language approval. Checked once per session; the files are not re-read every frame.
+        public string ReaderOperatorDirectory;
+        string readerAuthorizedSession; bool readerAuthorized;
+        public bool ReaderAuthorized
         {
-            if (record == null) return false;
-            if (ResearchParticipantRegistry.IsTechnical(record.group)) return true;
+            get
+            {
+                if (Record == null) return false;
+                if (Record.test_data) return true;
+                if (readerAuthorizedSession != Record.session_id)
+                { readerAuthorized = HasStudyApproval(Record, ReaderOperatorDirectory); readerAuthorizedSession = Record.session_id; }
+                return readerAuthorized;
+            }
+        }
+
+        // 28 Oct audit: the old message read as "no ethics approval" when the device only lacked the researcher's authorization file.
+        // This names the failed local check; it says nothing about whether approvals exist outside the device.
+        public string StudyApprovalBlocker(ParticipantRecord record, string operatorDirectory = null)
+        {
+            if (record == null || ResearchParticipantRegistry.IsTechnical(record.group)) return null;
+            string directory = string.IsNullOrEmpty(operatorDirectory) ? Path.Combine(Application.persistentDataPath, "OperatorControl") : operatorDirectory;
+            if (!File.Exists(Path.Combine(directory, "research-operator-authorization.json")))
+                return "OperatorControl/research-operator-authorization.json is not on this device.";
             try
             {
-                string directory = string.IsNullOrEmpty(operatorDirectory) ? Path.Combine(Application.persistentDataPath, "OperatorControl") : operatorDirectory;
-                var auth = ResearchOperatorGuard.LoadAuthorization(directory, record, out _);
-                ResearchOperatorGuard.Demand("start", record, auth);
-                return true;
+                ResearchOperatorGuard.Demand("start", record, ResearchOperatorGuard.LoadAuthorization(directory, record, out _));
+                return null;
             }
-            catch { return false; }
+            catch (Exception e) { return e.Message; }
         }
         public string ResearcherResumeBlocker()
         {
@@ -210,8 +232,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             .Select(facts => facts.Where(fact => fact != "reposition").ToArray()).ToArray();
         // With the neutral Trainer_FX1 station the last group practises the S1 §4 mechanisms before the Inspect samples.
         static readonly string[][] TrainerTutorialFacts = WithTrainer(BasicTutorialFacts);
-        static readonly string[][] FixedTrainerTutorialFacts = FixedBasicTutorialFacts.Take(4)
-            .Concat(new[] { ResearchTrainingStation.FixedSequence.ToArray() }).ToArray();
+        string[][] FixedTrainerTutorialFacts => FixedBasicTutorialFacts.Take(4)
+            .Concat(new[] { ResearchTrainingStation.SequenceFor(Record?.training_version) }).ToArray();
         static string[][] WithTrainer(string[][] basic) => basic.Take(4)
             .Concat(new[] { ResearchTrainingStation.Facts.Concat(new[] { "inspect" }).ToArray() }).ToArray();
         string[][] TutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
@@ -1554,8 +1576,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 phaseOverride: exposurePhase, taskIdOverride: exposureTask, reason: reason);
         }
         public bool ReferenceAvailable(string section) => ResearchReferenceScheme.Contains(section)
-            && (Flow?.IsTutorial == true || TaskContentAvailable) &&
-            (IsTechnical ? ResearchReferenceViewer.Available(section, ReaderResource) : CurrentPort && CurrentPort.IsReadyForStudy);
+            && (Flow?.IsTutorial == true || TaskContentAvailable) && ReaderAuthorized
+            && ResearchReferenceViewer.Available(section, ReaderResource)
+            && (IsTechnical || Flow?.IsTutorial == true || CurrentPort && CurrentPort.IsReadyForStudy);
         public string ReaderResource => ResearchReferenceViewer.ResourceFor(Flow?.IsTutorial == true ? "T" : Flow?.CurrentTask, Language);
         public void ReferenceMediaEvent(string eventName, object after, string source = "User", string input = "None", string boundSection = null)
         {

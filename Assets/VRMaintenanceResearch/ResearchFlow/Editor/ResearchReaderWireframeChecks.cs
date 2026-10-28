@@ -1142,6 +1142,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             {
                                 Check(!player.isPlaying && !controller.Flow.Paused && audio && audio.mute && Number(reader, "DecodedFrameCount") > 0 && Convert.ToInt64(Read(reader, "FirstDecodedFrame")) >= 0,
                                     "native prepare yields a genuine first decoded frame, paused and muted without session Pause", Observe(player));
+                                // Reader v2 S1 videos are narrated; a silent S1 movie is a content regression (DEMO fixtures stay exempt).
+                                if (Read(reader, "BoundRegistryResource").ToString().StartsWith("ResearchReaderS1/", StringComparison.Ordinal))
+                                    Check(player.audioTrackCount >= 1 && player.GetAudioChannelCount(0) >= 1 && player.GetAudioSampleRate(0) > 0,
+                                        "S1 video decoder exposes a narration audio track routed to the media AudioSource",
+                                        new { tracks = player.audioTrackCount, channels = player.audioTrackCount > 0 ? player.GetAudioChannelCount(0) : 0, rate = player.audioTrackCount > 0 ? player.GetAudioSampleRate(0) : 0, output = player.audioOutputMode.ToString() });
                                 Canvas.ForceUpdateCanvases();
                                 var slider = (Slider)Read(reader, "Timeline"); var handleRect = slider.handleRect; var hostRect = (RectTransform)slider.transform;
                                 var handleCorners = new Vector3[4]; handleRect.GetWorldCorners(handleCorners);

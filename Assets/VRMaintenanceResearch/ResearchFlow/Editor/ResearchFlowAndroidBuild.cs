@@ -106,12 +106,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var oldIcons = PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any);
             var appIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIcon) ?? throw new Exception("Missing launcher icon " + AppIcon);
 
+            var builtUtc = DateTime.UtcNow;
             string apk = Path.Combine(Out, "ResearchFlowQuest3_" +
-                DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".apk");
+                builtUtc.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".apk");
+            // Each candidate gets its own Android version: the code only increases, so "pm install -r" over an older build stays an update.
+            string oldVersionName = PlayerSettings.bundleVersion;
+            int oldVersionCode = PlayerSettings.Android.bundleVersionCode;
+            int versionCode = (int)(builtUtc - new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMinutes;
+            string versionName = "3.4.1." + builtUtc.ToString("yyyyMMdd.HHmm", System.Globalization.CultureInfo.InvariantCulture);
 
             try
             {
                 PlayerSettings.productName = "VR Maintenance Lab";
+                PlayerSettings.bundleVersion = versionName;
+                PlayerSettings.Android.bundleVersionCode = versionCode;
                 PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { appIcon }, IconKind.Any);
                 PlayerSettings.SetApplicationIdentifier(target, TechnicalApplicationId);
                 PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
@@ -147,6 +155,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     applicationIdentifier = TechnicalApplicationId,
                     productName = PlayerSettings.productName,
+                    versionName,
+                    versionCode,
                     scene = ScenePath,
                     development = true,
                     backend = "IL2CPP",
@@ -198,6 +208,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 TryRestore(() => File.WriteAllBytes(ProfileManifest, oldProfileManifest), restoreErrors);
                 TryRestore(() => AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport), restoreErrors);
                 TryRestore(() => PlayerSettings.productName = oldProduct, restoreErrors);
+                TryRestore(() => PlayerSettings.bundleVersion = oldVersionName, restoreErrors);
+                TryRestore(() => PlayerSettings.Android.bundleVersionCode = oldVersionCode, restoreErrors);
                 TryRestore(() => PlayerSettings.SetIcons(NamedBuildTarget.Unknown, oldIcons, IconKind.Any), restoreErrors);
                 TryRestore(() => PlayerSettings.SetApplicationIdentifier(target, oldId), restoreErrors);
                 TryRestore(() => PlayerSettings.Android.targetSdkVersion = oldSdk, restoreErrors);

@@ -2539,7 +2539,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             pillText.text = Text("reference.restore_short"); pillText.font = Font;
             PrepareReferenceViewer(); LayoutReaderShell();
             ReferenceViewer.UseRegistry(controller.ReaderResource);
-            ReferenceViewer.Bind(ReferenceKey, controller.ReferenceSection, controller.IsTechnical, Text("reference.content_unavailable"));
+            ReferenceViewer.Bind(ReferenceKey, controller.ReferenceSection, controller.ReaderAuthorized, Text("reference.content_unavailable"));
             if (!wasOpen || previousMinimized != minimized) Animate(referenceGroup, ref referenceAnimation, enter: true);
             previousMinimized = minimized; previousSection = controller.ReferenceSection; previousReferenceKey = ReferenceKey;
             Canvas.ForceUpdateCanvases(); RefreshPageControls();

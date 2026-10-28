@@ -72,10 +72,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             void Check(bool pass, string name, object data) { rows.Add(new { name, pass, data }); if (!pass) failures.Add(name); }
             Application.LogCallback onLog = (message, stack, kind) => { if (kind == LogType.Error || kind == LogType.Exception) callbackErrors.Add(message + "\n" + stack); };
             var frozenHashes = new Dictionary<string,string> {
-                { "ResearchReaderS1/A_th/package", "e283cffb1f68914981aed637b9657bfc9c9204bcb81b773a267aabfd2cb8616f" },
-                { "ResearchReaderS1/A_ja/package", "cee12b728350f4c0f24d7c9adf962ed440b9d8b3c9b3e2c43d24c8f5dcd0b70b" },
-                { "ResearchReaderS1/B_th/package", "347481af70e25cbbd31ba2d08f46bf5e10d2d47d15f4e559f460f421a4bb7ac6" },
-                { "ResearchReaderS1/B_ja/package", "b0c28cad2d4722f8d4f2486c17704f6ab6165f2d540c514ebb35c74d7960d313" }
+                { "ResearchReaderS1/A_th/package", "0db8d1647fe41dc700c69d4d673b2ed43dc39ab7133d3f9bafd7deafdb019b94" },
+                { "ResearchReaderS1/A_ja/package", "a45173776d6d024af902c63b511c014babe2eadf53306c0b9d2833a993ee5fdc" },
+                { "ResearchReaderS1/B_th/package", "e97e0ab1d3372c9cade6313331d018d543e8d84f771a84a8011cc83640684c0c" },
+                { "ResearchReaderS1/B_ja/package", "8f9d64a36363f3c04ad12f4bded3410f19316a9b68097ecdee0862adacf518b8" }
             };
             Directory.CreateDirectory(dir); Application.logMessageReceived += onLog;
             try

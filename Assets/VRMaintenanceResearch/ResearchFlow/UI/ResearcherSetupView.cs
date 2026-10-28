@@ -118,6 +118,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             abort.onClick.AddListener(AbortSelected);
             export.onClick.AddListener(ExportSession);
             group.onValueChanged.AddListener(GroupChanged);
+            language.onValueChanged.AddListener(LanguageChanged);
             participant.onValueChanged.AddListener(ParticipantSelected);
         }
 
@@ -129,6 +130,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             abort.onClick.RemoveListener(AbortSelected);
             export.onClick.RemoveListener(ExportSession);
             group.onValueChanged.RemoveListener(GroupChanged);
+            language.onValueChanged.RemoveListener(LanguageChanged);
             participant.onValueChanged.RemoveListener(ParticipantSelected);
         }
 
@@ -151,6 +153,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (controller) controller.SetLanguage("Japanese");
                 }
             }
+            Refresh();
+        }
+
+        // 28 Oct audit: only GroupChanged reached the controller, so choosing 日本語 for a DEV session left Setup in the previous language.
+        private void LanguageChanged(int index)
+        {
+            if (controller && index >= 0 && index <= (int)ParticipantLanguage.English) controller.SetLanguage((ParticipantLanguage)index);
             Refresh();
         }
 
@@ -979,6 +988,17 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             var selectedFont = controller && controller.view ? controller.view.Font : font;
             if (selectedFont) foreach (var label in GetComponentsInChildren<TMP_Text>(true)) label.font = selectedFont;
+            // ResearchFlow_Japanese/English carry no Thai glyphs; the Thai asset falls back to both, so it renders every autonym.
+            var autonymFont = controller && controller.view ? controller.view.thaiFont : null;
+            if (autonymFont)
+                foreach (var control in new[] { group, language })
+                {
+                    control.captionText.font = autonymFont;
+                    if (control.itemText) control.itemText.font = autonymFont;
+                    foreach (var label in control.template.GetComponentsInChildren<TMP_Text>(true)) label.font = autonymFont;
+                    var row = panel.Find(control.name + " Choices");
+                    if (row) foreach (var label in row.GetComponentsInChildren<TMP_Text>(true)) label.font = autonymFont;
+                }
             resume.GetComponentInChildren<TMP_Text>(true).text = R("resume");
             export.GetComponentInChildren<TMP_Text>(true).text = R("manual_export");
             stop.GetComponentInChildren<TMP_Text>(true).text = R("stop");
@@ -986,7 +1006,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (back) back.GetComponentInChildren<TMP_Text>(true).text = R("back");
             if (invalid) invalid.GetComponentInChildren<TMP_Text>(true).text = R(confirmInvalid ? "cancel_invalid" : "invalid");
             int visibleGroupCount = (detailsExpanded && !questOwner) ? groups.Length : 3;
-            var groupLabels = new[] { R("thai"), R("japanese"), "DEV - " + R("test_data"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
+            // Owner direction 28 Oct: languages and participant groups are named in their own script whatever the Setup language.
+            var groupLabels = new[] { "ไทย · " + R("mode_study"), "日本 · " + R("mode_study"), R("mode_program_test"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
             if (group.options.Count != visibleGroupCount)
             {
                 int currentVal = group.value;
@@ -1000,7 +1021,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             group.RefreshShownValue();
             var sources = new[] { language, order, input };
-            var captions = new[] { new[] { R("thai"), R("japanese"), R("english") }, new[] { R("auto"), "AB_P", "AB_Q", "BA_P", "BA_Q" }, new[] { R("controller"), R("hands"), R("both") } };
+            var captions = new[] { new[] { "ไทย", "日本語", "English" }, new[] { R("auto"), "AB_P", "AB_Q", "BA_P", "BA_Q" }, new[] { R("controller"), R("hands"), R("both") } };
             for (int i = 0; i < sources.Length; i++)
             {
                 var source = sources[i];
@@ -1022,13 +1043,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "Device not ready: floor/boundary is not confirmed.": return R("floor_block");
                 case "Device not ready: both controllers must be tracked.": return R("tracking_block");
                 case "Data logger not ready.": return R("logger_block");
-                case "Study locked: requires research ethics/content approval and bilingual review. Use DEV for testing.": return R("study_approval_block");
                 case "No open session.": return R("no_session");
                 case "Station transition in progress.": return R("transition");
                 case "Participant app is not focused.": return R("focus");
                 case "Headset or controllers not tracked.": return R("tracking");
                 case "Quest setup requires Controller mode.": return R("quest_mode");
             }
+            if (value.StartsWith(ResearchSessionFlowController.StudyAuthorizationPrefix, StringComparison.Ordinal))
+                return string.Format(R("study_authorization_block"), value.Substring(ResearchSessionFlowController.StudyAuthorizationPrefix.Length));
             const string open = "A session is already open: ";
             const string nothing = "Nothing to resume: participant is in ";
             if (value.StartsWith(open, StringComparison.Ordinal)) return string.Format(R("open_session"), value.Substring(open.Length));

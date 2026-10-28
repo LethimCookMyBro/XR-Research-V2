@@ -20,6 +20,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         private IGrabbable grab;
         private Matrix4x4 grabToRoot, mateInRoot, accepted;
         private float previousTurn;
+        private double stopBackoff;
         private bool held, rebase;
         public float ProgressDegrees => progress;
         public int SocketIndex => socketIndex;
@@ -36,7 +37,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var pose = SocketRules.Measure(Seat, mate.localToWorldMatrix);
                 float expected = (float)ResearchS1FanKinematics.ThreadDepthMm(progress, FullDegrees, travelMm);
                 if (pose.lateralMm > .3f || pose.tiltDeg > 1 || Mathf.Abs(pose.depthMm - expected) > .3f) return S1ThreadState.Absent;
-                return progress >= FullDegrees - .01f ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
+                return progress >= FullDegrees ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
             }
         }
         public void AuthorOpen()
@@ -55,6 +56,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var p = grab.GrabPoints[0];
             grabToRoot = Matrix4x4.TRS(p.position, p.rotation, Vector3.one).inverse * transform.localToWorldMatrix;
             previousTurn = Captive || socketIndex >= 0 ? SocketRules.Measure(Seat, mate.localToWorldMatrix).turnDeg : 0;
+            stopBackoff = 0;
             rebase = false;
         }
         public void UpdateTransform()
@@ -96,11 +98,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                 socketIndex = -1; Place(free); input.Motion("REMOVE", before, false); return;
             }
             bool blocked = hand.lateralMm > 4 || hand.tiltDeg > 8 || (Captive ? sled.Placement != S1Placement.Seated || sled.part.IsHeld : !owner.GpuSeated(socketIndex));
-            float next = blocked ? progress : (float)ResearchS1FanKinematics.Turn(progress, clockwiseDelta, FullDegrees, true);
-            blocked |= Mathf.Abs(clockwiseDelta) > .2f && Mathf.Approximately(next, progress);
+            double backoff = stopBackoff;
+            float next = blocked ? progress : (float)ResearchS1FanKinematics.TurnWithDetent(progress, clockwiseDelta, FullDegrees, true, ref backoff);
+            // Turning into a stop is blocked; a small turn held by the end-stop detent is not.
+            blocked |= Mathf.Abs(clockwiseDelta) > .2f && Mathf.Approximately((float)ResearchS1FanKinematics.Turn(progress, clockwiseDelta, FullDegrees, true), progress);
             bool changed = !Mathf.Approximately(next, progress);
             var nextPose = ThreadPose(socketIndex, next);
             if (!owner.AllowsMotion(transform, nextPose)) { input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, true); return; }
+            stopBackoff = backoff;
             progress = next;
             Place(nextPose);
             if (changed || blocked && Mathf.Abs(clockwiseDelta) > .2f) input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, blocked);

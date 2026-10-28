@@ -284,14 +284,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Acquire(thumb.input, true);
             var thumbMate = thumb.transform.worldToLocalMatrix * thumb.mate.localToWorldMatrix;
             step = storage + "-tighten-captive-thumb";
-            while (thumb.ProgressDegrees < thumb.FullDegrees - .01f)
-            {
-                float next = Mathf.Min(thumb.FullDegrees, thumb.ProgressDegrees + 5);
-                var root = SocketRules.RootPose(thumb.captiveSeat.localToWorldMatrix,
-                    (float)ResearchS1FanKinematics.ThreadDepthMm(next, thumb.FullDegrees, thumb.travelMm), -next, thumbMate);
-                yield return MoveRoot(thumb.input, new Pose(root.GetColumn(3), root.rotation));
-                Require(Mathf.Abs(thumb.ProgressDegrees - next) <= .25f, "Actual S01 thumb thread did not advance by the requested clockwise step.");
-            }
+            yield return TightenThroughInput(thumb, thumb.captiveSeat.localToWorldMatrix);
+            yield return ReleaseTwistAtStop(thumb, thumb.captiveSeat.localToWorldMatrix, thumbMate);
             yield return Release();
             Require(sled.Tray == 0 && sled.Placement == S1Placement.Seated && thumb.State == S1ThreadState.Tight,
                 "Released S01 or its actual captive fastener did not retain the observed completed mechanical state.");
@@ -327,7 +321,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(screw.SocketIndex == 0 && screw.ProgressDegrees == 0 && screw.State == S1ThreadState.Absent,
                 "Actual loose screw engagement at the primary bracket was not observed.");
             step = "G01-bracket-thread";
-            yield return TightenThroughInput(screw);
+            var bracketSeat = task.gpuScrewSeats[screw.SocketIndex].localToWorldMatrix * Matrix4x4.Translate(new Vector3(0, 0, -.0009f));
+            yield return TightenThroughInput(screw, bracketSeat);
+            yield return ReleaseTwistAtStop(screw, bracketSeat, screw.transform.worldToLocalMatrix * screw.mate.localToWorldMatrix);
             yield return Release();
             Require(screw.SocketIndex == 0 && screw.State == S1ThreadState.Tight && !screw.IsHeld && task.GpuSeated(0) &&
                 task.Capture().gpus.Single(p => p.id == "G01").bracketFastener == S1ThreadState.Tight,
@@ -406,22 +402,41 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return new Pose(slot.position + tray.up * Mathf.Sign(b) * .04f + rootFromSolid, pass);
         }
 
-        static IEnumerator TightenThroughInput(ResearchS1TaskAFastener screw)
+        static IEnumerator TightenThroughInput(ResearchS1TaskAFastener screw, Matrix4x4 seat)
         {
             var mateInRoot = screw.transform.worldToLocalMatrix * screw.mate.localToWorldMatrix;
-            while (screw.ProgressDegrees < screw.FullDegrees - .01f)
+            while (screw.ProgressDegrees < screw.FullDegrees)
             {
                 Require(Owns(screw.input), "Actual SDK thread ownership was lost.");
-                float next = Mathf.Min(screw.FullDegrees, screw.ProgressDegrees + 5);
-                var seat = task.gpuScrewSeats[screw.SocketIndex].localToWorldMatrix * Matrix4x4.Translate(new Vector3(0, 0, -.0009f));
+                float next = Mathf.Min(screw.FullDegrees, screw.ProgressDegrees + ThreadStep(screw));
                 var expected = SocketRules.RootPose(seat, (float)ResearchS1FanKinematics.ThreadDepthMm(next, screw.FullDegrees, screw.travelMm), -next, mateInRoot);
                 var goal = new Pose(expected.GetColumn(3), expected.rotation);
-                Send(Follow(ResearchFlowVisualInput.ControllerWorldPose(side), new Pose(screw.transform.position, screw.transform.rotation), goal));
-                yield return AwaitObservation(() => SdkSettled() && Mathf.Abs(screw.ProgressDegrees - next) <= .005f &&
+                var handGoal = next == screw.FullDegrees
+                    ? new Pose(goal.position, Quaternion.AngleAxis(-2, seat.GetColumn(2)) * goal.rotation) : goal;
+                Send(Follow(ResearchFlowVisualInput.ControllerWorldPose(side), new Pose(screw.transform.position, screw.transform.rotation), handGoal));
+                yield return AwaitObservation(() => SdkSettled() && (next == screw.FullDegrees ? screw.ProgressDegrees == next : Mathf.Abs(screw.ProgressDegrees - next) <= .005f) &&
                     SamePose(screw.transform, goal, .0003f, .1f), "observed bracket thread progress and axial pose", screw.input);
             }
         }
 
+
+        // A thread at zero follows the hand only once the turn clears the end-stop detent.
+        static float ThreadStep(ResearchS1TaskAFastener screw) => screw.ProgressDegrees <= 0 ? (float)ResearchS1FanKinematics.StopDetentDegrees + 2 : 5;
+
+        // Quest 9b39: the wrist turned back up to 5.8 deg while the trigger was let go. The held screw must stay tight.
+        static IEnumerator ReleaseTwistAtStop(ResearchS1TaskAFastener screw, Matrix4x4 seat, Matrix4x4 mateInRoot)
+        {
+            step = "release-twist:" + screw.input.stableId;
+            Require(screw.State == S1ThreadState.Tight, "Release-twist check needs the actual screw at its stop.");
+            float back = screw.FullDegrees - 5.8f;
+            var twisted = SocketRules.RootPose(seat, (float)ResearchS1FanKinematics.ThreadDepthMm(back, screw.FullDegrees, screw.travelMm), -back, mateInRoot);
+            Send(Follow(ResearchFlowVisualInput.ControllerWorldPose(side), new Pose(screw.transform.position, screw.transform.rotation),
+                new Pose(twisted.GetColumn(3), twisted.rotation)));
+            yield return AwaitObservation(SdkSettled, "5.8 deg wrist back-twist at the stop", screw.input);
+            Require(screw.ProgressDegrees >= screw.FullDegrees - .01f && screw.State == S1ThreadState.Tight,
+                "A 5.8 deg wrist back-twist at the stop loosened the actual screw.");
+            Phase(screw.input.stableId + "_release_twist_held_at_stop");
+        }
 
         static IEnumerator RotateService(float degrees)
         {

@@ -17,11 +17,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         IGrabbable grab;
         Matrix4x4 mateInRoot;
         float previousTurn;
+        double stopBackoff;
         bool held;
 
         public float Progress => progress;
-        public bool Tight => progress >= fullDegrees - .5f;
-        public bool Loose => progress <= .5f;
+        public bool Tight => progress >= fullDegrees;
+        public bool Loose => progress <= 0;
+        public float Fraction => progress / fullDegrees;
+        /// <summary>+1 last moved in (clockwise), -1 last moved out, 0 not moved this grip.</summary>
+        public int Direction { get; private set; }
         public bool IsHeld => grabbable && grabbable.SelectingPointsCount > 0;
         public bool Allowed = true;
 
@@ -33,6 +37,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void BeginTransform()
         {
             held = true;
+            stopBackoff = 0; Direction = 0;
             previousTurn = HandTurn();
         }
 
@@ -50,7 +55,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Seat-local +Z is the insertion axis; clockwise seen from the head is a negative turn about it.
             float clockwise = -Mathf.DeltaAngle(previousTurn, turn);
             previousTurn = turn;
-            if (Allowed) progress = Mathf.Clamp(progress + clockwise, 0, fullDegrees);
+            float before = progress;
+            if (Allowed) progress = (float)ResearchS1FanKinematics.TurnWithDetent(progress, clockwise, fullDegrees, true, ref stopBackoff);
+            if (Mathf.Abs(progress - before) > .05f) Direction = progress > before ? 1 : -1;
             Place();
         }
 

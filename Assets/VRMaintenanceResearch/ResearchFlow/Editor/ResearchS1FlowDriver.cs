@@ -319,7 +319,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     case "examine": yield return ExamineTrainer(); break;
                     case "insert_wrong": yield return InsertModule(180, false); break;
                     case "insert": yield return InsertModule(0, true); break;
-                    case "lock": case "unlock": yield return ToggleLatch(fact == "unlock"); break;
+                    case "lock":
+                        // TrainingTrainerV2: the blocked try leaves the module out; the trainee puts it back before latching.
+                        if (!Station.ModuleSeated) yield return InsertModule(0, true);
+                        yield return ToggleLatch(false); break;
+                    case "unlock": yield return ToggleLatch(true); break;
                     case "rotate_access": yield return TurnStation(130); break;
                     case "fasten": yield return TwistScrew(1); break;
                     case "loosen": yield return TwistScrew(-1); break;

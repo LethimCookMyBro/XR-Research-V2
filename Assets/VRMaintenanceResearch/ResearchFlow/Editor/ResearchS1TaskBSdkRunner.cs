@@ -125,6 +125,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Acquire(task.rearLock, true);
             yield return Rotate(task.rearLock, -(task.rearLock.fullTurnDegrees - task.rearLock.ThreadProgressDegrees) - EndOvershoot);
             Require(task.rearLock.ThreadState == S1ThreadState.Tight, "RH rear lock did not tighten from clockwise input viewed from its head.");
+            yield return ReleaseTwistAtStop(task.rearLock);
             yield return Release();
             Require(task.rearLock.ThreadState == S1ThreadState.Tight && !task.rearLock.IsHeld, "Rear lock did not retain tight state after release.");
             yield return Capture("04-rear-lock-tight");
@@ -139,6 +140,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(task.spinner.Aligned && task.spinner.ThreadProgressDegrees < .1f,
                 "Spinner did not reach its aligned thread entry.");
             yield return Rotate(task.spinner, task.spinner.fullTurnDegrees + EndOvershoot);
+            yield return ReleaseTwistAtStop(task.spinner);
             yield return Release();
             Require(task.spinner.ThreadState == S1ThreadState.Tight && !task.spinner.IsHeld,
                 "LH spinner did not retain tight state after positive rotation and release.");
@@ -233,6 +235,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             Require(Owns(part), "Selection ownership lost at rotation endpoint.");
             Record("after");
+        }
+
+        // Quest 9b39: the wrist turned back up to 5.8 deg while the trigger was let go. The held thread must stay tight.
+        static IEnumerator ReleaseTwistAtStop(ResearchS1FanPart part)
+        {
+            step = "release-twist:" + part.stableId; Record("before");
+            Require(part.ThreadState == S1ThreadState.Tight, "Release-twist check needs the actual thread at its stop.");
+            Send(Orbit(ResearchFlowVisualInput.ControllerWorldPose(side), part.seat.position, part.seat.forward, part.rightHanded ? 5.8f : -5.8f));
+            yield return AwaitObservation(SdkSettled, "5.8 deg wrist back-twist at the stop", part);
+            Require(part.ThreadProgressDegrees >= part.fullTurnDegrees - .01f && part.ThreadState == S1ThreadState.Tight,
+                "A 5.8 deg wrist back-twist at the stop loosened " + part.stableId + ".");
+            Record("release-twist-held-at-stop");
         }
 
         static IEnumerator WithdrawAndPark(ResearchS1FanPart part, float outwardMetres, float lateralMetres)

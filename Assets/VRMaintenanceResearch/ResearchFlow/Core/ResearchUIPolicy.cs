@@ -29,6 +29,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         public const string TrainingBaseline = "S1_TRAINING_BASELINE_DRAG_LESSON";
         // 20261015: practice-station order builds toward 'ready' without repeated insert/latch/tighten (no session used 20261014).
         public const string TrainingFixedDemo = "S1_TRAINING_FIXED_UI_20261015";
+        // 28 Oct 2026 (Quest session 9b39): trainee inserts the module the fitting way first, then tries the blocked way; a screw
+        // at a stop holds there until turned back past ResearchS1FanKinematics.StopDetentDegrees; part-side status labels. Same skills, new order.
+        public const string TrainingTrainerV2 = "S1_TRAINING_TRAINER_V2_20261028";
         // Table/station/Task A P/Q geometry is unchanged from the Q5 source in this revision.
         public const string LayoutVersion = "S1_LAYOUT_ENV_V2_FAN_TASK_FALLBACK_20261015";
 
@@ -63,7 +66,8 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : policy == DevMovable ? ProtocolDevMovable
             : policy == OwnerMovable ? ProtocolOwnerMovable : ProtocolBaseline;
-        public static string TrainingFor(string policy) => policy == FixedDemo || policy == DevMovable || policy == OwnerMovable ? TrainingFixedDemo : TrainingBaseline;
+        public static string TrainingFor(string policy) => policy == OwnerMovable ? TrainingTrainerV2
+            : policy == FixedDemo || policy == DevMovable ? TrainingFixedDemo : TrainingBaseline;
 
         /// <summary>Accepts the ids above plus short operator aliases ("fixed", "dev_movable", "legacy_movable").</summary>
         public static string Parse(string value)

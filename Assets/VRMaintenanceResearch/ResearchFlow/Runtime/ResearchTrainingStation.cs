@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Oculus.Interaction;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -18,8 +19,14 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Fixed-UI training (S1_TRAINING_FIXED_UI_20261015): same skills, each credited once from real state changes, ordered so the
         // trainee builds toward 'ready' instead of undoing and repeating it. The old order ended with module out / screw loose and
         // then asked for an uncredited second insert + latch + tighten before the 'ready' Inspect. Inspect is placed in sequence.
-        public static readonly string[] FixedSequence = { "examine", "inspect_fail", "insert_wrong", "insert", "lock", "rotate_access",
+        public static readonly string[] FixedSequence20261015 = { "examine", "inspect_fail", "insert_wrong", "insert", "lock", "rotate_access",
             "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
+        // TrainingTrainerV2: Quest 28 Oct, a trainee seated the module the fitting way 7 times in 134 s while the step waited for a
+        // blocked attempt. The fitting insert comes first; the blocked try then reverses what the trainee has just done.
+        public static readonly string[] FixedSequence = { "examine", "inspect_fail", "insert", "insert_wrong", "lock", "rotate_access",
+            "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
+        public static string[] SequenceFor(string trainingVersion) =>
+            trainingVersion == ResearchUIPolicy.TrainingFixedDemo ? FixedSequence20261015 : FixedSequence;
 
         public ResearchSessionFlowController controller;
         public Transform turntable;
@@ -64,6 +71,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             lead.tubeMaterial = leadSkin.sharedMaterials.First(m => m.name == "M_PVC_Blue"); lead.tubeRadius = .003f; // its straight J02/J03 segments sit within 3.5 mm of their chord
             lead.spans = new[] { ResearchS1Cable.BindSpan(transform, leadSkin, LeadEnd("B1"), leadBones, LeadEnd("B2")) };
             ApplyLatch(false);
+            BuildGripZones(lead.tubeMaterial);
             module.PoseAllowed = ModulePoseAllowed;
             leadHead.PoseAllowed = pose => Vector3.Distance(pose.GetColumn(3), leadAnchor.position) <= leadReach;
             foreach (var grabbable in new[] { module.grabbable, screw.grabbable, leadHead.grabbable, turnHandle.GetComponent<Grabbable>() })
@@ -89,7 +97,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             switch (step)
             {
                 case "insert_wrong": case "insert": return Module();
-                case "lock": return root == latchInteractable.gameObject;
+                case "lock": return root == latchInteractable.gameObject || Module(); // the blocked try leaves the module out
                 case "unlock": return root == latchInteractable.gameObject || Module();
                 case "rotate_access": return Handle();
                 case "fasten": case "loosen": return part == screw.transform || Handle();
@@ -153,6 +161,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (root && root.activeSelf != on) root.SetActive(on);
             }
             turnHandle.Allowed = screw.Allowed = active;
+            foreach (var cue in gripCues) if (cue.activeSelf != (step == "rotate_access")) cue.SetActive(step == "rotate_access");
             if (!active) return;
 
             bool blocked = module.IsHeld && moduleSocket.Occupant == module && moduleSocket.Last.captured && moduleSocket.Last.stop == Stop.Block;
@@ -226,7 +235,140 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void LateUpdate()
         {
-            if (Active) ModuleAttempt();
+            bool active = Active;
+            if (active) { ModuleAttempt(); TurntableAttempt(); }
+            ShowStatus(active ? controller.TutorialFact : null);
+        }
+
+        // Quest 28 Oct: the only turntable grab zone was an invisible 14x4x5 cm box beside the module. Two more zones at the front
+        // corners (on the handle's rigidbody, so HandGrabInteractable.Start collects them) and a visible blue edge bar on all three.
+        // They sit 16 cm from the back-right screw; the module is never grabbable in the steps that enable the handle.
+        GameObject[] gripCues = Array.Empty<GameObject>();
+        void BuildGripZones(Material cueMaterial)
+        {
+            var station = PartBounds(turntable);
+            var handle = turnHandle.transform;
+            var front = handle.GetComponent<BoxCollider>().bounds;
+            float y = front.center.y, z = front.center.z, inset = .035f;
+            foreach (float x in new[] { station.min.x + inset, station.max.x - inset })
+            {
+                var zone = new GameObject("TurntableRimGrip").transform;
+                zone.SetParent(handle, false);
+                zone.position = new Vector3(x, y, z);
+                var box = zone.gameObject.AddComponent<BoxCollider>();
+                box.size = Divide(new Vector3(.07f, .05f, .06f), zone.lossyScale);
+                box.isTrigger = true; // a grab target only; never pushes the module or lead
+                if (box.bounds.Intersects(PartBounds(module.transform))) Debug.LogWarning("TRAINING_GRIP_ZONE overlaps the module at " + x);
+            }
+            var cues = new System.Collections.Generic.List<GameObject>();
+            foreach (var (center, size) in new[] {
+                (new Vector3(front.center.x, station.max.y + .004f, front.min.z), new Vector3(front.size.x, .008f, .008f)),
+                (new Vector3(station.min.x + inset, station.max.y + .004f, front.min.z), new Vector3(.07f, .008f, .008f)),
+                (new Vector3(station.max.x - inset, station.max.y + .004f, front.min.z), new Vector3(.07f, .008f, .008f)) })
+            {
+                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cue.name = "TurntableGripCue";
+                Destroy(cue.GetComponent<Collider>());
+                cue.transform.SetParent(turntable, false);
+                cue.transform.position = center;
+                cue.transform.localScale = Divide(size, turntable.lossyScale);
+                cue.GetComponent<Renderer>().sharedMaterial = cueMaterial;
+                cue.SetActive(false);
+                cues.Add(cue);
+            }
+            gripCues = cues.ToArray();
+        }
+        static Vector3 Divide(Vector3 a, Vector3 b) => new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
+
+        // Quest 28 Oct: 147 s on rotate_access left no turntable trace at all.
+        bool wasHandleHeld;
+        void TurntableAttempt()
+        {
+            bool held = turnHandle.GetComponent<Grabbable>().SelectingPointsCount > 0;
+            if (held != wasHandleHeld) controller.Log("TRAINING_TURNTABLE", "training.trainer", held ? "Grabbed" : "Released",
+                after: new { turntable_yaw = turntable.localEulerAngles.y, turned_deg = TurnedDegrees }, inputSource: lastInput);
+            wasHandleHeld = held;
+        }
+        float TurnedDegrees => Mathf.Abs(Mathf.DeltaAngle(startYaw, turntable.localEulerAngles.y));
+
+        // Quest 28 Oct: the only feedback was on the instruction panel above the table while the trainee looked down at the part.
+        // One short label beside the part in use states its measured condition (module stop, screw progress, turntable angle).
+        TextMeshPro statusLabel;
+        string statusKey, statusLanguage;
+
+        void ShowStatus(string fact)
+        {
+            Transform anchor = null;
+            string key = StatusKey(fact, ref anchor), text = null;
+            if (key != null)
+            {
+                string language = controller.Language;
+                text = ResearchStrings.Get("training.status." + key, language);
+                if (key == "screw.fasten" || key == "screw.loosen") text = string.Format(text, Mathf.RoundToInt(screw.Fraction * 100));
+                if (key == "turn.turning") text = string.Format(text, Mathf.RoundToInt(TurnedDegrees), Mathf.RoundToInt(accessYaw));
+                if (!statusLabel) statusLabel = CreateStatusLabel();
+                if (language != statusLanguage && controller.view)
+                { statusLanguage = language; statusLabel.font = controller.view.Font; }
+                statusLabel.text = "<mark=#FFFFFFE8 padding=\"14,14,6,6\">" + text + "</mark>";
+                var camera = controller.origin && controller.origin.Camera ? controller.origin.Camera.transform : null;
+                var bounds = PartBounds(anchor);
+                statusLabel.transform.position = new Vector3(bounds.center.x, bounds.max.y + .06f, bounds.center.z);
+                if (camera) statusLabel.transform.rotation = Quaternion.LookRotation(statusLabel.transform.position - camera.position);
+            }
+            if (statusLabel && statusLabel.gameObject.activeSelf != (key != null)) statusLabel.gameObject.SetActive(key != null);
+            if (key != statusKey)
+            {
+                statusKey = key;
+                if (key != null) controller.Log("TRAINING_STATUS_SHOWN", "training." + fact, key, after: new { text }, source: "System");
+            }
+        }
+
+        string StatusKey(string fact, ref Transform anchor)
+        {
+            switch (fact)
+            {
+                case "insert": case "insert_wrong": case "lock":
+                    anchor = module.transform;
+                    if (!module.IsHeld) return fact == "lock" || ModuleSeated ? null : "module.grab";
+                    if (moduleSocket.Occupant == module && moduleSocket.Last.captured)
+                        return moduleSocket.Last.stop == Stop.Block ? (fact == "insert_wrong" ? "module.blocked" : "module.wrong_way")
+                            : moduleSocket.Last.stop == Stop.Entrance ? "module.turned"
+                            : fact == "insert_wrong" ? "module.fits_reverse" : "module.right_way";
+                    return moduleHint == "tilted" || moduleHint == "off_center" ? "module." + moduleHint : null;
+                case "fasten": case "loosen":
+                    anchor = screw.transform;
+                    if (!screw.IsHeld) return "screw.grab." + fact;
+                    if (fact == "fasten" && screw.Tight) return "screw.tight_held";
+                    if (fact == "loosen" && screw.Loose) return "screw.loose_held";
+                    // The direction shown is the measured motion, so twisting the wrong way reads as such.
+                    return screw.Direction < 0 ? "screw.loosen" : screw.Direction > 0 ? "screw.fasten" : "screw.grab." + fact;
+                case "rotate_access":
+                    anchor = turnHandle.transform;
+                    return wasHandleHeld ? "turn.turning" : "turn.grab";
+                default: return null;
+            }
+        }
+
+        static Bounds PartBounds(Transform part)
+        {
+            var renderers = part.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return new Bounds(part.position, Vector3.zero);
+            var bounds = renderers[0].bounds;
+            foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+            return bounds;
+        }
+
+        TextMeshPro CreateStatusLabel()
+        {
+            var label = new GameObject("TrainingPartStatus").AddComponent<TextMeshPro>();
+            label.transform.SetParent(transform, true);
+            label.fontSize = .26f; // about 2.6 cm cap height, legible at the 0.5-0.9 m working distance
+            label.color = new Color(.10f, .23f, .34f);
+            label.alignment = TextAlignmentOptions.Center;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.rectTransform.sizeDelta = new Vector2(.6f, .08f);
+            label.raycastTarget = false;
+            return label;
         }
 
         // Dropped parts return to their authored pose; logged as System, never credited.

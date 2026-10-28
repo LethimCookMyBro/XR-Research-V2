@@ -117,7 +117,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Place(end.plug.transform, end.plug.mates.Single(), target.socket.seat, depth);
         }
 
-        static string MotionA(ResearchS1TaskAMechanics a, string section, int fact, double time)
+        internal static string MotionA(ResearchS1TaskAMechanics a, string section, int fact, double time)
         {
             if (section == "A.ram")
             {
@@ -165,7 +165,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!clip) throw new InvalidOperationException("The source guard clip animation is missing.");
             Sample(b.frontClip.clipAnimationRoot.transform, clip);
         }
-        static void ClosedFan(ResearchS1TaskBMechanics b)
+        internal static void ClosedFan(ResearchS1TaskBMechanics b)
         {
             Fan(b.rearGuard); Thread(b.rearLock, b.rearLock.fullTurnDegrees);
             Fan(b.blade); Thread(b.spinner, b.spinner.fullTurnDegrees); Fan(b.frontGuard); Clip(b, true);
@@ -179,7 +179,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // Mirrors ResearchS1EducationalMedia.MotionB on the real parts; the returned state labels normal/abnormal phases.
-        static string MotionB(ResearchS1TaskBMechanics b, string section, int fact, double time)
+        internal static string MotionB(ResearchS1TaskBMechanics b, string section, int fact, double time)
         {
             ClosedFan(b);
             float insertion = (float)Plan.Insert(time);

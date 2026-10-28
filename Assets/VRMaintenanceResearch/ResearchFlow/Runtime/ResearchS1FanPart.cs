@@ -29,6 +29,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         private IGrabbable grab;
         private Matrix4x4 grabToRoot, mateInRoot, acceptedPose;
         private float previousHandTurn;
+        private double stopBackoff;
         private int pointer = -1;
         private bool gesture, rebase, wasBlocked, cancelled, endPending;
         private ResearchTaskPort.Attempt attempt;
@@ -68,7 +69,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!IsThread || !captured || progressDegrees <= 0 || !Aligned) return S1ThreadState.Absent;
                 float expected = (float)ResearchS1FanKinematics.ThreadDepthMm(progressDegrees, fullTurnDegrees, threadTravelMm);
                 if (Mathf.Abs(Pose.depthMm - expected) > .3f) return S1ThreadState.Absent;
-                return progressDegrees >= fullTurnDegrees - .01f ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
+                return progressDegrees >= fullTurnDegrees ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
             }
         }
 
@@ -169,6 +170,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var point = grab.GrabPoints[0];
             grabToRoot = Matrix4x4.TRS(point.position, point.rotation, Vector3.one).inverse * transform.localToWorldMatrix;
             previousHandTurn = seat && mate ? Pose.turnDeg : 0;
+            stopBackoff = 0;
             acceptedPose = transform.localToWorldMatrix;
             rebase = false;
         }
@@ -229,9 +231,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
                 if (aligned)
                 {
-                    float nextProgress = (float)ResearchS1FanKinematics.Turn(progressDegrees, -delta, fullTurnDegrees, rightHanded);
-                    wasBlocked |= Mathf.Abs(delta) > .2f && Mathf.Approximately(nextProgress, progressDegrees);
-                    progressDegrees = nextProgress;
+                    // Turning into a stop is blocked; a small turn held by the end-stop detent is not.
+                    wasBlocked |= Mathf.Abs(delta) > .2f &&
+                        Mathf.Approximately((float)ResearchS1FanKinematics.Turn(progressDegrees, -delta, fullTurnDegrees, rightHanded), progressDegrees);
+                    progressDegrees = (float)ResearchS1FanKinematics.TurnWithDetent(progressDegrees, -delta, fullTurnDegrees, rightHanded, ref stopBackoff);
                 }
                 else wasBlocked = true;
                 return SocketRules.RootPose(seat.localToWorldMatrix,

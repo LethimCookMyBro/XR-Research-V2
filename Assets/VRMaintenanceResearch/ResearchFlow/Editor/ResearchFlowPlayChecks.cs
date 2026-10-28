@@ -599,10 +599,32 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 fixture.taskPorts = new[] { port };
                 var timing = (ResearchTaskTiming)typeof(ResearchSessionFlowController).GetField("taskTiming", flags).GetValue(fixture);
                 timing.Start(0);
-                Set(fixture, "Record", new ParticipantRecord { test_data = false });
+                // SYNTHETIC isolated authorization in a temp directory; never the live OperatorControl or registry.
+                string syntheticOperator = Path.Combine(Path.GetTempPath(), "ResearchReaderStudyGate-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(syntheticOperator);
+                fixture.ReaderOperatorDirectory = syntheticOperator;
+                var studyRecord = new ParticipantRecord { participant_id = "TH90", group = ParticipantGroup.Thai, test_data = false,
+                    session_state = RegistryState.InProgress, session_id = Guid.NewGuid().ToString("N") };
+                Set(fixture, "Record", studyRecord);
                 Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5)); ui.Refresh();
                 Check(!illustration || !illustration.gameObject.activeSelf, "Tutorial diagrams never appear as experimental task answers");
-                Check(ResearchReferenceScheme.Active.All(fixture.ReferenceAvailable), "Study retains every approved information format");
+                Check(!fixture.ReaderAuthorized && !ResearchReferenceScheme.Active.Any(fixture.ReferenceAvailable),
+                    "Study without its own session authorization offers no Reader format even with an approved task port");
+                File.WriteAllText(Path.Combine(syntheticOperator, "research-operator-authorization.json"), JsonConvert.SerializeObject(new ResearchOperatorAuthorization
+                {
+                    schema = "research.operator-authorization.1", operator_id = "SYNTHETIC_FIXTURE_NOT_APPROVAL", participant_id = studyRecord.participant_id,
+                    session_id = studyRecord.session_id, link_status = "linked", consent_approved = true, content_approved = true, language_approved = true,
+                    consent_approval_ref = "SYNTHETIC", content_approval_ref = "SYNTHETIC", language_approval_ref = "SYNTHETIC"
+                }));
+                studyRecord.session_id = Guid.NewGuid().ToString("N");
+                Check(!fixture.ReaderAuthorized, "Authorization linked to a different session does not open the Reader");
+                Set(fixture, "Record", studyRecord = new ParticipantRecord { participant_id = "TH90", group = ParticipantGroup.Thai, test_data = false,
+                    session_state = RegistryState.InProgress, session_id = JsonConvert.DeserializeObject<ResearchOperatorAuthorization>(
+                        File.ReadAllText(Path.Combine(syntheticOperator, "research-operator-authorization.json"))).session_id });
+                Check(fixture.ReaderAuthorized && ResearchReferenceScheme.Active.All(fixture.ReferenceAvailable),
+                    "Study with its own linked consent/content/language authorization retains every available format");
+                fixture.ReaderOperatorDirectory = null;
+                Directory.Delete(syntheticOperator, true);
                 Set(fixture, "Record", new ParticipantRecord { test_data = true });
                 Set(fixture, "ReferenceSection", "user_manual"); ui.Refresh();
                 Check(ui.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Count(a => a.command.StartsWith("reference_tab.") && a.gameObject.activeSelf) == 4,

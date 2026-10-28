@@ -15,13 +15,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             double next = Turn(progressDegrees, clockwiseDeltaDegrees, fullDegrees, rightHanded);
             bool atFull = progressDegrees >= fullDegrees, atZero = progressDegrees <= 0;
             if (!atFull && !atZero) { backoff = 0; return next; }
+            double stop = atFull ? fullDegrees : 0;
             // A stationary sample or a rejected tracking jump must not clear motion already accumulated in this grip.
             // Track net hand displacement: turning back toward the stop subtracts from backoff rather than erasing it.
-            if (Math.Abs(clockwiseDeltaDegrees) > 90) return progressDegrees;
+            if (Math.Abs(clockwiseDeltaDegrees) > 90) return stop;
             double directedDelta = clockwiseDeltaDegrees * (rightHanded ? 1 : -1);
             double away = atFull ? -directedDelta : directedDelta;
             backoff = Math.Max(0, backoff + away);
-            if (backoff <= StopDetentDegrees) return progressDegrees;
+            if (backoff <= StopDetentDegrees) return stop;
             double released = atFull ? fullDegrees - backoff : backoff;
             backoff = 0;
             return Math.Max(0, Math.Min(fullDegrees, released));

@@ -141,7 +141,7 @@ static class ResearchFlowChecks
     static void CaptionPartChecks([System.Runtime.CompilerServices.CallerFilePath] string here = "")
     {
         string root = Path.Combine(Path.GetDirectoryName(here), "..", "Resources", "ResearchReaderS1");
-        int images = 0, split = 0, longest = 0;
+        int images = 0, split = 0;
         bool identity = true, parity = true;
         foreach (string task in new[] { "A", "B", "T" })
         {
@@ -156,13 +156,11 @@ static class ResearchFlowChecks
                 identity &= ResearchCaptionParts.Join(sa.heading, sa.parts) == a && ResearchCaptionParts.Join(sb.heading, sb.parts) == b;
                 parity &= sa.parts.Length == sb.parts.Length && (sa.heading == null) == (sb.heading == null);
                 images++; if (sa.parts.Length > 1) split++;
-                if (sa.parts.Length > 1) foreach (var part in sa.parts) longest = Math.Max(longest, part.Length);
             }
         }
         Check(identity, "Illustrated sub-pages reproduce every reviewed caption byte-for-byte (no rewording, reordering or loss)");
         Check(parity, "TH and JA get the same number of sub-pages and headings for every image");
-        Check(images == 21 && split == 16, "the 16 long A/B captions are split; the 5 short Training captions stay whole");
-        Check(longest <= 240, "longest Thai sub-page paragraph is at most 240 characters (was up to 738 as one caption; whole Training captions are at most 258)");
+        Check(images == 19 && split == 0, "Reader v2: 7 A + 7 B picture-first panels with a title-plus-one-line caption, and 5 Training captions, all shown whole");
         Check(ResearchCaptionParts.Split("one\n\ntwo\n\nthree").parts.Length == 1 && ResearchCaptionParts.Split("h\n\na\n\n\n\nb\n\nc").parts.Length == 1,
             "short or irregular captions are never split");
     }
@@ -292,7 +290,7 @@ static class ResearchFlowChecks
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
             // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
             Check(th.ui_policy == ResearchUIPolicy.OwnerMovable && th.protocol_version == ResearchUIPolicy.ProtocolOwnerMovable
-                && th.training_version == ResearchUIPolicy.TrainingFixedDemo && th.layout_version == ResearchUIPolicy.LayoutVersion,
+                && th.training_version == ResearchUIPolicy.TrainingTrainerV2 && th.layout_version == ResearchUIPolicy.LayoutVersion,
                 "new study session records the 28 Oct movable UI policy, protocol, training and layout versions");
             Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
             var legacyDev = r.CreateNext(ParticipantGroup.Dev);
