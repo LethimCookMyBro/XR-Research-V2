@@ -797,7 +797,7 @@ def pull_queue(adb,serial,destination,remote_registry=REMOTE_ROOT,client=None):
         jobs=client.scoped('queues',registry=registry)
     except (ConnectionError,OSError,subprocess.TimeoutExpired) as ex:return dict(status='queued_profile_unavailable',reason=str(ex),delivered=[])
     profile=dict(client.bound)
-    destination=Path(destination)/'quest'/token(serial)/('user-'+str(profile['android_user']))
+    destination=Path(destination)/'quest'/token(profile['serial'])/('user-'+str(profile['android_user']))
     destination.mkdir(parents=True,exist_ok=True)
     receipt_dir=destination/'.delivery-receipts'/token(registry);receipt_dir.mkdir(parents=True,exist_ok=True)
     delivered=[];failed=[]

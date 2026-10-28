@@ -15,8 +15,13 @@ import research_cloud_sync as cs
 import research_export as rx
 
 def quests(adb):
+    """One adb target per physical Quest (a headset on USB and Wi-Fi at once is pulled once)."""
     out=subprocess.run([adb,'devices'],capture_output=True,text=True,timeout=30).stdout.splitlines()[1:]
-    return [line.split()[0] for line in out if line.strip().endswith('device')]
+    targets={}
+    for target in [line.split()[0] for line in out if line.strip().endswith('device')]:
+        p=subprocess.run([adb,'-s',target,'shell','getprop','ro.serialno'],capture_output=True,text=True,timeout=30)
+        if p.returncode==0 and p.stdout.strip():targets.setdefault(p.stdout.strip(),target)
+    return list(targets.values())
 
 def one_pass(adb,data_root,config):
     pulled={}

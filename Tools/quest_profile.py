@@ -70,11 +70,16 @@ def foreground_activity(dump, user, package):
     return component
 
 
+# Wi-Fi adb names a device by IP:port; its identity is then the hardware ro.serialno, checked like a USB serial.
+TCP_TARGET = re.compile(r'(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}')
+
+
 class Client:
     def __init__(self, adb, serial, package=PACKAGE, runner=subprocess.run, expected=None, native=True):
         if package != PACKAGE:
             raise ProfileError('Only the exact technical package is permitted')
-        self.adb, self.serial, self.package, self.runner = str(adb), token(serial), package, runner
+        self.adb, self.package, self.runner = str(adb), package, runner
+        self.serial = serial if isinstance(serial, str) and TCP_TARGET.fullmatch(serial) else token(serial)
         self.request_log = []
         self._apk_cache = {expected['apk_path']: expected['build_sha256']} if expected and expected.get('apk_path') and re.fullmatch(r'[a-f0-9]{64}', expected.get('build_sha256', '')) else {}
         self.bound = self.snapshot()
@@ -111,6 +116,7 @@ class Client:
         user = int(raw)
         if self.run('get-serialno') != self.serial or self.run('get-state') != 'device':
             raise ProfileError('Device serial/state mismatch')
+        device = token(self.run('shell', 'getprop', 'ro.serialno')) if TCP_TARGET.fullmatch(self.serial) else self.serial
         packages = self.run('shell', 'pm', 'list', 'packages', '--user', user, '-U', self.package)
         owners = re.findall(r'^package:' + re.escape(self.package) + r' uid:(\d+)\s*$', packages, re.M)
         if len(owners) != 1 or int(owners[0]) // 100000 != user:
@@ -148,7 +154,7 @@ class Client:
             raise ProfileError('Device boot identity unavailable')
         if self.run('shell', 'am', 'get-current-user') != str(user):
             raise ProfileError('Android user changed during identity capture')
-        return dict(serial=self.serial, android_user=user, package=self.package, uid=uid, pid=pid,
+        return dict(serial=device, android_user=user, package=self.package, uid=uid, pid=pid,
                     process_start_ticks=birth, boot_id=boot, build_sha256=sha, apk_path=apk, foreground_activity=foreground)
 
     @staticmethod
