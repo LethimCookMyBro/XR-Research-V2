@@ -10,7 +10,7 @@ This is the TMU/TMU Meta Quest 3 research project, not a generic XRI sample proj
 
 ## Read first
 - Cloud/current S1 handoff: read `Documentation/S1/CLOUD_START_HERE.md` first. It uses portable paths and distinguishes current work from historical reports.
-- Latest user/advisor UI revision: `Documentation/S1/ADVISOR_UI_AMENDMENT_20261014.md` supersedes free participant panel dragging for the revised technical demo. Preserve baseline task rules and record protocol/UI versions.
+- Latest owner UI revision: `Documentation/S1/OWNER_UI_DIRECTION_20261028.md` restores panel dragging for the new implementation and supersedes the no-drag direction of `Documentation/S1/ADVISOR_UI_AMENDMENT_20261014.md`. Preserve baseline task rules, historical recorded sessions, approval gates and protocol/UI versions; do not assume this design instruction is proof of hardware readiness.
 - For UI/workflow changes, read `design_rule.md` before editing and again before completion or Build. Inspect the affected runtime screens and interactions; fix reproducible violations and report untested cases without weakening S1 or researcher gates.
 - Current status only when needed: `Logs/QuestFinalIntegration/FINAL_INTEGRATION_STATUS.md`
 - Next physical test only when needed: `Logs/QuestFinalIntegration/NEXT_WEAR_RUNBOOK.md`

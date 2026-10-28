@@ -1,10 +1,10 @@
 # S1 UI / Workflow Design Rules
 
-Version: 1.2 — 2026-10-20 (owner P0: one Pause during Task, Stop-and-wait on the pause card, concise Task card)
+Version: 1.3 — 2026-10-28 (owner restores dragging; preserve one Pause, Stop-and-wait, concise Task cards, historical session policies and study gates)
 
-## Latest priority: advisor-controlled UI revision (implementation pending)
+## Latest priority: owner restores panel dragging — 28 October 2026
 
-Read `Documentation/S1/ADVISOR_UI_AMENDMENT_20261014.md` first. The user now requests four instruction choices at fixed positions, no free participant panel dragging, shorter non-redundant training, and controlled table layout. For the revised technical-demo policy this supersedes the free-drag/grip requirements below. Remove the drag exercise together with the drag interaction; do not leave training impossible to finish. Keep the baseline S1 file and old evidence unchanged, record policy/version differences, and preserve voluntary information selection, task mechanics, safety and researcher gates. The old grip requirements below apply only to retained legacy movable-panel tests, NOT the new participant UI. This document change is not evidence that runtime UI has been fixed.
+Read `Documentation/S1/OWNER_UI_DIRECTION_20261028.md` first. The latest owner instruction restores panel dragging and supersedes the 14 October no-drag design direction for the new implementation. Restore a single usable grip without redundant controls. Keep panels stable after release, preserve drag/scroll/click ownership and safe geometry, and do not silently migrate historical recorded fixed sessions. New-session policy changes must be versioned; Study/content/ethics approval gates remain independent. Do not add a compulsory legacy drag lesson without an explicit training-version change. The 14 October amendment remains historical authority for old sessions, not permission to ignore the latest owner design. This document is not evidence of a completed runtime or Quest fix.
 
 Cloud start: `Documentation/S1/CLOUD_START_HERE.md`. A cloud checkout cannot assume access to this PC's D: drive, its Unity Editor or USB Quest. Use a verified authenticated connector when available, otherwise keep local/device validation explicitly pending. The owner's 14 October permission allows guarded technical Quest testing; the old Unity/PC-only sentence below is historical and is not the current device scope.
 Owner: ผู้วิจัย / ผู้ใช้โครงการ XR-Research-V2

@@ -1433,7 +1433,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             negativeIcon.SetActive(state == "fail");
             mainPanel.movable = (tutorialChecklist && !controller.ReferenceOpen) || state.Contains("Active")
                 || (ResearchUIPolicy.Active == ResearchUIPolicy.DevMovable && (state == "pass" || state == "fail"));
-            mainToolbar.SetActive(mainPanel.movable && !compactTask && state != "pass" && state != "fail");
+            // Owner 28 Oct: a compact task must retain its move grip when the recorded policy allows dragging.
+            // Hiding this parent defeated PanelDragAllowed even though the child DragHandle was enabled.
+            mainToolbar.SetActive(mainPanel.movable && (!compactTask || ResearchUIPolicy.PanelDragAllowed) && state != "pass" && state != "fail");
             if (!mainPanel.movable || Interrupting(state)) mainMinimized = false;
             mainContent.SetActive(!mainMinimized); mainPill.SetActive(mainMinimized);
             mainPill.GetComponent<RectTransform>().sizeDelta = MainPillSize; // Keep serialized scenes aligned with root hit bounds.
@@ -1840,7 +1842,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             LayoutToolbar(mainToolbar.transform, width);
             // The practice coach only needs its move handle. Panel utility buttons compete with the current lesson.
             foreach (var key in new[] { "Minimize", "Recenter" })
-                mainToolbar.transform.Find(key)?.gameObject.SetActive(!tutorialChecklist);
+                mainToolbar.transform.Find(key)?.gameObject.SetActive(!tutorialChecklist && !compactTask);
             taskToolbarSurface.gameObject.SetActive(false);
             mainContent.transform.Find("ActionRule").gameObject.SetActive(false);
             var rule = mainContent.transform.Find("HeaderRule").GetComponent<RectTransform>();
