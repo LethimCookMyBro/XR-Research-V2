@@ -307,6 +307,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!ResearchUIPolicy.StationAnchoredPanels || centered || !owner || !ResearchStationAnchors.Supports(owner.CurrentStationIndex, panelId)) return false;
             if (!owner.TryStationFrame(out var station, out int index, out string layout, out double eye)) return false;
             var stationPosition = station.position;
+            // Authored task anchors stay world-fixed; looking down must not prevent placement.
+            bool ownerTaskReader = ResearchUIPolicy.Active == ResearchUIPolicy.OwnerMovable && panelId == "reference" && FixedWorkingSlate;
             for (int candidate = 0; candidate < ResearchStationAnchors.CandidateCount(index, panelId); candidate++)
             {
                 if (!ResearchStationAnchors.TryGet(index, layout, panelId, stationPosition.x, stationPosition.y, stationPosition.z,
@@ -315,7 +317,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var p = new Vector3((float)pose.X, (float)pose.Y, (float)pose.Z);
                 var r = Quaternion.Euler(0, (float)pose.YawDegrees, 0);
                 bool clear = PlacementClear(p, r);
-                if (clear && (!FixedReader || PeerClearForCandidate(p, r)) && (FixedReader || FitsView(p, r))) { position = p; rotation = r; anchorId = pose.Id; return true; }
+                if (clear && (!FixedReader || PeerClearForCandidate(p, r)) && (FixedReader || (ownerTaskReader && ReadableFace(p, r)) || FitsView(p, r))) { position = p; rotation = r; anchorId = pose.Id; return true; }
                 fallback = pose.Id + ":" + LastRejection;
             }
             return false;

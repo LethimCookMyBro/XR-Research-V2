@@ -16,6 +16,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
     public static class ResearchPanelClearanceP0Checks
     {
+        public const string ContractVersion = "S1_CLEARANCE_GAZE_20261029_R2";
         const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         public static string Run(string evidenceDirectory)
         {
@@ -192,7 +193,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     blocker.SetActive(false); Physics.SyncTransforms();
                     typeof(ResearchPanelMotion).GetField("clearanceKnown", Hidden).SetValue(panel, false);
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
-                    return !panel.PlacementBlocked && panel.GetComponent<Canvas>().enabled
+                    bool waitsForDwell = panel.PlacementBlocked;
+                    // Stopped-Editor fixture advances only the component's recovery clock, never recorded data.
+                    float dwell = (float)typeof(ResearchPanelMotion).GetField("RecoverDwellSeconds", BindingFlags.Static | BindingFlags.NonPublic).GetRawConstantValue();
+                    typeof(ResearchPanelMotion).GetField("clearSince", Hidden).SetValue(panel, Time.unscaledTime - dwell - .001f);
+                    typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
+                    return waitsForDwell && !panel.PlacementBlocked && panel.GetComponent<Canvas>().enabled
                         && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) < .0001f
                         && Quaternion.Angle(panel.transform.rotation, acceptedFixedPose.rotation) < .01f;
                 });
@@ -235,6 +241,54 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     return !panel.PlacementBlocked && panel.PlacementClear(panel.transform.position, panel.transform.rotation)
                         && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) > .001f;
                 });
+                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
+                foreach (int stationIndex in new[] { 1, 2 })
+                    Check("owner_reader_looks_down_then_reads_" + language + "_" + stationIndex, () =>
+                    {
+                        var owner = ownerRoot.GetComponent<ResearchSessionFlowController>();
+                        blocker.SetActive(false); panel.gameObject.SetActive(false); peer.gameObject.SetActive(true);
+                        applyPolicy.Invoke(null, new object[] { ResearchUIPolicy.OwnerMovable });
+                        Set(owner, "CurrentStationIndex", stationIndex); Set(owner, "StationEyeHeight", 1.5412344d);
+                        Set(owner, "Record", new ParticipantRecord { participant_id = "DEV_P0_GEOMETRY", test_data = true,
+                            group = ParticipantGroup.Dev, language = language, task_order = TaskOrder.AB,
+                            input_mode = ExperimentInputMode.Controller, task_a_layout = "P", session_state = RegistryState.InProgress });
+                        Set(owner, "Flow", new ResearchSessionFlow(TaskOrder.AB,
+                            stationIndex == 1 ? ResearchFlowState.Task1Active : ResearchFlowState.Task2Active, 5));
+                        var station = owner.stations[stationIndex];
+                        head.transform.SetPositionAndRotation(station.position + Vector3.up * 1.5412344f, Quaternion.Euler(45, 0, 0));
+                        ((RectTransform)peer.transform).sizeDelta = new Vector2(1180, 896); peer.centered = false;
+                        typeof(ResearchPanelMotion).GetMethod("OnDisable", Hidden).Invoke(peer, null);
+                        Physics.SyncTransforms();
+                        int clear = 0, fits = 0;
+                        for (int i = 0; i < ResearchStationAnchors.CandidateCount(stationIndex, "reference"); i++)
+                        {
+                            ResearchAnchorPose anchor;
+                            if (!ResearchStationAnchors.TryGet(stationIndex, "P", "reference", station.position.x, station.position.y,
+                                station.position.z, station.eulerAngles.y, 1.5412344d, i, out anchor)) return false;
+                            var p = new Vector3((float)anchor.X, (float)anchor.Y, (float)anchor.Z);
+                            var r = Quaternion.Euler(0, (float)anchor.YawDegrees, 0);
+                            if (peer.PlacementClear(p, r) && (bool)typeof(ResearchPanelMotion).GetMethod("ReadableFace", Hidden).Invoke(peer, new object[] { p, r }))
+                            {
+                                clear++;
+                                if ((bool)typeof(ResearchPanelMotion).GetMethod("FitsView", Hidden).Invoke(peer, new object[] { p, r, 1f })) fits++;
+                            }
+                        }
+                        if (clear == 0 || fits != 0) throw new InvalidOperationException("Fixture must isolate clear front-facing authored anchors outside the current gaze.");
+                        peer.Recenter(false, false);
+                        if (!peer.HasAcceptedPose || peer.PlacementBlocked || peer.IsReadableFromHead) return false;
+                        var accepted = new Pose(peer.transform.position, peer.transform.rotation);
+                        head.transform.rotation = Quaternion.LookRotation(accepted.position - head.transform.position, Vector3.up);
+                        if (!peer.IsReadableFromHead || Vector3.Distance(peer.transform.position, accepted.position) > .0001f) return false;
+                        panel.transform.SetPositionAndRotation(accepted.position, accepted.rotation); panel.gameObject.SetActive(true);
+                        if (!panel.GetComponent<Canvas>().enabled || peer.PlacementClear(accepted.position, accepted.rotation)
+                            || peer.LastRejection != "other_panel") return false;
+                        panel.gameObject.SetActive(false);
+                        Obstacle(station.position + new Vector3(0, 1, 1), new Vector3(10, 5, 10), false, true);
+                        typeof(ResearchPanelMotion).GetMethod("OnDisable", Hidden).Invoke(peer, null);
+                        peer.Recenter(false, false);
+                        return peer.PlacementBlocked && !peer.HasAcceptedPose && !peer.GetComponent<Canvas>().enabled
+                            && !peer.GetComponent<GraphicRaycaster>().enabled;
+                    });
             }
             finally
             {
@@ -249,7 +303,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             File.WriteAllText(Path.Combine(output, "result.json"), JsonConvert.SerializeObject(new
             {
                 status, checks, failed, rows, hardware_verified = false,
-                scope = "Owned preview-scene public PlacementClear and production drag pose pipeline. Synthetic mono geometry at separate -/+32 mm eye origins. No native XR stereo branch, native ray acquisition, actual render, lens acceptance, or participant session."
+                scope = "Owned additive normal-scene public PlacementClear, drag pipeline and TH/JA Owner TaskA/B first-anchor geometry; explicit component lifecycle and seeded recovery clock; synthetic mono and separate eye-origin checks, not native XR stereo, actual rendering, language approval or participant session"
             }, Formatting.Indented));
             return status + " checks=" + checks + "; failed=" + failed + "; " + output;
         }

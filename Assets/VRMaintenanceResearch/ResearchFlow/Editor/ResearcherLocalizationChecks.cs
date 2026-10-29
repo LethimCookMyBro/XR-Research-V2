@@ -31,7 +31,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>();
             foreach (var locale in new[] { "English", "Thai", "Japanese" })
             {
-                var damaged = ResearchStrings.All(locale).Where(text => text.Contains("???") || text.Contains("\uFFFD")).ToArray();
+                var damaged = ResearchStrings.All(locale).Where(pair => pair.Value.Contains("???") || pair.Value.Contains("\uFFFD")).Select(pair => pair.Key).ToArray();
                 bool pass = damaged.Length == 0;
                 rows.Add(new { check = locale + "/all UI source copy retains Unicode", damaged, pass });
                 if (!pass) failures.Add(locale + "/damaged source copy");

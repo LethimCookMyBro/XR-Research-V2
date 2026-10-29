@@ -161,7 +161,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public event Action<bool, string> ReferenceVisibilityChanged;
         bool observedReferenceVisible;
-        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R2";
+        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R3";
         enum ReaderFeedback { None, Blocked, Direction }
         ReaderFeedback readerFeedback;
         TMP_Text readerFeedbackLabel, readerMainFeedbackLabel;
