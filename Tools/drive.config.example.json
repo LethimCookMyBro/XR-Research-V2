@@ -1,0 +1,9 @@
+{
+  "schema": "research.cloud-sync-config.1",
+  "target_id": "SET_TARGET",
+  "site_code": "SET_SITE",
+  "target_root": "C:/SET_PRIVATE_GOOGLE_DRIVE_FOLDER/research_s1",
+  "drive_folder_id": "SET_RESEARCHER_DRIVE_FOLDER_ID",
+  "enabled": false,
+  "allow_study": false
+}

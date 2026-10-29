@@ -1,6 +1,6 @@
 import json,shutil,sqlite3,sys,tempfile,unittest,uuid
 from datetime import timedelta
-from pathlib import Path
+from pathlib import Path,PureWindowsPath
 from unittest.mock import patch
 TOOLS=Path(__file__).resolve().parent;sys.path.insert(0,str(TOOLS))
 import research_export as rx
@@ -11,6 +11,30 @@ def study_authorization(path,record):
     path.write_text(json.dumps(dict(schema='research.operator-authorization.1',participant_id=record['participant_id'],operator_id='OPERATOR_FIXTURE',
         consent_approved=True,content_approved=True,language_approved=True,consent_approval_ref='fixture',content_approval_ref='fixture',
         language_approval_ref='fixture',link_status='linked',session_id=record['session_id'])),encoding='utf-8')
+
+class CloudSyncExampleChecks(unittest.TestCase):
+    def example(self):
+        return json.loads((TOOLS/'drive.config.example.json').read_text(encoding='utf-8'))
+    def test_example_schema_disabled_and_no_approval_or_secrets(self):
+        c=self.example()
+        self.assertEqual(set(c),{'schema','target_id','site_code','target_root','drive_folder_id','enabled','allow_study'})
+        self.assertEqual(c['schema'],cs.CONFIG_SCHEMA)
+        self.assertIs(c['enabled'],False);self.assertIs(c['allow_study'],False)
+        self.assertNotIn('approval',c);self.assertNotRegex(json.dumps(c),cs.SECRET_KEYS)
+        self.assertTrue(PureWindowsPath(c['target_root']).is_absolute())
+        for key in ('target_id','site_code','drive_folder_id'):
+            self.assertTrue(c[key].startswith('SET_'),key)
+    def test_example_loads_and_default_sync_is_disabled_cross_platform(self):
+        c=self.example()
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            # The shipped placeholder is Windows-absolute; localize only this isolated fixture on POSIX.
+            if not Path(c['target_root']).is_absolute():c=dict(c,target_root=str(root/'private-drive'))
+            path=root/'example.json';path.write_text(json.dumps(c),encoding='utf-8')
+            self.assertEqual(cs.load_config(path),c)
+            result=cs.sync(root/'empty-recordings',path)
+            self.assertIs(result['enabled'],False);self.assertEqual(result['bundles'],[])
+            self.assertFalse((root/'private-drive').exists())
 
 class CloudSyncChecks(unittest.TestCase):
     def setUp(self):
