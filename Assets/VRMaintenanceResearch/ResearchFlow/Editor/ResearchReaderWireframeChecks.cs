@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -55,6 +55,59 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static T Field<T>(object target, string name) => (T)target.GetType().GetField(name, Hidden).GetValue(target);
         static T Public<T>(object fixture, string name) => (T)fixture.GetType().GetField(name).GetValue(fixture);
         static void Set(ResearchSessionFlowController controller, string name, object value) => controller.GetType().GetProperty(name).GetSetMethod(true).Invoke(controller, new[] { value });
+        static void BindSyntheticTechnicalRecord(ResearchSessionFlowController controller, ParticipantLanguage language, TaskOrder order = TaskOrder.AB)
+        {
+            if (controller.gameObject.activeInHierarchy || !ResearchFloorPolicy.EditorFixtureAllowed
+                || Enum.GetValues(typeof(ParticipantGroup)).Cast<ParticipantGroup>().Any(group => controller.Registry.List(group).Count != 0))
+                throw new InvalidOperationException("An inactive controller with a fresh isolated fixture registry is required.");
+            var record = controller.Registry.CreateNext(ParticipantGroup.Test);
+            Set(controller, "Record", controller.Registry.StartOrResume(record.participant_id, language, ExperimentInputMode.Controller,
+                orderOverride: order, uiPolicy: ResearchUIPolicy.Active));
+        }
+        static string HashBytes(byte[] bytes)
+        {
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+                return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
+        }
+
+        static void BindTrainingVideoVersion(ResearchSessionFlowController controller, ParticipantLanguage language, string context, string fixtureDirectory)
+        {
+            if (context != "T2" && context != "T3") throw new ArgumentException("Training video context must be T2 or T3.");
+            var record = controller.Record;
+            string root = Path.GetFullPath(fixtureDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            string sidecarPath = Path.GetFullPath(controller.Registry.ProtocolPath);
+            if (controller.gameObject.activeInHierarchy || !ResearchFloorPolicy.EditorFixtureAllowed || !sidecarPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                || record == null || record.group != ParticipantGroup.Test || !record.test_data || record.session_state != RegistryState.InProgress
+                || record.training_version != ResearchUIPolicy.TrainingTrainerV3)
+                throw new InvalidOperationException("Fresh inactive external TEST training fixture required.");
+            if (context == "T2")
+            {
+                // Synthetic historical fixture only: normal creator reserved this TEST identity; normal resume reads its seeded frozen version.
+                var historical = JObject.Parse(File.ReadAllText(sidecarPath));
+                var entry = historical["sessions"]?[record.session_id] as JObject;
+                if (entry == null || (string)entry["training_version"] != ResearchUIPolicy.TrainingTrainerV3)
+                    throw new InvalidOperationException("Owned training sidecar precondition failed.");
+                entry["training_version"] = ResearchUIPolicy.TrainingTrainerV2;
+                File.WriteAllText(sidecarPath, historical.ToString(Formatting.Indented), new System.Text.UTF8Encoding(false));
+                Set(controller, "Record", controller.Registry.StartOrResume(record.participant_id, language, ExperimentInputMode.Controller));
+            }
+            string expected = context == "T2" ? ResearchUIPolicy.TrainingTrainerV2 : ResearchUIPolicy.TrainingTrainerV3;
+            if (controller.Record.training_version != expected || controller.Record.session_id != record.session_id || controller.Record.run_id != record.run_id)
+                throw new InvalidOperationException("Normal training resume did not retain requested frozen version and identity.");
+        }
+
+        static Action<bool, string> BindFixtureVisibility(ResearchSessionFlowController controller, ResearchFlowView view)
+        {
+            var callback = (Action<bool, string>)Delegate.CreateDelegate(typeof(Action<bool, string>), controller,
+                controller.GetType().GetMethod("ReferenceVisibilityChanged", Hidden));
+            view.ReferenceVisibilityChanged += callback;
+            return callback;
+        }
+        static void SetFixtureLanguage(ResearchSessionFlowController controller, ParticipantLanguage language)
+        {
+            controller.Record.language = language;
+            Set(controller, "SetupLanguage", language);
+        }
         static object Viewer(ResearchFlowView view) => typeof(ResearchFlowView).GetProperty("ReferenceViewer")?.GetValue(view, null);
         static object Read(object target, string name) => target?.GetType().GetProperty(name)?.GetValue(target, null);
         static int Number(object target, string name) => Read(target, name) == null ? 0 : Convert.ToInt32(Read(target, name));
@@ -65,6 +118,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static void Flush(ResearchFlowView view)
         {
             Canvas.ForceUpdateCanvases();
+            if (!Application.isPlaying)
+            {
+                // Stopped previews do not receive the next Editor placement frame.
+                bool settled = false;
+                foreach (var panel in new[] { view.mainPanel, view.referencePanel })
+                    if (panel && panel.gameObject.activeInHierarchy && panel.RecenterPending)
+                    {
+                        panel.GetType().GetMethod("TryApplyPendingRecenter", Hidden).Invoke(panel, new object[] { true, true, true, Time.frameCount + 1 });
+                        settled |= !panel.RecenterPending;
+                    }
+                if (settled) { view.RefreshReference(); Canvas.ForceUpdateCanvases(); }
+            }
             var scroll = Field<ScrollRect>(view, "scroll");
             typeof(ScrollRect).GetMethod("LateUpdate", Hidden).Invoke(scroll, null);
             foreach (var text in view.GetComponentsInChildren<TMP_Text>(true))
@@ -248,10 +313,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
             {
                 object fixture = null;
+                ResearchFlowView fixtureView = null;
+                Action<bool, string> visibility = null;
                 try
                 {
                     fixture = Activator.CreateInstance(type, new object[] { Path.Combine(directory, language.ToString()), donor, language });
                     var controller = Public<ResearchSessionFlowController>(fixture, "Controller"); var view = Public<ResearchFlowView>(fixture, "View"); var camera = Public<Camera>(fixture, "Camera");
+                Check(!controller.ReaderAuthorized, "unbound session remains unauthorized", controller.Record);
+                BindSyntheticTechnicalRecord(controller, language);
+                fixtureView = view; visibility = BindFixtureVisibility(controller, view);
+                Check(controller.ReaderAuthorized, "isolated synthetic technical record authorizes media only", controller.Record);
                     Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5));
                     var timing = Field<ResearchTaskTiming>(controller, "taskTiming");
                     timing.Start(controller.Logger.Timestamp);
@@ -340,10 +411,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Set(controller, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.Task1Active, 5)); view.Refresh(); Flush(view);
                     Check(Mathf.Abs(saved - scroll.verticalNormalizedPosition) < .001f, language + "/returning to Task A restores only Task A offset", new { saved, restored = scroll.verticalNormalizedPosition });
                     var alternate = language == ParticipantLanguage.Thai ? ParticipantLanguage.Japanese : ParticipantLanguage.Thai;
-                    Set(controller, "SetupLanguage", alternate); view.Refresh(); Flush(view);
+                    SetFixtureLanguage(controller, alternate); view.Refresh(); Flush(view);
                     Check(Mathf.Abs(scroll.verticalNormalizedPosition - 1) < .001f, language + "/different language cannot inherit the previous language offset", new { alternate, normalized = scroll.verticalNormalizedPosition });
                     scroll.verticalNormalizedPosition = .6f; Flush(view);
-                    Set(controller, "SetupLanguage", language); view.Refresh(); Flush(view);
+                    SetFixtureLanguage(controller, language); view.Refresh(); Flush(view);
                     Check(Mathf.Abs(saved - scroll.verticalNormalizedPosition) < .001f, language + "/returning to the original language restores its offset", new { saved, restored = scroll.verticalNormalizedPosition });
                     var beforeMinimizeViewer = JObject.Parse(Metadata(reader).ToString(Newtonsoft.Json.Formatting.None)); int beforeMinimizeEvents = Events(controller).Count;
                     Click(view, "reference_minimize", pointer); Check(controller.ReferenceMinimized, language + "/native button callbacks minimize", controller.ReferenceMinimized);
@@ -427,9 +498,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     TutorialCueAndFeedback(fixture, type, view, controller, captures, (pass, name, observed) => Check(pass, language + "/" + name, observed));
                     var tutorialOpenEvents = Events(controller).Skip(beforeTutorialOpen).ToArray();
                     var referenceOpened = tutorialOpenEvents.SingleOrDefault(row => (string)row["event"] == "REFERENCE_OPEN");
-                    var tutorialOpened = tutorialOpenEvents.LastOrDefault(row => (string)row["event"] == "INFORMATION_OPEN");
+                    var tutorialExposures = tutorialOpenEvents.Where(row => (string)row["event"] == "INFORMATION_OPEN").ToArray();
+                var firstTutorialOpened = tutorialExposures.FirstOrDefault();
+                var tutorialOpened = tutorialExposures.LastOrDefault();
                     var tutorialBound = tutorialOpenEvents.LastOrDefault(row => (string)row["event"] == "REFERENCE_VIEWER_BOUND");
-                    string tutorialContext = "fixture::" + language + ":Tutorial:user_manual";
+                    string tutorialContext = controller.Record.session_id + ":" + controller.Record.run_id + ":" + language + ":Tutorial:user_manual";
                     Check(referenceOpened != null && (bool?)referenceOpened["before"] == false && (string)referenceOpened["task_id"] == "training"
                         && (string)referenceOpened["source"] == "Tester" && (string)referenceOpened["input_source"] == "None"
                         && (bool?)referenceOpened["after"]?["reference_open"] == true && (bool?)referenceOpened["after"]?["reference_minimized"] == false
@@ -438,14 +511,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         && (string)outgoingTaskViewer["context"] != tutorialContext && tutorialBound != null && (string)tutorialBound["after"]?["context"] == tutorialContext
                         && (long?)referenceOpened["seq"] < (long?)tutorialBound["seq"],
                         language + "/Tutorial open intent cannot advertise the stale Task viewer as incoming materialized content", new { outgoingTaskViewer, referenceOpened, tutorialBound });
-                    Check(tutorialOpened != null && (string)tutorialOpened["source"] == "System" && (string)tutorialOpened["input_source"] == "None"
-                        && (string)tutorialOpened["task_id"] == "training" && (string)tutorialOpened["after"]?["selection_kind"] == "automatic_default"
-                        && (string)tutorialOpened["after"]?["language"] == language.ToString() && (string)tutorialOpened["after"]?["reference_section"] == "user_manual"
-                        && (string)tutorialOpened["after"]?["viewer"]?["context"] == tutorialContext
-                        && (string)tutorialOpened["after"]?["viewer"]?["content_id"] == (string)Metadata(reader)["content_id"]
-                        && (string)tutorialOpened["after"]?["viewer"]?["version"] == (string)Metadata(reader)["version"]
-                        && !tutorialOpenEvents.Any(row => (string)row["event"] == "INFORMATION_FORMAT_SELECTED"),
-                        language + "/automatic Tutorial exposure keeps System attribution and actual incoming content, not a deliberate choice", new { tutorialOpened, tutorialBound });
+                    Check(firstTutorialOpened != null && (string)firstTutorialOpened["source"] == "System" && (string)firstTutorialOpened["input_source"] == "None"
+                        && (string)firstTutorialOpened["task_id"] == "training" && (string)firstTutorialOpened["after"]?["selection_kind"] == "automatic_default"
+                        && (string)firstTutorialOpened["after"]?["language"] == language.ToString() && (string)firstTutorialOpened["after"]?["reference_section"] == "user_manual"
+                        && (string)firstTutorialOpened["after"]?["viewer"]?["context"] == tutorialContext
+                        && (string)firstTutorialOpened["after"]?["viewer"]?["content_id"] == (string)Metadata(reader)["content_id"]
+                        && (string)firstTutorialOpened["after"]?["viewer"]?["version"] == (string)Metadata(reader)["version"]
+                        && !tutorialOpenEvents.Any(row => (string)row["event"] == "INFORMATION_FORMAT_SELECTED")
+                    && tutorialExposures.Skip(1).All(row => (string)row["source"] == "System" && (string)row["input_source"] == "None"
+                        && (string)row["after"]?["selection_kind"] == "system_resume" && (string)row["after"]?["viewer"]?["context"] == tutorialContext
+                        && (string)row["after"]?["viewer"]?["content_id"] == (string)Metadata(reader)["content_id"]
+                        && (string)row["after"]?["viewer"]?["version"] == (string)Metadata(reader)["version"]),
+                        language + "/automatic Tutorial exposure keeps System attribution and actual incoming content, not a deliberate choice", new { firstTutorialOpened, tutorialExposures, tutorialBound });
                     var beforeCloseViewer = JObject.Parse(Metadata(reader).ToString(Formatting.None)); int beforeClose = Events(controller).Count;
                     var creditsBeforeClose = Field<HashSet<string>>(controller, "tutorialEvidence").ToArray(); int completedBeforeClose = controller.Flow.TutorialCompleted;
                     Click(view, "reference_close", pointer);
@@ -487,10 +564,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         && JToken.DeepEquals(beforePauseViewer, pauseExposure["after"]?["viewer_at_action"]),
                         language + "/system pause preserves System attribution and the outgoing exposure context", new { beforePauseViewer, pauseEvents });
                     captures.Add(Capture(fixture, "Session_pause"));
+                Check(string.IsNullOrEmpty(controller.Error) && controller.Registry.List(ParticipantGroup.Test).Single().paused
+                    && !Events(controller).Any(row => (string)row["event"] == "SYSTEM_ERROR"),
+                    language + "/owned synthetic registry persists Pause without a system error", new { controller.Error, record = controller.Registry.List(ParticipantGroup.Test).Single() });
                 }
                 catch (Exception error) { Check(false, language + "/arrangement or execution error", error.ToString()); }
                 finally
                 {
+                    if (fixtureView && visibility != null) fixtureView.ReferenceVisibilityChanged -= visibility;
                     try { if (fixture != null) ((IDisposable)fixture).Dispose(); }
                     catch (Exception error) { Check(false, language + "/fixture cleanup error", error.ToString()); }
                     finally { if (priorEvents) EventSystem.current = priorEvents; }
@@ -659,25 +740,37 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             settings.InitManagerOnStart = false; XRGeneralSettings.Instance = settings;
         }
         public static string BeginVideo(string evidenceDirectory, string registryResource = "ResearchReaderDemo/package",
-            TaskOrder taskOrder = TaskOrder.AB, ParticipantLanguage language = ParticipantLanguage.Thai, bool fixedLocale = false)
+            TaskOrder taskOrder = TaskOrder.AB, ParticipantLanguage language = ParticipantLanguage.Thai, bool fixedLocale = false, string trainingContext = null)
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode || VideoState() != null || videoTick != null)
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating || VideoState() != null || videoTick != null)
                 throw new InvalidOperationException("BeginVideo requires a stopped Editor and no existing owned video operation.");
             if (!ResearchFloorPolicy.EditorFixtureAllowed) throw new InvalidOperationException("An XR subsystem is already running; isolated no-XR Play refused.");
+            // SceneLedger/file hashes do not prove unsaved serialized RAM preservation. The owner must prepare/restore dirty caller RAM externally.
+            if (Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).Any(scene => scene.isDirty || string.IsNullOrEmpty(scene.path)))
+                throw new InvalidOperationException("Preserve and verify caller RAM externally before BeginVideo; no dirty or untitled caller scene may enter Play.");
+            if (trainingContext != null && ((trainingContext != "T2" && trainingContext != "T3") || !fixedLocale))
+                throw new ArgumentException("Training video requires fixed-locale T2/T3 context.");
+            string readerContext = trainingContext ?? (taskOrder == TaskOrder.AB ? "A" : "B");
+            string packageHash = null;
+
             if (!Enum.IsDefined(typeof(TaskOrder), taskOrder) || !Enum.IsDefined(typeof(ParticipantLanguage), language))
                 throw new ArgumentException("Unknown video fixture task order or language.");
             if (fixedLocale)
             {
-                string expected = ResearchReferenceViewer.ResourceFor(taskOrder == TaskOrder.AB ? "A" : "B", language.ToString());
+                string expected = ResearchReferenceViewer.ResourceFor(readerContext, language.ToString());
                 if (registryResource != expected || !Resources.Load<TextAsset>(expected))
                     throw new ArgumentException("Fixed-locale fixture requires its actual task/language package: " + expected);
+                packageHash = HashBytes(Resources.Load<TextAsset>(expected).bytes);
             }
             ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
             string servicesPath = Path.GetFullPath("ProjectSettings/UnityConnectSettings.asset");
             byte[] servicesBefore = File.ReadAllBytes(servicesPath);
             if (System.Text.Encoding.UTF8.GetString(servicesBefore).Contains("m_EnableCloudDiagnosticsReporting: 1"))
                 throw new InvalidOperationException("Serialized Cloud Diagnostics must be disabled before the native fixture.");
-            string directory = Path.GetFullPath(evidenceDirectory); Directory.CreateDirectory(directory);
+            string directory = Path.GetFullPath(evidenceDirectory), project = Path.GetFullPath(Path.Combine(Application.dataPath, "..")).TrimEnd(Path.DirectorySeparatorChar);
+            if (!Path.IsPathRooted(evidenceDirectory) || directory.Equals(project, StringComparison.OrdinalIgnoreCase) || directory.StartsWith(project + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new IOException("Absolute external video evidence directory required.");
+            Directory.CreateDirectory(directory);
             if (Directory.EnumerateFileSystemEntries(directory).Any()) throw new IOException("Use a fresh empty evidence directory: " + directory);
             var settings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Standalone);
             if (!settings || !typeof(XRGeneralSettings).GetProperty("InitManagerOnStart").CanWrite) throw new InvalidOperationException("Verified public Standalone InitManagerOnStart setter is required.");
@@ -692,7 +785,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 ["xr_path"] = settingsPath, ["xr_hash"] = Hash(Path.GetFullPath(settingsPath)), ["xr_dirty"] = EditorUtility.IsDirty(settings),
                 ["xr_init"] = settings.InitManagerOnStart, ["xr_instance_path"] = instancePath, ["xr_instance_id"] = instanceId,
                 ["started_utc"] = DateTime.UtcNow.ToString("o"), ["stage"] = "preparing", ["hardware_verified"] = false, ["registry_resource"] = registryResource,
-                ["task_order"] = taskOrder.ToString(), ["language"] = language.ToString(), ["fixed_locale"] = fixedLocale,
+                ["task_order"] = taskOrder.ToString(), ["language"] = language.ToString(), ["fixed_locale"] = fixedLocale, ["training_context"] = trainingContext, ["reader_context"] = readerContext, ["package_sha256"] = packageHash,
+                ["evidence_tier"] = "EDITOR_PLAY_VIDEOPLAYER_DECODER_NOT_QUEST_INPUT",
+                ["caller_ram_scope"] = "Prepared clean caller ledger only; original dirty RAM requires external before/after copy and sentinel proof",
                 ["services_path"] = servicesPath, ["services_before_base64"] = Convert.ToBase64String(servicesBefore),
                 ["crash_reporting_before"] = UnityEditor.CrashReporting.CrashReportingSettings.enabled
             };
@@ -961,7 +1056,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var taskOrder = (TaskOrder)Enum.Parse(typeof(TaskOrder), (string)videoState?["task_order"] ?? "AB");
             var language = (ParticipantLanguage)Enum.Parse(typeof(ParticipantLanguage), (string)videoState?["language"] ?? "Thai");
             bool fixedLocale = (bool?)videoState?["fixed_locale"] ?? false;
-            string expectedResource = ResearchReferenceViewer.ResourceFor(taskOrder == TaskOrder.AB ? "A" : "B", language.ToString());
+            string trainingContext = (string)videoState?["training_context"];
+            bool training = trainingContext == "T2" || trainingContext == "T3";
+            if (trainingContext != null && (!training || !fixedLocale)) throw new InvalidOperationException("Invalid training media operation state.");
+            string readerContext = trainingContext ?? (taskOrder == TaskOrder.AB ? "A" : "B");
+            string expectedResource = ResearchReferenceViewer.ResourceFor(readerContext, language.ToString());
+            string expectedPackageHash = (string)videoState?["package_sha256"];
+            if (fixedLocale && HashBytes(Resources.Load<TextAsset>(expectedResource).bytes) != expectedPackageHash)
+                throw new InvalidOperationException("Requested media package changed across Play entry.");
             var expectedPackage = fixedLocale ? JsonUtility.FromJson<ResearchReferenceViewer.Package>(Resources.Load<TextAsset>(expectedResource).text) : null;
             string directory = Path.GetFullPath(evidenceDirectory), path = Path.Combine(directory, "reader-video.json");
             Directory.CreateDirectory(directory);
@@ -972,16 +1074,85 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var priorEvents = EventSystem.current;
             var cursors = Resources.FindObjectsOfTypeAll<Oculus.Interaction.RayInteractorCursorVisual>().ToDictionary(cursor => cursor, cursor => cursor.HoverColor);
             object fixture = null, reader = null; ResearchFlowView view = null; ResearchSessionFlowController controller = null;
+            Action<bool, string> visibility = null;
             PointerEventData pointer = null; EventSystem ownedEvents = null;
             var rows = new List<object>(); var captures = new List<object>(); int failures = 0, updates = 0, stage = 0;
             double started = 0, phaseStarted = 0, pausedTime = 0, firstTime = 0, timelineTarget = 0, timelineRestoreTime = 0, pendingTarget = 0;
             long firstFrame = -1, timelineFrames = 0, timelineRequestSeq = 0, pendingRestoreSeq = 0; int replacedPlayerId = 0;
-            string timelineContext = null; bool quickPauseIssued = false; double quickPauseTime = 0, quickPauseAt = 0, longSkipTarget = 0; int longSkipStage = 0, endpointIndex = 0; bool endpointPending = false; double endpointTarget = 0; long endpointRequestSeq = 0;
-            bool tailSeekPending = false; long tailSeekRequestSeq = 0;
+            string timelineContext = null; bool quickPauseIssued = false; double quickPauseTime = 0, quickPauseAt = 0, longSkipTarget = 0; int longSkipStage = 0, endpointIndex = 0; bool endpointPending = false, fixtureEvidenceWarmed = false; double endpointTarget = 0; long endpointRequestSeq = 0;
+            bool tailSeekPending = false, pendingMinimizeIssued = false; long tailSeekRequestSeq = 0;
             string error = null;
             int reopenCycle = 0, closedEvents = 0, openedEvents = 0, errorLocaleCycle = 0; long playingSeekSeq = 0; double playingSeekTarget = 0;
             var retiredPlayers = new List<UnityEngine.Video.VideoPlayer>(); var retiredTextures = new List<RenderTexture>();
             var priorTextures = new HashSet<int>(Resources.FindObjectsOfTypeAll<RenderTexture>().Select(item => item.GetInstanceID()));
+
+            var nativeTrace = new List<object>(); var captureDurations = new List<object>();
+            UnityEngine.Video.VideoPlayer observedPlayer = null;
+            double previousEditorTick = -1, maximumEditorUpdateGap = 0, latestEditorUpdateGap = 0;
+            int maximumGapAtFrame = -1, traceDropped = 0; string lastTraceState = null;
+            object finalSeekDiagnostic = null;
+            object VideoDiagnostic(string kind, UnityEngine.Video.VideoPlayer source, long nativeFrame = -1)
+            {
+                return new { kind, stage, updates, editor_seconds = EditorApplication.timeSinceStartup,
+                    realtime_seconds = Time.realtimeSinceStartupAsDouble, frame_count = Time.frameCount,
+                    editor_gap_seconds = latestEditorUpdateGap,
+                    since_last_editor_tick = previousEditorTick < 0 ? (double?)null : EditorApplication.timeSinceStartup - previousEditorTick,
+                    status = reader == null ? null : Read(reader, "Status"),
+                    controller_active = controller ? (bool?)controller.gameObject.activeInHierarchy : null,
+                    view_enabled = view ? (bool?)view.enabled : null,
+                    reference_open = controller ? (bool?)controller.ReferenceOpen : null,
+                    reference_minimized = controller ? (bool?)controller.ReferenceMinimized : null,
+                    reference_root_active = view && view.referencePanel ? (bool?)view.referencePanel.gameObject.activeInHierarchy : null,
+                    reference_expanded_active = view ? (bool?)Field<GameObject>(view, "referenceExpanded").activeInHierarchy : null,
+                    reference_canvas_enabled = view && view.referencePanel ? (bool?)view.referencePanel.GetComponent<Canvas>().enabled : null,
+                    reference_group_alpha = view ? (float?)Field<CanvasGroup>(view, "referenceGroup").alpha : null,
+                    reference_pose_accepted = view && view.referencePanel ? (bool?)view.referencePanel.HasAcceptedPose : null,
+                    reference_recenter_pending = view && view.referencePanel ? (bool?)view.referencePanel.RecenterPending : null,
+                    reference_placement_blocked = view && view.referencePanel ? (bool?)view.referencePanel.PlacementBlocked : null,
+                    reference_readable_from_head = view && view.referencePanel ? (bool?)view.referencePanel.IsReadableFromHead : null,
+                    native_frame_argument = nativeFrame,
+                    seek_completed_seen = reader == null ? (bool?)null : Field<bool>(reader, "seekCompletedSeen"),
+                    seek_frame_seen = reader == null ? (bool?)null : Field<bool>(reader, "seekFrameSeen"),
+                    seek_target = reader == null ? (double?)null : Field<double>(reader, "seekTarget"),
+                    seek_elapsed_seconds = reader == null ? (double?)null : Time.realtimeSinceStartup - Field<float>(reader, "seekStarted"),
+                    player_id = source ? source.GetInstanceID() : 0, prepared = source && source.isPrepared,
+                    playing = source && source.isPlaying, player_frame = source ? (long?)source.frame : null,
+                    player_time = source && source.isPrepared ? (double?)source.time : null,
+                    application_focused = Application.isFocused,
+                    editor_application_active = UnityEditorInternal.InternalEditorUtility.isApplicationActive,
+                    editor_paused = EditorApplication.isPaused };
+            }
+            void TraceNative(string kind, UnityEngine.Video.VideoPlayer source, long frame = -1)
+            {
+                if (nativeTrace.Count >= 64) { traceDropped++; return; }
+                nativeTrace.Add(VideoDiagnostic(kind, source, frame));
+            }
+            // Observers only: subscription follows the runtime handlers; no callback or decoder command is fabricated.
+            void SeekObserved(UnityEngine.Video.VideoPlayer source) => TraceNative("actual_seekCompleted_callback", source);
+            void FrameObserved(UnityEngine.Video.VideoPlayer source, long frame) => TraceNative("actual_frameReady_callback", source, frame);
+            void DetachObservedPlayer()
+            {
+                if (!ReferenceEquals(observedPlayer, null))
+                { observedPlayer.seekCompleted -= SeekObserved; observedPlayer.frameReady -= FrameObserved; }
+                observedPlayer = null;
+            }
+            void ObservePlayer(UnityEngine.Video.VideoPlayer source)
+            {
+                if (ReferenceEquals(source, observedPlayer)) return;
+                DetachObservedPlayer(); observedPlayer = source;
+                if (observedPlayer)
+                { observedPlayer.seekCompleted += SeekObserved; observedPlayer.frameReady += FrameObserved; }
+            }
+            object CaptureTimed(string label)
+            {
+                double begin = EditorApplication.timeSinceStartup; int beginFrame = Time.frameCount;
+                var before = VideoDiagnostic("capture_begin", observedPlayer);
+                try { return CaptureNative(fixture, label, directory); }
+                finally { captureDurations.Add(new { label, elapsed_seconds = EditorApplication.timeSinceStartup - begin,
+                    begin_frame = beginFrame, end_frame = Time.frameCount, before,
+                    after = VideoDiagnostic("capture_end", observedPlayer) }); }
+            }
+
             void Check(bool pass, string name, object observed) { rows.Add(new { name, pass, observed }); if (!pass) failures++; }
             void CheckBinding(string phase)
             {
@@ -990,7 +1161,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(((ResearchReferenceViewer)reader).BoundRegistryResource == expectedResource
                     && (string)metadata["content_id"] == expectedPackage.content_id
                     && (string)metadata["version"] == expectedPackage.version
-                    && controller.Language == language.ToString(),
+                    && controller.Language == language.ToString() && controller.ReaderResource == expectedResource
+                    && (string)metadata["registry_sha256"] == expectedPackageHash
+                    && (string)metadata["context"] == controller.Record.session_id + ":" + controller.Record.run_id + ":" + language + ":" + (training ? "Tutorial" : readerContext) + ":video"
+                    && (!training || (controller.Flow.IsTutorial && controller.Record.training_version == (trainingContext == "T2" ? ResearchUIPolicy.TrainingTrainerV2 : ResearchUIPolicy.TrainingTrainerV3))),
                     phase + " retains the requested task/language package", new { expectedResource, actual = Read(reader, "BoundRegistryResource"), metadata });
             }
             void TrackMedia()
@@ -1028,6 +1202,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             void Finish()
             {
                 EditorApplication.update -= videoTick; videoTick = null; videoAbort = null;
+                finalSeekDiagnostic = VideoDiagnostic("finish_before_disposal", observedPlayer);
+                DetachObservedPlayer();
+                if (view && visibility != null) { view.ReferenceVisibilityChanged -= visibility; visibility = null; }
                 try { if (fixture != null) ((IDisposable)fixture).Dispose(); }
                 catch (Exception exception) { error = (error ?? "") + exception; failures++; }
                 if (priorEvents) EventSystem.current = priorEvents;
@@ -1037,7 +1214,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check(SceneManager.GetActiveScene() == caller && EditorSceneManager.previewSceneCount == previews && EventSystem.current == priorEvents,
                     "native video fixture releases its preview and EventSystem ownership in the owned blank scene", new { caller.path, prior_owned_scene_dirty = dirty, current_owned_scene_dirty = caller.isDirty, previews, current_previews = EditorSceneManager.previewSceneCount });
                 string summary = failures == 0 ? "READER_NATIVE_VIDEO_EDITOR_PASS" : "READER_NATIVE_VIDEO_EDITOR_FAIL";
-                File.WriteAllText(path, JsonConvert.SerializeObject(new { summary, failures, error, updates, rows, captures, hardware_verified = false,
+                File.WriteAllText(path, JsonConvert.SerializeObject(new { summary, failures, error, updates, rows, captures, nativeTrace, traceDropped, captureDurations,
+                    maximumEditorUpdateGap, maximumGapAtFrame, finalSeekDiagnostic, hardware_verified = false,
+                    evidence_tier = "EDITOR_PLAY_VIDEOPLAYER_DECODER", quest_native_input = false, training_context = trainingContext, expectedResource, expectedPackageHash,
                     scope = "Native Unity VideoPlayer URL/hash load, decode clock/frame and production callbacks in root-owned Editor Play Mode and isolated TEST preview. UI button events use synthetic pointers. No manually invoked prepare/seek/end callback, simulated playback clock, Quest/stereo/wearer, consent or study approval." }, Formatting.Indented));
                 Debug.Log(summary + "; " + path);
                 var session = VideoState();
@@ -1053,30 +1232,39 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 donor = FontDonor(out ownedDonor);
                 fixture = Activator.CreateInstance(type, new object[] { directory, donor, language });
                 controller = Public<ResearchSessionFlowController>(fixture, "Controller"); view = Public<ResearchFlowView>(fixture, "View");
+                Check(!controller.ReaderAuthorized, "unbound session remains unauthorized", controller.Record);
+                BindSyntheticTechnicalRecord(controller, language, taskOrder);
+                if (training) BindTrainingVideoVersion(controller, language, trainingContext, directory);
+                visibility = BindFixtureVisibility(controller, view);
+                Check(controller.ReaderAuthorized, "isolated synthetic technical record authorizes media only", controller.Record);
                 // Only the owned detached View joins the owned runtime scene so genuine media Update/coroutines tick.
-                // Controller stays inactive in the preview scene; View remains disabled; no task/session startup executes.
+                // Controller stays inactive in the preview scene; only the owned View and media receive normal Play callbacks.
                 SceneManager.MoveGameObjectToScene(view.gameObject, caller);
                 view.referencePanel.GetComponent<Canvas>().worldCamera = Public<Camera>(fixture, "Camera");
-                Set(controller, "Flow", new ResearchSessionFlow(taskOrder, ResearchFlowState.Task1Active, 5));
+                Set(controller, "Flow", new ResearchSessionFlow(taskOrder, training ? ResearchFlowState.TutorialReferenceInspect : ResearchFlowState.Task1Active, training ? 3 : 5));
                 var timing = Field<ResearchTaskTiming>(controller, "taskTiming");
-                timing.Start(controller.Logger.Timestamp);
-                Check(timing.CanManipulate && (bool)controller.GetType().GetProperty("LocalUICommandsAllowed", Hidden).GetValue(controller), "owned media fixture enables its task clock without task startup", new { timing.CanManipulate, localUICommandsAllowed = (bool)controller.GetType().GetProperty("LocalUICommandsAllowed", Hidden).GetValue(controller) });
+                if (!training) timing.Start(controller.Logger.Timestamp);
+                bool contextReady = training ? controller.Flow.IsTutorial && !timing.Started && controller.ReaderResource == expectedResource : timing.CanManipulate;
+                Check(contextReady && (bool)controller.GetType().GetProperty("LocalUICommandsAllowed", Hidden).GetValue(controller), "owned media fixture enables its session context without task startup", new { training, controller.Record.training_version, controller.ReaderResource, timing.CanManipulate, localUICommandsAllowed = (bool)controller.GetType().GetProperty("LocalUICommandsAllowed", Hidden).GetValue(controller) });
                 Set(controller, "ReferenceOpen", true); Set(controller, "ReferenceMinimized", false); Set(controller, "ReferenceSection", "video");
                 type.GetMethod("Refresh").Invoke(fixture, null); Flush(view); reader = Viewer(view);
                 if (reader == null) throw new InvalidOperationException("No production media viewer.");
                 string registryResource = (string)VideoState()?["registry_resource"];
-                if (!string.IsNullOrEmpty(registryResource) && registryResource != "ResearchReaderDemo/package")
+                if (!fixedLocale && !string.IsNullOrEmpty(registryResource) && registryResource != "ResearchReaderDemo/package")
                 {
                     ((ResearchReferenceViewer)reader).Initialize(Field<ScrollRect>(view, "scroll"), Field<TMP_Text>(view, "referenceBody"), view, registryResource);
                     view.RefreshReference(); Flush(view);
                 }
                 CheckBinding("initial binding");
-                Check(!controller.gameObject.activeInHierarchy && !view.enabled && view.gameObject.activeInHierarchy && ((Behaviour)reader).isActiveAndEnabled && controller.Record == null && ResearchFloorPolicy.EditorFixtureAllowed,
-                    "only the owned active media viewer runs; canonical controllers, task startup, participant record and XR remain absent", new { controller_active = controller.gameObject.activeInHierarchy, view.enabled, viewer_active = ((Behaviour)reader).isActiveAndEnabled, participant_record_present = controller.Record != null, no_xr = ResearchFloorPolicy.EditorFixtureAllowed });
+                if (controller.gameObject.activeInHierarchy || view.gameObject.scene != caller || view.enabled || !view.gameObject.activeInHierarchy)
+                    throw new InvalidOperationException("Only the owned detached inactive-preview-controller View may receive normal Play callbacks.");
+                view.enabled = true; // Normal Update/LateUpdate/animation lifecycle, never forced placement or visibility.
+                Check(!controller.gameObject.activeInHierarchy && view.enabled && view.gameObject.activeInHierarchy && ((Behaviour)reader).isActiveAndEnabled && controller.Record.test_data && controller.Record.group == ParticipantGroup.Test && ResearchFloorPolicy.EditorFixtureAllowed,
+                    "Only the owned View and media viewer run with a synthetic test record; task startup and XR are absent", new { controller_active = controller.gameObject.activeInHierarchy, view.enabled, viewer_active = ((Behaviour)reader).isActiveAndEnabled, synthetic_record = controller.Record, no_xr = ResearchFloorPolicy.EditorFixtureAllowed });
                 var eventObject = new GameObject("NativeVideoOwnedEvents") { hideFlags = HideFlags.HideAndDontSave }; eventObject.SetActive(false);
                 SceneManager.MoveGameObjectToScene(eventObject, view.gameObject.scene); eventObject.transform.SetParent(view.transform, false);
                 ownedEvents = eventObject.AddComponent<EventSystem>(); pointer = new PointerEventData(ownedEvents) { pointerId = Owner, button = PointerEventData.InputButton.Left };
-                captures.Add(CaptureNative(fixture, "Video_actual_loading", directory));
+                captures.Add(CaptureTimed("Video_actual_loading"));
                 Check(!Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible, "loading video is not successful reading", Read(reader, "Metadata"));
             }
             catch (Exception exception) { error = exception.ToString(); Check(false, "native video arrangement", error); Finish(); return "READER_NATIVE_VIDEO_EDITOR_FAILED_TO_START; " + path; }
@@ -1088,6 +1276,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     updates++;
                     if (!EditorApplication.isPlaying || !ResearchFloorPolicy.EditorFixtureAllowed || !view) throw new InvalidOperationException("Bound Editor Play/no-XR fixture condition changed.");
                     double now = EditorApplication.timeSinceStartup;
+                    latestEditorUpdateGap = previousEditorTick < 0 ? 0 : now - previousEditorTick;
+                    if (latestEditorUpdateGap > maximumEditorUpdateGap) { maximumEditorUpdateGap = latestEditorUpdateGap; maximumGapAtFrame = Time.frameCount; }
+                    previousEditorTick = now;
                     if (updates == 1)
                     {
                         rows.Add(new { name = "first_video_tick_observation", diagnostic_only = true,
@@ -1098,12 +1289,42 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     }
                     if (now - started > 180 || now - phaseStarted > 25) throw new TimeoutException("Native video did not reach stage " + stage + "; " + JsonConvert.SerializeObject(Read(reader, "Metadata")));
                     var player = Field<UnityEngine.Video.VideoPlayer>(reader, "player");
+                    ObservePlayer(player);
+                    string observedStatus = (string)Read(reader, "Status");
+                    if (observedStatus != lastTraceState && (observedStatus == "Seeking" || lastTraceState == "Seeking" || observedStatus == "Error"))
+                        TraceNative("observed_state_" + observedStatus, player);
+                    lastTraceState = observedStatus;
                     if ((string)Read(reader, "Status") == "Error" && stage != 21) throw new InvalidOperationException(JsonConvert.SerializeObject(Read(reader, "Metadata")));
+
                     Flush(view);
                     switch (stage)
                     {
                         case 0:
                             if (!player || !player.isPrepared || !Flag(reader, "IsReady")) return;
+                            if (!fixtureEvidenceWarmed)
+                            {
+                                // Editor-only evidence plumbing: execute cold JSON/reflection paths before the first timed native seek.
+                                double warmStarted = EditorApplication.timeSinceStartup, warmTime = player.time;
+                                long warmFrame = player.frame; string warmStatus = Read(reader, "Status")?.ToString();
+                                bool warmPlaying = player.isPlaying;
+                                var warmEvents = Events(controller); int warmEventCount = warmEvents.Count;
+                                var warmMetadata = JObject.Parse(Metadata(reader).ToString(Formatting.None));
+                                double warmMetadataTime = (double)warmMetadata["time_seconds"];
+                                long warmDecodedFrames = (long)warmMetadata["decoded_frames"];
+                                var warmEvent = warmEvents.Last();
+                                long warmSequence = (long)warmEvent["seq"]; double warmTimestamp = (double)warmEvent["timestamp"];
+                                var afterWarmEvents = Events(controller).Skip(warmEventCount).ToArray();
+                                bool unchanged = player.frame == warmFrame && player.time == warmTime && player.isPlaying == warmPlaying
+                                    && Read(reader, "Status")?.ToString() == warmStatus && !Flag(reader, "TimelineHeld")
+                                    && !afterWarmEvents.Any(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_REQUESTED"
+                                        || (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED");
+                                Check(unchanged && !warmPlaying, "read-only Editor evidence prewarm leaves paused native player and seek request/ACK state unchanged",
+                                    new { elapsed_seconds = EditorApplication.timeSinceStartup - warmStarted, warmFrame, warmTime, warmStatus,
+                                        warmMetadataTime, warmDecodedFrames, warmSequence, warmTimestamp, events = afterWarmEvents });
+                                if (!unchanged || warmPlaying) throw new InvalidOperationException("Read-only fixture prewarm changed native video state.");
+                                fixtureEvidenceWarmed = true; TraceNative("readonly_fixture_prewarm_complete", player);
+                                return; // Yield cold fixture work outside the production five-second Seeking window.
+                            }
                             var audio = Field<AudioSource>(reader, "videoAudio");
                             if (endpointIndex == 0 && !endpointPending)
                             {
@@ -1116,7 +1337,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 pointer.pointerPressRaycast = new RaycastResult { module = view.referencePanel.GetComponent<GraphicRaycaster>(), gameObject = idleTimeline.gameObject };
                                 bool zeroCanSeek = Flag(reader, "CanSeekTimeline"), zeroInteractable = idleTimeline.IsInteractable();
                                 ExecuteEvents.Execute(idleTimeline.gameObject, pointer, ExecuteEvents.pointerDownHandler);
-                                bool zeroHeld = Flag(reader, "TimelineHeld"); float zeroTarget = idleTimeline.value; ExecuteEvents.Execute(idleTimeline.gameObject, pointer, ExecuteEvents.pointerUpHandler);
+                                bool zeroHeld = Flag(reader, "TimelineHeld");
+                                ExecuteEvents.Execute(idleTimeline.gameObject, pointer, ExecuteEvents.dragHandler); // Same position: warm actual drag dispatch without seeking.
+                                float zeroTarget = idleTimeline.value; ExecuteEvents.Execute(idleTimeline.gameObject, pointer, ExecuteEvents.pointerUpHandler);
                                 var noop = Events(controller).Skip(beforeNoop).ToArray();
                                 Check(zeroHeld && zeroTarget == idleTimeline.minValue && Flag(reader, "IsReady") && player.frame == beforeFrame && !Flag(reader, "TimelineHeld") && !noop.Any(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_REQUESTED")
                                     && noop.Any(row => (string)row["event"] == "REFERENCE_VIEWER_INPUT_REJECTED" && (string)row["after"]?["reason"] == "already_at_decoded_start"),
@@ -1128,12 +1351,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 if (!endpointPending)
                                 {
                                     var endpointRequest = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, fraction, fraction);
-                                    endpointTarget = (double)endpointRequest["after"]["seek_target_seconds"]; endpointRequestSeq = (long)endpointRequest["seq"]; endpointPending = true; return;
+                                    TraceNative("after_timeline_helper_return", player);
+                                    endpointTarget = (double)endpointRequest["after"]["seek_target_seconds"]; endpointRequestSeq = (long)endpointRequest["seq"];
+                                    TraceNative("after_timeline_jobject_casts", player);
+                                    endpointPending = true; return;
                                 }
                                 var completion = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED" && (long)row["seq"] > endpointRequestSeq);
                                 Check(completion != null && TargetFrameMatches(player, endpointTarget) && !player.isPlaying && !controller.Flow.Paused,
                                     "actual native timeline endpoint " + fraction + " acknowledges requested target frame without task change", new { target = endpointTarget, request_seq = endpointRequestSeq, actual_time = player.time, actual_frame = player.frame, completion });
-                                captures.Add(CaptureNative(fixture, "Timeline_endpoint_" + endpointIndex + "_ack", directory));
+                                captures.Add(CaptureTimed("Timeline_endpoint_" + endpointIndex + "_ack"));
                                 if (completion != null && TargetFrameMatches(player, endpointTarget) && !player.isPlaying && !controller.Flow.Paused)
                                     phaseStarted = EditorApplication.timeSinceStartup;
                                 endpointIndex++; endpointPending = false; return;
@@ -1153,7 +1379,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 Check(handleRect.rect.height > 0 && handleCorners.All(corner => { var point = hostRect.InverseTransformPoint(corner); return point.y >= hostRect.rect.yMin - .1f && point.y <= hostRect.rect.yMax + .1f; }),
                                     "native timeline handle remains inside its reserved band without covering time or buttons", new { handle_height = handleRect.rect.height, timeline_height = hostRect.rect.height });
                                 CheckVideoRefinement(view, reader, player, Check, fixture, directory, captures, pointer);
-                                captures.Add(CaptureNative(fixture, "Video_actual_prepared", directory));
+                                captures.Add(CaptureTimed("Video_actual_prepared"));
                                 quickPauseTime = player.time; Click(view, "reference_media.play", pointer); Click(view, "reference_media.pause", pointer);
                                 Check(!Flag(reader, "IsReady") && !player.isPlaying && !controller.Flow.Paused, "immediate Play/Pause waits decoded pause acknowledgement without session Pause", Read(reader, "Metadata"));
                                 quickPauseIssued = true; quickPauseAt = now; return;
@@ -1161,23 +1387,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             if (now - quickPauseAt < .4) return;
                             var pauseAck = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_PAUSED");
                             Check(pauseAck != null && !player.isPlaying && !controller.Flow.Paused && TargetFrameMatches(player, quickPauseTime), "rapid Play/Pause acknowledges its original decoded target before readiness", new { expected_time = quickPauseTime, observed = Observe(player), pause_ack = pauseAck });
-                            captures.Add(CaptureNative(fixture, "Video_actual_rapid_pause_ack", directory));
+                            captures.Add(CaptureTimed("Video_actual_rapid_pause_ack"));
                             firstFrame = player.frame; firstTime = player.time; Click(view, "reference_media.play", pointer); break;
                         case 1:
                             if (!player || !player.isPlaying || player.frame <= firstFrame + 2 || player.time <= firstTime + .1) return;
                             Check(!controller.Flow.Paused, "actual play advances native decoded frames and time without pausing the session", Observe(player));
-                            captures.Add(CaptureNative(fixture, "Video_actual_playing", directory));
+                            captures.Add(CaptureTimed("Video_actual_playing"));
                             pausedTime = player.time; Click(view, "reference_minimize", pointer); break;
                         case 2:
                             if (now - phaseStarted < .4) return;
                             Check(controller.ReferenceMinimized && (!player || !player.isPlaying) && Math.Abs(Convert.ToDouble(JToken.FromObject(Read(reader, "Metadata"))["time_seconds"]) - pausedTime) < .08 && !view.IsReferenceActuallyVisible,
                                 "minimize stops real playback and exposure", Observe(player));
-                            captures.Add(CaptureNative(fixture, "Video_actual_minimized", directory));
+                            captures.Add(CaptureTimed("Video_actual_minimized"));
                             Click(view, "reference_restore", pointer); break;
                         case 3:
                             if (now - phaseStarted < .4 || !player || !player.isPrepared || !Flag(reader, "IsReady")) return;
                             Check(!controller.ReferenceMinimized && (!player || !player.isPlaying) && Math.Abs(Convert.ToDouble(JToken.FromObject(Read(reader, "Metadata"))["time_seconds"]) - pausedTime) < .08, "restore retains video time without autoplay", Observe(player));
-                            captures.Add(CaptureNative(fixture, "Video_actual_restored", directory));
+                            captures.Add(CaptureTimed("Video_actual_restored"));
                             firstFrame = player.frame; firstTime = player.time; Click(view, "reference_media.play", pointer); break;
                         case 4:
                             if (!player.isPlaying || player.frame <= firstFrame + 2 || player.time <= firstTime + .1) return;
@@ -1185,7 +1411,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         case 5:
                             if (now - phaseStarted < .4 || !Flag(reader, "IsReady")) return;
                             if (longSkipStage == 0) Check(!player.isPlaying && !controller.Flow.Paused && Math.Abs(player.time - pausedTime) < .08, "player Pause freezes the native clock but not the session", new { expected_paused_time = pausedTime, observed = Observe(player) });
-                            if (longSkipStage == 0) captures.Add(CaptureNative(fixture, "Video_actual_player_pause", directory));
+                            if (longSkipStage == 0) captures.Add(CaptureTimed("Video_actual_player_pause"));
                             if (player.length > 20)
                             {
                                 if (longSkipStage == 0)
@@ -1193,13 +1419,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 if (longSkipStage == 1)
                                 {
                                     Check(TargetFrameMatches(player, longSkipTarget) && !player.isPlaying, "long TEST native +10 control acknowledges actual decoded target", new { target = longSkipTarget, observed = Observe(player) });
-                                    captures.Add(CaptureNative(fixture, "Video_long_skip_forward", directory));
+                                    captures.Add(CaptureTimed("Video_long_skip_forward"));
                                     longSkipTarget = Math.Max(0, player.time - 10); Click(view, "reference_media.seek_back", pointer); longSkipStage = 2; return;
                                 }
                                 if (longSkipStage == 2)
                                 {
                                     Check(TargetFrameMatches(player, longSkipTarget) && !player.isPlaying, "long TEST native -10 control acknowledges actual decoded target", new { target = longSkipTarget, observed = Observe(player) });
-                                    captures.Add(CaptureNative(fixture, "Video_long_skip_back", directory)); longSkipStage = 3;
+                                    captures.Add(CaptureTimed("Video_long_skip_back")); longSkipStage = 3;
                                 }
                             }
                             TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, .9f, .95f); break;
@@ -1208,7 +1434,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             var seek = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED");
                             Check(seek != null && player.time > pausedTime + .1 && !player.isPlaying && !controller.Flow.Paused,
                                 "native seek completion changes media time without evaluator progress", new { observed = Observe(player), seek_event = seek });
-                            captures.Add(CaptureNative(fixture, "Video_actual_seek_completed", directory));
+                            captures.Add(CaptureTimed("Video_actual_seek_completed"));
                             timelineRestoreTime = player.time; replacedPlayerId = player.GetInstanceID();
                             TimelineStaleCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), ownedEvents, pointer, Check);
                             Check(!Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible, "stale timeline restore remains Loading until the replacement decoder and saved-time target frame are ready", Read(reader, "Metadata")); break;
@@ -1220,22 +1446,30 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             var request = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check);
                             timelineRequestSeq = (long)request["seq"]; timelineTarget = (double)request["after"]["seek_target_seconds"]; timelineContext = (string)request["after"]["context"]; break;
                         case 8:
-                            if (!player || !player.isPrepared || !Flag(reader, "IsReady")) return;
-                            var timelineSeek = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED" && (long)row["seq"] > timelineRequestSeq && (string)row["after"]?["context"] == timelineContext);
-                            Check(Flag(reader, "IsReady") && !player.isPlaying && TargetFrameMatches(player, timelineTarget)
-                                && Convert.ToInt64(Read(reader, "DecodedFrameCount")) > timelineFrames && timelineSeek != null,
-                                "actual fresh timeline native seek has its own later matching completion and genuine target frame", new { target = timelineTarget, request_seq = timelineRequestSeq, before_decoded_frames = timelineFrames, observed = Observe(player), timelineSeek });
-                            captures.Add(CaptureNative(fixture, "Video_actual_timeline_seek", directory));
-                            var pendingRequest = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, .55f, .6f);
-                            pendingTarget = (double)pendingRequest["after"]["seek_target_seconds"]; replacedPlayerId = player.GetInstanceID();
-                            Check(!Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible, "pending native timeline seek is not successful reading", Read(reader, "Metadata"));
-                            Click(view, "reference_minimize", pointer);
-                            Check(!Flag(reader, "IsReady") && !(Read(reader, "NativeVideoPlayer") as UnityEngine.Video.VideoPlayer) && Math.Abs((double)Metadata(reader)["time_seconds"] - pendingTarget) < .001,
-                                "minimize during pending native seek releases the old decoder and preserves the requested target, not a prior frame", new { requested_target = pendingTarget, metadata = Read(reader, "Metadata") });
-                            captures.Add(CaptureNative(fixture, "Video_actual_pending_seek_minimized", directory));
+                            if (!pendingMinimizeIssued)
+                            {
+                                if (!player || !player.isPrepared || !Flag(reader, "IsReady")) return;
+                                var timelineSeek = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED" && (long)row["seq"] > timelineRequestSeq && (string)row["after"]?["context"] == timelineContext);
+                                Check(Flag(reader, "IsReady") && !player.isPlaying && TargetFrameMatches(player, timelineTarget)
+                                    && Convert.ToInt64(Read(reader, "DecodedFrameCount")) > timelineFrames && timelineSeek != null,
+                                    "actual fresh timeline native seek has its own later matching completion and genuine target frame", new { target = timelineTarget, request_seq = timelineRequestSeq, before_decoded_frames = timelineFrames, observed = Observe(player), timelineSeek });
+                                captures.Add(CaptureTimed("Video_actual_timeline_seek"));
+                                var pendingRequest = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, .55f, .6f);
+                                pendingTarget = (double)pendingRequest["after"]["seek_target_seconds"]; replacedPlayerId = player.GetInstanceID();
+                                Check(!Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible, "pending native timeline seek is not successful reading", Read(reader, "Metadata"));
+                                Click(view, "reference_minimize", pointer);
+                                Check(!Flag(reader, "IsReady") && !(Read(reader, "NativeVideoPlayer") as UnityEngine.Video.VideoPlayer) && Math.Abs((double)Metadata(reader)["time_seconds"] - pendingTarget) < .001,
+                                    "minimize during pending native seek releases the old decoder and preserves the requested target, not a prior frame", new { requested_target = pendingTarget, metadata = Read(reader, "Metadata") });
+                                pendingMinimizeIssued = true; return;
+                            }
+                            // Capture a naturally presented pill, not the hidden relayout frame after minimization.
+                            if (!controller.ReferenceMinimized || !view.referencePanel.HasAcceptedPose || view.referencePanel.RecenterPending
+                                || view.referencePanel.PlacementBlocked || !view.referencePanel.GetComponent<Canvas>().enabled
+                                || Field<CanvasGroup>(view, "referenceGroup").alpha <= .01f || !Field<GameObject>(view, "referencePill").activeInHierarchy) return;
+                            captures.Add(CaptureTimed("Video_actual_pending_seek_minimized"));
                             Click(view, "reference_restore", pointer); pendingRestoreSeq = (long)Events(controller).Last()["seq"];
                             Check(!Flag(reader, "IsReady") && !view.IsReferenceActuallyVisible, "pending seek restore starts honest Loading rather than treating a saved timestamp as a decoded frame", Read(reader, "Metadata"));
-                            captures.Add(CaptureNative(fixture, "Video_actual_pending_seek_restored_loading", directory)); break;
+                            break; // Loading is asserted above; the decoded target is captured in case9.
                         case 9:
                             if (!player || !player.isPrepared || !Flag(reader, "IsReady")) return;
                             if (!tailSeekPending)
@@ -1247,7 +1481,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                     && restoredRequest != null && restoredSeek != null && (long)restoredSeek["seq"] > (long)restoredRequest["seq"] && Convert.ToInt64(Read(reader, "DecodedFrameCount")) > 1
                                     && !restoredEvents.Any(row => (string)row["event"] == "REFERENCE_VIEWER_ACTIVE_BEGIN" && (long)row["seq"] < (long)(restoredSeek?["seq"] ?? long.MaxValue)),
                                     "pending seek minimize/restore becomes readable only after new native prepare and matching requested-target frame completion, without autoplay", new { pendingTarget, restoredRequest, restoredSeek, observed = Observe(player) });
-                                captures.Add(CaptureNative(fixture, "Video_actual_pending_seek_restored_target", directory));
+                                captures.Add(CaptureTimed("Video_actual_pending_seek_restored_target"));
                                 float tailFraction = (float)(Math.Max(0, player.length - 2) / player.length);
                                 var tailRequest = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, tailFraction, tailFraction);
                                 tailSeekRequestSeq = (long)tailRequest["seq"]; tailSeekPending = true;
@@ -1265,9 +1499,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         case 10:
                             if ((string)Read(reader, "Status") != "Ended") return;
                             var ended = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_ENDED");
-                            Check(ended != null && !player.isPlaying && !controller.Flow.Paused && controller.Flow.State == ResearchFlowState.Task1Active && !controller.Flow.InspectPassed.HasValue,
+                            Check(ended != null && !player.isPlaying && !controller.Flow.Paused && (training ? controller.Flow.State == ResearchFlowState.TutorialReferenceInspect : controller.Flow.State == ResearchFlowState.Task1Active) && !controller.Flow.InspectPassed.HasValue,
                                 "real decoder reaches Ended without completing or evaluating the task", new { observed = Observe(player), ended_event = ended, task_state = controller.Flow.State.ToString(), controller.Flow.InspectPassed });
-                            captures.Add(CaptureNative(fixture, "Video_actual_ended", directory));
+                            captures.Add(CaptureTimed("Video_actual_ended"));
                             Click(view, "reference_media.play", pointer); break;
                         case 11:
                             if (!player.isPlaying || player.frame < 1 || player.time < .1) return;
@@ -1288,13 +1522,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(generationEvents.Count(row => (string)row["event"] == "REFERENCE_VIDEO_PREPARED") == 1
                                 && generationEvents.Count(row => (string)row["event"] == "REFERENCE_VIDEO_FIRST_FRAME_DECODED") == 1,
                                 "reopen cycle " + reopenCycle + " receives prepare and first-frame callbacks exactly once", generationEvents);
-                            captures.Add(CaptureNative(fixture, "Video_actual_reopen_" + controller.Language + "_cycle_" + reopenCycle, directory));
+                            captures.Add(CaptureTimed("Video_actual_reopen_" + controller.Language + "_cycle_" + reopenCycle));
                             firstTime = player.time; Click(view, "reference_media.play", pointer); break;
                         case 14:
                             if (!player.isPlaying || player.time < firstTime + .2) return;
                             Check(!Field<AudioSource>(reader, "videoAudio").mute && !controller.Flow.Paused,
                                 controller.Language + " actual native Play unmutes only this media, not session Pause", Observe(player));
-                            captures.Add(CaptureNative(fixture, "Video_actual_playing_" + controller.Language + "_cycle_" + reopenCycle, directory));
+                            captures.Add(CaptureTimed("Video_actual_playing_" + controller.Language + "_cycle_" + reopenCycle));
                             Click(view, "reference_close", pointer); closedEvents = Events(controller).Count; break;
                         case 15:
                             if (now - phaseStarted < .4) return;
@@ -1304,7 +1538,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 "closed reader accepts no late decoder/readiness callback or held input", lateClosed);
                             if (++reopenCycle < 3)
                             {
-                                Set(controller, "SetupLanguage", fixedLocale ? language : reopenCycle == 1 ? ParticipantLanguage.Japanese : ParticipantLanguage.English);
+                                SetFixtureLanguage(controller, fixedLocale ? language : reopenCycle == 1 ? ParticipantLanguage.Japanese : ParticipantLanguage.English);
                                 Reopen(); stage = 13; phaseStarted = EditorApplication.timeSinceStartup; return;
                             }
                             Reopen(); break;
@@ -1315,14 +1549,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             if (!player.isPlaying || player.time < firstTime + .2) return;
                             var playingRequest = TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, .45f, .5f);
                             playingSeekTarget = (double)playingRequest["after"]["seek_target_seconds"]; playingSeekSeq = (long)playingRequest["seq"];
-                            captures.Add(CaptureNative(fixture, "Video_actual_playing_seek_loading", directory)); break;
+                            captures.Add(CaptureTimed("Video_actual_playing_seek_loading")); break;
                         case 18:
                             var playingComplete = Events(controller).LastOrDefault(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED" && (long)row["seq"] > playingSeekSeq);
                             if (playingComplete == null || !player.isPlaying || !Flag(reader, "IsReady")) return;
                             Check(Math.Abs((double)playingComplete["after"]["time_seconds"] - playingSeekTarget) <= 2 / player.frameRate
                                 && player.time >= playingSeekTarget && !Field<AudioSource>(reader, "videoAudio").mute && !controller.Flow.Paused,
                                 "seek while actually playing receives native target ACK before resuming unmuted playback", new { playingSeekTarget, playingComplete, observed = Observe(player) });
-                            captures.Add(CaptureNative(fixture, "Video_actual_playing_seek_resumed", directory));
+                            captures.Add(CaptureTimed("Video_actual_playing_seek_resumed"));
                             TimelineFreshCallbacks(view, controller, reader, Public<Camera>(fixture, "Camera"), pointer, Check, .65f, .7f);
                             Click(view, "reference_tab.user_manual", pointer); closedEvents = Events(controller).Count; break;
                         case 19:
@@ -1331,7 +1565,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(controller.ReferenceSection == "user_manual" && Flag(reader, "IsReady") && !Flag(reader, "ControlHeld")
                                 && !Events(controller).Skip(closedEvents).Any(row => (string)row["event"] == "REFERENCE_VIDEO_SEEK_COMPLETED"),
                                 "switching to real PDF cancels pending video seek, old callbacks and held input", Read(reader, "Metadata"));
-                            captures.Add(CaptureNative(fixture, "PDF_actual_after_pending_video_seek", directory));
+                            captures.Add(CaptureTimed("PDF_actual_after_pending_video_seek"));
                             Click(view, "reference_tab.video", pointer); break;
                         case 20:
                             if (!player || !Flag(reader, "IsReady")) return;
@@ -1354,7 +1588,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(!Field<TMP_Text>(reader, "timeLabel").gameObject.activeInHierarchy && !((Slider)Read(reader, "Timeline")).gameObject.activeInHierarchy
                                 && view.referencePanel.GetComponentsInChildren<ResearchUIAction>(true).Where(item => item.command.StartsWith("reference_media.") && item.command != "reference_media.retry").All(item => !item.gameObject.activeInHierarchy),
                                 "native Error reserves the band for Retry without clock, timeline or transport overlap", Read(reader, "Metadata"));
-                            captures.Add(CaptureNative(fixture, "Video_actual_native_error_retry_" + controller.Language + "_cycle_" + errorLocaleCycle, directory));
+                            captures.Add(CaptureTimed("Video_actual_native_error_retry_" + controller.Language + "_cycle_" + errorLocaleCycle));
                             Click(view, "reference_media.retry", pointer); break;
                         case 22:
                             if (!player || !player.isPrepared || !Flag(reader, "IsReady")) return;
@@ -1362,10 +1596,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(Events(controller).Any(row => (string)row["event"] == "REFERENCE_VIEWER_RETRY") && !player.isPlaying
                                 && Field<AudioSource>(reader, "videoAudio").mute && Convert.ToInt64(Read(reader, "DecodedFrameCount")) > 0,
                                 "actual Retry UI reloads the original valid registry and native decoder without autoplay", Observe(player));
-                            captures.Add(CaptureNative(fixture, "Video_actual_retry_recovered_" + controller.Language + "_cycle_" + errorLocaleCycle, directory));
+                            captures.Add(CaptureTimed("Video_actual_retry_recovered_" + controller.Language + "_cycle_" + errorLocaleCycle));
                             if (++errorLocaleCycle < 3)
                             {
-                                Set(controller, "SetupLanguage", fixedLocale ? language : errorLocaleCycle == 1 ? ParticipantLanguage.Thai : ParticipantLanguage.Japanese);
+                                SetFixtureLanguage(controller, fixedLocale ? language : errorLocaleCycle == 1 ? ParticipantLanguage.Thai : ParticipantLanguage.Japanese);
                                 view.RefreshReference(); stage = 20; phaseStarted = EditorApplication.timeSinceStartup; return;
                             }
                             firstTime = player.time; Click(view, "reference_media.play", pointer); break;
@@ -1415,9 +1649,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             if (now - phaseStarted < .4) return;
                             CheckReleased("actual session Pause UI");
                             Check(controller.Flow.Paused && !controller.ReferenceOpen && !Flag(reader, "ControlHeld") && !Flag(reader, "IsReady")
-                                && !view.IsReferenceActuallyVisible && controller.Flow.State == ResearchFlowState.Task1Active && !controller.Flow.InspectPassed.HasValue
-                                && controller.Record == null && !Events(controller).Any(row => new[] { "TASK_COMPLETED", "INSPECT", "REPAIR", "ACTION" }.Contains((string)row["event"])),
-                                "actual header Pause closes media/reading without task result, consent or research record", new { observed = Observe(player), events = Events(controller).Where(row => (string)row["event"] == "SESSION_PAUSED").ToArray() });
+                                && !view.IsReferenceActuallyVisible && (training ? controller.Flow.State == ResearchFlowState.TutorialReferenceInspect : controller.Flow.State == ResearchFlowState.Task1Active) && !controller.Flow.InspectPassed.HasValue
+                                && controller.Record.test_data && controller.Record.group == ParticipantGroup.Test && !Events(controller).Any(row => new[] { "TASK_COMPLETED", "INSPECT", "REPAIR", "ACTION" }.Contains((string)row["event"])),
+                            "Pause closes reading without task results or consent; the record remains synthetic", new { observed = Observe(player), events = Events(controller).Where(row => (string)row["event"] == "SESSION_PAUSED").ToArray() });
                             Finish(); return;
                     }
                     stage++; phaseStarted = EditorApplication.timeSinceStartup;

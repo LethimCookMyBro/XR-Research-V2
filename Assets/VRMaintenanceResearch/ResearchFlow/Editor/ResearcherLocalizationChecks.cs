@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
     public static class ResearcherLocalizationChecks
@@ -28,6 +29,16 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!donor) throw new InvalidOperationException("Current canonical font donor required.");
             var ownedType = typeof(ResearchParticipantSafetyChecks).GetNestedType("Owned", BindingFlags.NonPublic);
             var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>();
+            foreach (var locale in new[] { "Thai", "Japanese" })
+                foreach (var key in new[] { "study_authorization_block", "study_auth_provenance", "study_auth_schema", "study_auth_identity", "study_auth_revision", "study_auth_session", "study_auth_references", "study_auth_booleans", "study_auth_size", "study_auth_changed" })
+                {
+                    string message = ResearchStrings.Get("researcher." + key, locale);
+                    bool pass = !message.Contains("??") && !message.Contains("\uFFFD")
+                        && message.Any(c => locale == "Thai" ? c >= '\u0E00' && c <= '\u0E7F'
+                            : (c >= '\u3040' && c <= '\u30FF') || (c >= '\u4E00' && c <= '\u9FFF'));
+                    rows.Add(new { check = locale + "/authorization message script/" + key, message, pass });
+                    if (!pass) failures.Add(locale + "/authorization message lost Unicode: " + key);
+                }
             var stages = new[] { ("Researcher_DEV_selector", ResearchFlowState.Task1Ready, 5, (bool?)null) };
             Directory.CreateDirectory(dir);
             try
@@ -92,7 +103,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 "No open session.", "Station transition in progress.", "Participant app is not focused.", "Headset or controllers not tracked.", "Quest setup requires Controller mode.",
                                 "A session is already open: DEV123", "DEV123 is Completed and stays locked.", "Session is InProgress; logger Error.", "Nothing to resume: participant is in Task1Active." };
                             var reasonKeys = new[] { "select_block", "floor_block", "tracking_block", "logger_block", "no_session", "transition", "focus", "tracking", "quest_mode", "open_session", "state_locked", "session_logger", "nothing_resume" };
-                            var reasonArgs = new[] { Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), new object[]{"DEV123"}, new object[]{"DEV123","Completed"}, new object[]{"InProgress","Error"}, new object[]{"Task1Active"} };
+                            var reasonArgs = new[] { Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), Array.Empty<object>(), new object[]{"DEV123"}, new object[]{"DEV123",ResearchStrings.Get("researcher.state_completed",language.ToString())}, new object[]{ResearchStrings.Get("researcher.in_progress",language.ToString()),ResearchStrings.Get("error.title",language.ToString())}, new object[]{string.Format(ResearchStrings.Get("task.progress",language.ToString()),1)+" ("+ResearchStrings.Get("researcher.in_progress",language.ToString())+")"} };
                             for(int ri=0;ri<reasonInputs.Length;ri++)
                             {
                                 var localizer=researcher.GetType().GetMethod("LocalizeBlocker",Instance);
@@ -102,6 +113,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 rows.Add(new {check="readiness_reason", input=reasonInputs[ri],actual,expected,localized_entrypoint_present=localizer!=null,pass});
                                 if(!pass)failures.Add("Lost/localization mismatch readiness reason: "+reasonKeys[ri]);
                             }
+                var enumInputs = new[] { "DEV123 is Completed and stays locked.", "Session is InProgress; logger Error.", "Session is InProgress; logger Error.", "Nothing to resume: participant is in Task1Active." };
+                var enumTokens = new[] { "Completed", "InProgress", "Error", "Task1Active" };
+                for (int ei = 0; ei < enumTokens.Length; ei++)
+                {
+                    string actual = (string)researcher.GetType().GetMethod("LocalizeBlocker",Instance).Invoke(researcher,new object[]{enumInputs[ei]});
+                    bool pass = actual.IndexOf(enumTokens[ei],StringComparison.Ordinal) < 0;
+                    rows.Add(new {check="raw_state_token_localized",token=enumTokens[ei],actual,pass});
+                    if(!pass)failures.Add("Raw state token remains in localized reason: "+enumTokens[ei]);
+                }
                             const string raw="E_TEST_RECORD_IO: DEV123/request-456";
                             var unknownLocalizer=researcher.GetType().GetMethod("LocalizeBlocker",Instance);
                             string unknown=unknownLocalizer!=null?(string)unknownLocalizer.Invoke(researcher,new object[]{raw}):raw;
@@ -125,6 +145,172 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             bool restored=heading.text==ResearchStrings.Get("researcher.setup",language.ToString());
                             rows.Add(new {check="repeat_refresh_language_switch_stable_refs",switched,restored,pass=switched&&restored});
                             if(!switched||!restored)failures.Add("Translated text broke identity/font on refresh.");
+                            void Fits(TMP_Text label, string name, RectTransform boundedViewport = null)
+                            {
+                                // Inactive popup templates skip TMP's dimension-change callback.
+                                label.ComputeMarginSize(); label.ForceMeshUpdate(true,true);
+                                var rect=label.rectTransform.rect;
+                                bool outside=label.textInfo.characterInfo.Take(label.textInfo.characterCount).Where(c=>c.isVisible).Any(c=>
+                                    c.bottomLeft.x<rect.xMin+label.margin.x-1 || c.topRight.x>rect.xMax-label.margin.z+1
+                                    || c.descender<rect.yMin+label.margin.w-1 || c.ascender>rect.yMax-label.margin.y+1);
+                                var preferred=label.GetPreferredValues(label.text,rect.width-label.margin.x-label.margin.z,float.PositiveInfinity);
+                                float availableHeight=boundedViewport?boundedViewport.rect.height:rect.height;
+                                string missingGlyphs=string.Concat(label.textInfo.characterInfo.Take(label.textInfo.characterCount)
+                                    .Where(c=>!char.IsWhiteSpace(c.character) && c.elementType==TMP_TextElementType.Character
+                                        && (!c.fontAsset || !c.fontAsset.HasCharacter(c.character,true,false))).Select(c=>c.character).Distinct());
+                    bool pass=!label.isTextOverflowing && !label.isTextTruncated && !outside && missingGlyphs.Length==0 && preferred.y<=availableHeight-label.margin.y-label.margin.w+1;
+                                rows.Add(new {check=name,label.text,label.fontSize,label.isTextOverflowing,outside,missingGlyphs,rect.width,rect.height,available_height=availableHeight,preferred_height=preferred.y,pass});
+                                if(!pass)failures.Add(name);
+                            }
+                            var devAvailable=controller.Registry.CreateNext(ParticipantGroup.Dev);
+                            var devSaved=controller.Registry.CreateNext(ParticipantGroup.Dev);
+                            devSaved=controller.Registry.StartOrResume(devSaved.participant_id,ParticipantLanguage.Japanese,ExperimentInputMode.Controller);
+                            researcher.Refresh();
+                            var groupChoice=Get<TMP_Dropdown>(researcher,"group");
+                            var languageChoice=Get<TMP_Dropdown>(researcher,"language");
+                            var participantChoice=Get<TMP_Dropdown>(researcher,"participant");
+                            var errorCaption=Get<TMP_Text>(researcher,"error");
+                var errorScroll=errorCaption.GetComponentInParent<ScrollRect>();
+                var errorViewport=errorScroll?errorScroll.viewport:null;
+                if(!errorScroll || !errorViewport)throw new InvalidOperationException("Actual diagnostic scroll viewport required.");
+                            foreach(var pending in controller.Registry.List(ParticipantGroup.Dev).Where(p=>p.session_state==RegistryState.Available && p.participant_id!=devAvailable.participant_id))
+                                controller.Registry.StartOrResume(pending.participant_id,ParticipantLanguage.Thai,ExperimentInputMode.Controller);
+                            participantChoice.SetValueWithoutNotify(0);
+                            typeof(ResearcherSetupView).GetField("recordSignature",Instance).SetValue(researcher,null);
+                            researcher.Refresh();
+                            bool newTestDefault=participantChoice.options[participantChoice.value].text.StartsWith(devAvailable.participant_id+" ",StringComparison.Ordinal);
+                            rows.Add(new {check="Unbound Setup defaults to available ID, not an old InProgress run",pass=newTestDefault});
+                            if(!newTestDefault)failures.Add("Setup silently selected an old InProgress run.");
+                            // English is a DEV presentation check, not a new experimental language group.
+                            foreach(var displayLanguage in new[]{ParticipantLanguage.Thai,ParticipantLanguage.Japanese,ParticipantLanguage.English})
+                            {
+                                languageChoice.value=(int)displayLanguage; controller.SetLanguage(displayLanguage); researcher.Refresh(); Canvas.ForceUpdateCanvases();
+                                Fits(groupChoice.captionText,displayLanguage+"/DEV closed caption fits");
+                                foreach(var choice in new[]{groupChoice,languageChoice,Get<TMP_Dropdown>(researcher,"order")})
+                                {
+                                    string original=choice.itemText.text;
+                                    try
+                                    {
+                                        foreach(var option in choice.options)
+                                        {
+                                            choice.itemText.text=option.text;
+                                            Fits(choice.itemText,displayLanguage+"/popup item template/"+choice.name+"/"+option.text);
+                                        }
+                                    }
+                                    finally {choice.itemText.text=original;}
+                                }
+                                foreach(var choice in new[]{groupChoice,languageChoice})
+                                {
+                                    var popup=UnityEngine.Object.Instantiate(choice.template.gameObject);
+                                    popup.name="Dropdown List"; popup.transform.SetParent(choice.transform,false); popup.SetActive(true);
+                                    try
+                                    {
+                                        var popupText=popup.GetComponentInChildren<TMP_Text>(true);
+                                        popupText.text=choice.options[0].text; popupText.font=view.thaiFont;
+                                        researcher.Refresh(); Canvas.ForceUpdateCanvases(); popupText.ForceMeshUpdate(true,true);
+                                        bool pass=popupText.font==view.thaiFont && popupText.font.HasCharacter('\u0E44',true,false);
+                                        rows.Add(new {check=displayLanguage+"/live-like popup autonym font survives Refresh/"+choice.name,popupText.text,font=popupText.font.name,pass});
+                                        if(!pass)failures.Add(displayLanguage+"/popup autonym font overwritten: "+choice.name);
+                                    }
+                                    finally {UnityEngine.Object.DestroyImmediate(popup);}
+                                }
+                                string previousError=errorCaption.text;
+                                try
+                                {
+                                    var approvalReasons = new[] {
+                                        "OperatorControl/research-operator-authorization.json is not on this device.",
+                                        "Participant group and test-data provenance are inconsistent.",
+                                        "Production operator authorization is missing or has an unsupported schema.",
+                                        "Production operator/participant identity is not linked.",
+                                        "Pre-session approval must match the available record revision exactly.",
+                                        "Production operator authorization is linked to a different or missing session.",
+                                        "Explicit consent, content and language approvals and their references are required.",
+                                        "Approval acknowledgments must be actual JSON booleans or null.",
+                                        "Local operator document exceeds 16 KiB.",
+                                        "Local operator document changed while reading.",
+                                    };
+                                    foreach (var approvalReason in approvalReasons)
+                                    {
+                                        errorCaption.text=ResearchStrings.Get("researcher.start_unavailable",displayLanguage.ToString())+(string)unknownLocalizer.Invoke(researcher,new object[]{ResearchSessionFlowController.StudyAuthorizationPrefix+approvalReason});
+                                        researcher.GetType().GetMethod("LayoutDiagnostic",Instance).Invoke(researcher,null);
+                        Fits(errorCaption,displayLanguage+"/authorization reason fits/"+approvalReason,errorViewport);
+                                    }
+                                }
+                                finally {errorCaption.text=previousError; researcher.GetType().GetMethod("LayoutDiagnostic",Instance).Invoke(researcher,null);}
+                    string previousLocalError=Get<string>(researcher,"localError");
+                    string diagnostic=string.Join("\n",Enumerable.Range(0,16).Select(i=>"E_TEST_JSON: <field_name> consent_approval_ref / "+i))+"\n"+new string('x',512)+"\nEND_TEST_DIAGNOSTIC";
+                    bool GlyphInside(TMP_CharacterInfo glyph)
+                    {
+                        var lo=errorViewport.InverseTransformPoint(errorCaption.transform.TransformPoint(glyph.bottomLeft));
+                        var hi=errorViewport.InverseTransformPoint(errorCaption.transform.TransformPoint(glyph.topRight));
+                        return lo.x>=errorViewport.rect.xMin-1 && hi.x<=errorViewport.rect.xMax+1
+                            && lo.y>=errorViewport.rect.yMin-1 && hi.y<=errorViewport.rect.yMax+1;
+                    }
+                    void DiagnosticTick()
+                    {
+                        Canvas.ForceUpdateCanvases();
+                        typeof(ScrollRect).GetMethod("LateUpdate",Instance).Invoke(errorScroll,null);
+                        errorCaption.ForceMeshUpdate(true,true);
+                    }
+                    try
+                    {
+                        researcher.GetType().GetField("localError",Instance).SetValue(researcher,diagnostic); researcher.Refresh(); DiagnosticTick();
+                        var glyphs=errorCaption.textInfo.characterInfo.Take(errorCaption.textInfo.characterCount).Where(ch=>ch.isVisible).ToArray();
+                        bool full=errorCaption.text==diagnostic && !errorCaption.richText && !errorCaption.isTextTruncated
+                            && errorCaption.overflowMode==TextOverflowModes.Overflow;
+                        bool bounded=errorViewport.GetComponent<RectMask2D>() && errorScroll.content==errorCaption.rectTransform
+                            && errorScroll.vertical && !errorScroll.horizontal && errorScroll.content.rect.height>errorViewport.rect.height
+                            && errorScroll.verticalScrollbar && errorScroll.verticalScrollbar.gameObject.activeInHierarchy;
+                        bool wraps=glyphs.All(glyph=>
+                        {
+                            var lo=errorViewport.InverseTransformPoint(errorCaption.transform.TransformPoint(glyph.bottomLeft));
+                            var hi=errorViewport.InverseTransformPoint(errorCaption.transform.TransformPoint(glyph.topRight));
+                            return lo.x>=errorViewport.rect.xMin-1 && hi.x<=errorViewport.rect.xMax+1;
+                        });
+                        bool markupLiteral=glyphs.Any(glyph=>glyph.character=='<');
+                        bool first=errorScroll.verticalNormalizedPosition>.99f && glyphs.Length>0 && GlyphInside(glyphs.First());
+                        errorScroll.verticalNormalizedPosition=0; DiagnosticTick();
+                        glyphs=errorCaption.textInfo.characterInfo.Take(errorCaption.textInfo.characterCount).Where(ch=>ch.isVisible).ToArray();
+                        bool last=errorScroll.verticalNormalizedPosition<.01f && glyphs.Length>0 && GlyphInside(glyphs.Last());
+                        researcher.Refresh(); DiagnosticTick();
+                        bool retained=errorScroll.verticalNormalizedPosition<.01f && errorCaption.text==diagnostic;
+                        bool pass=full&&bounded&&wraps&&markupLiteral&&first&&last&&retained;
+                        rows.Add(new {check=displayLanguage+"/long raw diagnostic remains readable in bounded scroll",full,bounded,wraps,markupLiteral,first,last,retained,
+                            content_height=errorScroll.content.rect.height,viewport_height=errorViewport.rect.height,synthetic=true,interaction="Editor scripted scroll",pass});
+                        if(!pass)failures.Add(displayLanguage+"/long raw diagnostic scroll incomplete or lost");
+                    }
+                    finally
+                    {
+                        researcher.GetType().GetField("localError",Instance).SetValue(researcher,previousLocalError); researcher.Refresh();
+                    }
+                            }
+                            Rect SiblingRect(Transform source)
+                            {
+                                var rect=(RectTransform)source;
+                                if(rect.parent!=actualSurface || rect.localScale!=Vector3.one || rect.localRotation!=Quaternion.identity)
+                                    throw new InvalidOperationException("Setup bounds require unscaled, unrotated siblings.");
+                                // World-space roundtrips at the fixture's 100 m origin lose subpixel precision.
+                                return new Rect((Vector2)rect.localPosition+rect.rect.position,rect.rect.size);
+                            }
+                            var startBounds=SiblingRect(Get<UnityEngine.UI.Button>(researcher,"start").transform);
+                            var errorBounds=SiblingRect(errorViewport);
+                            var statusBounds=SiblingRect(Get<TMP_Text>(researcher,"status").rectTransform);
+                            bool separated=startBounds.max.y<=errorBounds.min.y-1 && errorBounds.max.y<=statusBounds.min.y-1
+                                && actualSurface.rect.Contains(new Vector2(startBounds.min.x,startBounds.min.y)) && actualSurface.rect.Contains(new Vector2(startBounds.max.x,startBounds.max.y));
+                            rows.Add(new {check="Setup status/error/Start separated and inside panel",start_min=startBounds.min.ToString(),start_max=startBounds.max.ToString(),error_min=errorBounds.min.ToString(),error_max=errorBounds.max.ToString(),pass=separated});
+                            if(!separated)failures.Add("Setup status/error/Start overlap or Start outside panel.");
+                            string beforeSelection=File.ReadAllText(controller.Registry.RegistryPath);
+                            var writerBeforeSelection=controller.Logger;
+                            int savedIndex=participantChoice.options.FindIndex(o=>o.text.StartsWith(devSaved.participant_id+" ",StringComparison.Ordinal));
+                            if(savedIndex<1)throw new InvalidOperationException("Saved synthetic DEV option missing.");
+                            controller.SetLanguage(ParticipantLanguage.Thai); participantChoice.value=savedIndex; researcher.Refresh();
+                            bool savedLanguage=languageChoice.value==(int)ParticipantLanguage.Japanese && controller.Language=="Japanese"
+                                && heading.text==ResearchStrings.Get("researcher.setup","Japanese") && heading.font==view.japaneseFont;
+                            bool savedPreserved=beforeSelection==File.ReadAllText(controller.Registry.RegistryPath) && controller.Record==null && controller.Flow==null && ReferenceEquals(writerBeforeSelection,controller.Logger);
+                            rows.Add(new {check="Saved Japanese DEV selection updates presentation without mutating session",savedLanguage,savedPreserved,synthetic=true,devSaved.participant_id,devSaved.revision,pass=savedLanguage&&savedPreserved});
+                            if(!savedLanguage||!savedPreserved)failures.Add("Saved participant language/session preservation regression.");
+                            participantChoice.value=participantChoice.options.FindIndex(o=>o.text.StartsWith(devAvailable.participant_id+" ",StringComparison.Ordinal));
+                            languageChoice.value=(int)language; controller.SetLanguage(language); researcher.Refresh();
                             // Capture already accepts a ResearchPanelMotion solely for its RectTransform bounds. This disabled marker lives only on the owned actual researcher surface.
                             panel = actualSurface.gameObject.AddComponent<ResearchPanelMotion>(); panel.enabled = false;
                             rows.Add(new {stage=stage.Item1,actual_researcher_canvas=actualCanvas.name,actual_capture_surface=actualSurface.name,

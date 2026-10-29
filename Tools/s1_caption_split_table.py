@@ -24,7 +24,7 @@ def render():
              'หัวข้อ (ย่อหน้าแรก) แสดงซ้ำทุกหน้าย่อย; จำนวนหน้าย่อย TH และ JA เท่ากันทุกภาพ (ตรวจใน ResearchFlowChecks)',
              'สถานะ: รูปแบบการแสดงผลใหม่ `S1_ILLUSTRATED_PARAGRAPH_PAGES_20261015`; เนื้อหายังเป็น `S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW` (รอคนตรวจภาษา/เนื้อหา)',
              'ภาพย่อย: ทุกหน้าย่อยใช้ภาพเต็มเดิม ยังไม่ได้ครอปภาพเฉพาะส่วน (ต้องเลือกกรอบภาพใน Unity/ภาพจริง และต้องระวังไม่ชี้ชิ้นที่ถูก)', '']
-    for task in 'ABT':
+    for task in ('A', 'B', 'T', 'T2', 'T3'):
         th = json.loads((PKG / f'{task}_th/package.json').read_text(encoding='utf-8-sig'))
         ja = json.loads((PKG / f'{task}_ja/package.json').read_text(encoding='utf-8-sig'))
         lines += [f'## Task {task}', '']

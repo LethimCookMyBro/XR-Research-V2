@@ -53,6 +53,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         private void Rebase()
         {
             if (grab == null || grab.GrabPoints.Count == 0) return;
+            accepted = transform.localToWorldMatrix;
             var p = grab.GrabPoints[0];
             grabToRoot = Matrix4x4.TRS(p.position, p.rotation, Vector3.one).inverse * transform.localToWorldMatrix;
             previousTurn = Captive || socketIndex >= 0 ? SocketRules.Measure(Seat, mate.localToWorldMatrix).turnDeg : 0;

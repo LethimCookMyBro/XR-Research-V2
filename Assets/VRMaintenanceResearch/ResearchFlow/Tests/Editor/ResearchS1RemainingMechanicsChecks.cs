@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using UnityEngine;
 using VRMaintenanceResearch.AssetLibraryQA;
@@ -73,6 +73,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             {
                 root.transform.position = new Vector3(90, -50, 90);
                 var box = root.AddComponent<BoxCollider>(); box.size = Vector3.one * .01f;
+                var body = root.AddComponent<Rigidbody>(); body.isKinematic = true;
+                var fanPart = root.AddComponent<ResearchS1FanPart>(); fanPart.body = body;
+                var fan = root.AddComponent<ResearchS1TaskBMechanics>();
                 var barrier = obstacle.AddComponent<BoxCollider>(); barrier.size = new Vector3(.001f, .05f, .05f);
                 obstacle.transform.position = root.transform.position + new Vector3(.05f, .1f, 0);
                 var start = root.transform.localToWorldMatrix;
@@ -81,9 +84,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 obstacle.transform.position = root.transform.position + Vector3.right * .05f;
                 check(!ResearchS1HeldCollision.Allows(root.transform, end), "Held part passed through a 1 mm barrier.");
                 check(root.transform.localToWorldMatrix == start, "Collision query mutated the part.");
+                check(fan.FreePose(fanPart, end) == start, "Task B free part passed through the thin barrier.");
                 obstacle.transform.position = root.transform.position + Vector3.right * .003f;
                 check(!ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position + Vector3.right * .002f, Quaternion.identity, Vector3.one)), "Increasing initial penetration allowed.");
                 check(ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position - Vector3.right * .01f, Quaternion.identity, Vector3.one)), "Escape from initial penetration denied.");
+                var slowEscape = Matrix4x4.TRS(root.transform.position - Vector3.right * .00025f, Quaternion.identity, Vector3.one);
+                check(fan.FreePose(fanPart, slowEscape) == slowEscape, "Task B stalled while gradually escaping existing proxy overlap.");
+                check(root.transform.localToWorldMatrix == start, "Task B free-pose query moved the part.");
                 barrier.size = Vector3.one * .002f;
                 box.size = new Vector3(.08f, .004f, .004f);
                 obstacle.transform.position = root.transform.position + new Vector3(.02f, 0, -.02f);
@@ -96,6 +103,36 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 check(!ResearchS1ServiceYaw.HandDirection(Vector3.zero, Vector3.up, out direction), "Vertical hand motion fabricated yaw.");
                 check(ResearchS1ServiceYaw.HandDirection(Vector3.zero, Vector3.right * .2f + Vector3.up * 2, out direction) && direction == Vector3.right * .2f, "Yaw did not project onto world horizontal plane.");
                 check(ResearchS1HeldCollision.Samples(float.MaxValue, 1, 1) == -1 && ResearchS1HeldCollision.Samples(float.NaN, 1, 1) == -1, "Nonfinite/overflowing sweep accepted.");
+                obstacle.transform.SetPositionAndRotation(root.transform.position, Quaternion.identity);
+                var seat = new GameObject("ThreadPolicySeat").transform; seat.SetParent(obstacle.transform, false);
+                var guardObject = new GameObject("ThreadPolicyRearGuard"); guardObject.transform.SetParent(obstacle.transform, false);
+                var guardPart = guardObject.AddComponent<ResearchS1FanPart>(); guardPart.kind = S1FanPartKind.RearGuard; guardPart.seat = seat;
+                guardPart.mate = new GameObject("GuardMate").transform; guardPart.mate.SetParent(guardObject.transform, false);
+                guardPart.AuthorInitialPose();
+                fan.rearGuard = guardPart; fanPart.kind = S1FanPartKind.RearLock; fanPart.seat = seat;
+                fanPart.mate = new GameObject("LockMate").transform; fanPart.mate.SetParent(root.transform, false);
+                fanPart.threadTravelMm = 16.9f; fanPart.approachMm = 20;
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                typeof(ResearchS1TaskBMechanics).GetField("rearGuardThreadContact", flags).SetValue(fan, barrier);
+                var outer = SocketRules.RootPose(seat.localToWorldMatrix, 50, 0, Matrix4x4.identity);
+                root.transform.SetPositionAndRotation(outer.GetColumn(3), outer.rotation);
+                var entry = SocketRules.RootPose(seat.localToWorldMatrix, 49, 0, Matrix4x4.identity);
+                var policy = typeof(ResearchS1TaskBMechanics).GetMethod("ThreadContact", flags);
+                Func<Matrix4x4, bool> permitsBore = desired => (Collider)policy.Invoke(fan, new object[] { fanPart, desired, false }) == barrier;
+                check(permitsBore(entry), "Aligned outer bore entry must work beyond the unchanged 20 mm snap range.");
+                var offAxis = entry; offAxis.SetColumn(3, entry.GetColumn(3) + (Vector4)(Vector3.right * .01f));
+                check(!permitsBore(offAxis), "Off-axis candidate inherited the bore exception.");
+                check(!permitsBore(Matrix4x4.TRS(entry.GetColumn(3), Quaternion.Euler(0, 30, 0), Vector3.one)), "Tilted candidate inherited the bore exception.");
+                check(!permitsBore(SocketRules.RootPose(seat.localToWorldMatrix, 10, 0, Matrix4x4.identity)), "Inner-side candidate inherited the outer bore exception.");
+                root.transform.position += Vector3.right * .01f;
+                check(!permitsBore(entry), "Off-axis current pose inherited the bore exception.");
+                root.transform.SetPositionAndRotation(outer.GetColumn(3), outer.rotation);
+                var progress = typeof(ResearchS1FanPart).GetField("progressDegrees", flags); progress.SetValue(fanPart, 1f);
+                check(!permitsBore(entry), "Uncaptured nonzero progress inherited the entry exception."); progress.SetValue(fanPart, 0f);
+                guardPart.mate.localPosition = Vector3.forward * .1f;
+                check(!permitsBore(entry), "Unseated rear guard retained the bore exception."); guardPart.mate.localPosition = Vector3.zero;
+                var nonfinite = entry; nonfinite.m00 = float.NaN;
+                check(!permitsBore(nonfinite), "Nonfinite candidate inherited the bore exception.");
                 return "S1_REMAINING_PHYSICS_CHECKS_PASS checks=" + checks + "; isolated_primitives=true; authored_geometry=false; sdk_e2e=false";
             }
             finally

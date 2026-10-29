@@ -1,23 +1,19 @@
-"""Build the S1 Reader v2 packages (Task A computer, Task B fan; Thai and Japanese) and the Training T2 packages
-(TrainingTrainerV2 practice station; Thai, Japanese, English) from authored content.
+"""Build the S1 Reader packages from authored content and real Unity model captures.
 
-usage:
   python Tools/s1_reader_v2/build.py check
-  python Tools/s1_reader_v2/build.py build --shots D:/VR_TMU/S1_ReaderV2_work/shots --work D:/VR_TMU/S1_ReaderV2_work [--install]
-  python Tools/s1_reader_v2/build.py build --task T --shots <t2_work>/shots --work <t2_work> [--install]
-  python Tools/s1_reader_v2/build.py narration --task T --work <t2_work>     (TTS only: no shots, writes nothing in Assets/)
+  python Tools/s1_reader_v2/build.py build --shots <captures> --work <work> --keep-manual --install
+  python Tools/s1_reader_v2/build.py build --task T --shots <captures> --work <t3_work> --install
+  python Tools/s1_reader_v2/build.py build --task T --training-version v2 --shots <captures> --work <t2_work> --install
+  python Tools/s1_reader_v2/build.py narration --task T --work <t3_work>
 
-Without --task, build makes A and B exactly as before. --task T writes only Resources/ResearchReaderS1/T2_{th,ja,en}/
-and StreamingAssets/ResearchReaderS1/T2_{th,ja,en}.mp4; the old T_* packages and videos are never touched, and Unity
-creates the .meta files for T2 on import.
-
-content_A.json / content_B.json hold one authored source per task. Each format has its own job:
-  Manual = reference (six fixed sections), Steps = one action per step (do / look / correct when),
-  Illustrated = picture first with arrows and callouts, Video = real model motion with narration and subtitles.
-Every bullet, step, panel and scene is tagged with essential units; `check` fails unless every unit appears
-in all four formats in both languages (S1 spec: all formats carry equivalent essentials).
-Footage comes from ResearchS1ReaderV2Shots.Build (Unity, labels hidden). Narration uses Microsoft neural voices via
-edge-tts (only the authored script text is sent). --install writes into Assets/ (Resources + StreamingAssets).
+A/B support Thai and Japanese. Training defaults to T3 in Thai, Japanese and English;
+--training-version v2 preserves the historical T2 lesson. Original T_* assets are untouched.
+--keep-manual rebuilds A/B Steps, Illustrated and Video without changing accepted PDF/pages.
+Package versions include the authored scripts and captured PNG bytes, not filenames alone.
+Manual is reference; Steps use one action; Illustrated leads with pictures; Video synchronizes
+actual Unity model/animation motion with authored narration and subtitles. These are instructional
+renders, not headset gameplay or native controller evidence. Narration uses edge-tts; only the
+authored script is sent. --install writes Resources and StreamingAssets; Unity creates new .meta files.
 """
 import argparse, asyncio, base64, concurrent.futures, hashlib, html, io, json, math, re, shutil, subprocess, sys, time, wave
 from pathlib import Path
@@ -33,6 +29,7 @@ TASK_LANGS = {"A": LANGS, "B": LANGS, "T": ("th", "ja", "en")}
 PACKAGE = {"A": "A", "B": "B", "T": "T2"}
 PDF_NAME = {"A": "S1_TaskA_Reference_v2", "B": "S1_TaskB_Reference_v2", "T": "S1_Training_T2_Reference"}
 TRAINER_V2 = "S1_TRAINING_TRAINER_V2_20261028"
+TRAINER_V3 = "S1_TRAINING_TRAINER_V3_20261029"
 VOICE = {"th": ("th-TH-PremwadeeNeural", "-8%"), "ja": ("ja-JP-NanamiNeural", "-5%"), "en": ("en-US-AriaNeural", "-5%")}
 W, H, FPS = 1280, 720, 24
 FONT = {"th": "'Leelawadee UI','Noto Sans Thai',sans-serif", "ja": "'Yu Gothic UI','Yu Gothic','Meiryo',sans-serif",
@@ -75,8 +72,8 @@ def missing_glyphs(text, lang, _cache={}):
     return sorted({ch for ch in strip(text) if ch != "\n" and not any(ord(ch) in cmap for cmap in _cache[lang])})
 
 
-def load():
-    return {t: json.loads((HERE / f"content_{t}.json").read_text(encoding="utf-8")) for t in "ABT"}
+def load(training_version="v3"):
+    return {t: json.loads((HERE / ("content_T3.json" if t == "T" and training_version == "v3" else f"content_{t}.json")).read_text(encoding="utf-8")) for t in "ABT"}
 
 
 def strip(text):
@@ -166,6 +163,14 @@ def check(content):
                     errors.append(f"A: option ID outside the equal parts table: {text[:50]}")
                 if task == "B" and CAUSE_CLAIM.search(text):
                     errors.append(f"B: text names a cause: {text[:50]}")
+    for task, c in content.items():
+        for i, scene in enumerate(c["video"]):
+            windows = scene.get("motion_windows")
+            if windows is None:
+                continue
+            if any(len(windows) != len(scene["say"][lang]) for lang in TASK_LANGS[task]) or any(
+                    len(window) != 2 or not 0 <= window[0] <= window[1] <= 1 for window in windows):
+                errors.append(f"{task} video {i + 1}: invalid sentence-motion windows")
     return errors, report
 
 
@@ -183,9 +188,10 @@ TASK_REFERENCE = re.compile(r"\b[MSG]0\d\b|พัดลม|คอมพิวเ
 DRAWN_SYMBOLS = set("↻↺✓✗→↓↑·≠")  # drawn by the browser in pictures, video and PDF, never TextMeshPro
 
 
-def app_sequence():
-    """The step order Training runs now (ResearchTrainingStation.FixedSequence, used by TrainingTrainerV2)."""
-    match = re.search(r"string\[\] FixedSequence = \{([^}]*)\}", STATION_CS.read_text(encoding="utf-8"))
+def app_sequence(training_version):
+    """The actual station sequence for the recorded training version."""
+    name = "TrainerV3Sequence" if training_version == TRAINER_V3 else "FixedSequence"
+    match = re.search(r"string\[\] " + name + r" = \{([^}]*)\}", STATION_CS.read_text(encoding="utf-8"))
     return re.findall(r'"(\w+)"', match.group(1))
 
 
@@ -204,9 +210,9 @@ def in_app(quote, values):
 
 def check_training(c):
     errors, langs = [], TASK_LANGS["T"]
-    sequence = app_sequence()
-    if TRAINER_V2 not in POLICY_CS.read_text(encoding="utf-8"):
-        errors.append(f"T: {TRAINER_V2} is no longer a training version in ResearchUIPolicy.cs")
+    sequence = app_sequence(c["training_version"])
+    if c["training_version"] not in (TRAINER_V2, TRAINER_V3) or c["training_version"] not in POLICY_CS.read_text(encoding="utf-8"):
+        errors.append(f"T: unknown training version {c['training_version']}")
     if not set(sequence) <= set(c["units"]):
         errors.append(f"T: app steps without an essential unit: {sorted(set(sequence) - set(c['units']))}")
     # Steps and video follow the running order (fitting insert before the blocked try); a step teaches one app step.
@@ -254,7 +260,7 @@ CSS = """
 .sub{position:absolute;left:90px;right:90px;bottom:26px;text-align:center}
 .sub span{display:inline-block;background:rgba(10,18,28,.84);color:#fff;font-size:34px;line-height:1.45;padding:10px 22px;border-radius:12px}
 .stage{position:absolute;left:24px;top:22px;padding:8px 20px;border-radius:14px;color:#fff;font-size:30px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.prog{position:absolute;left:24px;top:76px;font-size:22px;color:#fff;background:rgba(10,18,28,.7);padding:3px 10px;border-radius:8px}
+.prog{position:absolute;left:24px;top:82px;font-size:22px;color:#fff;background:rgba(10,18,28,.7);padding:3px 10px;border-radius:8px}
 """
 
 
@@ -418,7 +424,7 @@ def panel_body(lang, panel, frames, content, video=False):
     elif layout == "parts":
         values = {row[0]: row[1] for row in next(s for s in content["manual"] if s["id"] == "parts")["table2"]["rows"]}
         quads = [("A_parts_ram", 0, 0), ("A_parts_ssd", 1, 0), ("A_parts_G01", 0, 1), ("A_parts_G02", 1, 1)]
-        iw, ih, lw, top = 352, 198, 262, 80
+        iw, ih, lw, top = 352, 198, 250, 112
         for shot, gx, gy in quads:
             f = frames.pick(shot, [0, 0])
             pts = [(name.replace("part_", ""), ax, ay) for name, (ax, ay, vis) in f["anchors"].items() if vis]
@@ -439,7 +445,7 @@ def panel_body(lang, panel, frames, content, video=False):
         req = panel["card"]
         line = " &nbsp;|&nbsp; ".join(html.escape(l[lang]) for l in req["lines"][:3])
         # In video the stage chip sits top-left and the subtitle owns the bottom, so the requirement card shifts right and the note is spoken.
-        left = 150 if video else 20
+        left = 200 if video else 20
         divs.append(f'<div class="card" style="left:{left}px;top:10px;width:{W - left - 20}px;padding:10px 16px"><div style="font-size:{21 if video else 23}px"><b style="color:#1F5FAF">{html.escape(req["title"][lang])}:</b> {line}</div></div>')
         if not video:
             divs.append(f'<div class="card" style="left:20px;top:{H - 56}px;width:1240px;padding:6px 16px"><div style="font-size:22px">{html.escape(req["lines"][3][lang])}</div></div>')
@@ -635,6 +641,35 @@ def pcm(path):
 
 
 # ---------------------------------------------------------------- video
+def motion_position(windows, starts, ends, t, duration):
+    if not windows:
+        return min(t / max(duration - .9, .5), 1)
+    current = max((i for i, start in enumerate(starts) if start <= t), default=0)
+    a, b = windows[current]
+    phase = max(0, min(1, (t - starts[current]) / max(ends[current] - starts[current], .001)))
+    return a + (b - a) * phase
+
+
+def video_sentence_anchors(segment, scene, sentence_index):
+    """Use the sentence's actual source pose; never pin a label to a moving target."""
+    if not segment:
+        return None, []
+    windows = scene.get("motion_windows")
+    a, b = windows[sentence_index] if windows else (0, 1)
+    last = len(segment) - 1
+    start, stop = (min(last, int(p * last + .5)) for p in (a, b))
+    used = segment[min(start, stop):max(start, stop) + 1]
+
+    def stationary(callout):
+        points = [frame["anchors"].get(callout["anchor"]) for frame in used]
+        # One rendered source pixel only accommodates coordinate rounding, not task tolerance.
+        return all(p and p[2] for p in points) and all(
+            max(p[axis] for p in points) - min(p[axis] for p in points) <= 1
+            for axis in (0, 1))
+
+    return segment[start], [c for c in scene.get("callouts", []) if stationary(c)]
+
+
 def build_video(browser, lang, task, c, frames, work, out_mp4):
     from PIL import Image
     cache = work / "tts"; cache.mkdir(parents=True, exist_ok=True)
@@ -644,9 +679,9 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
     silence = lambda s: b"\x00\x00" * int(48000 * s)
     for n, scene in enumerate(c["video"]):
         voiced = [tts(s, lang, cache) for s in scene["say"][lang]]
-        audio += silence(LEAD); starts, t = [], LEAD
+        audio += silence(LEAD); starts, ends, t = [], [], LEAD
         for i, (wav, d) in enumerate(voiced):
-            starts.append(t); audio += pcm(wav); t += d
+            starts.append(t); audio += pcm(wav); t += d; ends.append(t)
             if i < len(voiced) - 1: audio += silence(GAP); t += GAP
         audio += silence(TAIL); duration = t + TAIL
         # Base footage: real motion for this segment, or the composed still for parts/result layouts.
@@ -659,7 +694,11 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
             else:
                 panel["results"] = next(p for p in c["illustrated"] if p.get("layout") == "result")["results"]
             still = tmp / f"s{n:02d}_base.png"
-            browser.shot(page_html(lang, panel_body(lang, panel, frames, c, video=True)), still)
+            still_body = panel_body(lang, panel, frames, c, video=True)
+            if scene.get("layout") == "reader":
+                still_body = ('<div style="position:absolute;left:170px;top:0;transform:scale(.8);'
+                              'transform-origin:top left;width:1280px;height:720px">' + still_body + "</div>")
+            browser.shot(page_html(lang, still_body), still)
             sources = [Image.open(still).convert("RGB")]
             anchor_frame = None
         else:
@@ -668,8 +707,9 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
             anchor_frame = seg[0]
         overlays = []
         for i, sentence in enumerate(scene["say"][lang]):
-            svg, divs = ("", "") if anchor_frame is None else overlay_items(lang, anchor_frame, (0, 0, W, H, (0, 0, W, H)),
-                                                                             scene.get("callouts", []), scene.get("arrows", []), scene.get("rotate", []))
+            sentence_frame, callouts = (None, []) if anchor_frame is None else video_sentence_anchors(seg, scene, i)
+            svg, divs = ("", "") if sentence_frame is None else overlay_items(lang, sentence_frame, (0, 0, W, H, (0, 0, W, H)),
+                                                                         callouts, scene.get("arrows", []), scene.get("rotate", []))
             body = (f'<svg style="position:absolute;left:0;top:0" width="{W}" height="{H}">{svg}</svg>{divs}'
                     f'<div class="stage" style="background:{STAGE_COLOR[scene["stage"]]}">{c.get("stage_labels", {}).get(scene["stage"], {}).get(lang) or UI[lang]["stage"][scene["stage"]]}</div>'
                     f'<div class="prog">{n + 1} / {len(c["video"])}</div>'
@@ -677,7 +717,7 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
             out = tmp / f"s{n:02d}_{i}.png"
             browser.shot(page_html(lang, body, transparent=True), out, transparent=True)
             overlays.append(Image.open(out).convert("RGBA"))
-        timeline.append((duration, sources, overlays, starts))
+        timeline.append((duration, sources, overlays, starts, ends, scene.get("motion_windows")))
         chapters.append({"stage": scene["stage"], "start_seconds": round(t0, 2), "end_seconds": round(t0 + duration, 2)})
         t0 += duration
     wav_path = work / f"{task}_{lang}_narration.wav"
@@ -686,12 +726,11 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
     encoder = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                                 "-i", str(wav_path), "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p", "-profile:v", "high",
                                 "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "48000", "-shortest", "-movflags", "+faststart", str(out_mp4)], stdin=subprocess.PIPE)
-    for duration, sources, overlays, starts in timeline:
+    for duration, sources, overlays, starts, ends, windows in timeline:
         count = round(duration * FPS)
-        motion_end = max(duration - .9, .5)
         for k in range(count):
             t = k / FPS
-            src = sources[min(len(sources) - 1, int(min(t / motion_end, 1) * (len(sources) - 1) + .5))]
+            src = sources[min(len(sources) - 1, int(motion_position(windows, starts, ends, t, duration) * (len(sources) - 1) + .5))]
             current = max(i for i, s in enumerate(starts) if s <= t + 1e-6) if t >= starts[0] else 0
             encoder.stdin.write(Image.alpha_composite(src.convert("RGBA"), overlays[current]).convert("RGB").tobytes())
     encoder.stdin.close()
@@ -700,6 +739,11 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
 
 
 # ---------------------------------------------------------------- install
+def version_digest(paths):
+    # Git normalizes text line endings; a recipient checkout must derive the same content version.
+    return hashlib.sha256(b"".join(path.read_text(encoding="utf-8").encode("utf-8") for path in paths)).hexdigest()[:16]
+
+
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -727,22 +771,26 @@ def remove(path):
         if p.exists(): p.unlink()
 
 
-def install(task, lang, c, built, version):
+def install(task, lang, c, built, version, keep_manual=False):
     pid = PACKAGE[task]
     # A/B keep their pinned page/image .meta GUIDs; T2 is new, so Unity creates its .meta files on import.
     meta = task != "T"
     pkg_dir = RES / f"{pid}_{lang}"
     page_dir = pkg_dir / "pages"
-    for old in page_dir.glob("p*.bytes"):
-        if int(old.stem[1:]) > len(built["pages"]): remove(old)
-    pages = []
-    for i, png in enumerate(built["pages"], 1):
-        dst = page_dir / f"p{i:02d}.bytes"; put(png, dst, meta)
-        from PIL import Image
-        w, h = Image.open(png).size
-        pages.append({"page": i, "width": w, "height": h, "resource": f"ResearchReaderS1/{pid}_{lang}/pages/p{i:02d}", "sha256": sha(dst)})
-    put(built["pdf"], pkg_dir / "source_pdf.bytes", meta)
-    # T2 keeps its pictures inside its own package folder so the install touches nothing outside T2_*.
+    previous = json.loads((pkg_dir / "package.json").read_text(encoding="utf-8")) if keep_manual else None
+    if keep_manual:
+        pages = previous["pages"]
+    else:
+        for old in page_dir.glob("p*.bytes"):
+            if int(old.stem[1:]) > len(built["pages"]): remove(old)
+        pages = []
+        for i, png in enumerate(built["pages"], 1):
+            dst = page_dir / f"p{i:02d}.bytes"; put(png, dst, meta)
+            from PIL import Image
+            w, h = Image.open(png).size
+            pages.append({"page": i, "width": w, "height": h, "resource": f"ResearchReaderS1/{pid}_{lang}/pages/p{i:02d}", "sha256": sha(dst)})
+        put(built["pdf"], pkg_dir / "source_pdf.bytes", meta)
+        # T2 keeps its pictures inside its own package folder so the install touches nothing outside T2_*.
     img_dir, img_prefix = (pkg_dir / "images", "") if task == "T" else (RES / "images_v2", f"{pid}_{lang}_")
     img_resource = f"ResearchReaderS1/{pid}_{lang}/images/" if task == "T" else "ResearchReaderS1/images_v2/"
     for old in img_dir.glob(f"{img_prefix}*.bytes"):
@@ -759,8 +807,36 @@ def install(task, lang, c, built, version):
                "steps": [{f"text_{lang}": text} for text in built["steps"]], "images": images,
                "video": {"streaming_path": f"ResearchReaderS1/{pid}_{lang}.mp4", "sha256": sha(movie),
                          "duration_seconds": round(built["duration"], 2), "audio": "narration", "chapters": built["chapters"]}}
-    (pkg_dir / "package.json").write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if keep_manual:
+        for key in ("source_pdf", "source_pdf_resource", "source_sha256"):
+            package[key] = previous[key]
+    (pkg_dir / "package.json").write_text(json.dumps(package, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     return package
+
+
+def illustration_size(panel):
+    if panel.get("card"):
+        return W, H
+    return W, {"pair": 520, "triple": 460}.get(panel.get("layout"), H)
+
+
+def capture_digest(directory, task):
+    directory = Path(directory).resolve()
+    manifest = json.loads((directory / "shots.json").read_text(encoding="utf-8"))
+    digest, count = hashlib.sha256(), 0
+    for name, shot in sorted(manifest.items()):
+        if shot["task"] != task:
+            continue
+        digest.update(json.dumps(shot, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+        for frame in shot["frames"]:
+            path = (directory / name / frame["file"]).resolve()
+            path.relative_to(directory)
+            digest.update((name + "/" + frame["file"] + "\0").encode())
+            digest.update(hashlib.sha256(path.read_bytes()).digest())
+            count += 1
+    if not count:
+        raise ValueError(f"No captured frames for task {task}")
+    return digest.hexdigest()
 
 
 def main():
@@ -769,8 +845,13 @@ def main():
     parser.add_argument("--shots"); parser.add_argument("--work"); parser.add_argument("--install", action="store_true")
     parser.add_argument("--only", help="e.g. A_th or T_en")
     parser.add_argument("--task", choices=["A", "B", "T"], help="build one task; without it, build makes A and B")
+    parser.add_argument("--training-version", choices=["v2", "v3"], default="v3")
+    parser.add_argument("--keep-manual", action="store_true", help="Rebuild A/B media without touching accepted PDF/pages")
     args = parser.parse_args()
-    content = load()
+    if args.keep_manual and args.task == "T": parser.error("--keep-manual applies only to A/B")
+    content = load(args.training_version)
+    PACKAGE["T"] = "T3" if args.training_version == "v3" else "T2"
+    PDF_NAME["T"] = "S1_Training_" + PACKAGE["T"] + "_Reference"
     errors, report = check(content)
     print("\n".join(report))
     if errors:
@@ -782,9 +863,11 @@ def main():
     if args.command == "narration":
         return narration(content, tasks, work)
     frames = Frames(args.shots)
-    version = "v2-" + hashlib.sha256(b"".join((HERE / n).read_bytes() for n in ("content_A.json", "content_B.json", "shots.json", "build.py"))).hexdigest()[:16]
+    version = "v2-" + version_digest(HERE / n for n in ("content_A.json", "content_B.json", "shots.json", "build.py"))
     versions = {"A": version, "B": version,
-                "T": f"{TRAINER_V2}.reader-t2-" + hashlib.sha256(b"".join((HERE / n).read_bytes() for n in ("content_T.json", "shots.json", "build.py"))).hexdigest()[:16]}
+                "T": f"{content['T']['training_version']}.reader-{PACKAGE['T'].lower()}-" + version_digest(HERE / n for n in (("content_T3.json" if args.training_version == "v3" else "content_T.json"), "shots.json", "build.py"))}
+    for task in tasks:
+        versions[task] += "." + capture_digest(args.shots, task)[:16]
     browser = Browser()
     summary = {}
     try:
@@ -794,18 +877,19 @@ def main():
                 if args.only and args.only != name: continue
                 out = work / "out" / name; out.mkdir(parents=True, exist_ok=True)
                 c = content[task]
-                pages, pdf = build_manual(browser, lang, task, c, out)
+                pages, pdf = ([], None) if args.keep_manual else build_manual(browser, lang, task, c, out)
                 images = []
                 for i, panel in enumerate(c["illustrated"], 1):
                     png = out / f"img{i:02d}.png"
-                    browser.shot(page_html(lang, panel_body(lang, panel, frames, c)), png)
+                    size = illustration_size(panel)
+                    browser.shot(page_html(lang, panel_body(lang, panel, frames, c), size=size), png, size=size)
                     images.append((png, tmp_safe(panel["caption"][lang])))
                 mp4 = out / f"{name}.mp4"
                 chapters, duration = build_video(browser, lang, task, c, frames, work, mp4)
                 built = {"pages": pages, "pdf": pdf, "images": images, "steps": steps_text(lang, c), "video": mp4, "chapters": chapters, "duration": duration}
-                summary[name] = {"pages": len(pages), "steps": len(built["steps"]), "images": len(images), "video_seconds": round(duration, 1), "scenes": len(chapters)}
+                summary[name] = {"version": versions[task], "pages": len(pages), "steps": len(built["steps"]), "images": len(images), "video_seconds": round(duration, 1), "scenes": len(chapters)}
                 if args.install:
-                    package = install(task, lang, c, built, versions[task])
+                    package = install(task, lang, c, built, versions[task], keep_manual=args.keep_manual)
                     summary[name]["package_sha256"] = sha(RES / f"{PACKAGE[task]}_{lang}" / "package.json"); summary[name]["video_sha256"] = package["video"]["sha256"]
                 print(name, summary[name], flush=True)
     finally:

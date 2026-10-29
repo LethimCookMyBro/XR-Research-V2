@@ -1,819 +1,830 @@
 {
- "schema": "s1.reader.v2.shots.1",
- "note": "Rendered by ResearchS1ReaderV2Shots.Build from the real Task A/B models. Segments reuse the educational motion plan (ResearchS1EducationalPlan); from/to cut each clip so it ends in the finished state.",
- "shots": [
-  {
-   "id": "A_board",
-   "task": "A",
-   "frame": [
-    "MB_B760_DDR4"
-   ],
-   "view": [
-    0,
-    0.15,
-    1
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
+  "schema": "s1.reader.v2.shots.1",
+  "note": "Rendered by ResearchS1ReaderV2Shots.Build from the real Task A/B models. Segments reuse the educational motion plan (ResearchS1EducationalPlan); from/to cut each clip so it ends in the finished state.",
+  "shots": [
     {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "slot_A1",
-    "slot_A2",
-    "slot_B1",
-    "slot_B2",
-    "pcie_primary",
-    "pcie_secondary"
-   ]
-  },
-  {
-   "id": "A_parts_ram",
-   "task": "A",
-   "frame": [
-    "M01",
-    "M02",
-    "M03",
-    "M04",
-    "M05"
-   ],
-   "view": [
-    0,
-    1,
-    0.55
-   ],
-   "min": 0.22,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "part_M01",
-    "part_M02",
-    "part_M03",
-    "part_M04",
-    "part_M05"
-   ]
-  },
-  {
-   "id": "A_parts_ssd",
-   "task": "A",
-   "frame": [
-    "S01",
-    "S02",
-    "S03"
-   ],
-   "view": [
-    0,
-    1,
-    0.55
-   ],
-   "min": 0.22,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "part_S01",
-    "part_S02",
-    "part_S03"
-   ]
-  },
-  {
-   "id": "A_parts_G01",
-   "task": "A",
-   "frame": [
-    "G01"
-   ],
-   "view": [
-    0,
-    1,
-    0.7
-   ],
-   "min": 0.3,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "part_G01"
-   ]
-  },
-  {
-   "id": "A_parts_G02",
-   "task": "A",
-   "frame": [
-    "G02"
-   ],
-   "view": [
-    0,
-    1,
-    0.7
-   ],
-   "min": 0.3,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "part_G02"
-   ]
-  },
-  {
-   "id": "A_ram",
-   "task": "A",
-   "frame": [
-    "DIMM_A1",
-    "DIMM_B2"
-   ],
-   "view": [
-    -0.7,
-    0.35,
-    1
-   ],
-   "min": 0.3,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "A.ram",
-     "fact": 0,
-     "frames": 48,
-     "from": 0,
-     "to": 0.6
+      "id": "A_board",
+      "task": "A",
+      "frame": [
+        "MB_B760_DDR4"
+      ],
+      "view": [
+        0,
+        0.15,
+        1
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "slot_A1",
+        "slot_A2",
+        "slot_B1",
+        "slot_B2",
+        "pcie_primary",
+        "pcie_secondary"
+      ]
     },
     {
-     "section": "A.ram",
-     "fact": 1,
-     "frames": 30,
-     "from": 0,
-     "to": 0.35
-    }
-   ],
-   "anchors": [
-    "ram_latch",
-    "slot_A2",
-    "slot_B2"
-   ]
-  },
-  {
-   "id": "A_turn",
-   "task": "A",
-   "frame": [
-    "MB_B760_DDR4",
-    "SEAT_CASE_ATX_MID_Sled25_1"
-   ],
-   "view": [
-    0.7,
-    0.35,
-    1
-   ],
-   "min": 0.5,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "A.slots",
-     "fact": 3,
-     "frames": 48,
-     "from": 0,
-     "to": 0.25
-    }
-   ],
-   "anchors": [
-    "service_handle"
-   ]
-  },
-  {
-   "id": "A_ssd",
-   "task": "A",
-   "frame": [
-    "SEAT_CASE_ATX_MID_Sled25_1",
-    "SEAT_CASE_ATX_MID_Sled25_2"
-   ],
-   "view": [
-    0.3,
-    0.3,
-    -1
-   ],
-   "min": 0.3,
-   "fill": 1.6,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "A.ssd",
-     "fact": 0,
-     "frames": 48,
-     "from": 0,
-     "to": 0.6
+      "id": "A_parts_ram",
+      "task": "A",
+      "frame": [
+        "M01",
+        "M02",
+        "M03",
+        "M04",
+        "M05"
+      ],
+      "view": [
+        0,
+        1,
+        0.55
+      ],
+      "min": 0.22,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "part_M01",
+        "part_M02",
+        "part_M03",
+        "part_M04",
+        "part_M05"
+      ]
     },
     {
-     "section": "A.ssd",
-     "fact": 1,
-     "frames": 48,
-     "from": 0,
-     "to": 0.68
-    }
-   ],
-   "anchors": [
-    "ssd_tray",
-    "ssd_thumb",
-    "sata_data",
-    "sata_power"
-   ]
-  },
-  {
-   "id": "A_gpu",
-   "task": "A",
-   "frame": [
-    "PCIEX16_1",
-    "PCIEX16_2"
-   ],
-   "view": [
-    -0.5,
-    0.25,
-    1
-   ],
-   "min": 0.5,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "A.gpu",
-     "fact": 0,
-     "frames": 48,
-     "from": 0,
-     "to": 0.6
+      "id": "A_parts_ssd",
+      "task": "A",
+      "frame": [
+        "S01",
+        "S02",
+        "S03"
+      ],
+      "view": [
+        0,
+        1,
+        0.55
+      ],
+      "min": 0.22,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "part_S01",
+        "part_S02",
+        "part_S03"
+      ]
     },
     {
-     "section": "A.gpu",
-     "fact": 1,
-     "frames": 36,
-     "from": 0,
-     "to": 0.5
-    }
-   ],
-   "anchors": [
-    "pcie_primary",
-    "pcie_secondary",
-    "gpu_screw",
-    "gpu_8pin",
-    "gpu_card"
-   ]
-  },
-  {
-   "id": "A_whole",
-   "task": "A",
-   "frame": [
-    "ResearchS1TaskA"
-   ],
-   "view": [
-    0,
-    0.55,
-    1
-   ],
-   "min": 0.6,
-   "fill": 1.0,
-   "orbit": 6,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 48
-    }
-   ],
-   "anchors": []
-  },
-  {
-   "id": "B_front",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_FRONT",
-    "FAN_PED_GUARD_REAR"
-   ],
-   "view": [
-    0.95,
-    0.12,
-    0.45
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": null,
-     "fact": 0,
-     "frames": 1
-    }
-   ],
-   "anchors": [
-    "front_guard",
-    "front_clip",
-    "blade",
-    "spinner",
-    "rear_guard",
-    "front_guard_side",
-    "rear_guard_side"
-   ]
-  },
-  {
-   "id": "B_areas",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_FRONT",
-    "FAN_PED_GUARD_REAR"
-   ],
-   "view": [
-    0.9,
-    0.15,
-    0.5
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.causes",
-     "fact": 0,
-     "frames": 48
+      "id": "A_parts_G01",
+      "task": "A",
+      "frame": [
+        "G01"
+      ],
+      "view": [
+        0,
+        1,
+        0.7
+      ],
+      "min": 0.3,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "part_G01"
+      ]
     },
     {
-     "section": "B.causes",
-     "fact": 1,
-     "frames": 48
+      "id": "A_parts_G02",
+      "task": "A",
+      "frame": [
+        "G02"
+      ],
+      "view": [
+        0,
+        1,
+        0.7
+      ],
+      "min": 0.3,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "part_G02"
+      ]
     },
     {
-     "section": "B.causes",
-     "fact": 2,
-     "frames": 48
+      "id": "A_ram",
+      "task": "A",
+      "frame": [
+        "DIMM_A1",
+        "DIMM_B2"
+      ],
+      "view": [
+        -0.7,
+        0.35,
+        1
+      ],
+      "min": 0.3,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "A.ram",
+          "fact": 0,
+          "frames": 48,
+          "from": 0,
+          "to": 0.6
+        },
+        {
+          "section": "A.ram",
+          "fact": 1,
+          "frames": 30,
+          "from": 0,
+          "to": 0.35
+        },
+        {
+          "section": "A.ram",
+          "fact": 0,
+          "frames": 36,
+          "from": 0.6,
+          "to": 1
+        }
+      ],
+      "anchors": [
+        "ram_latch",
+        "slot_A2",
+        "slot_B2"
+      ]
+    },
+    {
+      "id": "A_turn",
+      "task": "A",
+      "frame": [
+        "ServicePivot"
+      ],
+      "view": [
+        0.7,
+        0.35,
+        1
+      ],
+      "min": 0.5,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "A.slots",
+          "fact": 3,
+          "frames": 48,
+          "from": 0,
+          "to": 1
+        }
+      ],
+      "anchors": [
+        "service_handle"
+      ]
+    },
+    {
+      "id": "A_ssd",
+      "task": "A",
+      "frame": [
+        "SEAT_CASE_ATX_MID_Sled25_1",
+        "SEAT_CASE_ATX_MID_Sled25_2"
+      ],
+      "view": [
+        0.3,
+        0.3,
+        -1
+      ],
+      "min": 0.3,
+      "fill": 1.6,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "A.ssd",
+          "fact": 0,
+          "frames": 48,
+          "from": 0,
+          "to": 0.6
+        },
+        {
+          "section": "A.ssd",
+          "fact": 1,
+          "frames": 48,
+          "from": 0,
+          "to": 0.68
+        }
+      ],
+      "anchors": [
+        "ssd_tray",
+        "ssd_thumb",
+        "sata_data",
+        "sata_power"
+      ]
+    },
+    {
+      "id": "A_gpu",
+      "task": "A",
+      "frame": [
+        "PCIEX16_1",
+        "PCIEX16_2"
+      ],
+      "view": [
+        -0.5,
+        0.25,
+        1
+      ],
+      "min": 0.5,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "A.gpu",
+          "fact": 0,
+          "frames": 48,
+          "from": 0,
+          "to": 0.6
+        },
+        {
+          "section": "A.gpu",
+          "fact": 1,
+          "frames": 36,
+          "from": 0,
+          "to": 0.5
+        }
+      ],
+      "anchors": [
+        "pcie_primary",
+        "pcie_secondary",
+        "gpu_screw",
+        "gpu_8pin",
+        "gpu_card"
+      ]
+    },
+    {
+      "id": "A_whole",
+      "task": "A",
+      "frame": [
+        "ResearchS1TaskA"
+      ],
+      "view": [
+        0,
+        0.55,
+        1
+      ],
+      "min": 0.6,
+      "fill": 1.0,
+      "orbit": 6,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 48
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "B_front",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_FRONT",
+        "FAN_PED_GUARD_REAR"
+      ],
+      "view": [
+        0.95,
+        0.12,
+        0.45
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": null,
+          "fact": 0,
+          "frames": 1
+        }
+      ],
+      "anchors": [
+        "front_guard",
+        "front_clip",
+        "blade",
+        "spinner",
+        "rear_guard",
+        "front_guard_side",
+        "rear_guard_side"
+      ]
+    },
+    {
+      "id": "B_areas",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_FRONT",
+        "FAN_PED_GUARD_REAR"
+      ],
+      "view": [
+        0.9,
+        0.15,
+        0.5
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.causes",
+          "fact": 0,
+          "frames": 48
+        },
+        {
+          "section": "B.causes",
+          "fact": 1,
+          "frames": 48
+        },
+        {
+          "section": "B.causes",
+          "fact": 2,
+          "frames": 48
+        }
+      ],
+      "anchors": [
+        "front_guard",
+        "front_clip",
+        "front_marks",
+        "blade",
+        "spinner",
+        "rear_guard",
+        "rear_lock"
+      ]
+    },
+    {
+      "id": "B_access",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_FRONT",
+        "FAN_PED_GUARD_REAR"
+      ],
+      "view": [
+        0.8,
+        0.12,
+        0.6
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.access",
+          "fact": 0,
+          "frames": 40,
+          "from": 0,
+          "to": 0.45
+        },
+        {
+          "section": "B.access",
+          "fact": 1,
+          "frames": 40,
+          "from": 0.4,
+          "to": 0.85
+        },
+        {
+          "section": "B.access",
+          "fact": 2,
+          "frames": 30,
+          "from": 0.75,
+          "to": 1
+        },
+        {
+          "section": "B.access",
+          "fact": 3,
+          "frames": 48,
+          "from": 0,
+          "to": 0.85
+        }
+      ],
+      "anchors": [
+        "front_clip",
+        "front_guard",
+        "spinner",
+        "blade",
+        "rear_lock",
+        "rear_guard"
+      ]
+    },
+    {
+      "id": "B_spin_close",
+      "task": "B",
+      "frame": [
+        "FAN_PED_SPINNER"
+      ],
+      "view": [
+        0,
+        0.05,
+        1
+      ],
+      "min": 0.25,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.access",
+          "fact": 1,
+          "frames": 40,
+          "from": 0.4,
+          "to": 0.75
+        },
+        {
+          "section": "B.reassembly",
+          "fact": 0,
+          "frames": 36,
+          "from": 0.3,
+          "to": 0.62
+        }
+      ],
+      "anchors": [
+        "spinner",
+        "blade"
+      ]
+    },
+    {
+      "id": "B_lock_close",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_LOCK"
+      ],
+      "view": [
+        0,
+        0.05,
+        1
+      ],
+      "min": 0.3,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.access",
+          "fact": 3,
+          "frames": 48,
+          "from": 0,
+          "to": 0.85
+        },
+        {
+          "section": "B.correction",
+          "fact": 2,
+          "frames": 40,
+          "from": 0.45,
+          "to": 0.85
+        }
+      ],
+      "anchors": [
+        "rear_lock",
+        "rear_guard"
+      ]
+    },
+    {
+      "id": "B_fix",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_FRONT",
+        "FAN_PED_GUARD_REAR"
+      ],
+      "view": [
+        0.8,
+        0.12,
+        0.6
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.correction",
+          "fact": 0,
+          "frames": 48,
+          "from": 0,
+          "to": 0.6
+        },
+        {
+          "section": "B.correction",
+          "fact": 1,
+          "frames": 48,
+          "from": 0,
+          "to": 0.85
+        },
+        {
+          "section": "B.correction",
+          "fact": 2,
+          "frames": 48,
+          "from": 0,
+          "to": 0.85
+        }
+      ],
+      "anchors": [
+        "front_clip",
+        "front_guard",
+        "spinner",
+        "blade",
+        "rear_lock",
+        "rear_guard"
+      ]
+    },
+    {
+      "id": "B_reassemble",
+      "task": "B",
+      "frame": [
+        "FAN_PED_GUARD_FRONT",
+        "FAN_PED_GUARD_REAR"
+      ],
+      "view": [
+        0.8,
+        0.12,
+        0.6
+      ],
+      "min": 0.35,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "B.reassembly",
+          "fact": 0,
+          "frames": 72
+        }
+      ],
+      "anchors": [
+        "front_clip",
+        "front_guard",
+        "spinner",
+        "blade"
+      ]
+    },
+    {
+      "id": "T_station",
+      "task": "T",
+      "frame": [
+        "station",
+        "module"
+      ],
+      "view": [
+        0,
+        0.75,
+        1
+      ],
+      "min": 0.45,
+      "fill": 1.0,
+      "orbit": 6,
+      "segments": [
+        {
+          "section": "T.start",
+          "fact": 0,
+          "frames": 48
+        }
+      ],
+      "anchors": [
+        "module",
+        "module_corner",
+        "slot",
+        "slot_corner",
+        "latch",
+        "plug_head",
+        "lead_socket",
+        "turn_handle"
+      ]
+    },
+    {
+      "id": "T_module",
+      "task": "T",
+      "frame": [
+        "slot",
+        "module"
+      ],
+      "view": [
+        0,
+        1,
+        0.9
+      ],
+      "min": 0.3,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.module",
+          "fact": 0,
+          "frames": 48
+        },
+        {
+          "section": "T.module",
+          "fact": 1,
+          "frames": 48
+        },
+        {
+          "section": "T.module",
+          "fact": 2,
+          "frames": 56
+        },
+        {
+          "section": "T.module",
+          "fact": 3,
+          "frames": 48
+        },
+        {
+          "section": "T.module",
+          "fact": 4,
+          "frames": 36
+        }
+      ],
+      "anchors": [
+        "module",
+        "module_corner",
+        "slot",
+        "slot_corner",
+        "latch"
+      ]
+    },
+    {
+      "id": "T_turn",
+      "task": "T",
+      "frame": [
+        "station"
+      ],
+      "view": [
+        0,
+        0.85,
+        1
+      ],
+      "min": 0.5,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.turn",
+          "fact": 0,
+          "frames": 60
+        }
+      ],
+      "anchors": [
+        "turn_handle",
+        "turn_grip_left",
+        "turn_grip_right",
+        "turn_axis"
+      ]
+    },
+    {
+      "id": "T_screw",
+      "task": "T",
+      "frame": [
+        "screw"
+      ],
+      "view": [
+        0,
+        0.75,
+        1
+      ],
+      "min": 0.12,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.screw",
+          "fact": 0,
+          "frames": 60
+        },
+        {
+          "section": "T.screw",
+          "fact": 1,
+          "frames": 48
+        }
+      ],
+      "anchors": [
+        "screw_head",
+        "screw_seat"
+      ]
+    },
+    {
+      "id": "T_screw_side",
+      "task": "T",
+      "frame": [
+        "screw"
+      ],
+      "view": [
+        0,
+        0.2,
+        1
+      ],
+      "min": 0.09,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.screw",
+          "fact": 2,
+          "frames": 1,
+          "from": 0,
+          "to": 0
+        },
+        {
+          "section": "T.screw",
+          "fact": 2,
+          "frames": 1,
+          "from": 1,
+          "to": 1
+        }
+      ],
+      "anchors": [
+        "screw_head",
+        "screw_seat"
+      ]
+    },
+    {
+      "id": "T_screw_face",
+      "task": "T",
+      "frame": [
+        "screw"
+      ],
+      "view": [
+        0,
+        1,
+        0.12
+      ],
+      "min": 0.08,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.screw",
+          "fact": 2,
+          "frames": 1,
+          "from": 0.5,
+          "to": 0.5
+        }
+      ],
+      "anchors": [
+        "screw_head"
+      ]
+    },
+    {
+      "id": "T_cable",
+      "task": "T",
+      "frame": [
+        "lead"
+      ],
+      "view": [
+        0,
+        0.8,
+        1
+      ],
+      "min": 0.25,
+      "fill": 1.0,
+      "orbit": 0,
+      "segments": [
+        {
+          "section": "T.cable",
+          "fact": 0,
+          "frames": 48
+        },
+        {
+          "section": "T.cable",
+          "fact": 1,
+          "frames": 48
+        }
+      ],
+      "anchors": [
+        "plug_head",
+        "lead_wire",
+        "lead_socket"
+      ]
     }
-   ],
-   "anchors": [
-    "front_guard",
-    "front_clip",
-    "front_marks",
-    "blade",
-    "spinner",
-    "rear_guard",
-    "rear_lock"
-   ]
-  },
-  {
-   "id": "B_access",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_FRONT",
-    "FAN_PED_GUARD_REAR"
-   ],
-   "view": [
-    0.8,
-    0.12,
-    0.6
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.access",
-     "fact": 0,
-     "frames": 40,
-     "from": 0,
-     "to": 0.45
-    },
-    {
-     "section": "B.access",
-     "fact": 1,
-     "frames": 40,
-     "from": 0.4,
-     "to": 0.85
-    },
-    {
-     "section": "B.access",
-     "fact": 2,
-     "frames": 30,
-     "from": 0.75,
-     "to": 1
-    },
-    {
-     "section": "B.access",
-     "fact": 3,
-     "frames": 48,
-     "from": 0,
-     "to": 0.85
-    }
-   ],
-   "anchors": [
-    "front_clip",
-    "front_guard",
-    "spinner",
-    "blade",
-    "rear_lock",
-    "rear_guard"
-   ]
-  },
-  {
-   "id": "B_spin_close",
-   "task": "B",
-   "frame": [
-    "FAN_PED_SPINNER"
-   ],
-   "view": [
-    0,
-    0.05,
-    1
-   ],
-   "min": 0.25,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.access",
-     "fact": 1,
-     "frames": 40,
-     "from": 0.4,
-     "to": 0.75
-    },
-    {
-     "section": "B.reassembly",
-     "fact": 0,
-     "frames": 36,
-     "from": 0.3,
-     "to": 0.62
-    }
-   ],
-   "anchors": [
-    "spinner",
-    "blade"
-   ]
-  },
-  {
-   "id": "B_lock_close",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_LOCK"
-   ],
-   "view": [
-    0,
-    0.05,
-    1
-   ],
-   "min": 0.3,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.access",
-     "fact": 3,
-     "frames": 48,
-     "from": 0,
-     "to": 0.85
-    },
-    {
-     "section": "B.correction",
-     "fact": 2,
-     "frames": 40,
-     "from": 0.45,
-     "to": 0.85
-    }
-   ],
-   "anchors": [
-    "rear_lock",
-    "rear_guard"
-   ]
-  },
-  {
-   "id": "B_fix",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_FRONT",
-    "FAN_PED_GUARD_REAR"
-   ],
-   "view": [
-    0.8,
-    0.12,
-    0.6
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.correction",
-     "fact": 0,
-     "frames": 48,
-     "from": 0,
-     "to": 0.6
-    },
-    {
-     "section": "B.correction",
-     "fact": 1,
-     "frames": 48,
-     "from": 0,
-     "to": 0.85
-    },
-    {
-     "section": "B.correction",
-     "fact": 2,
-     "frames": 48,
-     "from": 0,
-     "to": 0.85
-    }
-   ],
-   "anchors": [
-    "front_clip",
-    "front_guard",
-    "spinner",
-    "blade",
-    "rear_lock",
-    "rear_guard"
-   ]
-  },
-  {
-   "id": "B_reassemble",
-   "task": "B",
-   "frame": [
-    "FAN_PED_GUARD_FRONT",
-    "FAN_PED_GUARD_REAR"
-   ],
-   "view": [
-    0.8,
-    0.12,
-    0.6
-   ],
-   "min": 0.35,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "B.reassembly",
-     "fact": 0,
-     "frames": 72
-    }
-   ],
-   "anchors": [
-    "front_clip",
-    "front_guard",
-    "spinner",
-    "blade"
-   ]
-  },
-  {
-   "id": "T_station",
-   "task": "T",
-   "frame": [
-    "station",
-    "module"
-   ],
-   "view": [
-    0,
-    0.75,
-    1
-   ],
-   "min": 0.45,
-   "fill": 1.0,
-   "orbit": 6,
-   "segments": [
-    {
-     "section": "T.start",
-     "fact": 0,
-     "frames": 48
-    }
-   ],
-   "anchors": [
-    "module",
-    "module_corner",
-    "slot",
-    "slot_corner",
-    "latch",
-    "plug_head",
-    "lead_socket",
-    "turn_handle"
-   ]
-  },
-  {
-   "id": "T_module",
-   "task": "T",
-   "frame": [
-    "slot",
-    "module"
-   ],
-   "view": [
-    0,
-    1,
-    0.9
-   ],
-   "min": 0.3,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.module",
-     "fact": 0,
-     "frames": 48
-    },
-    {
-     "section": "T.module",
-     "fact": 1,
-     "frames": 48
-    },
-    {
-     "section": "T.module",
-     "fact": 2,
-     "frames": 56
-    },
-    {
-     "section": "T.module",
-     "fact": 3,
-     "frames": 48
-    }
-   ],
-   "anchors": [
-    "module",
-    "module_corner",
-    "slot",
-    "slot_corner",
-    "latch"
-   ]
-  },
-  {
-   "id": "T_turn",
-   "task": "T",
-   "frame": [
-    "station"
-   ],
-   "view": [
-    0,
-    0.85,
-    1
-   ],
-   "min": 0.5,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.turn",
-     "fact": 0,
-     "frames": 60
-    }
-   ],
-   "anchors": [
-    "turn_handle",
-    "turn_grip_left",
-    "turn_grip_right",
-    "turn_axis"
-   ]
-  },
-  {
-   "id": "T_screw",
-   "task": "T",
-   "frame": [
-    "screw"
-   ],
-   "view": [
-    0,
-    0.75,
-    1
-   ],
-   "min": 0.12,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.screw",
-     "fact": 0,
-     "frames": 60
-    },
-    {
-     "section": "T.screw",
-     "fact": 1,
-     "frames": 48
-    }
-   ],
-   "anchors": [
-    "screw_head",
-    "screw_seat"
-   ]
-  },
-  {
-   "id": "T_screw_side",
-   "task": "T",
-   "frame": [
-    "screw"
-   ],
-   "view": [
-    0,
-    0.2,
-    1
-   ],
-   "min": 0.09,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.screw",
-     "fact": 2,
-     "frames": 1,
-     "from": 0,
-     "to": 0
-    },
-    {
-     "section": "T.screw",
-     "fact": 2,
-     "frames": 1,
-     "from": 1,
-     "to": 1
-    }
-   ],
-   "anchors": [
-    "screw_head",
-    "screw_seat"
-   ]
-  },
-  {
-   "id": "T_screw_face",
-   "task": "T",
-   "frame": [
-    "screw"
-   ],
-   "view": [
-    0,
-    1,
-    0.12
-   ],
-   "min": 0.08,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.screw",
-     "fact": 2,
-     "frames": 1,
-     "from": 0.5,
-     "to": 0.5
-    }
-   ],
-   "anchors": [
-    "screw_head"
-   ]
-  },
-  {
-   "id": "T_cable",
-   "task": "T",
-   "frame": [
-    "lead"
-   ],
-   "view": [
-    0,
-    0.8,
-    1
-   ],
-   "min": 0.25,
-   "fill": 1.0,
-   "orbit": 0,
-   "segments": [
-    {
-     "section": "T.cable",
-     "fact": 0,
-     "frames": 48
-    },
-    {
-     "section": "T.cable",
-     "fact": 1,
-     "frames": 48
-    }
-   ],
-   "anchors": [
-    "plug_head",
-    "lead_wire",
-    "lead_socket"
-   ]
-  }
- ],
- "note_T": "T_* shots pose the real Training station (ResearchTrainingStation, TrainingTrainerV2 order) through ResearchS1ReaderMotionBuilder.MotionT: module via its socket rules, latch via its open clip, screw via ThreadDepthMm (axial travel), turntable yaw, lead plug via its socket. Frames name station parts: station, module, slot, screw, lead."
+  ],
+  "note_T": "T_* shots pose the real Training station (ResearchTrainingStation, TrainingTrainerV2 order) through ResearchS1ReaderMotionBuilder.MotionT: module via its socket rules, latch via its open clip, screw via ThreadDepthMm (axial travel), turntable yaw, lead plug via its socket. Frames name station parts: station, module, slot, screw, lead."
 }

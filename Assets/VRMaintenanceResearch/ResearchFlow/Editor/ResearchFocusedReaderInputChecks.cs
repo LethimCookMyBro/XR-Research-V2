@@ -68,37 +68,86 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var caller = SceneManager.GetActiveScene(); bool dirty = caller.isDirty; int previews = EditorSceneManager.previewSceneCount;
             var priorEvents = EventSystem.current;
             var cursors = Resources.FindObjectsOfTypeAll<Oculus.Interaction.RayInteractorCursorVisual>().ToDictionary(c => c, c => c.HoverColor);
-            var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>(); var callbackErrors = new List<string>();
+            var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>(); var callbackErrors = new List<string>(); var contexts = new List<object>();
             void Check(bool pass, string name, object data) { rows.Add(new { name, pass, data }); if (!pass) failures.Add(name); }
             Application.LogCallback onLog = (message, stack, kind) => { if (kind == LogType.Error || kind == LogType.Exception) callbackErrors.Add(message + "\n" + stack); };
-            var frozenHashes = new Dictionary<string,string> {
-                { "ResearchReaderS1/A_th/package", "0db8d1647fe41dc700c69d4d673b2ed43dc39ab7133d3f9bafd7deafdb019b94" },
-                { "ResearchReaderS1/A_ja/package", "a45173776d6d024af902c63b511c014babe2eadf53306c0b9d2833a993ee5fdc" },
-                { "ResearchReaderS1/B_th/package", "e97e0ab1d3372c9cade6313331d018d543e8d84f771a84a8011cc83640684c0c" },
-                { "ResearchReaderS1/B_ja/package", "8f9d64a36363f3c04ad12f4bded3410f19316a9b68097ecdee0862adacf518b8" }
+            // Reviewed input pins must be refreshed deliberately when package bytes change.
+            var frozenHashes = new Dictionary<string, string> {
+                { "ResearchReaderS1/A_th/package", "d5f96e280298030f528227cb4b68fd96e97bb29464652a0099c4b0926f383db5" },
+                { "ResearchReaderS1/A_ja/package", "e3c10bf7630497cfa2efff3ceadb50b042083017180ca9726f3f6535aac78862" },
+                { "ResearchReaderS1/B_th/package", "b38902aa2e48bdfd7d2cce0fa7153249255f8acac6260eb796992021a4f6666d" },
+                { "ResearchReaderS1/B_ja/package", "03e4e4bf0fb6a142d8337248a0e627492c5bf66c1681bccd3c88f45d7a297600" },
+                { "ResearchReaderS1/T2_th/package", "9b2e379a6dfd725a3b2d7faa3da6f3ccfe3ae108df81846e31ae320e58728da2" },
+                { "ResearchReaderS1/T2_ja/package", "ccf38506f48cc7016017d769b33ca467af28deaf0127d6275cb110584f82d4d3" },
+                { "ResearchReaderS1/T2_en/package", "de163e3145e251c84a92521b5a42772bd1588c912560b351758d6c76b0d9007d" },
+                { "ResearchReaderS1/T3_th/package", "e39370ff4330484c7c040df48f056e92be63e8f26366c82d3dabd7c922035663" },
+                { "ResearchReaderS1/T3_ja/package", "fbff10643dd941d0522bd2d7e7cbca4925f69eff2f98faafa86f0c12460d3b60" },
+                { "ResearchReaderS1/T3_en/package", "d4b5041946178be3b083cc10d8f465771ebd5a09aeaaa2e281bbc1a01c7287bb" },
             };
             Directory.CreateDirectory(dir); Application.logMessageReceived += onLog;
             try
             {
-                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese })
-                foreach (var task in new[] { "A", "B" })
+                foreach (var language in new[] { ParticipantLanguage.Thai, ParticipantLanguage.Japanese, ParticipantLanguage.English })
+                foreach (var task in new[] { "A", "B", "T2", "T3" })
                 {
-                    object owned = null; string prefix = language + "/" + task;
+                    bool training = task == "T2" || task == "T3";
+                    if (language == ParticipantLanguage.English && !training) continue; // No English experimental A/B group.
+                    object owned = null; ResearchFlowView visibilityView = null; Action<bool, string> visibility = null;
+                    string prefix = language + "/" + task;
+                    string locale = language == ParticipantLanguage.Thai ? "th" : language == ParticipantLanguage.Japanese ? "ja" : "en";
+                    string eventTask = training ? "training" : task;
+                    contexts.Add(new { task, language = language.ToString(), training, synthetic = true, historical_version_fixture = task == "T2" });
                     try
                     {
                         owned = Activator.CreateInstance(ownedType, all, null, new object[] { Path.Combine(dir, language + "_" + task), donor, language }, null);
                         var c = Get<ResearchSessionFlowController>(owned, "Controller"); var view = Get<ResearchFlowView>(owned, "View");
+                        visibilityView = view;
+                        visibility = (Action<bool, string>)Delegate.CreateDelegate(typeof(Action<bool, string>), c, c.GetType().GetMethod("ReferenceVisibilityChanged", all));
+                        view.ReferenceVisibilityChanged += visibility;
+                        string expectedTraining = task == "T2" ? ResearchUIPolicy.TrainingTrainerV2 : ResearchUIPolicy.TrainingTrainerV3;
+                        if (task == "T2")
+                        {
+                            // Historical version fixture only, in the brand-new external TEST registry created by Owned.
+                            // Never rewrite a live or pre-existing registry; normal resume then proves frozen-version routing.
+                            string contextRoot = Path.GetFullPath(Path.Combine(dir, language + "_" + task)) + Path.DirectorySeparatorChar;
+                            string sidecarPath = Path.GetFullPath(c.Registry.ProtocolPath);
+                            if (!sidecarPath.StartsWith(contextRoot, StringComparison.OrdinalIgnoreCase) || c.Record.group != ParticipantGroup.Test || !c.Record.test_data
+                                || c.Record.training_version != ResearchUIPolicy.TrainingTrainerV3) throw new InvalidOperationException("Fresh owned synthetic historical registry required.");
+                            var historical = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(sidecarPath));
+                            var entry = historical["sessions"]?[c.Record.session_id] as Newtonsoft.Json.Linq.JObject;
+                            if (entry == null || (string)entry["training_version"] != ResearchUIPolicy.TrainingTrainerV3) throw new InvalidOperationException("Owned version sidecar precondition failed.");
+                            entry["training_version"] = ResearchUIPolicy.TrainingTrainerV2;
+                            File.WriteAllText(sidecarPath, historical.ToString(Formatting.Indented), new System.Text.UTF8Encoding(false));
+                            var resumed = c.Registry.StartOrResume(c.Record.participant_id, language, ExperimentInputMode.Controller);
+                            Set(c, "Record", resumed);
+                            Check(resumed.training_version == expectedTraining, prefix + "/synthetic historical version loaded through normal resume", new { synthetic = true, sidecarPath, resumed.training_version });
+                        }
+                        Check(c.ReaderAuthorized && c.Record.group == ParticipantGroup.Test && c.Record.test_data, prefix + "/normal owned TEST record authorizes media only", new { c.Record.group, c.Record.test_data, c.Record.session_state });
+
                         if (task == "B") Call(owned, "Seed", ResearchFlowState.Task2Ready, 5, (bool?)null);
                         void Click(string command) { Call(owned, "Click", (ResearchUIAction)Call(owned, "Action", command, null), 1); }
-                        Click("task_start"); Click("task_start_confirm");
+                        if (training) Call(owned, "Seed", ResearchFlowState.TutorialReferenceInspect, 3, (bool?)null);
+                        else { Click("task_start"); Click("task_start_confirm"); }
                         var timing = Get<ResearchTaskTiming>(c, "taskTiming");
-                        Check(c.Flow.CurrentTask == task && c.Flow.IsTaskActive && timing.Started && !timing.Ended && c.Logger.State == HandsLabQuest3.Logging.HandsLabLogState.Active,
-                            prefix + "/real start-confirm clock and owned active writer", new { c.Flow.CurrentTask, timing.Started, timing.Ended, c.Record.participant_id, c.Record.run_id });
-                        if (!timing.Started || timing.Ended || c.Flow.CurrentTask != task) throw new InvalidOperationException("Actual task start precondition failed.");
+                        bool contextReady = training ? c.Flow.IsTutorial && c.Record.training_version == expectedTraining && !timing.Started
+                            : c.Flow.CurrentTask == task && c.Flow.IsTaskActive && timing.Started && !timing.Ended;
+                        Check(contextReady && c.Logger.State == HandsLabQuest3.Logging.HandsLabLogState.Active,
+                            prefix + "/owned production Reader context and writer", new { training, c.Flow.CurrentTask, timing.Started, timing.Ended, c.Record.participant_id, c.Record.run_id, c.Record.training_version });
+                        if (!contextReady) throw new InvalidOperationException("Production Reader context precondition failed.");
                         string identity = c.Record.participant_id + ":" + c.Record.session_id + ":" + c.Record.run_id;
                         Click("reference");
                         var viewer = view.ReferenceViewer; var scroll = Field<ScrollRect>(view, "scroll");
-                        void Flush() { Call(owned, "Refresh"); Canvas.ForceUpdateCanvases(); ScrollLateUpdate(scroll); Call(viewer, "Update"); Canvas.ForceUpdateCanvases(); }
+                        void Flush()
+                        {
+                            Call(owned, "Refresh"); Canvas.ForceUpdateCanvases();
+                            // Owned inactive preview does not receive a normal later Editor placement frame.
+                            bool settled = false;
+                            foreach (var panel in new[] { view.mainPanel, view.referencePanel })
+                                if (panel && panel.gameObject.activeInHierarchy && panel.RecenterPending)
+                                { Call(panel, "TryApplyPendingRecenter", true, true, true, Time.frameCount + 1); settled |= !panel.RecenterPending; }
+                            if (settled) { view.RefreshReference(); Canvas.ForceUpdateCanvases(); }
+                            ScrollLateUpdate(scroll); Call(viewer, "Update"); Canvas.ForceUpdateCanvases();
+                        }
                         Newtonsoft.Json.Linq.JObject Meta() => Newtonsoft.Json.Linq.JObject.FromObject(viewer.Metadata);
                         Newtonsoft.Json.Linq.JObject[] Events()
                         {
@@ -108,17 +157,62 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         void CaptureStage(string stage) => Call(owned, "Capture", stage, view.referencePanel, captures, rows);
                         Flush();
                         var pose = view.referencePanel.transform.position; var rotation = view.referencePanel.transform.rotation; var frame = Frame(view);
-                        string resource = "ResearchReaderS1/" + task + "_" + (language == ParticipantLanguage.Thai ? "th" : "ja") + "/package";
+                        string resource = "ResearchReaderS1/" + task + "_" + locale + "/package";
                         var asset = Resources.Load<TextAsset>(resource);
                         if (!asset || !frozenHashes.TryGetValue(resource, out var expectedHash) || Hash(asset.bytes) != expectedHash) throw new InvalidOperationException("Current production package differs from frozen fixture: " + resource);
                         var package = Newtonsoft.Json.Linq.JObject.Parse(asset.text);
-                        string expectedId = "s1.reader." + task + "." + (language == ParticipantLanguage.Thai ? "th" : "ja");
+                        string expectedId = "s1.reader." + task + "." + locale;
                         Check(c.ReaderResource == resource && viewer.BoundRegistryResource == resource && (string)package["content_id"] == expectedId && (string)package["approval"] == "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
                             prefix + "/actual S1 package selected, no DEMO substitution", new { resource, expectedHash, expectedId, approval = (string)package["approval"] });
                         Check(new[] { "user_manual", "step_by_step", "illustrated", "video" }.All(c.ReferenceAvailable), prefix + "/all four current formats available", resource);
+                        string InspectCard(string format)
+                        {
+                            var meta = Meta(); int page = viewer.PageIndex;
+                            int captionPart = format == "illustrated" ? (int?)meta["caption_part"] ?? 1 : 1;
+                            bool materialized = viewer.IsReady && (string)meta["status"] == "Ready" && (bool?)meta["visible"] == true
+                                && (bool?)meta["in_view"] == true && (bool?)meta["active_reading"] == true && (string)meta["registry_sha256"] == expectedHash;
+                            string expectedText = null; string actualText = null; bool contentCorrect; object textLayout = null;
+                            if (format == "user_manual")
+                            {
+                                var image = scroll.content.GetComponentsInChildren<RawImage>(true).SingleOrDefault(item => item.name == "PDFPage_" + page);
+                                contentCorrect = image && image.texture && image.texture.width > 0 && image.texture.height > 0;
+                            }
+                            else
+                            {
+                                var label = Field<TMP_Text>(viewer, "contentText"); label.ForceMeshUpdate(true, true); actualText = label.text;
+                                if (format == "step_by_step") expectedText = (string)package["steps"][page - 1]["text_" + locale];
+                                else
+                                {
+                                    string caption = (string)package["images"][page - 1]["caption_" + locale];
+                                    var (heading, parts) = ResearchCaptionParts.Split(caption);
+                                    expectedText = heading == null ? parts[captionPart - 1]
+                                        : (heading.IndexOf('<') < 0 ? "<b>" + heading + "</b>" : heading) + "\n" + parts[captionPart - 1];
+                                }
+                                contentCorrect = !string.IsNullOrWhiteSpace(expectedText) && actualText == expectedText && label.textInfo.characterCount > 0 && !label.isTextOverflowing;
+                                var textRect = label.rectTransform.rect;
+                                textLayout = new { label.isTextOverflowing, label.isTextTruncated, label.fontSize, textRect.width, textRect.height,
+                                    preferred_height = label.preferredHeight, label.textInfo.characterCount };
+                                if (format == "illustrated")
+                                {
+                                    var image = scroll.content.GetComponentsInChildren<RawImage>(true).SingleOrDefault(item => item.name == "SourceImage_" + page);
+                                    contentCorrect &= image && image.texture && image.texture.width > 0 && image.texture.height > 0;
+                                }
+                            }
+                            Check(materialized && contentCorrect, prefix + "/" + format + "/card_" + page + "_" + captionPart + "/actual current production UI content materialized", new {
+                                meta, contentCorrect, textLayout, expected_text_sha256 = expectedText == null ? null : Hash(System.Text.Encoding.UTF8.GetBytes(expectedText)),
+                                actual_text_sha256 = actualText == null ? null : Hash(System.Text.Encoding.UTF8.GetBytes(actualText)) });
+                            if (!materialized || !contentCorrect) CaptureStage(format + "_card_" + page + "_" + captionPart + "_failure");
+                            if (format == "illustrated" && language == ParticipantLanguage.English && page == 3) CaptureStage("illustrated_caption_margin_regression");
+                            return page + ":" + captionPart;
+                        }
                         var pointer = new PointerEventData(Get<EventSystem>(owned, "eventSystem")) { pointerId = Owner, button = PointerEventData.InputButton.Left };
                         var other = new PointerEventData(Get<EventSystem>(owned, "eventSystem")) { pointerId = Other, button = PointerEventData.InputButton.Left };
                         float pdfOffset = 1, pdfHorizontal = .5f; int pdfPage = 1;
+                        Check(training ? Events().Any(e => (string)e["event"] == "INFORMATION_OPEN" && (string)e["task_id"] == eventTask
+                            && (string)e["after"]?["viewer"]?["content_id"] == expectedId)
+                            : viewer.Status == "AwaitingSelection" && !viewer.IsReady && !Events().Any(e => (string)e["event"] == "INFORMATION_OPEN"),
+                            prefix + (training ? "/initial training automatic content exposure" : "/task chooser is not content exposure"), Meta());
+                        if (viewer.BoundSection == "user_manual") { Click("reference_tab.step_by_step"); Flush(); }
                         foreach (string format in new[] { "user_manual", "step_by_step", "illustrated", "video" })
                         {
                             int before = Events().Length;
@@ -128,7 +222,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 && (string)meta["version"] == (string)package["version"] && (string)meta["registry_sha256"] == expectedHash,
                                 prefix + "/" + format + "/real pointer selection binds exact package", meta);
                             var selected = events.SingleOrDefault(e => (string)e["event"] == "INFORMATION_FORMAT_SELECTED");
-                            Check(selected != null && (string)selected["task_id"] == task && (string)selected["after"]?["language"] == language.ToString()
+                            Check(selected != null && (string)selected["task_id"] == eventTask && (string)selected["after"]?["language"] == language.ToString()
                                 && (bool?)selected["after"]?["deliberate"] == true && (bool?)selected["after"]?["incoming_binding_pending"] == true && selected["after"]?["viewer"] == null,
                                 prefix + "/" + format + "/selection logged as intent, not false incoming exposure", selected);
                             Check(events.Any(e => (string)e["event"] == "REFERENCE_VIEWER_BOUND" && (string)e["after"]?["content_id"] == expectedId),
@@ -146,6 +240,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             Check(viewer.IsReady && viewer.PageCount == expectedCount && events.Any(e => (string)e["event"] == "INFORMATION_OPEN" && (string)e["after"]?["viewer"]?["content_id"] == expectedId),
                                 prefix + "/" + format + "/actual current content count and exposure", new { viewer.PageCount, expectedCount, viewer.IsReady, events });
                             CaptureStage(format + "_first");
+                            var visitedCards = new HashSet<string> { InspectCard(format) };
                             if (format == "user_manual")
                             {
                                 var focus = view.referencePanel.GetComponent<ResearchSlateFocus>();
@@ -160,18 +255,28 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 // Same-frame LateUpdate, as in the player loop; Flush's Refresh+canvas rebuild would otherwise reset the ScrollRect's previous position first.
                                 pointer.scrollDelta = new Vector2(0, -boundaryDelta); ExecuteEvents.Execute(scroll.gameObject, pointer, ExecuteEvents.scrollHandler); ScrollLateUpdate(scroll); Flush();
                                 Check(scroll.verticalNormalizedPosition < .999f && viewer.PageIndex > 1, prefix + "/PDF/actual ScrollRect callback changes page", Meta());
+                                int transitions = 0;
+                                while (viewer.CanPrevious && transitions++ < 128) { Click("reference_previous"); Flush(); }
+                                Check(viewer.PageIndex == 1 && transitions < 128, prefix + "/PDF/actual previous controls return to first page", Meta());
+                                visitedCards.Add(InspectCard(format));
+                                while (viewer.CanNext && transitions++ < 128) { Click("reference_next"); Flush(); visitedCards.Add(InspectCard(format)); }
+                                Check(transitions < 128 && visitedCards.SetEquals(Enumerable.Range(1, expectedCount).Select(page => page + ":1")),
+                                    prefix + "/PDF/every authored page materialized through actual controls", visitedCards.ToArray());
                                 int pageBeforeZoom = viewer.PageIndex; Click("reference_media.zoom_in"); Flush();
                                 Check(Mathf.Abs((float)Meta()["pdf_zoom"] - 1.25f) < .001f && viewer.PageIndex == pageBeforeZoom, prefix + "/PDF/actual zoom pointer grows while retaining page", Meta());
                                 Click("reference_media.pan_right"); Flush();
                                 pdfOffset = scroll.verticalNormalizedPosition; pdfHorizontal = scroll.horizontalNormalizedPosition; pdfPage = viewer.PageIndex;
-                                Check(Events().Any(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED" && (string)e["task_id"] == task), prefix + "/PDF/actual view change event", Events().Where(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED").ToArray());
+                                Check(Events().Any(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED" && (string)e["task_id"] == eventTask), prefix + "/PDF/actual view change event", Events().Where(e => (string)e["event"] == "REFERENCE_PDF_VIEW_CHANGED").ToArray());
                                 CaptureStage("PDF_scrolled_zoomed");
                             }
                             else
                             {
                                 int steps = 0;
-                                while (viewer.CanNext && steps++ < 128) { Click("reference_next"); Flush(); }
+                                while (viewer.CanNext && steps++ < 128) { Click("reference_next"); Flush(); visitedCards.Add(InspectCard(format)); }
                                 Check(!viewer.CanNext && viewer.PageIndex == expectedCount && steps < 128, prefix + "/" + format + "/all authored pages and caption parts reachable", Meta());
+                                var expectedCards = format == "step_by_step" ? Enumerable.Range(1, expectedCount).Select(page => page + ":1")
+                                    : Enumerable.Range(1, expectedCount).SelectMany(page => Enumerable.Range(1, ResearchCaptionParts.Count((string)package["images"][page - 1]["caption_" + locale])).Select(part => page + ":" + part));
+                                Check(visitedCards.SetEquals(expectedCards), prefix + "/" + format + "/every authored card and caption part inspected", visitedCards.ToArray());
                                 Check(!view.LocalCommand("reference_next", "None"), prefix + "/" + format + "/end boundary rejects no-op", Meta());
                                 CaptureStage(format + "_last");
                             }
@@ -191,21 +296,27 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         Check(!view.LocalCommand("reference_media.zoom_in", "None") && !view.LocalCommand("reference_next", "None") && Mathf.Abs(scroll.verticalNormalizedPosition - paused) < .001f,
                             prefix + "/paused input guards preserve document", Meta());
                         Check(identity == c.Record.participant_id + ":" + c.Record.session_id + ":" + c.Record.run_id && c.Registry.List(ParticipantGroup.Test).Count == 1
-                            && !timing.Ended && Events().Count(e => (string)e["event"] == "TASK_STARTED") == 1
+                            && !timing.Ended && Events().Count(e => (string)e["event"] == "TASK_STARTED") == (training ? 0 : 1)
                             && !Events().Any(e => (string)e["event"] == "INSPECT_PASS" || (string)e["event"] == "TASK_COMPLETED"),
                             prefix + "/single owned task no scoring or fabricated completion", new { identity, eventsPath = c.Logger.EventsPath });
+                        Check(c.Registry.List(ParticipantGroup.Test).Single().training_version == expectedTraining,
+                            prefix + "/normal pause persistence preserves session training version", new { expectedTraining, c.Record.training_version });
                         failures.AddRange(Get<List<string>>(owned, "TextOverflows").Select(v => prefix + "/" + v));
                     }
                     catch (Exception e) { Check(false, prefix + "/execution", (e is TargetInvocationException wrapped && wrapped.InnerException != null ? wrapped.InnerException : e).ToString()); }
-                    finally { (owned as IDisposable)?.Dispose(); }
+                    finally
+                    {
+                        if (visibilityView && visibility != null) visibilityView.ReferenceVisibilityChanged -= visibility;
+                        (owned as IDisposable)?.Dispose();
+                    }
                 }
             }
             finally { Application.logMessageReceived -= onLog; foreach (var cursor in cursors) if (cursor.Key) cursor.Key.HoverColor = cursor.Value; }
             Check(callbackErrors.Count == 0, "no swallowed Unity callback exceptions", callbackErrors);
             Check(SceneManager.GetActiveScene() == caller && caller.isDirty == dirty && EditorSceneManager.previewSceneCount == previews && EventSystem.current == priorEvents, "caller scene dirty previews EventSystem preserved", new { dirty, previews });
             string report = Path.Combine(dir, "reader-production.json");
-            File.WriteAllText(report, JsonConvert.SerializeObject(new { rows, captures, failures, pass = failures.Count == 0, frozenHashes,
-                scope = "Current production-path S1 engineering-draft packages A/B TH/JA on existing Safety.Owned. Registry/clock/writer real in owned TEST fixture; Task2Ready and training credits seeded, actual start-confirm and media pointer callbacks. Actual mono pixels and existing TMP overflow checks. Consumer focus/ScrollRect callbacks not native SDK acquisition. Video source hash and loading only; decoded frames/audio/play/pause/seek/end require separately guarded native Play/Quest. No study/language/wearer approval, no whole workflow completion." }, Formatting.Indented));
+            File.WriteAllText(report, JsonConvert.SerializeObject(new { rows, captures, failures, pass = failures.Count == 0, frozenHashes, coverage = new { expected_contexts = 10, attempted_contexts = contexts.Count, formats_per_context = 4, contexts, english_experimental_tasks = false, video_evidence = "SOURCE_HASH_AND_STOPPED_LOADING_ONLY" },
+                scope = "Current production-path engineering-draft A/B TH/JA and T2/T3 TH/JA/EN. Owned normal TEST creation/resume; T2 uses explicit synthetic historical version seed only in fresh external fixture. Every PDF page, Steps card and Illustrated caption part inspected through UI state/text/texture; existing first/last mono captures only. Programmatic PointerEventData and actual mono preview pixels, not SDK/native/wearer input. Video source SHA and stopped Loading only; actual decoded VideoPlayer frames/audio/play/pause/seek/end require separate guarded Play/Quest verification. No English experimental group, Study/content/language approval or task completion claim." }, Formatting.Indented));
             if (failures.Count != 0) throw new InvalidOperationException("READER_PRODUCTION_FAIL " + report);
             return "READER_PRODUCTION_PASS " + report;
         }

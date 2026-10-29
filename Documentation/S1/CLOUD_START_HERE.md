@@ -1,10 +1,26 @@
-# Start here: S1 Q5 current-source handoff
+# Start here: S1 current-source handoff
 
-Updated 2026-10-14. **Use `main` as the single current working and delivery branch**, as explicitly requested by the user. It includes the complete committed S1 Q5 source checkpoint `4a3f14bfa257b4cecf70674fecab98aec4a7bad4`. This remains a **PARTIAL technical source checkpoint**, not a participant-ready release. Use repository-relative paths and check actual Git status; the earlier uncommitted-source warning no longer describes this checkpoint.
+Updated 2026-10-29. **Use `main` as the single current working and delivery branch.** Read the actual checkout and remote identities, not the historical checkpoint IDs below. Source availability does not establish APK/source identity, installation, Quest input, wearer acceptance or Study approval.
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+git remote get-url origin
+```
+
+## Current owner-fix source
+
+- Read `OWNER_UI_DIRECTION_20261028.md` and root `design_rule.md` before UI work. The 28 Oct owner direction supersedes the earlier no-drag amendment.
+- New sessions use `S1_TRAINING_TRAINER_V3_20261029`: a correct insertion proceeds directly to the latch. Existing T2/legacy session versions and their Reader routes remain frozen; do not relabel old sessions.
+- `S1_LAYOUT_REACH_20261029` is a new-session geometry version. Do not apply it retrospectively to an older recorded session.
+- Reader generation lives in `Tools/s1_reader_v2/`. Training packages T2/T3 retain their separate versions; English remains existing Training support, not an English experimental A/B group. Source-version hashing normalizes text newlines and generated package JSON is LF so recipient checkout hashes match.
+- The Japanese source-font dependency is intentionally not redistributed as a loose font. Follow `Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/SOURCE.md` for the pinned download, SHA256 and existing `.meta` GUID before opening Unity.
+- Use the delivered APK/source/content manifests and installed readback for release identity. Editor fixture, SDK-simulated input, Editor VideoPlayer decoding, Quest controller and wearer evidence are different tiers. No historical PASS below closes a changed-input or native gate.
+- An old APK is not a compatible resume target for an InProgress V3/Reach session. Rollback requires preserved/exported data, closed writers and no resumption of newer-version sessions in an older binary; do not rewrite registry history to make a downgrade fit.
 
 Do not create extra branches/worktrees by default. Use one writer per checkout, commit reviewed batches, and deliver them to `main` without force-push. If a host requires a temporary branch, integrate reviewed changes into `main` before reporting delivery complete. Never overwrite newer local/cloud edits.
 
-## Latest cloud session (14 Oct 2026 night)
+## Historical cloud session (14 Oct 2026 night)
 
 Read `Documentation/S1/HANDOFF_20261015_CLOUD_TH.md` first. It added the versioned fixed-position UI policy
 (`ResearchFlow/Core/ResearchUIPolicy.cs`), shorter Training presentation, Reader feedback/video/caption fixes and export
@@ -13,7 +29,7 @@ protocol versions. Unity and Quest were NOT reachable from that session: nothing
 ## Read order
 
 1. `AGENTS.md`, `CLAUDE.md`, root `design_rule.md` v1.1.
-2. `Documentation/S1/ADVISOR_UI_AMENDMENT_20261014.md` (latest user/advisor direction).
+2. `Documentation/S1/OWNER_UI_DIRECTION_20261028.md` (current owner UI direction); use the older advisor amendment only where not superseded.
 3. `Documentation/S1/CAPTURE_REVIEW_20261014.md` (actual user-capture findings and uncertainties).
 4. `Documentation/S1/VR_TaskSpec_S1_LOCKED_TH.md`, `content_contract.json`, `verification_design.json` (unchanged baseline copies).
 5. `Documentation/S1/CLOUD_CONTINUATION_PROMPT_TH.txt` (execution brief).

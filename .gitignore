@@ -119,9 +119,8 @@ __pycache__/
 /Assets/VRMaintenanceResearch/ResearchFlow/Editor/ReaderDemoFixtures.meta
 /Assets/VRMaintenanceResearch/ResearchFlow/Editor/Resources/ResearchReaderDemo/
 /Assets/VRMaintenanceResearch/ResearchFlow/Editor/Resources/ResearchReaderDemo.meta
-# Raw font source is a local dependency; generated SDF assets remain in the project.
+# Raw font source is a local dependency; keep its GUID metadata and generated SDF assets tracked.
 /Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/NotoSansJP-Regular.otf
-/Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/NotoSansJP-Regular.otf.meta
 
 # Cross-PC sync: machine-local / generated
 /.claude/

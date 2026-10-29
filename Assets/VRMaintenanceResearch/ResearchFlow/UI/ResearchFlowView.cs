@@ -2441,14 +2441,19 @@ namespace VRMaintenanceResearch.ResearchFlow
                 && string.IsNullOrEmpty(controller.Error) && (mainPauseEligible || controller.ReferenceOpen)
                 && (controller.Record == null || (controller.Record.session_state == RegistryState.InProgress && !SessionWriterUnavailable))
                 && (controller.Logger == null || controller.LoggerReady);
-            bool mainReadable = mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
-                && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts
-                && !mainPanel.PlacementBlocked && mainPanel.IsReadableFromHead;
+            bool mainPresented = mainContent.activeInHierarchy && mainPanel.GetComponent<Canvas>().enabled
+                && mainGroup.alpha > .01f && mainGroup.interactable && mainGroup.blocksRaycasts && !mainPanel.PlacementBlocked;
+            bool mainReadable = mainPresented && mainPanel.IsReadableFromHead;
             bool mainOwns = available && mainPauseEligible && (mainReadable || (taskBriefHiddenForReaderFeedback
                 && MainCanShowReaderFeedback && FeedbackRectFits(helpUtility.GetComponent<RectTransform>())));
-            bool referenceOwns = available && controller.ReferenceOpen && !controller.ReferenceMinimized
+            bool referencePresented = available && controller.ReferenceOpen && !controller.ReferenceMinimized
                 && referenceExpanded.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled && referenceGroup.alpha > .01f
-                && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked && referencePanel.IsReadableFromHead;
+                && referenceGroup.interactable && referenceGroup.blocksRaycasts && !referencePanel.PlacementBlocked;
+            bool referenceOwns = referencePresented && referencePanel.IsReadableFromHead;
+            // An accepted, usable panel outside the current gaze is not lost UI (design_rule98).
+            // Paused/floor-fault, blocked, parked, hidden and input-disabled surfaces retain existing safety recovery.
+            bool gazeOnly = available && controller.FloorReady && ((mainPresented && mainPanel.HasAcceptedPose && !mainPanel.RecenterPending)
+                || (referencePresented && referencePanel.HasAcceptedPose && !referencePanel.RecenterPending));
             bool FeedbackOwnsPause() => readerFeedback != ReaderFeedback.None && RecoveryCanvas.gameObject.activeInHierarchy
                 && RecoveryCanvas.enabled && !recoveryPanel.PlacementBlocked && !recoveryPanel.RecenterPending && recoveryPanel.IsReadableFromHead;
             helpUtility.gameObject.SetActive(mainOwns && !referenceOwns && !FeedbackOwnsPause());
@@ -2460,7 +2465,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool mainOffersStop = stopAvailable && mainReadable
                 && (mainStopChip || Array.Exists(actions, a => a.gameObject.activeSelf && a.GetComponent<ResearchUIAction>().command == "stop"));
             stopUtility.gameObject.SetActive(mainOffersStop && mainStopChip);
-            bool fallbackStop = stopAvailable && !mainOwns && !referenceOwns && !mainOffersStop;
+            bool fallbackStop = stopAvailable && !mainOwns && !referenceOwns && !mainOffersStop && !gazeOnly;
             // Quest 16 Oct: each glance at the table re-placed this strip (34 recentres in 2 min). A short dwell ignores glances;
             // Menu still pauses at once.
             // A minimized or closed panel is a deliberate state, not a glance: Stop appears at once there.
@@ -2473,7 +2478,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Includes the self-resume pause: with Stop hidden there, this strip is its only recall when the card is out of view.
             bool paused = controller && controller.Flow?.Paused == true && controller.PauseKind == "participant"
                 && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
-            bool needed = (readerFeedback != ReaderFeedback.None && !taskBriefHiddenForReaderFeedback) || fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
+            bool feedbackNeedsRecovery = readerFeedback == ReaderFeedback.Blocked || (readerFeedback == ReaderFeedback.Direction && !gazeOnly);
+            bool needed = (feedbackNeedsRecovery && !taskBriefHiddenForReaderFeedback) || fallbackStop || (paused && (mainPanel.PlacementBlocked || !mainPanel.IsReadableFromHead
                 || (recoveryWasNeeded && mainPanel.RecenterPending)));
             if (!paused || mainPanel.PlacementBlocked || needed == recoveryWasNeeded)
                 recoveryTransitionSince = float.NegativeInfinity;

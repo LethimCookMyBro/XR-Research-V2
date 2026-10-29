@@ -51,17 +51,37 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     scene = EditorSceneManager.OpenScene(Scene, OpenSceneMode.Single);
                     var a = UnityEngine.Object.FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single();
                     var b = UnityEngine.Object.FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single();
+                b.KeepAuthoredGuardDetail();
                     var cables = a.GetComponentsInChildren<ResearchS1Cable>(true);
                     var targets = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true)).ToList();
-                    var anchors = Anchors(a, b, camera);
+                    var station = shot.task == "T" ? UnityEngine.Object.FindObjectsByType<ResearchTrainingStation>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single() : null;
+                    if (station)
+                    {
+                        // Training footage must not show the experiment-task models behind the station.
+                        foreach (var r in a.GetComponentsInChildren<Renderer>(true).Concat(b.GetComponentsInChildren<Renderer>(true))) r.enabled = false;
+                    foreach (var item in station.controller.trainingObjects) if (item) item.gameObject.SetActive(false);
+                        // The turntable moves its seats, so the shot is framed on its first pose.
+                        var first = shot.segments[0];
+                        ResearchS1ReaderMotionBuilder.MotionT(station, first.section, first.fact, first.frames == 1 ? first.to : first.from);
+                    }
+                    var anchors = station ? TrainingAnchors(station, camera) : Anchors(a, b, camera);
                     blanked = BlankLabels(a.transform) + BlankLabels(b.transform);
                     if (shot.segments.Any(s => s.section == "A.ssd")) cables.Single(c => c.assetId == "CABLE_SATA_DATA_S_500").transform.localRotation *= Quaternion.Euler(0, 0, 180);
                     string dir = Path.Combine(outputRoot, shot.id);
                     if (Directory.Exists(dir)) foreach (var old in Directory.GetFiles(dir, "*.png")) File.Delete(old);
                     Directory.CreateDirectory(dir);
-                    var bounds = ResearchS1ReaderMediaBuilder.Frame(targets, shot.frame);
+                    var bounds = station ? TrainingFrame(station, shot.frame) : ResearchS1ReaderMediaBuilder.Frame(targets, shot.frame);
                     float radius = Mathf.Max(bounds.extents.magnitude, .04f);
+                    if (shot.id == "A_turn")
+                    {
+                        var center = new Vector3(a.servicePivot.position.x, bounds.center.y, a.servicePivot.position.z);
+                        radius += Vector3.Distance(bounds.center, center);
+                        bounds.center = center;
+                    }
                     float distance = Mathf.Clamp(radius / Mathf.Sin(camera.fieldOfView * .5f * Mathf.Deg2Rad) * 1.05f, shot.min, 2.4f);
+                    // Keep the physical rim clip above the video caption band, not just its label.
+                    if (shot.task == "B" && shot.anchors != null && shot.anchors.Contains("front_clip"))
+                        bounds.center -= Vector3.up * (distance * .07f);
                     var direction = new Vector3(shot.view[0], shot.view[1], shot.view[2]).normalized;
                     fill.intensity = Mathf.Clamp(1.6f * distance * distance / 1.4f, .3f, 1.6f) * shot.fill;
                     var frames = new JArray(); int n = 0;
@@ -72,6 +92,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         {
                             double time = segment.from + (segment.to - segment.from) * (segment.frames == 1 ? 1 : (double)k / (segment.frames - 1));
                             string state = segment.section == null ? null : shot.task == "A" ? ResearchS1ReaderMotionBuilder.MotionA(a, segment.section, segment.fact, time)
+                                : station ? ResearchS1ReaderMotionBuilder.MotionT(station, segment.section, segment.fact, time)
                                 : ResearchS1ReaderMotionBuilder.MotionB(b, segment.section, segment.fact, time);
                             if (segment.section == null && shot.task == "B") ResearchS1ReaderMotionBuilder.ClosedFan(b);
                             foreach (var cable in cables) cable.RefreshShape();
@@ -150,14 +171,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 ["pcie_primary"] = () => a.gpuSlots[0].seat.position,
                 ["pcie_secondary"] = () => a.gpuSlots[1].seat.position,
                 ["gpu_card"] = () => a.gpus[1].transform.position,
-                ["gpu_screw"] = () => a.gpuScrewSeats[0].position,
+                ["gpu_screw"] = () => Rim(a.gpuScrews[0].transform),
                 ["gpu_8pin"] = () => Socket(a.gpus[1], S1Connector.GpuPcie8).position,
                 ["ssd_tray"] = () => a.traySeats[0].position,
                 ["ssd_thumb"] = () => a.sleds[0].thumb.transform.position,
                 ["sata_data"] = () => Socket(a.ssds[0], S1Connector.SsdData).position,
                 ["sata_power"] = () => Socket(a.ssds[0], S1Connector.SsdPower).position,
                 ["service_handle"] = () => a.servicePivot.position,
-                ["front_clip"] = () => b.frontClip.clipAnimationRoot.transform.position,
+                ["front_clip"] = () => Rim(b.frontClip.transform),
                 ["front_guard"] = () => Rim(b.frontGuard.transform),
                 ["front_marks"] = () => b.frontGuard.seat.position,
                 ["blade"] = () => b.blade.transform.position,
@@ -171,6 +192,83 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach (var slot in a.ramSlots) map["slot_" + slot.seatName.Replace("DIMM_", "")] = () => slot.seat.position;
             foreach (var part in a.ram.Concat(a.ssds).Concat(a.gpus)) map["part_" + part.stableId] = () => part.transform.position;
             return map;
+        }
+
+        // Training shots frame station parts by role (shots.json "frame": station, module, slot, screw, lead).
+        static Bounds TrainingFrame(ResearchTrainingStation t, string[] names)
+        {
+            Bounds Box(Vector3 centre, float size) => new Bounds(centre, Vector3.one * size);
+            Bounds One(string name)
+            {
+                switch (name)
+                {
+                    case "station": return RendererBounds(t.turntable);
+                    case "module": return RendererBounds(t.module.transform);
+                    case "slot": return Box(t.moduleSocket.seat.position, .09f);
+                    case "screw": return Box(t.screw.seat.position, .02f);
+                    case "lead": { var b = Box(t.leadSocket.seat.position, .05f); b.Encapsulate(Box(t.leadAnchor.position, .05f)); return b; }
+                    default: throw new InvalidOperationException("Unknown training frame " + name);
+                }
+            }
+            var bounds = One(names[0]);
+            foreach (var name in names.Skip(1)) bounds.Encapsulate(One(name));
+            return bounds;
+        }
+
+        static Bounds RendererBounds(Transform t)
+        {
+            var renderers = t.GetComponentsInChildren<Renderer>(true).Where(r => r.enabled && r.gameObject.activeInHierarchy).ToArray();
+            return renderers.Length == 0 ? new Bounds(t.position, Vector3.one * .05f) : renderers.Select(r => r.bounds).Aggregate((x, y) => { x.Encapsulate(y); return x; });
+        }
+
+        // The module's keyed (chamfered) corner in module space: of the four outline corners, the one farthest from every mesh vertex.
+        static Vector3? KeyCorner(Transform module)
+        {
+            var filter = module.GetComponentsInChildren<MeshFilter>(true).Where(f => f.sharedMesh && f.GetComponent<MeshRenderer>() && f.GetComponent<MeshRenderer>().enabled)
+                .OrderByDescending(f => f.sharedMesh.bounds.size.sqrMagnitude).FirstOrDefault();
+            if (!filter) return null;
+            var vertices = filter.sharedMesh.vertices; var b = filter.sharedMesh.bounds;
+            if (vertices.Length == 0) return null;
+            int up = b.size.x <= b.size.y && b.size.x <= b.size.z ? 0 : b.size.y <= b.size.z ? 1 : 2, u = (up + 1) % 3, v = (up + 2) % 3;
+            Vector3 best = b.center; float bestGap = -1;
+            foreach (int su in new[] { -1, 1 })
+                foreach (int sv in new[] { -1, 1 })
+                {
+                    var corner = b.center; corner[u] += su * b.extents[u]; corner[v] += sv * b.extents[v];
+                    float gap = vertices.Min(p => new Vector2(p[u] - corner[u], p[v] - corner[v]).sqrMagnitude);
+                    if (gap > bestGap) { bestGap = gap; best = Vector3.Lerp(corner, b.center, .2f); }
+                }
+            return module.InverseTransformPoint(filter.transform.TransformPoint(best));
+        }
+
+        static Dictionary<string, Func<Vector3>> TrainingAnchors(ResearchTrainingStation t, Camera camera)
+        {
+            var module = t.module.transform; var mate = ResearchS1ReaderMotionBuilder.ModuleMate(t);
+            var mateInRoot = module.worldToLocalMatrix * mate.localToWorldMatrix;
+            float keyed = t.moduleSocket.rules.Single(r => r.outcome == PairOutcome.Seat).turnDeg;
+            var corner = KeyCorner(module);
+            if (corner == null) Debug.LogWarning("Reader T2: the module's cut corner was not found; corner callouts point at the module centre.");
+            var grips = ResearchS1ReaderMotionBuilder.TrainingGrips(t);
+            // Left/right as the camera sees them, so callout offsets in the content stay on the intended side.
+            Vector3 Grip(bool left) => (left ? grips.OrderBy(g => camera.WorldToViewportPoint(g.position).x) : grips.OrderByDescending(g => camera.WorldToViewportPoint(g.position).x)).First().position;
+            return new Dictionary<string, Func<Vector3>>
+            {
+                ["module"] = () => Rim(module),
+                ["module_corner"] = () => corner.HasValue ? module.TransformPoint(corner.Value) : Rim(module),
+                ["slot"] = () => t.moduleSocket.seat.position,
+                ["slot_corner"] = () => corner.HasValue
+                    ? SocketRules.RootPose(t.moduleSocket.seat.localToWorldMatrix, 0, keyed, mateInRoot).MultiplyPoint3x4(corner.Value) : t.moduleSocket.seat.position,
+                ["latch"] = () => Rim(t.latch),
+                ["screw_head"] = () => Rim(t.screw.transform),
+                ["screw_seat"] = () => t.screw.seat.position,
+                ["plug_head"] = () => t.leadHead.transform.position,
+                ["lead_wire"] = () => t.leadBones[t.leadBones.Length / 2].position,
+                ["lead_socket"] = () => t.leadSocket.seat.position,
+                ["turn_handle"] = () => t.turnHandle.transform.position,
+                ["turn_grip_left"] = () => Grip(true),
+                ["turn_grip_right"] = () => Grip(false),
+                ["turn_axis"] = () => new Vector3(t.turntable.position.x, Rim(t.turntable).y, t.turntable.position.z),
+            };
         }
     }
 }

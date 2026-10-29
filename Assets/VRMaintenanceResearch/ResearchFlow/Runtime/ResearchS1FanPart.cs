@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Oculus.Interaction;
 using Oculus.Interaction.HandGrab;
 using UnityEngine;
@@ -194,6 +194,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             var prior = Pose;
             bool priorCaptured = captured;
             float priorProgress = progressDegrees;
+            double priorBackoff = stopBackoff;
             wasBlocked = false;
             if (!owner.CanManipulate(this))
             {
@@ -205,7 +206,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (rebase) { Rebase(); return; }
             Matrix4x4 next = IsThread ? ThreadPose(hand, delta, free) : kind == S1FanPartKind.FrontGuard ? FrontPose(hand, free) : KeyedPose(hand, free);
-            bool moved = Vector3.Distance(transform.position, next.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, next.rotation) > .01f;
+            if (IsThread && !owner.AllowsThreadPose(this, next, priorCaptured))
+            {
+                string rejected = ClassifyMotion(kind, priorCaptured, captured, priorProgress, progressDegrees,
+                    prior.depthMm, hand.depthMm, prior.turnDeg, hand.turnDeg);
+                captured = priorCaptured; progressDegrees = priorProgress; stopBackoff = priorBackoff; wasBlocked = true;
+                if (rejected != null) RecordMotion(before, rejected, true);
+                return;
+            }
+            // Keep accepted thread angle/depth synchronized even below the display-motion epsilon.
+            bool moved = Vector3.Distance(transform.position, next.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, next.rotation) > .01f || (IsThread && priorProgress != progressDegrees);
             if (!moved)
             {
                 string rejected = ClassifyMotion(kind, priorCaptured, priorCaptured, priorProgress,
@@ -214,6 +224,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 return;
             }
             Place(next);
+            // Thread travel changes the held axial offset; zero progress must not leave old-depth slack before withdrawal.
+            if (IsThread && priorProgress > 0 && progressDegrees <= 0 && captured) Rebase();
             var current = Pose;
             string operation = ClassifyMotion(kind, priorCaptured, captured, priorProgress, progressDegrees,
                 prior.depthMm, current.depthMm, prior.turnDeg, current.turnDeg);

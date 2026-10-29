@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.T2.ja",
+  "version": "S1_TRAINING_TRAINER_V2_20261028.reader-t2-f90fe6228ef84208.f72d32c4b61da82b",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_Training_T2_Reference_JA.pdf",
+  "source_pdf_resource": "ResearchReaderS1/T2_ja/source_pdf",
+  "source_sha256": "d318a02188da8c49e36498ddceb910c0f57e7e264dd9db08635f2a9e4ef7879b",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_ja/pages/p01",
+      "sha256": "01873712899e73b095ef9283de8595712ee142ed678d9e794270facdbc2ec21e"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_ja/pages/p02",
+      "sha256": "ab4dfe5ca9672cae780d966cc39aaf13baff515df54b2a7a2b086ed927fc5281"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_ja/pages/p03",
+      "sha256": "4ff3ae3c683d41d4092bcd2c0e7effa66b64e8e94176827190e025ec4957ce26"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_ja/pages/p04",
+      "sha256": "a5d0dd62fe47cc0a10b891464eccc6c281e72105701c1c79438a0b70b0a12a36"
+    }
+  ],
+  "steps": [
+    {
+      "text_ja": "<size=24><color=#5B6B7F>はじめに</color></size>\n<size=36><b>机の上の練習台を見ます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 机の上のモジュール・切り欠きのあるスロット・青いラッチ・奥側のねじ・プラグ付きのケーブル。\n\n<color=#2E7D32><b>正しい状態:</b></color> これは練習で、実験課題とは関係ないとわかります。まちがえてもやり直せます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>はじめに</color></size>\n<size=36><b>2 つのボタンを覚えます。Grip（中指）とトリガー（人差し指）。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> Grip＝モジュール・ラッチ・回転台。トリガー＝パネルのボタン・ねじの頭・プラグの頭。\n\n<color=#2E7D32><b>正しい状態:</b></color> 部品の上の短い表示が今の状態を教えます。表示に従えば大丈夫です。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>参照資料</color></size>\n<size=36><b>別の形式のタブを選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> タブ：マニュアル・手順・図解・動画\n\n<color=#2E7D32><b>正しい状態:</b></color> 中身は同じで、見せ方だけが変わります。いちばん見やすいものを選びます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>参照資料</color></size>\n<size=36><b>−を選んでパネルを小さくします。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> パネルが小さい「参照資料を開く」バーになります。\n\n<color=#2E7D32><b>正しい状態:</b></color> バーを選ぶとパネルが元に戻ります。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>参照資料</color></size>\n<size=36><b>移動：パネル下のハンドルを指し、トリガーを押したまま動かします。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> パネルが手について動きます。\n\n<color=#2E7D32><b>正しい状態:</b></color> トリガーを離すと、そこに止まります（動かさなくてもかまいません）。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>参照資料</color></size>\n<size=36><b>×を選んでパネルを閉じます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> パネルが消えます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「参照資料」でいつでもまた開けます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>確認と検査</color></size>\n<size=36><b>練習モジュールを指して「確認」を選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 情報：切り欠きの角をスロットに合わせ、ラッチで固定します。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「確認」は情報を見るだけで、修理はしません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>確認と検査</color></size>\n<size=36><b>今「検査」を選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> モジュールはまだ入っておらず、ねじも緩んでいます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「練習の結果: 未完了。」と出ます。終わっていないときの結果の例です。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>モジュール</color></size>\n<size=36><b>入る向きで入れます。切り欠きをスロットの切り欠きと同じ側にします。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> Gripで持ち、スロットの真上で水平にして、奥まで押し込みます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「合っています：押し込んで離す」と出たら手を離します。モジュールが奥まで入ります。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>モジュール</color></size>\n<size=36><b>入らない向きを試します。抜いて半回転させ、ゆっくり下ろします。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 切り欠きがスロットの切り欠きと反対側にあります。\n\n<color=#2E7D32><b>正しい状態:</b></color> スロットの上で止まり、「止まった：この向きは入らない」と出ます。無理に押しません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ラッチ</color></size>\n<size=36><b>持ち上げて向きを戻し、入る向きで奥まで入れます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 切り欠き同士が合っています。\n\n<color=#2E7D32><b>正しい状態:</b></color> 奥まで入りました。でも、まだ固定されていません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ラッチ</color></size>\n<size=36><b>ラッチを閉じます。青いラッチに手を近づけ、Gripを一度押します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラッチが閉じた位置に動きます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 置いただけでは固定ではありません。ラッチを閉じたので、今は固定されています。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>回転台</color></size>\n<size=36><b>台の手前の縁のハンドル（または青い線のある手前の角）をGripで持ちます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 中心のまわりに弧を描いて手を動かすと、台がついて回ります。持ち直してもかまいません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「120°のうち120°回転」と出て、奥側のねじがこちらを向きます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ねじ</color></size>\n<size=36><b>締める（奥へ）：トリガーで頭をつまみ、時計回りにひねります。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 頭を正面から見ます。ねじは回りながら少しずつ奥へ入ります。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「締めています：50%」のように数字が増えます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ねじ</color></size>\n<size=36><b>手首が回しにくくなったら、手を離して持ち直します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ねじはその位置のままで、戻りません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 続きから回せます。進み具合は残っています。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ねじ</color></size>\n<size=36><b>「締まった：手を離して次へ」と出るまで回し、手を離します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ねじの頭が台の面まで下がり、それ以上回りません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 離すときに手首が少し戻っても、締まったままです。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ケーブル</color></size>\n<size=36><b>トリガーでプラグの頭をつまみます（ケーブル部分は持たない）。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 空いているソケットにまっすぐ差します。反対側はつながったままです。\n\n<color=#2E7D32><b>正しい状態:</b></color> プラグが奥まで入り、手を離しても抜けません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>検査</color></size>\n<size=36><b>もう一度「検査」を選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 今はモジュールが入り、ラッチが閉じ、ねじが締まっています。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「練習の結果: 完了。」と出ます。すべて取り付けて固定したときの結果です。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ケーブル</color></size>\n<size=36><b>もう一度プラグの頭を持ち、まっすぐ引き抜きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 引くのはプラグの頭です。ケーブルは引きません。\n\n<color=#2E7D32><b>正しい状態:</b></color> ソケットが空きます。手を離すとプラグは元の位置に戻ります。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ねじ</color></size>\n<size=36><b>緩める（手前へ）：トリガーで頭をつまみ、反時計回りにひねります。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ねじは回りながら少しずつ手前へ出てきます。「緩めています：残り40%」と出ます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「緩みきった：手を離して次へ」と出たら、手を離します。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>ラッチ</color></size>\n<size=36><b>ラッチを開けます。ラッチに手を近づけ、Gripを一度押します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラッチが閉じている間は、モジュールは抜けません。\n\n<color=#2E7D32><b>正しい状態:</b></color> ラッチが開いた位置に動きます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>終わり</color></size>\n<size=36><b>Gripでモジュールを持ち、上へ引き抜きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> モジュールがスロットから出ました。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「練習が終わりました」と出ます。本番も同じ動きを使います。"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/01",
+      "sha256": "4f9efeb07f7dc4869b6906b4bb00355819e0a8a6a9036379cb301d0a26c907dc",
+      "caption_ja": "<b>練習台</b>\n部品の上の表示が今の状態を教えます。パネルの順に進みます。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/02",
+      "sha256": "7fef5a390f95765a9cf6bbff834b10f274c45053aea3e8b2602ed829c5991a8e",
+      "caption_ja": "<b>参照資料の使い方</b>\nタブ・−で最小化・バーで開く・ハンドルで移動・×で閉じる"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/03",
+      "sha256": "819b9b3742783e99da7c99202c68736819ca8cd2912ba296d4e8378987a7475c",
+      "caption_ja": "<b>確認と検査</b>\n「確認」は直しません。今の「検査」は未完了の例です。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/04",
+      "sha256": "50f673e48870a98dfc2b1a05081b62821612813044ea0dab6592c77111ab88dc",
+      "caption_ja": "<b>モジュールを入れる</b>\n先に入る向きで入れ、そのあと入らない向きを試します。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/05",
+      "sha256": "34e91b119499e989bae16d9d8835151aa65b9da5f8a26a1933c31419e52f01cc",
+      "caption_ja": "<b>ラッチ</b>\n閉じると固定。抜く前に開けます。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/06",
+      "sha256": "9a82cf7ae791b268a630c7c7664cbdce6b232a4f722a9439c9134c736ead5fcb",
+      "caption_ja": "<b>台を回す</b>\nハンドルか手前の角を持ち、中心のまわりに弧を描きます。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/07",
+      "sha256": "1e995a6fb0686d187c63ecaa20a06650324ee1a23ce2a55f5e548928f8033c2b",
+      "caption_ja": "<b>ねじを回す向き</b>\n締める（奥へ）は時計回り、緩める（手前へ）は反時計回り。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/08",
+      "sha256": "d817f515fd21a99867aa1d7b992796dfcd3c1094306af8549bea45d488d8559d",
+      "caption_ja": "<b>ねじは奥へ・手前へ動く</b>\n締めると頭が面まで下がり、緩めると上がります。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/09",
+      "sha256": "b633470dee075723142a5797a88903db7bb5ac536c9e02e922fae5f0a519c4fb",
+      "caption_ja": "<b>プラグを差す・抜く</b>\nいつもプラグの頭を持ち、ケーブルは引きません。"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_ja/images/10",
+      "sha256": "2358f4a30a03e1ae9f73bc0faf445f7807f1dc9c76ed41e3d2411ae6419d18ab",
+      "caption_ja": "<b>検査の結果</b>\n未完了＝まだ足りない。完了＝すべて取り付けて固定。"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/T2_ja.mp4",
+    "sha256": "9a7daa21dd3d310c6ff6b62b80aba7b31b6ff958c487085ac61ad2d78cacbec5",
+    "duration_seconds": 278.01,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 28.41
+      },
+      {
+        "stage": "do",
+        "start_seconds": 28.41,
+        "end_seconds": 52.38
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 52.38,
+        "end_seconds": 74.24
+      },
+      {
+        "stage": "do",
+        "start_seconds": 74.24,
+        "end_seconds": 90.3
+      },
+      {
+        "stage": "do",
+        "start_seconds": 90.3,
+        "end_seconds": 108.04
+      },
+      {
+        "stage": "do",
+        "start_seconds": 108.04,
+        "end_seconds": 124.26
+      },
+      {
+        "stage": "do",
+        "start_seconds": 124.26,
+        "end_seconds": 145.89
+      },
+      {
+        "stage": "do",
+        "start_seconds": 145.89,
+        "end_seconds": 174.27
+      },
+      {
+        "stage": "do",
+        "start_seconds": 174.27,
+        "end_seconds": 192.24
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 192.24,
+        "end_seconds": 211.22
+      },
+      {
+        "stage": "do",
+        "start_seconds": 211.22,
+        "end_seconds": 228.28
+      },
+      {
+        "stage": "do",
+        "start_seconds": 228.28,
+        "end_seconds": 247.57
+      },
+      {
+        "stage": "do",
+        "start_seconds": 247.57,
+        "end_seconds": 265.34
+      },
+      {
+        "stage": "done",
+        "start_seconds": 265.34,
+        "end_seconds": 278.01
+      }
+    ]
+  }
+}

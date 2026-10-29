@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.T2.th",
+  "version": "S1_TRAINING_TRAINER_V2_20261028.reader-t2-f90fe6228ef84208.f72d32c4b61da82b",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_Training_T2_Reference_TH.pdf",
+  "source_pdf_resource": "ResearchReaderS1/T2_th/source_pdf",
+  "source_sha256": "35d0092edf79a2bcd50983b79ce2a13f601eea75d516d43ed20f8977575cb674",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_th/pages/p01",
+      "sha256": "0823b90a62a0d5284a27e4ff698be2551c824fabcbd329f7609d04f5d3e6a7d5"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_th/pages/p02",
+      "sha256": "b97753163ebe4ca5f666f62720f723e7f7fa0cb24c19bf6d3ef33578febcba25"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_th/pages/p03",
+      "sha256": "b16f0e38b6fc48ad3025845c1535293a23b3670a1b376867e8ba33471bd9bfeb"
+    }
+  ],
+  "steps": [
+    {
+      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=36><b>ดูแท่นฝึกบนโต๊ะ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> โมดูลบนโต๊ะ · ช่องที่มีมุมบาก · สลักสีฟ้า · สกรูด้านหลัง · สายที่มีหัวปลั๊ก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> รู้ว่านี่คือบทฝึก ไม่เกี่ยวกับงานทดลอง · ทำผิดแล้วลองใหม่ได้"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=36><b>จำปุ่ม 2 ปุ่ม: Grip (นิ้วกลาง) และ Trigger (นิ้วชี้)</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> Grip = จับโมดูล สลัก และแท่นหมุน · Trigger = กดปุ่มบนแผง จับหัวสกรู และหัวปลั๊ก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ป้ายสั้น ๆ เหนือชิ้นส่วนบอกสภาพตอนนี้ ทำตามป้ายได้"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เอกสารอ้างอิง</color></size>\n<size=36><b>เลือกแท็บรูปแบบอื่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> แท็บ: คู่มือ · ทีละขั้นตอน · ภาพประกอบ · วิดีโอ\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เนื้อหาเหมือนเดิม แต่หน้าตาเปลี่ยน เลือกแบบที่อ่านง่ายที่สุด"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เอกสารอ้างอิง</color></size>\n<size=36><b>เลือก − เพื่อย่อแผง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> แผงเหลือแถบเล็ก “เปิดเอกสารอ้างอิง”\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เลือกแถบเล็กแล้วแผงกลับมาที่เดิม"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เอกสารอ้างอิง</color></size>\n<size=36><b>ย้ายแผง: ชี้แถบจับใต้แผง กด Trigger ค้างแล้วลาก</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> แผงเลื่อนตามมือ\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ปล่อย Trigger แล้วแผงอยู่ตรงนั้น (ไม่ย้ายก็ได้)"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เอกสารอ้างอิง</color></size>\n<size=36><b>เลือก × เพื่อปิดแผง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> แผงหายไป\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เปิดใหม่ได้ทุกเมื่อด้วยปุ่ม “เอกสารอ้างอิง”"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจดู / ตรวจผล</color></size>\n<size=36><b>ชี้ที่โมดูลฝึก แล้วเลือก “ตรวจดู”</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ข้อมูล: มีบากกันใส่ผิดด้าน มุมบากต้องตรงช่อง ยึดด้วยสลัก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> “ตรวจดู” ให้ข้อมูลเท่านั้น ไม่ซ่อมอะไร"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจดู / ตรวจผล</color></size>\n<size=36><b>เลือก “ตรวจผล” ตอนนี้</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> โมดูลยังไม่ได้ใส่ และสกรูยังหลวม\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ขึ้น “ผลตัวอย่าง: ยังไม่พร้อม” = ตัวอย่างผลเมื่องานยังไม่เสร็จ"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>โมดูล</color></size>\n<size=36><b>ใส่โมดูลด้านที่ใส่ได้: หันมุมบากไปฝั่งเดียวกับมุมบากของช่อง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> จับด้วย Grip ถือให้ขนานและตรงเหนือช่อง แล้วกดลงให้สุด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ป้ายขึ้น “ด้านถูก: กดลงให้สุด แล้วปล่อยมือ” ปล่อยมือแล้วโมดูลลงสุดในช่อง"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>โมดูล</color></size>\n<size=36><b>ลองด้านที่ใส่ไม่ได้: ดึงโมดูลออก หมุนครึ่งรอบ แล้วค่อย ๆ ลดลง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มุมบากอยู่คนละฝั่งกับมุมบากของช่อง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> โมดูลติดค้างเหนือช่อง ป้ายขึ้น “ติด: ด้านนี้ใส่ไม่ได้” · ไม่ต้องฝืน"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สลัก</color></size>\n<size=36><b>ยกโมดูลขึ้น หมุนกลับ แล้วใส่ด้านที่ใส่ได้ให้สุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มุมบากตรงกับมุมบากของช่อง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> โมดูลลงสุด แต่ยังไม่ได้ยึด"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สลัก</color></size>\n<size=36><b>ปิดสลัก: เอื้อมไปที่สลักสีฟ้า แล้วกด Grip หนึ่งครั้ง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> สลักขยับไปตำแหน่งปิด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วางเข้าที่ยังไม่เท่ากับยึดแล้ว ตอนนี้ปิดสลักแล้วจึงยึดแล้ว"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>แท่นหมุน</color></size>\n<size=36><b>จับมือจับขอบหน้าแท่น (หรือมุมหน้าที่มีแถบสีฟ้า) ด้วย Grip</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เลื่อนมือเป็นวงโค้งรอบแกนกลาง แท่นหมุนตามมือ ปล่อยแล้วจับใหม่ได้\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ป้ายขึ้น “หมุนแล้ว 120° จาก 120°” และสกรูด้านหลังหันมาทางคุณ"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สกรู</color></size>\n<size=36><b>ขันเข้า: ใช้ Trigger จับหัวสกรู แล้วบิดตามเข็มนาฬิกา</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มองตรงหัวสกรู · สกรูหมุนและจมลงในรูทีละนิด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ป้ายขึ้น “กำลังขันเข้า: 50%” ตัวเลขเพิ่มขึ้นเรื่อย ๆ"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สกรู</color></size>\n<size=36><b>ถ้าข้อมือบิดต่อไม่ได้ ปล่อยมือ แล้วจับใหม่</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> สกรูอยู่ที่เดิม ไม่ถอยกลับ\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> บิดต่อจากเดิมได้ ความคืบหน้าไม่หาย"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สกรู</color></size>\n<size=36><b>บิดจนป้ายขึ้น “แน่นแล้ว: ปล่อยมือเพื่อไปต่อ” แล้วปล่อยมือ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> หัวสกรูลงจนชิดผิวแท่น หมุนต่อไม่ได้แล้ว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ข้อมือบิดกลับนิดหน่อยตอนปล่อย สกรูก็ยังแน่น"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สาย</color></size>\n<size=36><b>ใช้ Trigger จับที่หัวปลั๊ก (ไม่จับตัวสาย)</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เสียบตรง ๆ เข้าช่องที่ว่าง ปลายอีกด้านต่ออยู่แล้ว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ปลั๊กลงสุดในช่อง ปล่อยมือแล้วยังอยู่"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจผล</color></size>\n<size=36><b>เลือก “ตรวจผล” อีกครั้ง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ตอนนี้ใส่โมดูล ปิดสลัก และขันสกรูแน่นแล้ว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ขึ้น “ผลตัวอย่าง: พร้อม” = ผลเมื่อทุกอย่างใส่และยึดครบ"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สาย</color></size>\n<size=36><b>จับหัวปลั๊กอีกครั้ง แล้วดึงออกจากช่องตรง ๆ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ดึงที่หัวปลั๊ก ไม่ดึงที่สาย\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ช่องว่างแล้ว ปล่อยมือแล้วปลั๊กกลับไปที่พัก"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สกรู</color></size>\n<size=36><b>คลายออก: ใช้ Trigger จับหัวสกรู แล้วบิดทวนเข็มนาฬิกา</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> สกรูหมุนและยกขึ้นมาทีละนิด · ป้ายขึ้น “กำลังคลายออก: เหลือ 40%”\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> บิดจนป้ายขึ้น “คลายสุดแล้ว: ปล่อยมือเพื่อไปต่อ” แล้วปล่อยมือ"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>สลัก</color></size>\n<size=36><b>ปลดสลัก: เอื้อมไปที่สลัก แล้วกด Grip หนึ่งครั้ง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ถ้าสลักยังปิด จะดึงโมดูลไม่ออก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> สลักขยับไปตำแหน่งเปิด"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>จบ</color></size>\n<size=36><b>จับโมดูลด้วย Grip แล้วดึงขึ้นออกจากช่อง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> โมดูลออกจากช่องแล้ว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ขึ้น “บทฝึกเสร็จแล้ว” · งานจริงใช้ท่าเดียวกันนี้"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/T2_th/images/01",
+      "sha256": "5396cfe68037316c0cf38eac8c34f0b96ac56cab5c17386fdd5201b55c80637a",
+      "caption_th": "<b>แท่นฝึก</b>\nป้ายเหนือชิ้นส่วนบอกสภาพตอนนี้ · ทำตามแผงทีละขั้น"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/02",
+      "sha256": "fdd516dc0dd50a04579248f549a8973c743e3c578bd1360f208bd9d18d292f39",
+      "caption_th": "<b>ใช้เอกสารอ้างอิง</b>\nแท็บเปลี่ยนรูปแบบ · − ย่อ · แถบเล็กเปิดกลับ · แถบจับย้าย · × ปิด"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/03",
+      "sha256": "223d0284fea6a04e8157498d4d35c8ba0e80e14af9330a092f31355f2042e839",
+      "caption_th": "<b>ตรวจดู / ตรวจผล</b>\n“ตรวจดู” ไม่ซ่อม · “ตรวจผล” ตอนนี้ = ตัวอย่างผลยังไม่พร้อม"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/04",
+      "sha256": "95b27e9c977d0196d68be138ee3c4acea950c0053e1df8d101dbbd64b9df265b",
+      "caption_th": "<b>ใส่โมดูล</b>\nใส่ด้านที่ใส่ได้ก่อน แล้วจึงลองด้านที่ใส่ไม่ได้"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/05",
+      "sha256": "6ce55ae196c4a32eaebe2d1a3ebb640d4dae57869c379f4f367e921236edefa7",
+      "caption_th": "<b>สลัก</b>\nปิดสลักจึงยึด · ปลดสลักก่อนจึงดึงออกได้"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/06",
+      "sha256": "0b241f24d1aea1a0cfa9771d420efb7e9efc68d73c6b11fb717c747fb9dbd14d",
+      "caption_th": "<b>หมุนแท่น</b>\nจับมือจับหรือมุมหน้า แล้วเลื่อนมือเป็นวงโค้งรอบแกน"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/07",
+      "sha256": "9d8daf648aeb0dd6cf210707e900718661c0ac06ba15adb49086278fabb9cf2e",
+      "caption_th": "<b>ทิศบิดสกรู</b>\nขันเข้า = ตามเข็ม · คลายออก = ทวนเข็ม (มองที่หัวสกรู)"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/08",
+      "sha256": "eb31e5f09088a865fe8d5e8e40f4eca12a927433a177e0e6295492e96168373c",
+      "caption_th": "<b>สกรูเลื่อนเข้าและออก</b>\nขันเข้า หัวสกรูลงชิดผิว · คลายออก หัวสกรูยกขึ้น"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/09",
+      "sha256": "f082068c682e54c9a4e6726b05ab3d2f59c1deec1999dcfa2f980c64edf68955",
+      "caption_th": "<b>เสียบและถอดปลั๊ก</b>\nจับที่หัวปลั๊กเสมอ ไม่ดึงที่สาย"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_th/images/10",
+      "sha256": "6138b36b48999873015d2b2a38ae636d100c3beedc01e53e6d8c00f818cc1bb1",
+      "caption_th": "<b>ตรวจผล</b>\nไม่พร้อม = ยังใส่หรือยึดไม่ครบ · พร้อม = ใส่และยึดครบ"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/T2_th.mp4",
+    "sha256": "77812278c2574d94f7162232c336b60a32e4d2109b547bcae811356dc5aae72a",
+    "duration_seconds": 221.51,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 20.18
+      },
+      {
+        "stage": "do",
+        "start_seconds": 20.18,
+        "end_seconds": 39.75
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 39.75,
+        "end_seconds": 58.4
+      },
+      {
+        "stage": "do",
+        "start_seconds": 58.4,
+        "end_seconds": 73.57
+      },
+      {
+        "stage": "do",
+        "start_seconds": 73.57,
+        "end_seconds": 90.11
+      },
+      {
+        "stage": "do",
+        "start_seconds": 90.11,
+        "end_seconds": 105.52
+      },
+      {
+        "stage": "do",
+        "start_seconds": 105.52,
+        "end_seconds": 122.27
+      },
+      {
+        "stage": "do",
+        "start_seconds": 122.27,
+        "end_seconds": 144.54
+      },
+      {
+        "stage": "do",
+        "start_seconds": 144.54,
+        "end_seconds": 155.23
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 155.23,
+        "end_seconds": 169.87
+      },
+      {
+        "stage": "do",
+        "start_seconds": 169.87,
+        "end_seconds": 180.73
+      },
+      {
+        "stage": "do",
+        "start_seconds": 180.73,
+        "end_seconds": 196.41
+      },
+      {
+        "stage": "do",
+        "start_seconds": 196.41,
+        "end_seconds": 210.9
+      },
+      {
+        "stage": "done",
+        "start_seconds": 210.9,
+        "end_seconds": 221.51
+      }
+    ]
+  }
+}

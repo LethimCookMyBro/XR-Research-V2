@@ -467,7 +467,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Heading repeated as context on every sub-page; rich text only when the reviewed text has no markup characters.
             contentText.text = heading == null ? parts[part - 1]
                 : (heading.IndexOf('<') < 0 ? "<b>" + heading + "</b>" : heading) + "\n" + parts[part - 1];
-            float textHeight = Mathf.Max(48, contentText.GetPreferredValues(contentText.text, width, 10000).y + 12);
+            contentText.rectTransform.sizeDelta = new Vector2(width, 10000);
+            contentText.ComputeMarginSize(); contentText.ForceMeshUpdate(true, true);
+            float textHeight = Mathf.Max(48, contentText.preferredHeight + 12);
             // Capture C04: a fixed 75% image floor pushed 2-3 line captions below the viewport edge (looked clipped by the footer).
             // Reserve the measured caption first; only captions longer than ~45% of the viewport still need the scrollbar.
             float availableHeight = Mathf.Max(viewportHeight * .55f, viewportHeight - textHeight - 48);

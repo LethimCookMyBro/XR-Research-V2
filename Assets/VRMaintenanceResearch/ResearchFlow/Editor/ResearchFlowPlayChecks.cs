@@ -589,6 +589,38 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Check((drag.GetComponent<Graphic>().color == Color.clear || drag.GetComponent<Graphic>().color == ResearchUITheme.Elevated) && drag.GetComponent<RectTransform>().rect.width >= 320
                     && drag.GetComponent<RectTransform>().rect.height >= 50
                     && drag.transform.Find("GripLine").gameObject.activeSelf, "Drag grip keeps a light opaque background and large hit target");
+                var savedFlow = fixture.Flow; var savedRecord = fixture.Record;
+                var training = root.AddComponent<ResearchTrainingStation>(); fixture.trainingStation = training;
+            Check(ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Default) == ResearchUIPolicy.TrainingTrainerV3,
+                "New sessions use the owner's simplified training version");
+            foreach (string version in new[] { ResearchUIPolicy.TrainingTrainerV3, ResearchUIPolicy.TrainingTrainerV2, ResearchUIPolicy.TrainingFixedDemo, null, "unknown-historical-version" })
+                foreach (ParticipantLanguage language in Enum.GetValues(typeof(ParticipantLanguage)))
+                {
+                    bool revised = version == ResearchUIPolicy.TrainingTrainerV2;
+                bool simplified = version == ResearchUIPolicy.TrainingTrainerV3;
+                string task = simplified ? "T3" : revised ? "T2" : "T";
+                    Set(fixture, "Record", new ParticipantRecord { test_data = true, training_version = version, language = language });
+                    Set(fixture, "Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 4));
+                    string expected = ResearchReferenceViewer.ResourceFor(task, language.ToString());
+                    Check(fixture.ReaderResource == expected, "Training Reader uses recorded version: " + version + "/" + language);
+                    var package = Resources.Load<TextAsset>(expected);
+                    string suffix = language == ParticipantLanguage.Japanese ? "ja" : language == ParticipantLanguage.English ? "en" : "th";
+                    Check(package && (string)Newtonsoft.Json.Linq.JObject.Parse(package.text)["content_id"] == "s1.reader." + task + "." + suffix,
+                        "Training package identity matches recorded version: " + version + "/" + language);
+                    foreach (string section in ResearchReferenceScheme.Active)
+                        Check(fixture.ReferenceAvailable(section), "Training format available: " + version + "/" + language + "/" + section);
+                    var sequence = ResearchTrainingStation.SequenceFor(version);
+                Check(simplified ? !sequence.Contains("insert_wrong") && Array.IndexOf(sequence, "lock") == Array.IndexOf(sequence, "insert") + 1
+                    : (Array.IndexOf(sequence, "insert") < Array.IndexOf(sequence, "insert_wrong")) == revised,
+                        "Only exact TrainerV2 uses fitting-first sequence: " + version);
+                    evidence.Clear(); evidence.UnionWith(new[] { "examine", "inspect_fail" });
+                if (revised || simplified) evidence.Add("insert");
+                Check(simplified ? fixture.TutorialFact == "lock" && fixture.TutorialInstructionKey == "tutorial.try.lock.v3"
+                    : fixture.TutorialFact == "insert_wrong" && fixture.TutorialInstructionKey == "tutorial.try.insert_wrong" + (revised ? ".v2" : ""),
+                        "Blocked-way instruction retains recorded training meaning: " + version + "/" + language);
+                }
+                evidence.Clear(); fixture.trainingStation = null; UnityEngine.Object.DestroyImmediate(training);
+                Set(fixture, "Flow", savedFlow); Set(fixture, "Record", savedRecord);
                 var port = root.AddComponent<ResearchTaskPort>();
                 port.taskId = "A";
                 port.contentApproved = true;

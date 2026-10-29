@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "content_id": "s1.reader.B.ja",
-  "version": "v2-b4fb442b0702ae3b",
+  "version": "v2-6d693550421389cf.840f9e10dd0eeb4c",
   "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
   "source_pdf": "S1_TaskB_Reference_v2_JA.pdf",
   "source_pdf_resource": "ResearchReaderS1/B_ja/source_pdf",
@@ -43,7 +43,10 @@
       "text_ja": "<size=24><color=#5B6B7F>開ける</color></size>\n<size=36><b>前ガードのクリップを外します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> クリップは前ガードの縁にあります。\n\n<color=#2E7D32><b>正しい状態:</b></color> クリップが開きます。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>開ける</color></size>\n<size=36><b>前ガードをマークに合わせて回し、まっすぐ外します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ほかの部品に当てず、まっすぐ引きます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 前ガードが外れ、羽根が見えます。"
+      "text_ja": "<size=24><color=#5B6B7F>開ける</color></size>\n<size=36><b>前ガードをマークに合わせて回してロックを外します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ほかの部品に当てず、まっすぐ引きます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 前ガードのロックが溝から外れ、引き抜けます。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>開ける</color></size>\n<size=36><b>前ガードをまっすぐ引き抜きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> クリップが開き、ロックが溝から外れています。\n\n<color=#2E7D32><b>正しい状態:</b></color> 前ガードが外れ、羽根が見えます。"
     },
     {
       "text_ja": "<size=24><color=#5B6B7F>調べる</color></size>\n<size=36><b>羽根で「確認」を使います。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 羽根の溝がピンにはまっているか、羽根キャップが締まっているか。\n\n<color=#2E7D32><b>正しい状態:</b></color> 正常 = 羽根が奥まで入り、動かない。"
@@ -58,22 +61,31 @@
       "text_ja": "<size=24><color=#5B6B7F>調べる</color></size>\n<size=36><b>後ガードの固定リングで「確認」を使います。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> リングが締まっているか。「ねじに入っている」は締まっているとは限りません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 正常 = リングが締まり、後ガードが動かない。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>直す（見つけたら）</color></size>\n<size=36><b>前ガードがずれている・クリップが開いていたら：手順 15〜16 で付け直すときにマークを合わせます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 回す前にぴったり押し付けます。\n\n<color=#2E7D32><b>正しい状態:</b></color> マークが合い、クリップが閉じている。"
+      "text_ja": "<size=24><color=#5B6B7F>後ガードを付け直す場合</color></size>\n<size=36><b>後ガードの固定リングを反時計回りに回し、ねじから外れるまで緩めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 正面から見ます。リングは右ねじです。先に羽根を外します。\n\n<color=#2E7D32><b>正しい状態:</b></color> リングがねじから外れ、引き抜けます。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>直す（見つけたら）</color></size>\n<size=36><b>羽根がピンからずれている・奥まで入っていなかったら：手順 13〜14 で溝をピンに合わせて付け直します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 軸の近くに置いただけでは入っていません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 羽根が奥まで入り、ぐらつかない。"
+      "text_ja": "<size=24><color=#5B6B7F>後ガードを付け直す場合</color></size>\n<size=36><b>固定リングを軸に沿って引き抜きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ねじに入っている間は引っぱりません。\n\n<color=#2E7D32><b>正しい状態:</b></color> リングが後ガードから外れます。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>直す（見つけたら）</color></size>\n<size=36><b>後ガードが動く・リングがゆるかったら：後ガードを合わせ、リングを 時計回りに締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> リングは右ねじ：緩めるのは反時計回り、締めるのは時計回り。ガードを合わせ直すときは、先にリングを外します。\n\n<color=#2E7D32><b>正しい状態:</b></color> リングが締まり、後ガードが動かない。"
+      "text_ja": "<size=24><color=#5B6B7F>後ガードを付け直す場合</color></size>\n<size=36><b>後ガードを取付位置に合わせ、奥まで入れます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 後ガードがずれている場合は、いったん外して位置を合わせます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 後ガードが正しい位置に収まります。まだ固定されていません。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>羽根の溝をピンに合わせて、奥まで押し込みます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 押す前に溝とピンを合わせます。\n\n<color=#2E7D32><b>正しい状態:</b></color> 羽根が奥まで入り、ぐらつかない。"
+      "text_ja": "<size=24><color=#5B6B7F>後ガードを付け直す場合</color></size>\n<size=36><b>固定リングをねじの位置に戻します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 先に後ガードを奥まで入れます。\n\n<color=#2E7D32><b>正しい状態:</b></color> リングがねじに入ります。まだ締まった状態ではありません。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>羽根キャップを付け、 反時計回りに締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> まっすぐねじ込みます。固いときは戻してやり直します。\n\n<color=#2E7D32><b>正しい状態:</b></color> キャップが締まっている。"
+      "text_ja": "<size=24><color=#5B6B7F>後ガードを付け直す場合</color></size>\n<size=36><b>固定リングを時計回りに回して締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 正面から見て締めます。リングを置くだけでは固定されません。\n\n<color=#2E7D32><b>正しい状態:</b></color> リングが締まり、後ガードが動きません。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>前ガードのマークを合わせ、ぴったり付けてから回して固定します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ガードのマークを本体のマークに合わせます。\n\n<color=#2E7D32><b>正しい状態:</b></color> マークが合っている。"
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>羽根を軸に沿って奥まで押し込みます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 押す前に羽根の溝をピンに合わせます。ずれていたり、奥まで入っていなかった場合は、ここで合わせ直します。\n\n<color=#2E7D32><b>正しい状態:</b></color> 羽根が奥まで入り、ぐらつかない。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>羽根キャップをねじの位置に戻します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> まっすぐねじ込みます。固いときは戻してやり直します。\n\n<color=#2E7D32><b>正しい状態:</b></color> キャップがねじに入ります。まだ締まった状態ではありません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>羽根キャップを反時計回りに回して締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 正面から見ます。羽根キャップは左ねじで、後ろのリングとは逆方向です。\n\n<color=#2E7D32><b>正しい状態:</b></color> キャップが締まり、羽根が奥まで入り、ぐらつきません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>前ガードのマークを合わせ、ぴったり付けてから回して固定します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> マークがずれていた場合は、ここで合わせます。合わせ面を奥まで入れてからロックします。\n\n<color=#2E7D32><b>正しい状態:</b></color> マークが合っている。"
     },
     {
       "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=36><b>前ガードのクリップを閉じます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 検査の前に前後のガードをすべて付けます。\n\n<color=#2E7D32><b>正しい状態:</b></color> クリップが閉じている。"
@@ -88,44 +100,44 @@
   "images": [
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_01",
-      "sha256": "1dd79dc000e75b104ac9eaeccbcdcf849c1d3a1a4295cfe4548ed2ae1378eb26",
+      "sha256": "8885ff6a7bd81082c65c644e732fc570978ae2824ac64a587a594b0451ce9e08",
       "caption_ja": "<b>この作業</b>\nゆるい所・ずれている所を探して直し、「検査」を押します。順番は自由です。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_02",
-      "sha256": "4e9a7d4705d1c2a2fd37ed5afc6695f1d0b53f6e059824e2a6faba6906ef8724",
+      "sha256": "869857a3290a7bef0588a2000824dc583db50aa268619d831bf88ebcf230b681",
       "caption_ja": "<b>正常 ✓ / 異常 ×</b>\nねじに入っている ≠ 締まっている。「確認」は見るだけで直しません。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_03",
-      "sha256": "45b1b9f478dd4e7a6129cf6ed944887ef554b413845d06f50c52b77e64fee238",
+      "sha256": "9c38e51aa48ff7c62317f3b5d7cf4cda4e78e840694c2d3978d3e3737d62b013",
       "caption_ja": "<b>開け方</b>\n前ガード → 羽根キャップ → 羽根 → 後ガードの固定リングが見える"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_04",
-      "sha256": "d01d445bc901496801aae934b63a246bc8a21a48ff69979ed4b9dd52cf8658c5",
+      "sha256": "6e91ee1ac4eba565e6a2ec381e2a1b397b64c50357981381ea723b5488f35d87",
       "caption_ja": "<b>回す向き（正面から見て）</b>\nこの 2 つは向きが逆です。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_05",
-      "sha256": "93643bda93d29d6da9039630aaef387570e39073fb22eeadb9162e137d4b4cdb",
+      "sha256": "7e50f4937a610be55ee917e84fb14850f614c2d34b317d8161a7aa84ce53acbd",
       "caption_ja": "<b>見つけた所を直す</b>\n悪い所を直し、外した部品をすべて戻します。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_06",
-      "sha256": "d95680b99b31c58d880ea68cc7a0fcf5494bc9a530a6e1102943511f25440b96",
+      "sha256": "19c1c0290e40e5227a46444f8f167211578e9195cf2aefd3e1c1c61d0f8da0e1",
       "caption_ja": "<b>元どおりに組み立てる</b>\n「検査」の前にガードをすべて付けます。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_ja_07",
-      "sha256": "7ccf3c7621fead48be3ac633f8c0f60c1030c65577213ae74d07c4722cf235b8",
+      "sha256": "e5e9e8c6a991f3ef3fc7c5c7ec4208741b95b0a91eeb8d4859477d2f554f99e1",
       "caption_ja": "<b>「検査」を押す</b>\n直して何度でも検査できます。不具合は研究者へ。"
     }
   ],
   "video": {
     "streaming_path": "ResearchReaderS1/B_ja.mp4",
-    "sha256": "c6008b21436b4fd368db3dca044efdbe335be8b48d96759044059b2a7c164410",
-    "duration_seconds": 186.82,
+    "sha256": "54e6b1174cc2e3650d015d0ae948e7f45c893990be009b5dd4e4027f250e905a",
+    "duration_seconds": 206.93,
     "audio": "narration",
     "chapters": [
       {
@@ -151,47 +163,47 @@
       {
         "stage": "do",
         "start_seconds": 74.98,
-        "end_seconds": 83.38
+        "end_seconds": 88.67
       },
       {
         "stage": "do",
-        "start_seconds": 83.38,
-        "end_seconds": 98.7
+        "start_seconds": 88.67,
+        "end_seconds": 99.91
       },
       {
         "stage": "do",
-        "start_seconds": 98.7,
-        "end_seconds": 107.59
+        "start_seconds": 99.91,
+        "end_seconds": 108.8
       },
       {
         "stage": "do",
-        "start_seconds": 107.59,
-        "end_seconds": 125.47
+        "start_seconds": 108.8,
+        "end_seconds": 125.08
       },
       {
         "stage": "do",
-        "start_seconds": 125.47,
-        "end_seconds": 134.56
+        "start_seconds": 125.08,
+        "end_seconds": 134.17
       },
       {
         "stage": "do",
-        "start_seconds": 134.56,
-        "end_seconds": 143.42
+        "start_seconds": 134.17,
+        "end_seconds": 148.67
       },
       {
         "stage": "do",
-        "start_seconds": 143.42,
-        "end_seconds": 151.17
+        "start_seconds": 148.67,
+        "end_seconds": 162.88
       },
       {
         "stage": "do",
-        "start_seconds": 151.17,
-        "end_seconds": 168.1
+        "start_seconds": 162.88,
+        "end_seconds": 188.2
       },
       {
         "stage": "done",
-        "start_seconds": 168.1,
-        "end_seconds": 186.82
+        "start_seconds": 188.2,
+        "end_seconds": 206.93
       }
     ]
   }

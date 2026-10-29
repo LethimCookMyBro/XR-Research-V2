@@ -331,6 +331,44 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 ResearchDragHandle drag = null; PointerEventData reader = null; Oculus.Interaction.PointableCanvasModule module = null;
                 var e = new Oculus.Interaction.Locomotion.LocomotionEvent(98761008, f.head.position + f.head.forward, Oculus.Interaction.Locomotion.LocomotionEvent.TranslationType.Absolute);
                 var pending = typeof(ResearchPanelMotion).GetMethod("TryApplyPendingRecenter", Hidden);
+                // Session-policy callbacks only; this owned gate is not a Meta/native teleport interactor.
+                var navigationGate = new GameObject("RecoveryGazeNavigationGate"); SceneManager.MoveGameObjectToScene(navigationGate, v.gameObject.scene);
+                navigationGate.transform.SetParent(v.transform, false); c.locomotionInputRoots = new[] { navigationGate };
+                typeof(ResearchSessionFlowController).GetField("locomotionGates", Hidden).SetValue(c, new[] { navigationGate });
+                var mainCanvas = panel.GetComponent<Canvas>();
+                var mainGroup = (CanvasGroup)typeof(ResearchFlowView).GetField("mainGroup", Hidden).GetValue(v);
+                Vector3 gazePose = default, readerPose = default; Quaternion gazeRotation = default, readerRotation = default;
+                int gazeCredits = 0, readerCredits = 0; float readerOpened = 0;
+                void Sync() { v.Refresh(); Settle(panel); if (v.referencePanel.gameObject.activeInHierarchy) Settle(v.referencePanel); v.RefreshReference(); v.RefreshRecoveryUtility(); }
+                bool StopVisible() => v.RecoveryCanvas.gameObject.activeSelf && v.RecoveryCanvas.transform.Find("Stop").gameObject.activeSelf;
+                void NoGazePopup(string name, bool readerCase)
+                {
+                    bool stable = readerCase ? v.referencePanel.transform.position == readerPose && v.referencePanel.transform.rotation == readerRotation && c.TutorialCompletedFactCount == readerCredits
+                        : panel.transform.position == gazePose && panel.transform.rotation == gazeRotation && c.TutorialCompletedFactCount == gazeCredits;
+                    Check(!v.RecoveryCanvas.gameObject.activeSelf && stable && !c.Flow.Paused, name,
+                        new { readerCase, stable, recovery = v.RecoveryCanvas.gameObject.activeSelf, reader_age = Time.unscaledTime - readerOpened, c.TutorialCompletedFactCount });
+                }
+                void FinishClosedPreviewReader(string reason)
+                {
+                    // This disabled preview View has no Play coroutine pump. Close logically first,
+                    // then retire only its owned, already-hidden shell before another open epoch.
+                    var visible = Newtonsoft.Json.Linq.JObject.FromObject(v.ReferenceViewer.Metadata)["visible"];
+                    bool closed = !v.enabled && EditorSceneManager.IsPreviewScene(v.gameObject.scene)
+                        && !c.ReferenceOpen && visible != null && visible.Type == Newtonsoft.Json.Linq.JTokenType.Boolean && !(bool)visible;
+                    Check(closed, reason + "/owned disabled preview Reader already logically closed", new { c.ReferenceOpen, viewer_visible = visible });
+                    if (!closed) throw new InvalidOperationException("Closed preview Reader teardown precondition failed: " + reason);
+                    v.referencePanel.gameObject.SetActive(false);
+                }
+                void NavigationRecovery(string command)
+                {
+                    Check(c.ReferenceOpen && !c.ReferenceMinimized && !navigationGate.activeSelf, command + "/expanded Reader retains intentional navigation lock", c.ReferenceOpen);
+                    Check(c.Command(command, "Controller"), command + "/normal Reader command accepted", c.ReferenceMinimized);
+                    if (command == "reference_close") FinishClosedPreviewReader(command);
+                    c.UpdateReferenceNavigation(false, Vector2.zero); Check(!navigationGate.activeSelf, command + "/missing input cannot release lock", navigationGate.activeSelf);
+                    c.UpdateReferenceNavigation(true, Vector2.up); Check(!navigationGate.activeSelf, command + "/held stick cannot release lock", navigationGate.activeSelf);
+                    c.UpdateReferenceNavigation(true, Vector2.zero); Check(navigationGate.activeSelf, command + "/tracked neutral releases lock in interactive phase", navigationGate.activeSelf);
+                }
+
                 var steps = new List<(double at, string label, Action action)> {
                     (0, "instruction_presented", () => Check(c.TutorialArmedFact == "teleport" && panel.IsReadableFromHead, "initial instruction presented", new { c.TutorialArmedFact })),
                     (.20, "look_down_aim_hold", () => { pose = panel.transform.position; input.value.SetAxis2D(ControllerAxis2DUsage.Primary2DAxis, Vector2.up); f.head.rotation = facing * Quaternion.Euler(45, 85, 0); f.Requested(e); }),
@@ -357,10 +395,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         reader.position += reader.delta; typeof(Oculus.Interaction.PointableCanvasModule).GetMethod("ProcessDrag", Hidden).Invoke(module, new object[] { reader }); Check(reader.dragging && reader.pointerPress == reader.pointerDrag, "production ProcessDrag owns the reader input surface", new { content_has_scroll_range = scroll.content.rect.height > scroll.viewport.rect.height, before = new[] { contentBefore.x, contentBefore.y }, after = new[] { scroll.content.anchoredPosition.x, scroll.content.anchoredPosition.y }, long_document_movement_verified_separately = "ResearchFocusedReaderInputChecks" });
                         pose = panel.transform.position; f.head.position += Vector3.right * .15f; panel.Recenter(false, false);
                         Check(reader.dragging && panel.RecenterPending && panel.transform.position == pose && reader.pointerPress == reader.pointerDrag, "production ProcessDrag cancellation path retains scroll owner", new { reader.dragging, press_owner = reader.pointerPress ? reader.pointerPress.name : null, drag_owner = reader.pointerDrag ? reader.pointerDrag.name : null }); }),
-                    (2.0, "reader_end_drag", () => { ExecuteEvents.Execute(reader.pointerPress, reader, ExecuteEvents.pointerUpHandler); ExecuteEvents.Execute(reader.pointerDrag, reader, ExecuteEvents.endDragHandler); reader.dragging = false; Settle(panel); Check(!panel.RecenterPending && panel.IsReadableFromHead, "reader endDrag releases pose", panel.Pose()); typeof(ResearchSessionFlowController).GetProperty("ReferenceOpen").GetSetMethod(true).Invoke(c, new object[] { false }); v.RefreshReference(); }),
+                    (2.0, "reader_end_drag", () => { ExecuteEvents.Execute(reader.pointerPress, reader, ExecuteEvents.pointerUpHandler); ExecuteEvents.Execute(reader.pointerDrag, reader, ExecuteEvents.endDragHandler); reader.dragging = false; Settle(panel); Check(!panel.RecenterPending && panel.IsReadableFromHead, "reader endDrag releases pose", panel.Pose()); Check(c.Command("reference_close", "Controller"), "drag fixture Reader closes normally", c.ReferenceOpen); FinishClosedPreviewReader("reader_end_drag"); }),
                     (2.2, "panel_drag_head_movement", () => { drag = panel.GetComponentInChildren<ResearchDragHandle>(true); panel.GetComponent<Canvas>().worldCamera = camera; pointer.position = camera.WorldToScreenPoint(drag.transform.position); pointer.pointerCurrentRaycast = new RaycastResult { gameObject = drag.gameObject, module = panel.GetComponent<UnityEngine.UI.GraphicRaycaster>() }; pointer.pointerPressRaycast = pointer.pointerCurrentRaycast; ExecuteEvents.Execute(drag.gameObject, pointer, ExecuteEvents.beginDragHandler); pose = panel.transform.position; rotation = panel.transform.rotation; f.head.position += Vector3.right * .15f; f.head.rotation *= Quaternion.Euler(0, 30, 0); v.OnSpatialDiscontinuity("synthetic_timeline_drag"); }),
                     (2.4, "panel_drag_release", () => { Check(drag.IsDragging && panel.transform.position == pose && panel.transform.rotation == rotation, "held drag does not steal pose", panel.Pose()); ExecuteEvents.Execute(drag.gameObject, pointer, ExecuteEvents.endDragHandler); Settle(panel); Check(!panel.RecenterPending && panel.IsReadableFromHead, "panel drag release settles", panel.Pose()); }),
-                    (2.6, "menu_pause_main_lost", () => { f.head.rotation *= Quaternion.Euler(0, 180, 0); menu.value.SetButton(ControllerButtonUsage.MenuButton, true); f.Tick(); menu.value.Clear(); Settle(panel); f.head.rotation *= Quaternion.Euler(0, 180, 0); Check(c.Flow.Paused && c.PauseKind == "participant", "existing left Menu pauses offview", new { c.Flow.Paused, c.PauseKind }); edgeTime = Time.unscaledTime; v.RefreshRecoveryUtility(); Check(!v.RecoveryCanvas.gameObject.activeSelf, "offview hysteresis does not open at zero elapsed", new { edgeTime, now = Time.unscaledTime }); }),
+                    (2.6, "menu_pause_main_lost", () => { f.head.rotation *= Quaternion.Euler(0, 180, 0); menu.value.SetButton(ControllerButtonUsage.MenuButton, true); f.Tick(); menu.value.Clear(); f.Tick(); Settle(panel); Check(panel.IsReadableFromHead && !panel.PlacementBlocked && !panel.RecenterPending, "Menu naturally presents readable Pause card", panel.Pose()); Check(c.Flow.Paused && c.PauseKind == "participant", "existing left Menu pauses offview", new { c.Flow.Paused, c.PauseKind }); edgeTime = Time.unscaledTime; v.RefreshRecoveryUtility(); Check(!v.RecoveryCanvas.gameObject.activeSelf, "presented Pause card does not open secondary Recovery at zero elapsed", new { edgeTime, now = Time.unscaledTime }); }),
                     (2.8, "paused_no_secondary_fallback", () => { Check(Time.unscaledTime - edgeTime >= .08f && !v.RecoveryCanvas.gameObject.activeSelf, "eligible Pause does not create a secondary fallback", new { edgeTime, now = Time.unscaledTime });
                         menu.value.Clear(); f.Tick(); input.value.SetAxis2D(ControllerAxis2DUsage.Primary2DAxis, Vector2.up); menu.value.SetButton(ControllerButtonUsage.MenuButton, true); f.Tick(); input.value.Clear(); menu.value.Clear(); f.Tick();
                         foreach (var readiness in new[] { new[] { false, true, true }, new[] { true, false, false }, new[] { true, true, false } }) { pending.Invoke(panel, new object[] { readiness[0], readiness[1], readiness[2], Time.frameCount + 1 }); Check(panel.RecenterPending && !v.RecoveryCanvas.gameObject.activeSelf, "explicit Menu request waits for valid pose/presence without secondary UI", new { readiness, panel.RecenterPending }); } input.value.SetAxis2D(ControllerAxis2DUsage.Primary2DAxis, Vector2.up); }),
@@ -369,7 +407,65 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     (3.8, "bounded_idle_queries", () => { int count = panel.PlacementCalls - idleCalls; Check(count <= Mathf.CeilToInt((Time.unscaledTime - idleTime) / .1f) + 2 && updates > idleUpdates, "idle query count bounded by observed elapsed clock", new { count, update_count = updates - idleUpdates, elapsed = Time.unscaledTime - idleTime }); }),
                     (4.0, "real_collider_entry", () => { var obstacle = new GameObject("TimelineObstacle"); obstacle.transform.SetParent(f.root.transform); obstacle.transform.position = panel.transform.position; obstacle.AddComponent<BoxCollider>().size = Vector3.one * .2f; obstacle.transform.SetParent(null, true); SceneManager.MoveGameObjectToScene(obstacle, caller); obstacle.SetActive(true); Physics.SyncTransforms(); Check(!panel.PlacementClear(panel.transform.position, panel.transform.rotation) && panel.LastRejection.StartsWith("collider:"), "real collider blocks placement", new { panel.LastRejection, panel.PlacementCalls }); UnityEngine.Object.DestroyImmediate(obstacle); Physics.SyncTransforms(); }),
                     (4.25, "clear_after_obstacle_exit", () => { panel.Recenter(false, false); Settle(panel); Check(panel.IsReadableFromHead && !panel.PlacementBlocked, "readable after obstacle removal", panel.Pose()); }),
-                    (4.5, "final_retained_state", () => Check(c.TutorialCompletedFactCount == 1 && !c.Flow.Paused, "final credit and running state retained", new { c.TutorialCompletedFactCount, c.Flow.Paused }))
+                    (4.5, "baseline_retained_state", () => Check(c.TutorialCompletedFactCount == 1 && !c.Flow.Paused, "baseline credit and running state retained", new { c.TutorialCompletedFactCount, c.Flow.Paused })),
+                    (4.75, "main_gaze_away_start", () => { input.value.Clear(); menu.value.Clear(); f.head.rotation = facing; Sync(); gazePose = panel.transform.position; gazeRotation = panel.transform.rotation; gazeCredits = c.TutorialCompletedFactCount; f.head.rotation = facing * Quaternion.Euler(45, 85, 0); }),
+                    (5.75, "main_gaze_after_dwell", () => NoGazePopup("main accepted panel lookaway beyond0.75s has no Recovery", false)),
+                    (6.75, "main_gaze_sustained", () => NoGazePopup("main sustained gaze away retains pose and credits", false)),
+                    (7.0, "open_actual_training_reader", () => {
+                        f.head.rotation = facing;
+                        var flow = new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialReferenceInspect, 3);
+                        typeof(ResearchSessionFlowController).GetProperty("Flow").GetSetMethod(true).Invoke(c, new object[] { flow });
+                        typeof(ResearchSessionFlowController).GetProperty("Record").GetSetMethod(true).Invoke(c, new object[] { c.Registry.SaveProgress(c.Record, flow) });
+                        Sync(); Check(c.Command("reference", "Controller"), "actual authorized training Reader opens", c.ReaderResource);
+                        v.referencePanel.GetComponent<Canvas>().worldCamera = camera; Sync(); readerOpened = Time.unscaledTime;
+                    }),
+                    (7.35, "reader_gaze_away_start", () => {
+                        Sync(); Check(c.ReferenceOpen && c.ReaderAuthorized && v.IsReferenceActuallyVisible && v.referencePanel.HasAcceptedPose && !v.referencePanel.PlacementBlocked && !v.referencePanel.RecenterPending,
+                            "Reader naturally presented before gaze change", new { c.ReaderResource, v.IsReferenceActuallyVisible });
+                        readerPose = v.referencePanel.transform.position; readerRotation = v.referencePanel.transform.rotation; readerCredits = c.TutorialCompletedFactCount;
+                        f.head.rotation = facing * Quaternion.Euler(45, 85, 0);
+                    }),
+                    (8.35, "reader_gaze_during_direction_cue", () => {
+                        float until = (float)typeof(ResearchFlowView).GetField("readerCueUntil", Hidden).GetValue(v);
+                        Check(Time.unscaledTime - readerOpened >= .75f && Time.unscaledTime < until, "real timeline samples Reader lookaway before4s cue expiry", new { Time.unscaledTime, until });
+                        NoGazePopup("Reader Direction and fallback cannot open Recovery on ordinary gaze", true);
+                    }),
+                    (12.0, "reader_gaze_after_cue_expiry", () => {
+                        float until = (float)typeof(ResearchFlowView).GetField("readerCueUntil", Hidden).GetValue(v);
+                        Check(Time.unscaledTime > until, "real timeline crosses4s cue expiry without clock edits", new { Time.unscaledTime, until });
+                        NoGazePopup("Reader sustained gaze away after cue expiry has no Recovery", true);
+                    }),
+                    (12.25, "reader_blocked_negative_fixture", () => {
+                        // Inject an unavailable-placement fault, never force a visible/ready surface or bypass its guard.
+                        typeof(ResearchPanelMotion).GetMethod("SetPlacementBlocked", Hidden).Invoke(v.referencePanel, new object[] { true }); v.RefreshRecoveryUtility();
+                        Check(v.RecoveryCanvas.gameObject.activeSelf && typeof(ResearchFlowView).GetField("readerFeedback", Hidden).GetValue(v).ToString() == "Blocked",
+                            "actual Blocked Reader feedback still requires Recovery", new { fault_injected = true, v.referencePanel.PlacementBlocked });
+                    }),
+                    (12.5, "reader_close_neutral_contract", () => {
+                        typeof(ResearchPanelMotion).GetMethod("SetPlacementBlocked", Hidden).Invoke(v.referencePanel, new object[] { false }); f.head.rotation = facing; Sync(); NavigationRecovery("reference_close");
+                    }),
+                    (13.0, "reader_minimize_neutral_contract", () => { Check(c.Command("reference", "Controller"), "Reader reopens for minimize contract", c.ReaderResource); Sync(); NavigationRecovery("reference_minimize"); Check(c.Command("reference_close", "Controller"), "minimized Reader closes normally", c.ReferenceOpen); FinishClosedPreviewReader("minimize_cleanup"); Sync(); }),
+                    (13.25, "parked_main_fallback", () => { Check(v.LocalCommand("main_minimize", "Controller"), "main surface explicitly parked", true); v.RefreshRecoveryUtility(); Check(StopVisible(), "parked surfaces retain Stop fallback", v.RecoveryCanvas.gameObject.activeSelf); }),
+                    (13.5, "main_unpark", () => { v.LocalCommand("main_restore", "Controller"); f.head.rotation = facing; Sync(); }),
+                    (13.75, "canvas_disabled_start", () => { f.head.rotation = facing * Quaternion.Euler(45, 85, 0); mainCanvas.enabled = false; v.RefreshRecoveryUtility(); }),
+                    (14.75, "canvas_disabled_fallback", () => Check(StopVisible(), "disabled Canvas is not merely looked-away: Stop remains", v.RecoveryCanvas.gameObject.activeSelf)),
+                    (15.0, "canvas_restored", () => { mainCanvas.enabled = true; f.head.rotation = facing; Sync(); }),
+                    (15.25, "alpha_hidden_start", () => { f.head.rotation = facing * Quaternion.Euler(45, 85, 0); mainGroup.alpha = 0; v.RefreshRecoveryUtility(); }),
+                    (16.25, "alpha_hidden_fallback", () => Check(StopVisible(), "alpha-zero surface retains Stop fallback", v.RecoveryCanvas.gameObject.activeSelf)),
+                    (16.5, "alpha_restored", () => { mainGroup.alpha = 1; f.head.rotation = facing; Sync(); }),
+                    (16.75, "input_disabled_start", () => { f.head.rotation = facing * Quaternion.Euler(45, 85, 0); mainGroup.interactable = mainGroup.blocksRaycasts = false; v.RefreshRecoveryUtility(); }),
+                    (17.75, "input_disabled_fallback", () => Check(StopVisible(), "noninteractable nonraycast surface retains Stop fallback", v.RecoveryCanvas.gameObject.activeSelf)),
+                    (18.0, "input_restored", () => { mainGroup.interactable = mainGroup.blocksRaycasts = true; f.head.rotation = facing; Sync(); }),
+                    (18.25, "menu_pause_after_gaze_cases", () => {
+                        menu.value.SetButton(ControllerButtonUsage.MenuButton, true); f.Tick(); menu.value.Clear(); f.Tick(); Settle(panel);
+                        Check(c.Flow.Paused && c.PauseKind == "participant" && !navigationGate.activeSelf && c.guards.All(g => !g.Suspended), "Menu pauses world while retaining guarded UI input", new { c.PauseKind, navigationGate.activeSelf });
+                    }),
+                    (18.35, "paused_card_lookaway", () => { f.head.rotation = facing * Quaternion.Euler(0, 180, 0); v.RefreshRecoveryUtility(); }),
+                    (18.6, "paused_recovery_retained", () => Check(c.Flow.Paused && v.RecoveryCanvas.gameObject.activeSelf, "paused lost card retains recovery path", new { c.PauseKind, v.RecoveryCanvas.gameObject.activeSelf })),
+                    (18.9, "stop_command_retained", () => {
+                        Check(c.Command("stop", "Controller") && c.Flow.Paused && c.PauseKind == "stop" && !navigationGate.activeSelf && c.Record.session_state == RegistryState.InProgress,
+                            "Stop retains guarded wait state without fabricated completion", new { c.PauseKind, c.Record.session_state, navigationGate.activeSelf });
+                    })
                 };
                 update = () => {
                     try {

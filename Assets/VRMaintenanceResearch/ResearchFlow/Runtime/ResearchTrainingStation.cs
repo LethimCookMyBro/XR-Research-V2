@@ -25,8 +25,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         // blocked attempt. The fitting insert comes first; the blocked try then reverses what the trainee has just done.
         public static readonly string[] FixedSequence = { "examine", "inspect_fail", "insert", "insert_wrong", "lock", "rotate_access",
             "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
+        // Owner 29 Oct: correct insertion goes straight to the latch; wrong-way contact is feedback, not a required exercise.
+        public static readonly string[] TrainerV3Sequence = { "examine", "inspect_fail", "insert", "lock", "rotate_access",
+            "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
         public static string[] SequenceFor(string trainingVersion) =>
-            trainingVersion == ResearchUIPolicy.TrainingFixedDemo ? FixedSequence20261015 : FixedSequence;
+            trainingVersion == ResearchUIPolicy.TrainingTrainerV3 ? TrainerV3Sequence :
+            trainingVersion == ResearchUIPolicy.TrainingTrainerV2 ? FixedSequence : FixedSequence20261015;
 
         public ResearchSessionFlowController controller;
         public Transform turntable;
@@ -244,37 +248,55 @@ namespace VRMaintenanceResearch.ResearchFlow
         // corners (on the handle's rigidbody, so HandGrabInteractable.Start collects them) and a visible blue edge bar on all three.
         // They sit 16 cm from the back-right screw; the module is never grabbable in the steps that enable the handle.
         GameObject[] gripCues = Array.Empty<GameObject>();
+        public (Bounds[] zones, float surfaceY) TurntableGripLayout()
+        {
+            Bounds InPivot(Bounds bounds, Transform space)
+            {
+                var matrix = turntable.worldToLocalMatrix * space.localToWorldMatrix;
+                var result = new Bounds(matrix.MultiplyPoint3x4(bounds.center), Vector3.zero);
+                foreach (int x in new[] { -1, 1 })
+                foreach (int y in new[] { -1, 1 })
+                foreach (int z in new[] { -1, 1 })
+                    result.Encapsulate(matrix.MultiplyPoint3x4(bounds.center + Vector3.Scale(bounds.extents, new Vector3(x, y, z))));
+                return result;
+            }
+            var body = turntable.GetComponentsInChildren<Renderer>(true).Single(r => r.name == "VIS_TRAINER_FX1_BASE_LOD0");
+            var station = InPivot(body.localBounds, body.transform);
+            var box = turnHandle.GetComponent<BoxCollider>();
+            var front = InPivot(new Bounds(box.center, box.size), box.transform);
+            var scale = turntable.lossyScale;
+            float inset = .035f / scale.x;
+            var size = Divide(new Vector3(.07f, .05f, .06f), scale);
+            var zones = new[] { front,
+                new Bounds(new Vector3(station.min.x + inset, front.center.y, front.center.z), size),
+                new Bounds(new Vector3(station.max.x - inset, front.center.y, front.center.z), size) };
+            return (zones, station.max.y + .004f / scale.y);
+        }
+
         void BuildGripZones(Material cueMaterial)
         {
-            var station = PartBounds(turntable);
+            var layout = TurntableGripLayout();
             var handle = turnHandle.transform;
-            var front = handle.GetComponent<BoxCollider>().bounds;
-            float y = front.center.y, z = front.center.z, inset = .035f;
-            foreach (float x in new[] { station.min.x + inset, station.max.x - inset })
+            foreach (var bounds in layout.zones.Skip(1))
             {
                 var zone = new GameObject("TurntableRimGrip").transform;
                 zone.SetParent(handle, false);
-                zone.position = new Vector3(x, y, z);
+                zone.SetPositionAndRotation(turntable.TransformPoint(bounds.center), turntable.rotation);
                 var box = zone.gameObject.AddComponent<BoxCollider>();
-                box.size = Divide(new Vector3(.07f, .05f, .06f), zone.lossyScale);
-                box.isTrigger = true; // a grab target only; never pushes the module or lead
-                if (box.bounds.Intersects(PartBounds(module.transform))) Debug.LogWarning("TRAINING_GRIP_ZONE overlaps the module at " + x);
+                box.size = Divide(Vector3.Scale(bounds.size, turntable.lossyScale), zone.lossyScale);
+                box.isTrigger = true;
+                if (box.bounds.Intersects(PartBounds(module.transform))) Debug.LogWarning("TRAINING_GRIP_ZONE overlaps module");
             }
             var cues = new System.Collections.Generic.List<GameObject>();
-            foreach (var (center, size) in new[] {
-                (new Vector3(front.center.x, station.max.y + .004f, front.min.z), new Vector3(front.size.x, .008f, .008f)),
-                (new Vector3(station.min.x + inset, station.max.y + .004f, front.min.z), new Vector3(.07f, .008f, .008f)),
-                (new Vector3(station.max.x - inset, station.max.y + .004f, front.min.z), new Vector3(.07f, .008f, .008f)) })
+            foreach (var bounds in layout.zones)
             {
-                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cue.name = "TurntableGripCue";
+                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube); cue.name = "TurntableGripCue";
                 Destroy(cue.GetComponent<Collider>());
                 cue.transform.SetParent(turntable, false);
-                cue.transform.position = center;
-                cue.transform.localScale = Divide(size, turntable.lossyScale);
+                cue.transform.localPosition = new Vector3(bounds.center.x, layout.surfaceY, bounds.center.z);
+                cue.transform.localScale = new Vector3(bounds.size.x, .008f / turntable.lossyScale.y, .008f / turntable.lossyScale.z);
                 cue.GetComponent<Renderer>().sharedMaterial = cueMaterial;
-                cue.SetActive(false);
-                cues.Add(cue);
+                cue.SetActive(false); cues.Add(cue);
             }
             gripCues = cues.ToArray();
         }
@@ -308,8 +330,11 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (key == "turn.turning") text = string.Format(text, Mathf.RoundToInt(TurnedDegrees), Mathf.RoundToInt(accessYaw));
                 if (!statusLabel) statusLabel = CreateStatusLabel();
                 if (language != statusLanguage && controller.view)
-                { statusLanguage = language; statusLabel.font = controller.view.Font; }
-                statusLabel.text = "<mark=#FFFFFFE8 padding=\"14,14,6,6\">" + text + "</mark>";
+                {
+                    statusLanguage = language; statusLabel.font = controller.view.Font;
+                    statusLabel.outlineColor = Color.white; statusLabel.outlineWidth = .18f;
+                }
+                statusLabel.text = text;
                 var camera = controller.origin && controller.origin.Camera ? controller.origin.Camera.transform : null;
                 var bounds = PartBounds(anchor);
                 statusLabel.transform.position = new Vector3(bounds.center.x, bounds.max.y + .06f, bounds.center.z);

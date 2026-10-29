@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.T2.en",
+  "version": "S1_TRAINING_TRAINER_V2_20261028.reader-t2-f90fe6228ef84208.f72d32c4b61da82b",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_Training_T2_Reference_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/T2_en/source_pdf",
+  "source_sha256": "31d23fec7a6cab33461ef437b32b0edd5055bf89db8623a8119cce1e66763794",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_en/pages/p01",
+      "sha256": "19774c4ba419b287eb913dc72ab4565c3d4cdb9c989597330975c4e9f185dfde"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_en/pages/p02",
+      "sha256": "eacd74d11e9f3ad7e3a3f5823cf5a08bb7c569ecf847b232c55ec1e43fd4406f"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_en/pages/p03",
+      "sha256": "8fa68300d9825846862367819da446b63fd38812efe90d42bb9cedfb30ef2b57"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/T2_en/pages/p04",
+      "sha256": "540dadacab062847332ea7d40e7c8896ef8be6ceb76671b0794142a13bbf2485"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=36><b>Look at the practice station on the table.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The module on the table, the slot with a cut corner, the blue latch, the screw at the back, the cable with its plug.\n\n<color=#2E7D32><b>Correct when:</b></color> You know this is practice, not an experiment task. You can try again after a mistake."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=36><b>Learn two buttons: Grip (middle finger) and Trigger (index finger).</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Grip: the module, the latch, the turntable. Trigger: panel buttons, the screw head, the plug head.\n\n<color=#2E7D32><b>Correct when:</b></color> A short label above the part tells you its state. Follow it."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reference</color></size>\n<size=36><b>Select another format tab.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Tabs: Manual, Steps, Illustrated, Video.\n\n<color=#2E7D32><b>Correct when:</b></color> Same content, a different look. Pick the one that is easiest for you."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reference</color></size>\n<size=36><b>Select − to minimize the panel.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The panel becomes a small “Open Reference” bar.\n\n<color=#2E7D32><b>Correct when:</b></color> Selecting the bar brings the panel back."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reference</color></size>\n<size=36><b>Move it: point at the handle below, hold Trigger and move.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The panel follows your hand.\n\n<color=#2E7D32><b>Correct when:</b></color> Release Trigger and it stays there. Moving it is optional."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reference</color></size>\n<size=36><b>Select × to close the panel.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The panel goes away.\n\n<color=#2E7D32><b>Correct when:</b></color> “Reference” opens it again at any time."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Examine and Inspect</color></size>\n<size=36><b>Point at the training module and select “Examine”.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Information: the cut corner must match the slot; a latch holds it.\n\n<color=#2E7D32><b>Correct when:</b></color> “Examine” shows information only; it does not fix anything."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Examine and Inspect</color></size>\n<size=36><b>Select “Inspect” now.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The module is not in yet and the screw is loose.\n\n<color=#2E7D32><b>Correct when:</b></color> It shows “Practice result: not ready.” This is what an unfinished job looks like."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Module</color></size>\n<size=36><b>Insert it the fitting way: cut corner on the slot's cut-corner side.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Hold it with Grip, level and right over the slot, and press it all the way down.\n\n<color=#2E7D32><b>Correct when:</b></color> The label says “Fits: press down, then let go”. Let go; the module sits fully in."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Module</color></size>\n<size=36><b>Try the blocked way: pull it out, turn it half a turn, lower it.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The cut corner is now on the other side from the slot's.\n\n<color=#2E7D32><b>Correct when:</b></color> It stops above the slot and the label says “Blocked: this way does not fit”. Do not force it."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Latch</color></size>\n<size=36><b>Lift it, turn it back, and put it fully in the fitting way.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The cut corners match.\n\n<color=#2E7D32><b>Correct when:</b></color> It is fully in, but not secured yet."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Latch</color></size>\n<size=36><b>Close the latch: reach to the blue latch and press Grip once.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The latch moves to its closed position.\n\n<color=#2E7D32><b>Correct when:</b></color> Placed is not the same as secured. With the latch closed, it is secured now."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Turntable</color></size>\n<size=36><b>Grip the handle on the front edge, or a front corner with a blue bar.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Move your hand in an arc around the centre; the station turns with it. You may let go and grab again.\n\n<color=#2E7D32><b>Correct when:</b></color> The label says “Turned 120° of 120°” and the back screw faces you."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Screw</color></size>\n<size=36><b>Tighten in: pinch the screw head with Trigger, twist clockwise.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Look straight at the head. The screw turns and moves in, little by little.\n\n<color=#2E7D32><b>Correct when:</b></color> The label counts up, like “Tightening: 50% in”."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Screw</color></size>\n<size=36><b>If your wrist cannot twist further, let go and grab it again.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The screw stays where it is; it does not go back.\n\n<color=#2E7D32><b>Correct when:</b></color> You carry on from there; your progress is kept."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Screw</color></size>\n<size=36><b>Twist until it says “Tight: let go to continue”, then let go.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The screw head is down against the surface and will not turn further.\n\n<color=#2E7D32><b>Correct when:</b></color> A small twist back as you let go does not loosen it."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Cable</color></size>\n<size=36><b>Pinch the plug head with Trigger (not the wire).</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Push it straight into the open socket. The other end stays attached.\n\n<color=#2E7D32><b>Correct when:</b></color> The plug is fully in and stays when you let go."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Inspect</color></size>\n<size=36><b>Select “Inspect” again.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Now the module is in, the latch is closed and the screw is tight.\n\n<color=#2E7D32><b>Correct when:</b></color> It shows “Practice result: ready.” This is the result when everything is in and secured."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Cable</color></size>\n<size=36><b>Hold the plug head again and pull it straight out.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> Pull by the plug head, never by the wire.\n\n<color=#2E7D32><b>Correct when:</b></color> The socket is empty. When you let go, the plug returns to its resting place."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Screw</color></size>\n<size=36><b>Loosen out: pinch the head with Trigger, twist counter-clockwise.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The screw turns and moves out, little by little; the label shows “Loosening: 40% in”.\n\n<color=#2E7D32><b>Correct when:</b></color> When the label says “Fully loose: let go to continue”, let go."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Latch</color></size>\n<size=36><b>Open the latch: reach to it and press Grip once.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> While the latch is closed, the module cannot come out.\n\n<color=#2E7D32><b>Correct when:</b></color> The latch moves to its open position."
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Finish</color></size>\n<size=36><b>Grip the module and lift it out of the slot.</b></size>\n\n<color=#1F5FAF><b>Look:</b></color> The module is out of the slot.\n\n<color=#2E7D32><b>Correct when:</b></color> You see “Practice Complete”. The real tasks use these same moves."
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/T2_en/images/01",
+      "sha256": "a1e835932046c810e7611c2f71fac4d241a4a79314868b086dc8c65f1cf02f62",
+      "caption_en": "<b>The practice station</b>\nA label above the part shows its state. Follow the panel step by step."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/02",
+      "sha256": "556c0b1415884614590b6c863aeb40323bd57bc0980959e90bb790732ed2123c",
+      "caption_en": "<b>Using the Reference</b>\nTabs: format · −: minimize · bar: reopen · handle: move · ×: close"
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/03",
+      "sha256": "c44e8061f476a19d9ae8a1cfd467792ea2f22ebc55b9fbd29dd0e5cd07e7eea1",
+      "caption_en": "<b>Examine and Inspect</b>\n“Examine” fixes nothing. “Inspect” now shows a ‘not ready’ example."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/04",
+      "sha256": "1177b2e65dd64da4f2e47ed8240b702db6abb1007715351346eb924bfdf1039c",
+      "caption_en": "<b>Insert the module</b>\nFirst the fitting way, then try the blocked way."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/05",
+      "sha256": "3a03500780719f73e7d23c1a41812ca3ee567eea129daa2323640b216ae286c5",
+      "caption_en": "<b>The latch</b>\nClosed holds it in. Open it before pulling the module out."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/06",
+      "sha256": "88eebe6578a6e86d64bd5bea6d8ec0924a84827181e65326a6f7c0630abe38ce",
+      "caption_en": "<b>Turn the station</b>\nHold the handle or a front corner and move your hand in an arc."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/07",
+      "sha256": "589f0ca56542c40ce6742a97b2b139cda8e3c3956b1d9667354ff6927b8b6f3a",
+      "caption_en": "<b>Which way to twist</b>\nTighten in: clockwise. Loosen out: counter-clockwise."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/08",
+      "sha256": "67015f5af471484c37bb565ceebafdd591d07b1f21bc8569447e1e99ca001f46",
+      "caption_en": "<b>The screw moves in and out</b>\nTighten in: the head goes down. Loosen out: it comes up."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/09",
+      "sha256": "dcc546f5b1c1d95324c29eb56a030eeb66c5c7e2774443e70780568ce772dc77",
+      "caption_en": "<b>Plug in and unplug</b>\nAlways hold the plug head; never pull the wire."
+    },
+    {
+      "resource": "ResearchReaderS1/T2_en/images/10",
+      "sha256": "2668325f128ffecc0212d64e324d9cef2ae0a091809d5f752f9310fa91667c8b",
+      "caption_en": "<b>Inspect results</b>\nNot ready: something is missing. Ready: all in and secured."
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/T2_en.mp4",
+    "sha256": "ef607d0f7b1415b44e1d849c21f3dc106e40597897a07752e7c5a56459d710d7",
+    "duration_seconds": 270.64,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 27.47
+      },
+      {
+        "stage": "do",
+        "start_seconds": 27.47,
+        "end_seconds": 52.11
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 52.11,
+        "end_seconds": 73.5
+      },
+      {
+        "stage": "do",
+        "start_seconds": 73.5,
+        "end_seconds": 93.28
+      },
+      {
+        "stage": "do",
+        "start_seconds": 93.28,
+        "end_seconds": 115.09
+      },
+      {
+        "stage": "do",
+        "start_seconds": 115.09,
+        "end_seconds": 132.33
+      },
+      {
+        "stage": "do",
+        "start_seconds": 132.33,
+        "end_seconds": 153.59
+      },
+      {
+        "stage": "do",
+        "start_seconds": 153.59,
+        "end_seconds": 177.71
+      },
+      {
+        "stage": "do",
+        "start_seconds": 177.71,
+        "end_seconds": 191.83
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 191.83,
+        "end_seconds": 209.74
+      },
+      {
+        "stage": "do",
+        "start_seconds": 209.74,
+        "end_seconds": 224.77
+      },
+      {
+        "stage": "do",
+        "start_seconds": 224.77,
+        "end_seconds": 241.65
+      },
+      {
+        "stage": "do",
+        "start_seconds": 241.65,
+        "end_seconds": 259.07
+      },
+      {
+        "stage": "done",
+        "start_seconds": 259.07,
+        "end_seconds": 270.64
+      }
+    ]
+  }
+}

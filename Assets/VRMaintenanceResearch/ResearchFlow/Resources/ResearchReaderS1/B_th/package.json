@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "content_id": "s1.reader.B.th",
-  "version": "v2-b4fb442b0702ae3b",
+  "version": "v2-6d693550421389cf.840f9e10dd0eeb4c",
   "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
   "source_pdf": "S1_TaskB_Reference_v2_TH.pdf",
   "source_pdf_resource": "ResearchReaderS1/B_th/source_pdf",
@@ -43,7 +43,10 @@
       "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=36><b>ปลดคลิปของตะแกรงหน้า</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> คลิปอยู่ที่ขอบตะแกรงหน้า\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> คลิปเปิด"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=36><b>หมุนตะแกรงหน้าตามเครื่องหมาย แล้วดึงออกตรง ๆ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ดึงออกตามแนว ไม่ดึงผ่านชิ้นอื่น\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตะแกรงหน้าออก เห็นใบพัด"
+      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=36><b>หมุนตะแกรงหน้าตามเครื่องหมายเพื่อปลดล็อก</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ดึงออกตามแนว ไม่ดึงผ่านชิ้นอื่น\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตัวล็อกตะแกรงหน้าพ้นร่อง พร้อมดึงออก"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=36><b>ดึงตะแกรงหน้าออกตรง ๆ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> คลิปต้องเปิดและตัวล็อกพ้นร่องแล้ว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตะแกรงหน้าออก เห็นใบพัด"
     },
     {
       "text_th": "<size=24><color=#5B6B7F>ตรวจ</color></size>\n<size=36><b>ใช้ปุ่ม “ตรวจดู” ที่ใบพัด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ร่องใบพัดสวมพินเต็มไหม ตัวล็อกใบพัดแน่นไหม\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ปกติ = ใบพัดนั่งเต็ม และไม่ขยับ"
@@ -58,22 +61,31 @@
       "text_th": "<size=24><color=#5B6B7F>ตรวจ</color></size>\n<size=36><b>ใช้ปุ่ม “ตรวจดู” ที่วงแหวนล็อกตะแกรงหลัง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> วงแหวนแน่นไหม · “เข้าเกลียวแล้ว” ยังไม่แปลว่าแน่น\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ปกติ = วงแหวนแน่น ตะแกรงหลังไม่ขยับ"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>แก้ (ถ้าพบ)</color></size>\n<size=36><b>ถ้าตะแกรงหน้าไม่ตรงหรือคลิปเปิด: จัดเครื่องหมายใหม่ตอนใส่กลับในขั้นที่ 15–16</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ต้องประกบให้เต็มก่อนหมุนล็อก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เครื่องหมายตรง คลิปปิด"
+      "text_th": "<size=24><color=#5B6B7F>เมื่อจำเป็นต้องจัดตะแกรงหลังใหม่</color></size>\n<size=36><b>คลายวงแหวนล็อกตะแกรงหลังทวนเข็มนาฬิกาจนพ้นเกลียว</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มองจากด้านหน้า วงแหวนเป็นเกลียวขวา ต้องถอดใบพัดออกก่อน\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วงแหวนไม่กินเกลียว พร้อมดึงออก"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>แก้ (ถ้าพบ)</color></size>\n<size=36><b>ถ้าใบพัดไม่ตรงพินหรือไม่สุด: สวมใหม่ให้ร่องตรงพินในขั้นที่ 13–14</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> วางใกล้แกนเฉย ๆ ไม่นับว่าเข้าที่\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ใบพัดชิดสุด ไม่โยก"
+      "text_th": "<size=24><color=#5B6B7F>เมื่อจำเป็นต้องจัดตะแกรงหลังใหม่</color></size>\n<size=36><b>ดึงวงแหวนออกตามแนวแกน</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> อย่าดึงขณะยังกินเกลียว\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วงแหวนพ้นตะแกรงหลัง"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>แก้ (ถ้าพบ)</color></size>\n<size=36><b>ถ้าตะแกรงหลังขยับหรือวงแหวนหลวม: จัดตะแกรงหลังให้ตรง แล้วขันวงแหวน ตามเข็มนาฬิกาจนแน่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> วงแหวนเป็นเกลียวขวา: คลายหมุนทวนเข็ม ขันหมุนตามเข็ม · ถ้าต้องจัดตะแกรงใหม่ ให้คลายวงแหวนออกก่อน\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วงแหวนแน่น ตะแกรงหลังไม่ขยับ"
+      "text_th": "<size=24><color=#5B6B7F>เมื่อจำเป็นต้องจัดตะแกรงหลังใหม่</color></size>\n<size=36><b>จัดตะแกรงหลังให้ตรงจุดยึดแล้วสวมให้สุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ถ้าตะแกรงหลังไม่ตรง ให้ยกออกแล้วจัดแนวใหม่ก่อนสวม\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตะแกรงหลังลงตรงตำแหน่ง แต่ยังไม่ยึด"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>สวมใบพัดกลับ ให้ร่องตรงพิน แล้วดันจนสุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ร่องต้องตรงพินก่อนดัน\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ใบพัดชิดสุด ไม่โยก"
+      "text_th": "<size=24><color=#5B6B7F>เมื่อจำเป็นต้องจัดตะแกรงหลังใหม่</color></size>\n<size=36><b>สวมวงแหวนล็อกกลับบนเกลียว</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ตะแกรงหลังต้องเข้าที่ก่อน\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วงแหวนเริ่มกินเกลียว ยังไม่ถือว่าแน่น"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ใส่ตัวล็อกใบพัด แล้วหมุน ทวนเข็มนาฬิกาจนแน่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เกลียวต้องเริ่มตรง ถ้าฝืด ให้ถอยแล้วเริ่มใหม่\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตัวล็อกแน่น"
+      "text_th": "<size=24><color=#5B6B7F>เมื่อจำเป็นต้องจัดตะแกรงหลังใหม่</color></size>\n<size=36><b>ขันวงแหวนตามเข็มนาฬิกาจนแน่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มองจากด้านหน้า ขันเข้า ไม่ใช่เพียงวางวงแหวนไว้\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> วงแหวนแน่น ตะแกรงหลังไม่ขยับ"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ใส่ตะแกรงหน้าให้เครื่องหมายตรงกัน ประกบให้เต็ม แล้วหมุนล็อก</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เครื่องหมายบนตะแกรงต้องตรงกับเครื่องหมายบนตัวพัดลม\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เครื่องหมายตรงกัน"
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ดันใบพัดกลับตามแนวแกนจนสุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ก่อนดัน ร่องของใบพัดต้องตรงกับพิน ถ้าเคยไม่ตรงหรือไม่สุด ให้จัดใหม่ตรงนี้\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ใบพัดชิดสุด ไม่โยก"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>สวมตัวล็อกใบพัดกลับบนเกลียว</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เกลียวต้องเริ่มตรง ถ้าฝืด ให้ถอยแล้วเริ่มใหม่\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตัวล็อกเริ่มกินเกลียว ยังไม่ถือว่าแน่น"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ขันตัวล็อกใบพัดทวนเข็มนาฬิกาจนแน่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> มองจากด้านหน้า ตัวล็อกใบพัดเป็นเกลียวซ้าย ตรงข้ามวงแหวนหลัง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตัวล็อกแน่น ใบพัดชิดสุดและไม่โยก"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ใส่ตะแกรงหน้าให้เครื่องหมายตรงกัน ประกบให้เต็ม แล้วหมุนล็อก</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ถ้าเครื่องหมายไม่ตรง ให้จัดให้ตรงตอนใส่ ต้องประกบเข้าที่ก่อนหมุนล็อก\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เครื่องหมายตรงกัน"
     },
     {
       "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=36><b>ปิดคลิปของตะแกรงหน้า</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ต้องใส่ตะแกรงหน้าและหลังครบก่อนตรวจผล\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> คลิปปิด"
@@ -88,44 +100,44 @@
   "images": [
     {
       "resource": "ResearchReaderS1/images_v2/B_th_01",
-      "sha256": "7f0b6706821846b1a78190833fd724242531bd516b39e7c200a5c42de9de45a6",
+      "sha256": "df3805bf0f0aa7d9cb50ea1f5ac86c9580195c1de3a72a65f1295476e613919a",
       "caption_th": "<b>งานนี้</b>\nหาจุดที่หลวมหรือไม่เข้าที่ แก้ แล้วกด “ตรวจผล” · ตรวจจุดไหนก่อนก็ได้"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_02",
-      "sha256": "7db054456a908031dad29e4d6f2cdbb2b186d51a30a15cd12a68b2afc4183020",
+      "sha256": "c37cde81c5a7bd66359a05b4ae542d5c180782727a963c539cae73b3029d6271",
       "caption_th": "<b>ปกติ ✓ / ผิดปกติ ×</b>\nเข้าเกลียวแล้ว ≠ แน่น · “ตรวจดู” บอกสิ่งที่เห็น ไม่ซ่อมให้"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_03",
-      "sha256": "bcd310a5efb40b8b672dcb2c81b2e68578f430fe5de1a0fb24256e491d8c324e",
+      "sha256": "dce53771b5f57feeae0804f59ad1093a89e003eb859b31095d1be03b3de44e4b",
       "caption_th": "<b>วิธีเปิด</b>\nตะแกรงหน้า → ตัวล็อกใบพัด → ใบพัด → เห็นวงแหวนล็อกตะแกรงหลัง"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_04",
-      "sha256": "ac7e86c9ce8c22ea53d4af81285c3dc4ec43137150be7c916da57d3cf6dbf8bb",
+      "sha256": "211510d595b6d781bf3c0e56194f60c8d221471a80b5cc5eaf2051044abafa09",
       "caption_th": "<b>ทิศหมุน (มองจากหน้าพัดลม)</b>\nสองตัวนี้หมุนคนละทิศ"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_05",
-      "sha256": "1e488c03620b09e1e5718086a21343693048527c63198e4976565d6905e7454f",
+      "sha256": "05a5de8d7cb01e840c8b6604b104113c46593ee3ff9fadd366573defa2e20ba0",
       "caption_th": "<b>แก้ตามที่พบ</b>\nแก้เฉพาะจุดที่ผิด แล้วประกอบชิ้นที่ถอดกลับให้ครบ"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_06",
-      "sha256": "bb275fbcd2587a3bec8c182bcb04ac99fab18cdfbd6cc12f30c1d469d17616aa",
+      "sha256": "d7756c7c5bb0596df35e625170a42b6a72d391112d98b9814437d4f6eece0f0d",
       "caption_th": "<b>ประกอบกลับให้ครบ</b>\nต้องมีตะแกรงครบก่อน “ตรวจผล”"
     },
     {
       "resource": "ResearchReaderS1/images_v2/B_th_07",
-      "sha256": "27723fd000917222ada0ca3ff7a7a5ceec3cd87266d0ddda21388ffcf1fa2d8d",
+      "sha256": "11484326e88c99db172225204e322d2f5dfaf3dc2ee2f274decfcb5d4d08e36a",
       "caption_th": "<b>กด “ตรวจผล”</b>\nแก้แล้วตรวจใหม่ได้ · ระบบขัดข้อง = บอกผู้วิจัย"
     }
   ],
   "video": {
     "streaming_path": "ResearchReaderS1/B_th.mp4",
-    "sha256": "721add917082b2dd5daa9dab3a23a798c6df3d2ea1b21213b5e80e671a3ad1b0",
-    "duration_seconds": 144.63,
+    "sha256": "7b5358947771f555f34aa52c05928c7887e430cae9de35e4f1bbe68bbcd976e8",
+    "duration_seconds": 162.36,
     "audio": "narration",
     "chapters": [
       {
@@ -151,47 +163,47 @@
       {
         "stage": "do",
         "start_seconds": 56.36,
-        "end_seconds": 63.01
+        "end_seconds": 67.4
       },
       {
         "stage": "do",
-        "start_seconds": 63.01,
-        "end_seconds": 76.38
+        "start_seconds": 67.4,
+        "end_seconds": 77.04
       },
       {
         "stage": "do",
-        "start_seconds": 76.38,
-        "end_seconds": 84.26
+        "start_seconds": 77.04,
+        "end_seconds": 84.92
       },
       {
         "stage": "do",
-        "start_seconds": 84.26,
-        "end_seconds": 98.59
+        "start_seconds": 84.92,
+        "end_seconds": 97.74
       },
       {
         "stage": "do",
-        "start_seconds": 98.59,
-        "end_seconds": 104.8
+        "start_seconds": 97.74,
+        "end_seconds": 103.95
       },
       {
         "stage": "do",
-        "start_seconds": 104.8,
-        "end_seconds": 111.91
+        "start_seconds": 103.95,
+        "end_seconds": 116.22
       },
       {
         "stage": "do",
-        "start_seconds": 111.91,
-        "end_seconds": 118.62
+        "start_seconds": 116.22,
+        "end_seconds": 128.05
       },
       {
         "stage": "do",
-        "start_seconds": 118.62,
-        "end_seconds": 130.64
+        "start_seconds": 128.05,
+        "end_seconds": 148.36
       },
       {
         "stage": "done",
-        "start_seconds": 130.64,
-        "end_seconds": 144.63
+        "start_seconds": 148.36,
+        "end_seconds": 162.36
       }
     ]
   }

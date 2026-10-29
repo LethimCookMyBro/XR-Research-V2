@@ -103,11 +103,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var pose = SocketRules.RootPose(seat.localToWorldMatrix, depthMm, turn, root.worldToLocalMatrix * mate.localToWorldMatrix);
             root.SetPositionAndRotation(pose.GetColumn(3), pose.rotation);
         }
-        static void Sample(Transform root, AnimationClip clip)
+        static void Sample(Transform root, AnimationClip clip, float time = 1)
         {
             if (!clip) throw new InvalidOperationException("Source latch animation is missing: " + root.name);
             root.GetLocalPositionAndRotation(out var position, out var rotation); var scale = root.localScale;
-            try { clip.SampleAnimation(root.gameObject, clip.length); }
+            try { clip.SampleAnimation(root.gameObject, clip.length * Mathf.Clamp01(time)); }
             finally { root.SetLocalPositionAndRotation(position, rotation); root.localScale = scale; }
         }
         static Transform Edge(QAPlug part) => part.mates.Single(m => m.name.EndsWith("_Edge", StringComparison.Ordinal));
@@ -150,7 +150,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (section == "A.slots" && fact == 3)
             {
                 if (time == 0) pivotRest = a.servicePivot.localRotation;
-                a.servicePivot.localRotation = pivotRest * Quaternion.AngleAxis(30 * Mathf.Sin((float)time * Mathf.PI * 2), Vector3.up);
+                a.servicePivot.localRotation = pivotRest * Quaternion.AngleAxis(180 * Mathf.SmoothStep(0, 1, (float)Plan.Ramp(time, .08, .9)), Vector3.up);
             }
             return null;
         }
@@ -195,7 +195,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             if (section == "B.access")
             {
-                Clip(b, false); Fan(b.frontGuard, 450 * (float)Plan.Ramp(time, .15, .4), b.frontGuard.insertTurnDegrees * (float)Plan.Ramp(time, 0, .15));
+                Sample(b.frontClip.clipAnimationRoot.transform, b.frontClip.clipOpen, (float)Plan.Ramp(time, 0, .1));
+                Fan(b.frontGuard, 450 * (float)Plan.Ramp(time, .2, .4), b.frontGuard.insertTurnDegrees * (float)Plan.Ramp(time, .1, .2));
                 if (fact >= 1) { Thread(b.spinner, b.spinner.fullTurnDegrees * (1 - Plan.Ramp(time, .4, .7))); if (time > .7) Fan(b.spinner, b.spinner.threadTravelMm + 200 * (float)Plan.Ramp(time, .7, .8)); }
                 if (fact >= 2) Fan(b.blade, 250 * (float)Plan.Ramp(time, .8, 1));
                 if (fact == 3) { Fan(b.frontGuard, 450, b.frontGuard.insertTurnDegrees); Fan(b.spinner, 240); Fan(b.blade, 250); Thread(b.rearLock, b.rearLock.fullTurnDegrees * (1 - Plan.Ramp(time, .15, .8))); }
@@ -225,6 +226,159 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 BladeAssembly(b, Plan.FanReassembly(time));
             }
             return null;
+        }
+
+        // Training Reader T2 (TrainingTrainerV2 order) on the real Trainer_FX1 station, with the same seat math as play: the module and
+        // the plug go through SocketRules.RootPose with the socket's own Seat/Block rules, the screw is placed as ResearchTrainingScrew.Place
+        // does (ThreadDepthMm, so the head travels in and out instead of only spinning), the latch samples its open clip, the turntable yaws.
+        // Edit Mode never runs ResearchTrainingStation.Awake, so the lead cable and the turntable grip cues are built here as Awake builds them.
+        sealed class TrainingRest
+        {
+            public ResearchTrainingStation station; public Pose module; public Vector3 leadPosition; public Quaternion leadRotation; public float yaw;
+            public ResearchS1Cable lead; public GameObject[] cues; public Transform[] grips;
+        }
+        static TrainingRest trainingRest;
+
+        static TrainingRest Rest(ResearchTrainingStation t)
+        {
+            if (trainingRest != null && trainingRest.station == t) return trainingRest;
+            var rest = new TrainingRest { station = t, module = new Pose(t.module.transform.position, t.module.transform.rotation), yaw = t.turntable.localEulerAngles.y,
+                leadPosition = t.leadHead.transform.localPosition, leadRotation = t.leadHead.transform.localRotation };
+            Screw(t, 0);
+            // As ResearchTrainingStation.Awake: the lead is drawn like the Task A cables (blue tube over the bone path).
+            var leadSkin = t.GetComponentsInChildren<SkinnedMeshRenderer>(true).First(r => r.name == "VIS_TRAINER_FX1_LEAD_LOD0");
+            Transform LeadEnd(string id) => leadSkin.bones.First(bone => bone.name == "B_TRAINER_FX1_LEAD_" + id);
+            rest.lead = t.gameObject.AddComponent<ResearchS1Cable>();
+            rest.lead.assetId = "TRAINER_FX1_LEAD"; rest.lead.skin = leadSkin; rest.lead.sideways = true;
+            rest.lead.tubeMaterial = leadSkin.sharedMaterials.First(m => m && m.name == "M_PVC_Blue"); rest.lead.tubeRadius = .003f;
+            rest.lead.spans = new[] { ResearchS1Cable.BindSpan(t.transform, leadSkin, LeadEnd("B1"), t.leadBones, LeadEnd("B2")) };
+            // As ResearchTrainingStation.BuildGripZones: two rim grips at the front corners and three blue edge bars, shown only while turning.
+            Physics.SyncTransforms();
+            var layout = t.TurntableGripLayout();
+            rest.grips = layout.zones.Skip(1).Select(bounds =>
+            {
+                var zone = new GameObject("TurntableRimGrip").transform; zone.SetParent(t.turnHandle.transform, false);
+                zone.SetPositionAndRotation(t.turntable.TransformPoint(bounds.center), t.turntable.rotation); return zone;
+            }).ToArray();
+            rest.cues = layout.zones.Select(bounds =>
+            {
+                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube); cue.name = "TurntableGripCue";
+                UnityEngine.Object.DestroyImmediate(cue.GetComponent<Collider>());
+                cue.transform.SetParent(t.turntable, false);
+                cue.transform.localPosition = new Vector3(bounds.center.x, layout.surfaceY, bounds.center.z);
+                cue.transform.localScale = new Vector3(bounds.size.x, .008f / t.turntable.lossyScale.y, .008f / t.turntable.lossyScale.z);
+                cue.GetComponent<Renderer>().sharedMaterial = rest.lead.tubeMaterial; cue.SetActive(false); return cue;
+            }).ToArray();
+            return trainingRest = rest;
+        }
+
+        static Bounds PartBounds(Transform part)
+        {
+            var renderers = part.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return new Bounds(part.position, Vector3.zero);
+            var bounds = renderers[0].bounds;
+            foreach (var r in renderers) bounds.Encapsulate(r.bounds);
+            return bounds;
+        }
+
+        internal static Transform ModuleMate(ResearchTrainingStation t) =>
+            t.module.mates.FirstOrDefault(m => m.name.EndsWith("_Slot", StringComparison.Ordinal)) ?? throw new InvalidOperationException("Training module has no _Slot mate.");
+        /// <summary>The two turntable rim grips (built on the first MotionT call for this station).</summary>
+        internal static Transform[] TrainingGrips(ResearchTrainingStation t) => Rest(t).grips;
+
+        static void Screw(ResearchTrainingStation t, double fraction)
+        {
+            var screw = t.screw; double degrees = screw.fullDegrees * Math.Max(0, Math.Min(1, fraction));
+            Place(screw.transform, screw.mate, screw.seat, (float)ResearchS1FanKinematics.ThreadDepthMm(degrees, screw.fullDegrees, screw.travelMm), -(float)degrees);
+        }
+
+        // away 0 = at the seat (depth, turn); 1 = resting on the table where the scene put it; between, an arc over the base edge.
+        static void Module(ResearchTrainingStation t, TrainingRest rest, float depthMm, float turn, double away)
+        {
+            var mate = ModuleMate(t); var root = t.module.transform;
+            if (away <= 0) { Place(root, mate, t.moduleSocket.seat, depthMm, turn); return; }
+            var above = SocketRules.RootPose(t.moduleSocket.seat.localToWorldMatrix, depthMm, turn, root.worldToLocalMatrix * mate.localToWorldMatrix);
+            float a = (float)away;
+            root.SetPositionAndRotation(Vector3.Lerp(above.GetColumn(3), rest.module.position, a) + Vector3.up * .06f * Mathf.Sin(a * Mathf.PI),
+                Quaternion.Slerp(above.rotation, rest.module.rotation, a));
+        }
+
+        static void LatchOpen(ResearchTrainingStation t, double open)
+        {
+            var clip = t.latchOpenClip; var root = t.latchAnimationRoot ? t.latchAnimationRoot.transform : null;
+            if (!clip || !root) throw new InvalidOperationException("The training latch open clip is missing.");
+            root.GetLocalPositionAndRotation(out var position, out var rotation); var scale = root.localScale;
+            try { clip.SampleAnimation(root.gameObject, clip.length * Mathf.Clamp01((float)open)); }
+            finally { root.SetLocalPositionAndRotation(position, rotation); root.localScale = scale; }
+        }
+
+        // away 0 = plug mate at depthMm above the open socket; 1 = the authored rest pose the station returns an unplugged head to.
+        static void Plug(ResearchTrainingStation t, TrainingRest rest, float depthMm, double away)
+        {
+            var head = t.leadHead.transform; var parent = head.parent;
+            var seated = SocketRules.RootPose(t.leadSocket.seat.localToWorldMatrix, depthMm, 0, head.worldToLocalMatrix * t.leadHead.mates[0].localToWorldMatrix);
+            float a = (float)away;
+            head.SetPositionAndRotation(Vector3.Lerp(seated.GetColumn(3), parent.TransformPoint(rest.leadPosition), a),
+                Quaternion.Slerp(seated.rotation, parent.rotation * rest.leadRotation, a));
+        }
+
+        // Sections: T.start (as Training begins), T.module (0 fitting insert, 1 blocked try, 2 re-insert + latch, 3 unlatch + pull out),
+        // T.turn (0 to 180 deg with the grip cues on), T.screw (0 tighten in with a pause to regrab, 1 loosen out, 2 static at progress = time),
+        // T.cable (0 connect, 1 disconnect). Each call sets the whole station, so any frame can be rendered alone.
+        internal static string MotionT(ResearchTrainingStation t, string section, int fact, double time)
+        {
+            var rest = Rest(t);
+            var keyed = t.moduleSocket.rules.Single(r => r.outcome == PairOutcome.Seat);
+            var blocked = t.moduleSocket.rules.Single(r => r.outcome == PairOutcome.Block);
+            float approach = t.moduleSocket.spec.approachMm * 2, half = blocked.turnDeg - keyed.turnDeg;
+            float yaw = 0, depth = 0, turn = keyed.turnDeg, plugDepth = 0;
+            double away = 0, open = 0, screw = 0, plugAway = 1;
+            bool cues = false; string state;
+            double R(double start, double end) => Plan.Ramp(time, start, end);
+            switch (section)
+            {
+                case "T.start": away = 1; open = 1; state = "start"; break;
+                case "T.module":
+                    if (fact == 0) { away = 1 - R(.05, .45); depth = approach * (float)(1 - R(.5, .8)); open = 1; state = depth > .3f ? "inserting" : "seated"; }
+                    else if (fact == 1)
+                    {
+                        depth = approach * (float)R(0, .2) - (approach - blocked.reachMm) * (float)R(.45, .7);
+                        turn += half * (float)R(.2, .42); open = 1; state = time >= .7 ? "blocked" : "reversing";
+                    }
+                    else if (fact == 2)
+                    {
+                        depth = blocked.reachMm + (approach - blocked.reachMm) * (float)R(0, .18) - approach * (float)R(.4, .62);
+                        turn += half * (float)(1 + R(.18, .38)); open = 1 - R(.7, .85);
+                        state = open <= 0 ? "latched" : depth > .3f ? "inserting" : "seated";
+                    }
+                    else if (fact == 3) { open = R(0, .15); depth = approach * (float)R(.25, .5); away = R(.55, .95); state = depth > .3f ? "removed" : "unlatched"; }
+                    else if (fact == 4) { open = 1 - R(0, 1); state = open <= 0 ? "latched" : "seated"; }
+                    else throw new ArgumentOutOfRangeException(nameof(fact));
+                    break;
+                case "T.turn": yaw = 120 * Mathf.SmoothStep(0, 1, (float)R(.08, .9)); cues = true; state = "yaw " + yaw.ToString("F0"); break;
+                case "T.screw":
+                    yaw = 120;
+                    screw = fact == 0 ? .5 * R(.05, .42) + .5 * R(.6, .92) : fact == 1 ? 1 - R(.05, .9) : fact == 2 ? time : throw new ArgumentOutOfRangeException(nameof(fact));
+                    state = screw >= 1 ? "tight" : screw <= 0 ? "loose" : "partial";
+                    break;
+                case "T.cable":
+                    yaw = 120; screw = 1;
+                    if (fact == 0) { plugAway = 1 - R(.1, .5); plugDepth = 25 * (float)(1 - R(.55, .85)); }
+                    else if (fact == 1) { plugDepth = 25 * (float)R(.1, .35); plugAway = R(.4, .85); }
+                    else throw new ArgumentOutOfRangeException(nameof(fact));
+                    state = plugAway <= 0 && plugDepth <= .3f ? "connected" : "free";
+                    break;
+                default: throw new ArgumentException("Unknown training section " + section);
+            }
+            var euler = t.turntable.localEulerAngles; euler.y = rest.yaw + yaw; t.turntable.localEulerAngles = euler;
+            Module(t, rest, depth, turn, away);
+            LatchOpen(t, open);
+            Screw(t, screw);
+            Plug(t, rest, plugDepth, plugAway);
+            foreach (var cue in rest.cues) cue.SetActive(cues);
+            Physics.SyncTransforms();
+            rest.lead.RefreshShape();
+            return state;
         }
     }
 }

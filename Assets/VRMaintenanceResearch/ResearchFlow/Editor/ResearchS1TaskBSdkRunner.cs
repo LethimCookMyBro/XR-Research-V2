@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +22,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static EditorWindow gameView;
         static string output, session, run, step, error;
         static int lastFrame, side, cleanupFrame;
-        static bool pinch, cleanupObserved;
+        static bool pinch, cleanupObserved, obstructionVerified;
+        static GameObject obstructionWitness;
         static double deadline, cleanupDeadline;
         // A hand turns a thread slightly past its end; Turn clamps at 0/full, while an exact orbit sum lands ~0.02 deg short.
         const float EndOvershoot = 6;
@@ -54,7 +55,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             output = Path.GetFullPath(evidenceDirectory);
             if (Directory.Exists(output) || File.Exists(output)) throw new IOException("Use a fresh evidence directory.");
             Directory.CreateDirectory(output);
-            error = null; selected = null; step = "initial"; lastFrame = -1; cleanupObserved = false;
+            error = null; selected = null; step = "initial"; lastFrame = -1; cleanupObserved = false; obstructionVerified = false;
             deadline = EditorApplication.timeSinceStartup + 120;
             gameView = EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
             gameView.Focus(); gameView.Repaint();
@@ -123,6 +124,35 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return WithdrawAndPark(task.blade, .36f, -.52f);
             yield return Capture("03-blade-removed");
             yield return Acquire(task.rearLock, true);
+            yield return RearLockObstruction();
+            yield return Rotate(task.rearLock, task.rearLock.ThreadProgressDegrees + EndOvershoot);
+            Require(task.rearLock.ThreadProgressDegrees < .1f && task.rearLock.ThreadState == S1ThreadState.Absent,
+                "Rear lock did not fully loosen through SDK input.");
+            for (int i = 0; i < 24; i++)
+            {
+                var before = task.rearLock.transform.position;
+                yield return Translate(task.rearLock, -task.rearLock.seat.forward * .00025f);
+                // Authored 2 mm release band + one input step + the existing 1 mm SDK settle bound.
+                Require(Vector3.Distance(before, task.rearLock.transform.position) <= .002f + .00025f + .001f, "Rear lock jumped during gradual withdrawal.");
+                Record("rear-lock-gradual-withdrawal");
+            }
+            Require(task.rearLock.Placement == S1Placement.NotInstalled, "Rear lock stalled during 6 mm of gradual SDK withdrawal.");
+            yield return WithdrawAndPark(task.rearLock, .16f, .35f);
+            yield return Acquire(task.rearLock, true);
+            yield return ReturnToSeat(task.rearLock, 50);
+            int entrySteps = Mathf.CeilToInt((50 - task.rearLock.threadTravelMm) / .25f);
+            for (int i = 0; i < entrySteps; i++)
+            {
+                var before = task.rearLock.transform.position;
+                yield return Translate(task.rearLock, task.rearLock.seat.forward * .00025f);
+                // Existing .3 mm capture band + one input step + the existing 1 mm SDK settle bound.
+                Require(Vector3.Distance(before, task.rearLock.transform.position) <= .0003f + .00025f + .001f,
+                    "Rear lock jumped during gradual entry.");
+                Record("rear-lock-gradual-entry");
+            }
+            Require(task.rearLock.Aligned && Mathf.Abs(task.rearLock.Pose.depthMm - task.rearLock.threadTravelMm) <= .5f,
+                "Rear lock stalled during gradual SDK entry.");
+            Require(task.rearLock.ThreadProgressDegrees < .1f, "Reinserting the rear lock created tightening credit without rotation.");
             yield return Rotate(task.rearLock, -(task.rearLock.fullTurnDegrees - task.rearLock.ThreadProgressDegrees) - EndOvershoot);
             Require(task.rearLock.ThreadState == S1ThreadState.Tight, "RH rear lock did not tighten from clockwise input viewed from its head.");
             yield return ReleaseTwistAtStop(task.rearLock);
@@ -166,6 +196,128 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Record("repair-and-reassembly-observed-inspection-not-invoked");
         }
 
+        struct ThreadSample
+        {
+            public float progress, depth;
+            public double backoff;
+            public Matrix4x4 accepted, actual;
+        }
+        static readonly System.Reflection.BindingFlags PrivatePart = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        static object PartField(ResearchS1FanPart part, string name) => typeof(ResearchS1FanPart).GetField(name, PrivatePart).GetValue(part);
+        static ThreadSample ReadThread(ResearchS1FanPart part) => new ThreadSample
+        {
+            progress = part.ThreadProgressDegrees, depth = part.Pose.depthMm, backoff = (double)PartField(part, "stopBackoff"),
+            accepted = (Matrix4x4)PartField(part, "acceptedPose"), actual = part.transform.localToWorldMatrix
+        };
+        static object ThreadEvidence(ThreadSample value) => new { value.progress, value.depth, value.backoff, accepted = value.accepted.ToString("R"), actual = value.actual.ToString("R") };
+        static bool SameThread(ThreadSample a, ThreadSample b) => Mathf.Abs(a.progress - b.progress) < .01f && Mathf.Abs(a.depth - b.depth) < .01f
+            && a.backoff.Equals(b.backoff) && a.accepted.Equals(b.accepted)
+            && Vector3.Distance(a.actual.GetColumn(3), b.actual.GetColumn(3)) < .00001f && Quaternion.Angle(a.actual.rotation, b.actual.rotation) < .01f;
+        static VRMaintenanceResearch.AssetLibraryQA.MatePose OfferedHand(ResearchS1FanPart part)
+        {
+            var point = part.grabbable.GrabPoints[0];
+            var free = Matrix4x4.TRS(point.position, point.rotation, Vector3.one) * (Matrix4x4)PartField(part, "grabToRoot");
+            return VRMaintenanceResearch.AssetLibraryQA.SocketRules.Measure(part.seat.localToWorldMatrix, free * (Matrix4x4)PartField(part, "mateInRoot"));
+        }
+        static Collider[] ThreadColliders(ResearchS1FanPart part) => part.GetComponentsInChildren<Collider>(true)
+            .Where(c => c.enabled && !c.isTrigger && c.attachedRigidbody == part.body).ToArray();
+        static float WitnessPenetration(ResearchS1FanPart part, Matrix4x4 pose)
+        {
+            float deepest = 0;
+            foreach (var collider in ThreadColliders(part))
+            {
+                var next = pose * part.transform.worldToLocalMatrix * collider.transform.localToWorldMatrix;
+                if (Physics.ComputePenetration(collider, next.GetColumn(3), next.rotation, obstructionWitness.GetComponent<Collider>(),
+                    obstructionWitness.transform.position, obstructionWitness.transform.rotation, out _, out float depth)) deepest = Mathf.Max(deepest, depth);
+            }
+            return deepest;
+        }
+        static void ClearObstructionWitness()
+        {
+            if (obstructionWitness) UnityEngine.Object.DestroyImmediate(obstructionWitness);
+            obstructionWitness = null;
+        }
+        static IEnumerator RearLockObstruction()
+        {
+            var part = task.rearLock;
+            step = "obstruction:" + part.stableId; Record("before");
+            Require(Owns(part) && task.CanManipulate(part) && part.ThreadState == S1ThreadState.EngagedLoose && part.rightHanded,
+                "Rear-lock obstruction needs the actual held loose RH thread after access.");
+            var before = ReadThread(part);
+            Require(before.progress + 12 < part.fullTurnDegrees, "Initial loose fault needs more than 12 degrees of real remaining travel.");
+            var candidate = VRMaintenanceResearch.AssetLibraryQA.SocketRules.RootPose(part.seat.localToWorldMatrix,
+                (float)ResearchS1FanKinematics.ThreadDepthMm(before.progress + 12, part.fullTurnDegrees, part.threadTravelMm),
+                -(before.progress + 12), part.transform.worldToLocalMatrix * part.mate.localToWorldMatrix);
+            var colliders = ThreadColliders(part);
+            Require(colliders.Length > 0 && colliders.All(c => c is BoxCollider), "Expected real authored thread BoxColliders.");
+            var axis = part.seat.forward; float leading = float.NegativeInfinity;
+            foreach (var collider in colliders.Cast<BoxCollider>())
+                foreach (int x in new[] { -1, 1 }) foreach (int y in new[] { -1, 1 }) foreach (int z in new[] { -1, 1 })
+                    leading = Mathf.Max(leading, Vector3.Dot(axis, collider.transform.TransformPoint(collider.center + Vector3.Scale(collider.size * .5f, new Vector3(x, y, z)))));
+            float radius = colliders.Max(c => Vector3.Distance(part.transform.position, c.bounds.center) + c.bounds.extents.magnitude);
+            bool witnessFound = false; float initialPenetration = 0, candidatePenetration = 0;
+            try
+            {
+                obstructionWitness = new GameObject("SYNTHETIC_SDK_THREAD_OBSTRUCTION", typeof(BoxCollider));
+                obstructionWitness.hideFlags = HideFlags.HideAndDontSave;
+                obstructionWitness.transform.rotation = Quaternion.LookRotation(axis, part.seat.up);
+                obstructionWitness.transform.localScale = new Vector3(2 * radius + .01f, 2 * radius + .01f, .004f);
+                foreach (float gap in new[] { .00002f, .00005f, .0001f })
+                {
+                    obstructionWitness.transform.position = part.transform.position + axis * (leading - Vector3.Dot(axis, part.transform.position) + .002f + gap);
+                    Physics.SyncTransforms();
+                    initialPenetration = WitnessPenetration(part, part.transform.localToWorldMatrix);
+                    candidatePenetration = WitnessPenetration(part, candidate);
+                    if (initialPenetration == 0 && candidatePenetration > .00025f) { witnessFound = true; break; }
+                }
+                File.WriteAllText(Path.Combine(output, "obstruction-witness.json"), JsonConvert.SerializeObject(new
+                {
+                    evidence_level = "SYNTHETIC_COLLISION_WITNESS_GEOMETRY", phase = "before_sdk_turn", synthetic = true, hardware_verified = false, witnessFound, initialPenetration, candidatePenetration,
+                    before = ThreadEvidence(before), candidate = candidate.ToString("R"), wall_position = V(obstructionWitness.transform.position),
+                    wall_rotation = Q(obstructionWitness.transform.rotation), wall_size = V(obstructionWitness.transform.localScale)
+                }, Formatting.Indented));
+                Require(witnessFound, "No current-clear/future-penetrating cube witness was found; fixture did not exercise obstruction.");
+                var prior = before; bool observedBlocked = false; var offeredBefore = OfferedHand(part);
+                Func<bool> observed = () =>
+                {
+                    Require(Owns(part) && task.CanManipulate(part), "Selection or normal manipulation gate changed during obstruction.");
+                    var offered = OfferedHand(part);
+                    Require(offered.lateralMm <= part.positionToleranceMm + 1 && offered.tiltDeg <= part.angleToleranceDegrees + 2,
+                        "Obstruction sample instead lost the real hand's thread alignment.");
+                    var current = ReadThread(part); float penetration = WitnessPenetration(part, part.transform.localToWorldMatrix);
+                    bool blocked = (bool)PartField(part, "wasBlocked");
+                    File.AppendAllText(Path.Combine(output, "obstruction-samples.jsonl"), JsonConvert.SerializeObject(new
+                    {
+                        evidence_level = "SDK_SIMULATED_INPUT", frame = Time.frameCount, current = ThreadEvidence(current), prior = ThreadEvidence(prior), penetration, blocked,
+                        offered_turn = offered.turnDeg, offered_depth = offered.depthMm
+                    }) + Environment.NewLine);
+                    Require(penetration <= .00025f, "B_THREAD_OBSTRUCTION_PENETRATION m=" + penetration.ToString("R"));
+                    if (blocked) { observedBlocked = true; Require(SameThread(prior, current), "B_THREAD_OBSTRUCTION_BANKED_ROTATION"); }
+                    prior = current; return SdkSettled();
+                };
+                Send(Orbit(ResearchFlowVisualInput.ControllerWorldPose(side), part.seat.position, part.seat.forward, -12));
+                yield return AwaitObservation(observed, "SDK hand settles against synthetic thread obstruction", part);
+                Require(Mathf.Abs(Mathf.DeltaAngle(offeredBefore.turnDeg, OfferedHand(part).turnDeg)) > 10,
+                    "Actual SDK offered hand did not perform the obstruction turn.");
+                Require(observedBlocked && part.ThreadState == S1ThreadState.EngagedLoose && task.Capture().original_fault_active == true,
+                    "No blocked SDK sample or original loose fault was lost.");
+                var blockedSample = ReadThread(part);
+                yield return WaitFrames(4);
+                Require(SameThread(blockedSample, ReadThread(part)), "Stationary held hand changed a blocked thread.");
+                ClearObstructionWitness(); yield return WaitFrames(4);
+                Require(SameThread(blockedSample, ReadThread(part)), "Removing the obstacle applied banked rotation without new input.");
+                Record("obstruction-no-banked-credit");
+            }
+            finally { ClearObstructionWitness(); }
+            yield return Release(); yield return Acquire(part, true);
+            float looseBefore = part.ThreadProgressDegrees;
+            yield return Rotate(part, 12);
+            Require(part.ThreadProgressDegrees < looseBefore - 10 && part.ThreadState == S1ThreadState.EngagedLoose && task.Capture().original_fault_active == true,
+                "Fresh SDK loosening must remain possible through the intended seated rear-guard contact.");
+            yield return Release(); yield return Acquire(part, true);
+            obstructionVerified = true; Record("obstruction-release-regrip-fresh-delta-observed");
+        }
+
         // After a stall or tracking block the input guard re-arms only on a continuously neutral hand,
         // like a person who lets go before reaching again. The runner never forces the guard.
         static IEnumerator AwaitGuardRearmed()
@@ -199,6 +351,22 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return AwaitObservation(() => Vector3.Distance(approachTarget, pinch ? hand.PinchPoint.position : hand.PalmPoint.position) <= .003f,
                 "neutral hand approach");
             Require(hand.State != InteractorState.Select, "Neutral approach unexpectedly selected an object.");
+            if (pinch)
+            {
+                var ray = hand.GetComponent<ResearchControllerGrabIntent>().ray;
+                // Match the existing flow driver's neutral wrist turn; preserve trigger-over-UI priority.
+                for (int i = 0; i < 9 && ray.Candidate && ray.Candidate.GetComponentInParent<Canvas>(); i++)
+                {
+                    if (i == 0) Record("pinch-ray-over-ui-before-neutral-wrist-turn");
+                    var neutral = ResearchFlowVisualInput.ControllerWorldPose(side);
+                    var pivot = hand.PinchPoint.position;
+                    var tip = Quaternion.AngleAxis(10, Vector3.Cross(neutral.rotation * Vector3.forward, Vector3.up).normalized);
+                    ResearchFlowVisualInput.SetControllerWorldPose(side, new Pose(pivot + tip * (neutral.position - pivot), tip * neutral.rotation));
+                    double settle = EditorApplication.timeSinceStartup + .08;
+                    while (EditorApplication.timeSinceStartup < settle) yield return null;
+                }
+                Require(!(ray.Candidate && ray.Candidate.GetComponentInParent<Canvas>()), "Aim off UI before pinching " + part.stableId);
+            }
             selected = part;
             Send(ResearchFlowVisualInput.ControllerWorldPose(side));
             double until = EditorApplication.timeSinceStartup + 3;
@@ -382,7 +550,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static object Q(Quaternion q) => new { q.x, q.y, q.z, q.w };
         public static object Audit() => new
         {
-            status = Status, running = Running, step, error, output, session, run, cleanup_observed = cleanupObserved,
+            status = Status, running = Running, step, error, output, session, run, cleanup_observed = cleanupObserved, obstruction_verified_sdk_simulated = obstructionVerified, obstruction_witness_present = obstructionWitness != null,
             evidence_scope = "Editor SimulatedController component interaction only. Initial DEV and TaskB-active state arranged by root. Repair and reassembly are observed only on successful completion. No full workflow, inspection-pass or hardware claim.",
             task_state = task ? task.Capture() : null,
             hand_state = hand ? hand.State.ToString() : null,
@@ -420,12 +588,34 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             File.AppendAllText(Path.Combine(output, "observations.jsonl"), JsonConvert.SerializeObject(ObservationRow(observation)) + Environment.NewLine);
         }
 
+        static object ThreadInputEvidence(ResearchS1FanPart part)
+        {
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var type = typeof(ResearchS1FanPart);
+            var grab = (IGrabbable)type.GetField("grab", flags).GetValue(part);
+            if (grab == null || grab.GrabPoints.Count != 1) return null;
+            var point = grab.GrabPoints[0];
+            var free = Matrix4x4.TRS(point.position, point.rotation, Vector3.one) * (Matrix4x4)type.GetField("grabToRoot", flags).GetValue(part);
+            var pose = VRMaintenanceResearch.AssetLibraryQA.SocketRules.Measure(part.seat.localToWorldMatrix,
+                free * (Matrix4x4)type.GetField("mateInRoot", flags).GetValue(part));
+            var contact = (Collider)typeof(ResearchS1TaskBMechanics).GetMethod("ThreadContact", flags).Invoke(task, new object[] { part, free, false });
+            return new { unconstrained_depth_mm = pose.depthMm, pose.lateralMm, pose.tiltDeg, pose.turnDeg,
+                actual_depth_mm = part.Pose.depthMm, captured = (bool)type.GetField("captured", flags).GetValue(part),
+                contact = contact ? contact.name : null, free_candidate_allowed = ResearchS1HeldCollision.Allows(part.transform, free, contact) };
+        }
+        static object GrabIntentEvidence()
+        {
+            var intent = hand.GetComponent<ResearchControllerGrabIntent>();
+            return !intent ? null : new { hand.name, intent.Active, source_active = intent.source && intent.source.Active,
+                candidate = intent.ray.Candidate ? intent.ray.Candidate.name : null,
+                canvas = intent.ray.Candidate ? intent.ray.Candidate.GetComponentInParent<Canvas>()?.name : null };
+        }
         static object ObservationRow(string observation)
         {
             return new
             {
                 observation, step, frame = Time.frameCount, realtime = Time.realtimeSinceStartupAsDouble, session, run,
-                input_source = "SimulatedController", test_data = true, task_state = task.Capture(),
+                input_source = "SimulatedController", test_data = true, task_state = task.Capture(), grab_intent = GrabIntentEvidence(), thread_input = ThreadInputEvidence(task.rearLock),
                 parts = new[] { task.frontClip, task.frontGuard, task.spinner, task.blade, task.rearLock }.Select(Part).ToArray(),
                 controller = new { position = V(ResearchFlowVisualInput.ControllerWorldPose(side).position), rotation = Q(ResearchFlowVisualInput.ControllerWorldPose(side).rotation) },
                 hand_state = hand.State.ToString(), selected_id = hand.Interactable ? hand.Interactable.GetInstanceID() : 0,
@@ -443,6 +633,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             if (!Running) return;
             EditorApplication.update -= Tick;
+            ClearObstructionWitness();
             error = failure == null ? null : failure.ToString();
             Status = "ReleasingInput";
             try

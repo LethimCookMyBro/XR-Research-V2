@@ -21,6 +21,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         [SerializeField] private Button start, resume, abort, export;
         private IReadOnlyList<ParticipantRecord> records = Array.Empty<ParticipantRecord>();
         private string recordSignature = "", localError = "";
+        private ScrollRect diagnosticScroll;
+        private string displayedDiagnostic;
+        private TMP_FontAsset diagnosticFont;
         private float nextRefresh;
         private float nextOperatorPoll;
         public string OperatorDirectoryOverride { get; set; }
@@ -271,7 +274,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     participant.AddOptions(new[] { R("select") }.Concat(records.Select(r => r.participant_id + "    " + Status(r.session_state))).Concat(new[] { R("create") }).ToList());
                     participant.allowed = new[] { false }.Concat(records.Select(r => Selectable(r))).Concat(new[] { true }).ToArray();
                     var index = records.ToList().FindIndex(r => r.participant_id == selectedId && (attachedRecord != null || Selectable(r)));
-                    if (index < 0) index = records.ToList().FindIndex(Selectable);
+                    if (index < 0) index = records.ToList().FindIndex(r => r.session_state == RegistryState.Available);
                     participant.SetValueWithoutNotify(index >= 0 ? index + 1 : 0);
                 }
                 if (attachedRecord != null) participant.SetValueWithoutNotify(records.ToList().FindIndex(r => r.participant_id == attachedRecord.participant_id) + 1);
@@ -286,6 +289,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (resuming || attachedRecord != null)
                 {
                     language.SetValueWithoutNotify((int)record.language);
+                    if (controller.SetupLanguage != record.language) controller.SetLanguage(record.language);
                     input.SetValueWithoutNotify((int)record.input_mode);
                     order.SetValueWithoutNotify(CellIndex(record));
                 }
@@ -334,7 +338,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     && resumeBlocker == "Nothing to resume: participant is in " + flow.State + ".";
                 string blocker = attachedRecord != null && attachedRecord.session_state != RegistryState.InProgress ? null : running ? (resume.interactable || activeWithoutResume ? null : R("resume_unavailable") + LocalizeBlocker(resumeBlocker))
                     : start.interactable ? null : R("start_unavailable") + LocalizeBlocker(controller.ResearcherStartBlocker(record, OperatorDirectory) ?? "Quest setup requires Controller mode.");
-                error.text = !string.IsNullOrEmpty(controller.Error) ? controller.Error : !string.IsNullOrEmpty(localError) ? localError : blocker ?? "";
+                error.text = !string.IsNullOrEmpty(controller.Error) ? LocalizeBlocker(controller.Error) : !string.IsNullOrEmpty(localError) ? LocalizeBlocker(localError) : blocker ?? "";
                 summary.text = controller.Record == null ? R("empty") : detailsExpanded ? controller.SummaryText(controller.Language) : "";
                 if (attachedRecord != null)
                 {
@@ -351,7 +355,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private ParticipantRecord Selected => participant && participant.value > 0 && participant.value <= records.Count ? records[participant.value - 1] : null;
         private static bool Selectable(ParticipantRecord record) => record.session_state == RegistryState.Available || record.session_state == RegistryState.InProgress;
-        private string Status(RegistryState state) => state == RegistryState.InProgress ? R("in_progress") : state == RegistryState.Available ? R("available") : state + " / " + R("locked");
+        private string Status(RegistryState state) => state == RegistryState.InProgress ? R("in_progress") : state == RegistryState.Available ? R("available") : R("state_" + state.ToString().ToLowerInvariant()) + " / " + R("locked");
 
         private void ParticipantSelected(int index)
         {
@@ -691,8 +695,45 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (Application.isPlaying) Destroy(stale.gameObject); else DestroyImmediate(stale.gameObject);
         }
 
+        private RectTransform DiagnosticViewport => diagnosticScroll ? (RectTransform)diagnosticScroll.transform : error.rectTransform;
+
+        private void EnsureDiagnosticScroll()
+        {
+            if (!error || diagnosticScroll) return;
+            var content = error.rectTransform;
+            var viewport = Box(content.parent, "Diagnostic Details", content.sizeDelta, content.anchoredPosition, Color.clear);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            diagnosticScroll = viewport.gameObject.AddComponent<ScrollRect>();
+            diagnosticScroll.content = content; diagnosticScroll.viewport = viewport;
+            diagnosticScroll.horizontal = false; diagnosticScroll.vertical = true;
+            diagnosticScroll.movementType = ScrollRect.MovementType.Clamped; diagnosticScroll.scrollSensitivity = 30;
+            content.SetParent(viewport, false);
+            content.anchorMin = new Vector2(0, 1); content.anchorMax = Vector2.one; content.pivot = new Vector2(.5f, 1);
+            content.anchoredPosition = Vector2.zero;
+            error.alignment = TextAlignmentOptions.TopLeft; error.raycastTarget = true;
+            // Raw diagnostic field names are text, not markup. Keep every character available for scrolling.
+            error.richText = false; error.overflowMode = TextOverflowModes.Overflow;
+            error.textWrappingMode = TextWrappingModes.Normal;
+            AddScrollbar(diagnosticScroll);
+        }
+
+        private void LayoutDiagnostic()
+        {
+            if (!diagnosticScroll) return;
+            var viewport = DiagnosticViewport;
+            error.rectTransform.sizeDelta = new Vector2(-42, viewport.rect.height);
+            error.ComputeMarginSize();
+            float width = Mathf.Max(1, error.rectTransform.rect.width - error.margin.x - error.margin.z);
+            float height = Mathf.Ceil(error.GetPreferredValues(error.text, width, float.PositiveInfinity).y + error.margin.y + error.margin.w);
+            error.rectTransform.sizeDelta = new Vector2(-42, Mathf.Max(viewport.rect.height, height));
+            if (displayedDiagnostic != error.text || diagnosticFont != error.font)
+                diagnosticScroll.verticalNormalizedPosition = 1;
+            displayedDiagnostic = error.text; diagnosticFont = error.font;
+        }
+
         private void LayoutSession(bool hasSession)
         {
+            EnsureDiagnosticScroll();
             var panel = start.transform.parent.GetComponent<RectTransform>();
             bool ended = hasSession && controller.Record.session_state != RegistryState.InProgress;
             panel.sizeDelta = new Vector2(920, hasSession ? !ended && (confirmAbort || confirmInvalid) ? 760 : 680 : 620);
@@ -788,7 +829,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Shown disabled with its reason (error line) instead of disappearing while the participant waits.
             resume.gameObject.SetActive(hasSession && !ended);
             resume.GetComponent<RectTransform>().anchoredPosition = new Vector2(-280, -215);
-            error.rectTransform.anchoredPosition = new Vector2(0, hasSession ? -152 : -275);
+            DiagnosticViewport.anchoredPosition = new Vector2(0, hasSession ? -152 : -275);
             summary.transform.parent.gameObject.SetActive(hasSession && detailsExpanded);
             var summaryRect = summary.transform.parent.GetComponent<RectTransform>();
             summaryRect.anchoredPosition = new Vector2(0, -15);
@@ -832,6 +873,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             ApplyLocalizedCaptions(panel);
             if (questOwner && !hasSession) LayoutQuestResearcherPreSession(panel);
+            LayoutDiagnostic();
             var stopLabel = stop.GetComponentInChildren<TMP_Text>(true);
             ((RectTransform)stop.transform.Find("Stop Square")).anchoredPosition = new Vector2(-stopLabel.GetPreferredValues(stopLabel.text).x / 2 - 16, 0);
             string current = amendable ? CurrentReason(record) : null;
@@ -976,10 +1018,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             status.rectTransform.sizeDelta = new Vector2(840, 38);
             status.rectTransform.anchoredPosition = new Vector2(0, -172);
             error.fontSize = 17;
-            error.rectTransform.sizeDelta = new Vector2(840, 38);
-            error.rectTransform.anchoredPosition = new Vector2(0, -211);
-            start.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -267);
-            start.GetComponent<RectTransform>().sizeDelta = new Vector2(820, 60);
+            DiagnosticViewport.sizeDelta = new Vector2(840, 60);
+            DiagnosticViewport.anchoredPosition = new Vector2(0, -222);
+            start.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -281);
+            start.GetComponent<RectTransform>().sizeDelta = new Vector2(820, 54);
             startLabel.fontSize = 26;
             startLabel.rectTransform.sizeDelta = new Vector2(790, 54);
         }
@@ -993,9 +1035,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (autonymFont)
                 foreach (var control in new[] { group, language })
                 {
-                    control.captionText.font = autonymFont;
-                    if (control.itemText) control.itemText.font = autonymFont;
-                    foreach (var label in control.template.GetComponentsInChildren<TMP_Text>(true)) label.font = autonymFont;
+                    foreach (var label in control.GetComponentsInChildren<TMP_Text>(true)) label.font = autonymFont;
                     var row = panel.Find(control.name + " Choices");
                     if (row) foreach (var label in row.GetComponentsInChildren<TMP_Text>(true)) label.font = autonymFont;
                 }
@@ -1007,7 +1047,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (invalid) invalid.GetComponentInChildren<TMP_Text>(true).text = R(confirmInvalid ? "cancel_invalid" : "invalid");
             int visibleGroupCount = (detailsExpanded && !questOwner) ? groups.Length : 3;
             // Owner direction 28 Oct: languages and participant groups are named in their own script whatever the Setup language.
-            var groupLabels = new[] { "ไทย · " + R("mode_study"), "日本 · " + R("mode_study"), R("mode_program_test"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
+            var groupLabels = new[] { "ไทย · " + R("mode_study"), "日本語 · " + R("mode_study"), R("mode_program_test"), "TEST - " + R("test_data"), "PILOT - " + R("test_data") };
             if (group.options.Count != visibleGroupCount)
             {
                 int currentVal = group.value;
@@ -1034,11 +1074,45 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
         }
 
+        // Preserve unknown diagnostics; translate only exact, supported state tokens.
+        private string LocalizeBlockerState(string value)
+        {
+            switch (value)
+            {
+                case "Completed": return R("state_completed");
+                case "InProgress": return R("in_progress");
+                case "Error": return ResearchStrings.Get("error.title", controller ? controller.Language : "English");
+                case "Task1Active":
+                case "Task2Active":
+                    return string.Format(ResearchStrings.Get("task.progress", controller ? controller.Language : "English"), value == "Task1Active" ? 1 : 2)
+                        + " (" + R("in_progress") + ")";
+                default: return value;
+            }
+        }
+
+        private string LocalizeStudyAuthorizationReason(string value)
+        {
+            switch (value)
+            {
+                case "Participant group and test-data provenance are inconsistent.": return R("study_auth_provenance");
+                case "Production operator authorization is missing or has an unsupported schema.": return R("study_auth_schema");
+                case "Production operator/participant identity is not linked.": return R("study_auth_identity");
+                case "Pre-session approval must match the available record revision exactly.": return R("study_auth_revision");
+                case "Production operator authorization is linked to a different or missing session.": return R("study_auth_session");
+                case "Explicit consent, content and language approvals and their references are required.": return R("study_auth_references");
+                case "Approval acknowledgments must be actual JSON booleans or null.": return R("study_auth_booleans");
+                case "Local operator document exceeds 16 KiB.": return R("study_auth_size");
+                case "Local operator document changed while reading.": return R("study_auth_changed");
+                default: return value;
+            }
+        }
+
         private string LocalizeBlocker(string value)
         {
             if (string.IsNullOrEmpty(value)) return value;
             switch (value)
             {
+                case ResearchSessionFlowController.StudyAuthorizationPrefix + "OperatorControl/research-operator-authorization.json is not on this device.": return R("study_authorization_missing");
                 case "Select or create a participant ID.": return R("select_block");
                 case "Device not ready: floor/boundary is not confirmed.": return R("floor_block");
                 case "Device not ready: both controllers must be tracked.": return R("tracking_block");
@@ -1050,16 +1124,16 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "Quest setup requires Controller mode.": return R("quest_mode");
             }
             if (value.StartsWith(ResearchSessionFlowController.StudyAuthorizationPrefix, StringComparison.Ordinal))
-                return string.Format(R("study_authorization_block"), value.Substring(ResearchSessionFlowController.StudyAuthorizationPrefix.Length));
+                return string.Format(R("study_authorization_block"), LocalizeStudyAuthorizationReason(value.Substring(ResearchSessionFlowController.StudyAuthorizationPrefix.Length)));
             const string open = "A session is already open: ";
             const string nothing = "Nothing to resume: participant is in ";
             if (value.StartsWith(open, StringComparison.Ordinal)) return string.Format(R("open_session"), value.Substring(open.Length));
-            if (value.StartsWith(nothing, StringComparison.Ordinal) && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("nothing_resume"), value.Substring(nothing.Length, value.Length - nothing.Length - 1));
+            if (value.StartsWith(nothing, StringComparison.Ordinal) && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("nothing_resume"), LocalizeBlockerState(value.Substring(nothing.Length, value.Length - nothing.Length - 1)));
             int locked = value.IndexOf(" is ", StringComparison.Ordinal);
-            if (locked > 0 && value.EndsWith(" and stays locked.", StringComparison.Ordinal)) return string.Format(R("state_locked"), value.Substring(0, locked), value.Substring(locked + 4, value.Length - locked - 4 - " and stays locked.".Length));
+            if (locked > 0 && value.EndsWith(" and stays locked.", StringComparison.Ordinal)) return string.Format(R("state_locked"), value.Substring(0, locked), LocalizeBlockerState(value.Substring(locked + 4, value.Length - locked - 4 - " and stays locked.".Length)));
             const string session = "Session is ";
             int logger = value.IndexOf("; logger ", StringComparison.Ordinal);
-            if (value.StartsWith(session, StringComparison.Ordinal) && logger > session.Length && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("session_logger"), value.Substring(session.Length, logger - session.Length), value.Substring(logger + 9, value.Length - logger - 10));
+            if (value.StartsWith(session, StringComparison.Ordinal) && logger > session.Length && value.EndsWith(".", StringComparison.Ordinal)) return string.Format(R("session_logger"), LocalizeBlockerState(value.Substring(session.Length, logger - session.Length)), LocalizeBlockerState(value.Substring(logger + 9, value.Length - logger - 10)));
             return value;
         }
 

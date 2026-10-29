@@ -275,6 +275,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (fact == "inspect" && trainingStation)
                     return ResearchUIPolicy.TrainingIncludesPanelDrag ? "tutorial.try.inspect.trainer" : "tutorial.try.inspect.trainer_ready";
                 if (fact == "inspect_fail" && !ResearchUIPolicy.TrainingIncludesPanelDrag) return "tutorial.try.inspect_fail.start";
+                if (fact == "insert_wrong" && Record?.training_version == ResearchUIPolicy.TrainingTrainerV2) return "tutorial.try.insert_wrong.v2";
+                if (fact == "lock" && Record?.training_version == ResearchUIPolicy.TrainingTrainerV3) return "tutorial.try.lock.v3";
                 string key = "tutorial.try." + fact;
                 return fact == "teleport" || fact == "snap" || fact == "select" || fact == "grab" || fact == "release" || fact == "reposition"
                     ? key + (TutorialUsesHands ? ".hand" : ".controller") : key;
@@ -470,6 +472,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 // A resumed record keeps the policy it started with (absent = earlier movable-panel build), so training facts,
                 // drag availability and analysis grouping never mix policies within one session.
                 ResearchUIPolicy.Apply(ResearchUIPolicy.ForRecord(Record.ui_policy));
+                ApplySessionGeometry(Record.layout_version);
                 policyAttribution = Record.ui_policy != null ? "recorded_at_session_start" : resume ? "unrecorded" : "unrecorded_new_session";
                 foreach (var task in FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsSortMode.None))
                     task.ApplyLayout(Record.task_a_layout ?? task.layout);
@@ -1579,7 +1582,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             && (Flow?.IsTutorial == true || TaskContentAvailable) && ReaderAuthorized
             && ResearchReferenceViewer.Available(section, ReaderResource)
             && (IsTechnical || Flow?.IsTutorial == true || CurrentPort && CurrentPort.IsReadyForStudy);
-        public string ReaderResource => ResearchReferenceViewer.ResourceFor(Flow?.IsTutorial == true ? "T" : Flow?.CurrentTask, Language);
+        public string ReaderResource => ResearchReferenceViewer.ResourceFor(Flow?.IsTutorial == true
+                ? (Record?.training_version == ResearchUIPolicy.TrainingTrainerV3 ? "T3" :
+                    Record?.training_version == ResearchUIPolicy.TrainingTrainerV2 ? "T2" : "T") : Flow?.CurrentTask, Language);
         public void ReferenceMediaEvent(string eventName, object after, string source = "User", string input = "None", string boundSection = null)
         {
             Log(eventName, "reference." + (boundSection ?? ReferenceSection), "Recorded", after: after, source: source, inputSource: input);
@@ -1603,6 +1608,58 @@ namespace VRMaintenanceResearch.ResearchFlow
             Log(eventName, target, "Recorded", before, after, source: error || terminal ? "System" : "User", inputSource: input,
                 actionId: lifecycle?.AttemptId, taskState: snapshot, taskIdOverride: lifecycle?.TaskId, phaseOverride: lifecycle != null ? "Experiment" : null);
             if (error) { Error = "Task adapter reported an error; contact the researcher."; BlockInteractions("task_adapter_error"); view?.Refresh(); }
+        }
+
+        bool closeGeometry;
+        readonly Dictionary<Transform, Vector3> landingRingScales = new Dictionary<Transform, Vector3>();
+        readonly Dictionary<SphereCollider, float> landingRadii = new Dictionary<SphereCollider, float>();
+
+        void ApplySessionGeometry(string layoutVersion)
+        {
+            bool close = layoutVersion == ResearchUIPolicy.LayoutVersion;
+            if (close == closeGeometry) return;
+            var computers = FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(a => a.controller == this).ToArray();
+            var fans = FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(b => b.controller == this).ToArray();
+            var sceneTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.gameObject.scene == gameObject.scene).ToArray();
+            var fanTray = fans.Length == 0 ? null : sceneTransforms.SingleOrDefault(t => t.name == "Fan_InspectionTray");
+            var wristStrap = computers.Length == 0 ? null : sceneTransforms.SingleOrDefault(t => t.name == "Computer_ESDWristStrapStation");
+            if (fans.Length != 0 && !fanTray) throw new InvalidOperationException("The fan inspection tray is missing.");
+            if (computers.Length != 0 && !wristStrap) throw new InvalidOperationException("The computer wrist strap station is missing.");
+            var computerRoots = computers.Select(a => a.transform.parent).ToArray();
+            if (computerRoots.Any(root => !root || root.name != "ResearchS1TaskA_Workspace"))
+                throw new InvalidOperationException("The computer workspace is missing.");
+            var roots = computerRoots.Concat(fans.Select(b => b.transform)).ToArray();
+            if (roots.Any(root => root.GetComponentsInChildren<Oculus.Interaction.Grabbable>(true).Any(g => g.SelectingPointsCount > 0)))
+                throw new InvalidOperationException("Release the workpiece before changing the session layout.");
+            float direction = close ? 1 : -1;
+            foreach (var root in computerRoots) root.position += Vector3.forward * (.20f * direction);
+            if (wristStrap) wristStrap.position += Vector3.forward * (.20f * direction);
+            foreach (var computer in computers)
+            {
+                // GPU choices already occupy the front row; keep that row supported by the unchanged table.
+                foreach (var gpu in computer.gpus) gpu.transform.position -= Vector3.forward * (.20f * direction);
+            }
+            foreach (var fan in fans) fan.transform.position += Vector3.forward * (.25f * direction);
+            if (fanTray) fanTray.position += Vector3.forward * (.25f * direction);
+            for (int index = 1; index < Math.Min(stations.Length, 3); index++)
+            {
+                var station = stations[index];
+                if (!station) continue;
+                station.position -= Vector3.forward * ((index == 1 ? .10f : .15f) * direction);
+                var ring = station.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == "Ring");
+                if (ring)
+                {
+                    if (!landingRingScales.ContainsKey(ring)) landingRingScales.Add(ring, ring.localScale);
+                    ring.localScale = landingRingScales[ring] * (close ? 1f / .78f : 1);
+                }
+                foreach (var collider in station.GetComponentsInChildren<SphereCollider>(true))
+                {
+                    if (!landingRadii.ContainsKey(collider)) landingRadii.Add(collider, collider.radius);
+                    collider.radius = landingRadii[collider] * (close ? 1.2f : 1);
+                }
+            }
+            closeGeometry = close;
+            Physics.SyncTransforms();
         }
 
         IEnumerator MoveToStation(int index)

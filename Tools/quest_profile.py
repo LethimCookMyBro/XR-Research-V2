@@ -97,12 +97,12 @@ class Client:
                     raise ProfileError('Native instance/session/run differs from the frozen operation binding')
         self.check()
 
-    def run(self, *args, output=None):
+    def run(self, *args, output=None, timeout=60):
         args = list(map(str, args))
         if args and args[0] in ('shell', 'exec-out'):
             args = [args[0], shlex.join(args[1:])]
         p = self.runner([self.adb, '-s', self.serial, *args], capture_output=output is None,
-                        stdout=output, stderr=subprocess.PIPE if output else None, timeout=60)
+                        stdout=output, stderr=subprocess.PIPE if output else None, timeout=timeout)
         if p.returncode:
             err = (p.stderr or p.stdout or b'ADB disconnected')
             raise ProfileError(err.decode(errors='replace').strip() if isinstance(err, bytes) else str(err))
@@ -231,28 +231,30 @@ class Client:
         raise ProfileError('No response within the bound request lifetime')
 
     def scoped(self, method, **values):
-        identity = self.call('identity')
+        self.check()
+        identity = self.call('identity', binding=False)
         self.scope_equal(identity)
         payload = dict(binding=dict(self.bound),
                        request_id=str(uuid.uuid4()), deadline_elapsed_ms=identity['elapsed_ms'] + 15000, **values)
         self.request_log.append(dict(method=method, request_id=payload['request_id'], binding=payload['binding']))
-        result = self.call(method, payload)
-        self.scope_check()
+        result = self.call(method, payload, binding=False)
+        # read() checks again after consuming its native-validated, one-use grant.
+        if method != 'read_grant': self.scope_check()
         return result
 
     def read(self, registry, bundle, name, destination):
         # Only immutable queued export files are addressable. The provider revalidates the lease.
         if name not in EXPORT_FILES:
             raise ProfileError('File not in immutable export allowlist')
-        grant = self.scoped('read_grant', registry=token(registry), bundle=token(bundle), name=name)
-        uri = 'content://' + AUTHORITY + '/export/' + grant['grant_id']
+        registry, bundle = token(registry), token(bundle)
         target = Path(destination)
         target.parent.mkdir(parents=True, exist_ok=True)
         temp = target.with_name(target.name + '.' + str(uuid.uuid4()) + '.partial')
         try:
-            self.check()
             with temp.open('xb') as out:
-                self.run('exec-out', 'content', 'read', '--user', self.bound['android_user'], '--uri', uri, output=out)
+                grant = self.scoped('read_grant', registry=registry, bundle=bundle, name=name)
+                uri = 'content://' + AUTHORITY + '/export/' + grant['grant_id']
+                self.run('exec-out', 'content', 'read', '--user', self.bound['android_user'], '--uri', uri, output=out, timeout=1800)
             self.check()
             self.scope_check()
             temp.replace(target)

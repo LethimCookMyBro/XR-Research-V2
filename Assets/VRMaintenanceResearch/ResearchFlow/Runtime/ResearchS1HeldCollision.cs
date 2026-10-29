@@ -15,7 +15,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             return count > 512 ? -1 : Mathf.Max(1, count);
         }
 
-        public static bool Allows(Transform root, Matrix4x4 desired)
+        public static bool Allows(Transform root, Matrix4x4 desired, Collider constrainedThreadContact = null)
         {
             if (!root || !ResearchS1TaskAMechanics.Finite(desired)) return false;
             var start = root.localToWorldMatrix;
@@ -33,7 +33,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 float reach = collider.bounds.extents.magnitude + travel +
                     Quaternion.Angle(start.rotation, desired.rotation) * Mathf.Deg2Rad * radius + .001f;
                 var others = Physics.OverlapSphere(collider.bounds.center, reach, ~0, QueryTriggerInteraction.Ignore)
-                    .Where(c => c.enabled && !c.transform.IsChildOf(root) && !Physics.GetIgnoreCollision(collider, c)).ToArray();
+                    .Where(c => c.enabled && c != constrainedThreadContact && !c.transform.IsChildOf(root) && !Physics.GetIgnoreCollision(collider, c)).ToArray();
                 var local = root.worldToLocalMatrix * collider.transform.localToWorldMatrix;
                 var box = (BoxCollider)collider;
                 Vector3 half = Vector3.Scale(box.size * .5f, Abs(box.transform.lossyScale));
@@ -67,7 +67,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     Vector3 a = prior.MultiplyPoint3x4(box.center), b = next.MultiplyPoint3x4(box.center), delta = b - a;
                     if (delta.sqrMagnitude > .0000000001f)
                         foreach (var hit in Physics.BoxCastAll(a, half, delta.normalized, prior.rotation, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
-                            if (hit.collider && !hit.collider.transform.IsChildOf(root) && !Physics.GetIgnoreCollision(collider, hit.collider) && hit.distance > .00001f) return false;
+                            if (hit.collider && hit.collider != constrainedThreadContact && !hit.collider.transform.IsChildOf(root) && !Physics.GetIgnoreCollision(collider, hit.collider) && hit.distance > .00001f) return false;
                     prior = next;
                 }
             }

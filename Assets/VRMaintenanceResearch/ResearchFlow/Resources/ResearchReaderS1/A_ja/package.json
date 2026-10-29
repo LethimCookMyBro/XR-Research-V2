@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "content_id": "s1.reader.A.ja",
-  "version": "v2-b4fb442b0702ae3b",
+  "version": "v2-6d693550421389cf.854468bd8356132e",
   "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
   "source_pdf": "S1_TaskA_Reference_v2_JA.pdf",
   "source_pdf_resource": "ResearchReaderS1/A_ja/source_pdf",
@@ -47,7 +47,7 @@
       "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>A2 スロットのラッチを開きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラッチは片側だけです。反対側は固定です。スロット名は基板に書かれています。\n\n<color=#2E7D32><b>正しい状態:</b></color> ラッチが開きます。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>RAM の切り欠きをスロットの突起に合わせ、まっすぐ奥まで押し込みます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 合わないときは押し込まず、向きを変えます。途中までは未接続です。\n\n<color=#2E7D32><b>正しい状態:</b></color> RAM が奥まで入り、ラッチが自然に閉じます。"
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>RAMをまっすぐ奥まで押し込みます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 押す前に切り欠きをスロットの突起に合わせます。合わないときは無理に押しません。途中までは未接続です。\n\n<color=#2E7D32><b>正しい状態:</b></color> RAM が奥まで入り、ラッチが自然に閉じます。"
     },
     {
       "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>2 枚目を同じ方法で B2 に挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 使うスロットは A2 と B2 だけです。\n\n<color=#2E7D32><b>正しい状態:</b></color> A2 と B2 に RAM が入り、両方のラッチが閉じています。"
@@ -59,7 +59,10 @@
       "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>台のハンドルを持ち、ケースを回して裏側を見ます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> SSD の取付位置はマザーボードトレイの裏側です。\n\n<color=#2E7D32><b>正しい状態:</b></color> SSD トレイの取付位置が見えます。"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSD トレイを取付位置に入れ、トレイの固定具を締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> SSD はトレイに固定済みです。SSD 底面のねじは不要です。\n\n<color=#2E7D32><b>正しい状態:</b></color> トレイが収まり、固定具が締まっています。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSDトレイを取付位置の奥まで入れます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> SSD はトレイに固定済みです。SSD 底面のねじは不要です。\n\n<color=#2E7D32><b>正しい状態:</b></color> トレイが収まります。固定具はまだ締まっていません。"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSDトレイの固定具を締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> トレイを奥まで入れてから固定具の頭を回します。SSD底面のねじではありません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 固定具が締まり、トレイが動きません。"
     },
     {
       "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SATA データケーブルを SSD に挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> コネクタの形と向きを合わせます。トレイを置いてもケーブルはつながりません。\n\n<color=#2E7D32><b>正しい状態:</b></color> コネクタが奥まで入ります。"
@@ -89,22 +92,22 @@
   "images": [
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_01",
-      "sha256": "a7b615aced636390d7d9094e1475bc46ab5909b1126f47b62897ae2d0bf04bb0",
+      "sha256": "80cc47b2758cf021dbc59a44c0ed5096723ee6999364ff1c4c7c797b2a227a4f",
       "caption_ja": "<b>この作業</b>\nW2 に合う RAM・SSD・GPU を入れます。順番は自由です。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_02",
-      "sha256": "85dd3fedc45fd7cafec3e781d0150ac5215c3bbb18b903541f62629d144a28d7",
+      "sha256": "e0ceb26531135c4e1c79e93996bef2ae7b00d5e515e5a8b8cec7998d065d5a37",
       "caption_ja": "<b>W2 に合うものを選ぶ</b>\n差し込める ≠ 正しい。ラベルの数値をすべて見ます。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_03",
-      "sha256": "33ecd5034c84f7a6f00bea159d57b52cd7b1a2dd9fdea4d695547c13b5d2e69e",
+      "sha256": "9acf3833cb464af5099a88b03ca9b5dfa6736b9fa058555417cfba7f9e97eedf",
       "caption_ja": "<b>RAM</b>\nラッチを開く → 切り欠きを合わせる → 奥まで押す（合わなければ無理に押さない）"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_04",
-      "sha256": "bb7bf5b6dd208e33b6cc57186f6cf957427b8dd1d753e806e92b948085371586",
+      "sha256": "6bab773a2d6cc2d0b7cc2effd993a07d6ba84aeafbe2295fe9a35fb633e49a3b",
       "caption_ja": "<b>SSD は裏側</b>\nケースを回してマザーボードトレイの裏を見ます。"
     },
     {
@@ -114,19 +117,19 @@
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_06",
-      "sha256": "294c28b4ab200635ce88448c46fc45fa679fa26fd704c66f458decb532d832d5",
+      "sha256": "ef1d18fc38b85b40e5409ab7f41ad4dee2bf9215028e18c3dfce76abfece48d6",
       "caption_ja": "<b>GPU：3 つの作業</b>\nプライマリに挿す・ねじ・8 ピン電源"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_07",
-      "sha256": "760029fbb54a2889160c20905ff8aedcc7e71e52e1ef0c1ead155b9b9fc20506",
+      "sha256": "24bd1f266d06d7d510c7a16a1853c69fe4c50e9ea71126505555444a8faf7e1a",
       "caption_ja": "<b>「検査」を押す</b>\n直して何度でも検査できます。外すときはラッチ・ケーブル・ねじが先。不具合は研究者へ。"
     }
   ],
   "video": {
     "streaming_path": "ResearchReaderS1/A_ja.mp4",
-    "sha256": "15b8d07789bd9a41d22faf7324242511211b4e1761a426973022c1571d7c4dde",
-    "duration_seconds": 176.12,
+    "sha256": "100255bbfc6ae4a95f587bbed5ce235cd2b3030d9999477944d7dfc01552ea2c",
+    "duration_seconds": 185.18,
     "audio": "narration",
     "chapters": [
       {
@@ -147,37 +150,42 @@
       {
         "stage": "watch",
         "start_seconds": 65.27,
-        "end_seconds": 78.39
+        "end_seconds": 73.07
       },
       {
         "stage": "do",
-        "start_seconds": 78.39,
-        "end_seconds": 89.39
+        "start_seconds": 73.07,
+        "end_seconds": 82.23
       },
       {
         "stage": "do",
-        "start_seconds": 89.39,
-        "end_seconds": 113.23
+        "start_seconds": 82.23,
+        "end_seconds": 93.23
       },
       {
         "stage": "do",
-        "start_seconds": 113.23,
-        "end_seconds": 124.97
+        "start_seconds": 93.23,
+        "end_seconds": 120.32
       },
       {
         "stage": "do",
-        "start_seconds": 124.97,
-        "end_seconds": 150.15
+        "start_seconds": 120.32,
+        "end_seconds": 134.03
       },
       {
         "stage": "do",
-        "start_seconds": 150.15,
-        "end_seconds": 156.75
+        "start_seconds": 134.03,
+        "end_seconds": 159.21
+      },
+      {
+        "stage": "do",
+        "start_seconds": 159.21,
+        "end_seconds": 165.81
       },
       {
         "stage": "done",
-        "start_seconds": 156.75,
-        "end_seconds": 176.12
+        "start_seconds": 165.81,
+        "end_seconds": 185.18
       }
     ]
   }

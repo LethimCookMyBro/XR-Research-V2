@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Linq;
 using UnityEngine;
 
 namespace VRMaintenanceResearch.ResearchFlow
@@ -16,6 +17,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public Transform motorShaft;
         public Quaternion isolatedShaftRotation;
         private ResearchS1FanPart[] parts;
+        private Collider rearGuardThreadContact;
         public bool InteractionAllowed => port && port.InteractionAllowed;
         public bool FrontGuardLocked => frontGuard && frontGuard.Placement == S1Placement.Seated && Mathf.Abs(frontGuard.Pose.turnDeg) <= 1;
 
@@ -23,8 +25,11 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void Bind()
         {
+            KeepAuthoredGuardDetail();
             if (!AuthoredBindingsValid())
                 throw new InvalidOperationException("Task B has missing or inconsistent authored bindings.");
+            rearGuardThreadContact = rearGuard.GetComponentsInChildren<Collider>(true).Single(c => c.name == "COL_FAN_PED_GUARD_REAR_Shell"
+                && !c.isTrigger && c.attachedRigidbody == rearGuard.body);
             parts = new[] { frontGuard, blade, spinner, rearGuard, rearLock, frontClip };
             port.BindSnapshot(() => Capture(), value =>
             {
@@ -34,6 +39,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             }, Gate);
             port.BindFeedback(value => "inspect.s1.B." + ResearchS1TaskEvaluator.Evaluate((S1TaskBState)value).Category);
             port.BindExamineInfo(Observation);
+        }
+
+        public void KeepAuthoredGuardDetail()
+        {
+            // The authored guard exposes only LOD0; automatic LOD selected disabled meshes and made it disappear.
+            foreach (var guard in new[] { frontGuard, rearGuard })
+                if (guard) foreach (var group in guard.GetComponentsInChildren<LODGroup>(true)) group.ForceLOD(0);
         }
 
         public S1TaskBState Capture()
@@ -167,31 +179,26 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var part in parts) if (part) part.Gate(allowed);
         }
 
-        public Matrix4x4 FreePose(ResearchS1FanPart part, Matrix4x4 desired)
+        Collider ThreadContact(ResearchS1FanPart part, Matrix4x4 desired, bool previouslyCaptured = false)
         {
-            Vector3 position = desired.GetColumn(3);
-            Vector3 delta = position - part.transform.position;
-            if (delta.sqrMagnitude > .00000001f)
-                foreach (var hit in part.body.SweepTestAll(delta.normalized, delta.magnitude, QueryTriggerInteraction.Ignore))
-                    if (hit.collider && !hit.collider.transform.IsChildOf(part.transform) && hit.distance > .0005f)
-                        return part.transform.localToWorldMatrix;
-            foreach (var collider in part.GetComponentsInChildren<Collider>())
-            {
-                if (!collider.enabled || collider.isTrigger || collider.attachedRigidbody != part.body) continue;
-                var local = part.transform.worldToLocalMatrix * collider.transform.localToWorldMatrix;
-                var future = desired * local;
-                Vector3 nextPosition = future.GetColumn(3);
-                float radius = collider.bounds.extents.magnitude;
-                foreach (var other in Physics.OverlapSphere(nextPosition, radius, ~0, QueryTriggerInteraction.Ignore))
-                {
-                    if (other.transform.IsChildOf(part.transform)) continue;
-                    Vector3 direction; float distance;
-                    if (Physics.ComputePenetration(collider, nextPosition, future.rotation, other, other.transform.position, other.transform.rotation, out direction, out distance) && distance > .0005f)
-                        return part.transform.localToWorldMatrix;
-                }
-            }
-            return desired;
+            if (part.kind != S1FanPartKind.RearLock || !rearGuard || rearGuard.Placement != S1Placement.Seated
+                || !rearGuard.Aligned || rearGuard.IsHeld || !ResearchS1TaskAMechanics.Finite(desired)) return null;
+            if (previouslyCaptured) return rearGuardThreadContact;
+            if (part.ThreadProgressDegrees > 0 || !CanMount(part) || !part.Aligned
+                || part.Pose.depthMm < part.threadTravelMm - .3f) return null;
+            var pose = VRMaintenanceResearch.AssetLibraryQA.SocketRules.Measure(part.seat.localToWorldMatrix,
+                desired * part.transform.worldToLocalMatrix * part.mate.localToWorldMatrix);
+            // The solid shell fills the bore outside the 20 mm snap range too; retain the existing capture band.
+            return pose.lateralMm <= part.positionToleranceMm && pose.tiltDeg <= part.angleToleranceDegrees
+                && pose.depthMm >= part.threadTravelMm - .3f ? rearGuardThreadContact : null;
         }
+
+        internal bool AllowsThreadPose(ResearchS1FanPart part, Matrix4x4 desired, bool previouslyCaptured)
+            => ResearchS1HeldCollision.Allows(part.transform, desired, ThreadContact(part, desired, previouslyCaptured));
+
+        // The shared swept test permits escape from existing proxy overlap without tunneling.
+        public Matrix4x4 FreePose(ResearchS1FanPart part, Matrix4x4 desired)
+            => ResearchS1HeldCollision.Allows(part.transform, desired, ThreadContact(part, desired)) ? desired : part.transform.localToWorldMatrix;
 
         private string Observation(string target, string language) => ResearchS1FanObservations.Get(Capture(), target, language);
     }

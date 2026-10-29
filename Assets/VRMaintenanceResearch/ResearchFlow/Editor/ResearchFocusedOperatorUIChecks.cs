@@ -239,6 +239,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Check(!taskOpened && (!opened || canvas.renderMode == RenderMode.ScreenSpaceOverlay || !canvas.enabled),
                         language + "/no operator panel during active task", new { taskOpened, canvas.enabled, render_mode = canvas.renderMode.ToString() });
                     Set("Record", null); Set("Flow", new ResearchSessionFlow(TaskOrder.AB, ResearchFlowState.TutorialInteractions, 0));
+                    controller.SetLanguage(language); // The prior attached-record case correctly restored its own Thai locale.
                     var evidence = (HashSet<string>)typeof(ResearchSessionFlowController).GetField("tutorialEvidence", Private).GetValue(controller);
                     evidence.Add("teleport");
                     view.Refresh(); view.TutorialFactCompleted("teleport");
