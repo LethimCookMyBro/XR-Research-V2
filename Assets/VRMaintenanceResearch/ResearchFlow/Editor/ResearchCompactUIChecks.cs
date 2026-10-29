@@ -14,7 +14,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
     public static class ResearchCompactUIChecks
     {
-        public const string ContractVersion = "S1_CONCISE_UI_RETRY_20261029_R2";
+        public const string ContractVersion = "S1_CONCISE_UI_MAIN_RECOVERY_20261029_R3";
         const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         public static string Run(string freshDirectory)
         {
@@ -164,6 +164,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Canvas.ForceUpdateCanvases();
                     if(!strip.gameObject.activeSelf||!strip.transform.Find("Stop").gameObject.activeSelf||strip.PlacementBlocked)failures.Add(lang+" off-view strip has no placed Stop");
                     Stage("offview_strip",strip,false);
+                    CheckMainPoseCache(view,controller,(Camera)type.GetField("Camera",Fields).GetValue(owner),
+                        ()=>Seed(dev,ResearchFlowState.Task1Active,null,false),check);
                 }
                 catch(Exception error)
                 {var cause=error is TargetInvocationException wrapper&&wrapper.InnerException!=null?wrapper.InnerException:error;failures.Add(lang+" fixture exception "+cause);}
@@ -173,6 +175,49 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             string json=JsonConvert.SerializeObject(new {scope="Owned stopped-Editor TEST fixture; render-only state seeds; retired Task Details route rejected; retry feedback state seeded; actual Refresh/TMP mono captures; not workflow, pointer, Quest or language approval",stages,checks,failures,pass=failures.Count==0},Formatting.Indented);
             string output=Path.Combine(dir,"session-stages.json");File.WriteAllText(output,json);return output;
         }
+        static void CheckMainPoseCache(ResearchFlowView view, ResearchSessionFlowController controller, Camera camera,
+            Action seed, Action<bool,string> check)
+        {
+            var panel=view.mainPanel; var rotation=camera.transform.rotation; string id=controller.Language+" Main cache fixture ";
+            var cache=typeof(ResearchFlowView).GetField("hasTaskPose",Fields);
+            try
+            {
+                typeof(ResearchFlowView).GetField("mainMinimized",Fields).SetValue(view,false);
+                cache.SetValue(view,false); camera.transform.rotation=Quaternion.identity; seed(); panel.Recenter(false,false);
+                bool ready=panel.HasAcceptedPose&&!panel.PlacementBlocked;
+                check(ready,id+"starts with a genuinely accepted full task card"); if(!ready)return;
+                panel.RestorePose(panel.transform.position+Vector3.right*.05f,panel.transform.rotation);
+                camera.transform.rotation=Quaternion.Euler(45,0,0); panel.Recenter(false,false);
+                bool unaccepted=!panel.HasAcceptedPose&&panel.PlacementBlocked;
+                check(unaccepted,id+"actual failed recenter clears acceptance"); if(!unaccepted)return;
+                controller.Flow.Pause(); Set(controller,"PauseKind","participant"); view.Refresh();
+                check(!(bool)cache.GetValue(view),id+"unaccepted pose is not cached");
+                controller.Flow.ResearcherResume(); Set(controller,"PauseKind",""); view.Refresh();
+                check(!panel.HasAcceptedPose,id+"resume does not promote an unaccepted prior pose");
+                camera.transform.rotation=Quaternion.identity; view.Refresh();
+                // Stopped-Editor fixture advances the component retry deadline, not recorded task/movement time.
+                typeof(ResearchPanelMotion).GetField("nextBlockedRetry",Fields).SetValue(panel,Time.unscaledTime);
+                typeof(ResearchPanelMotion).GetMethod("LateUpdate",Fields).Invoke(panel,null);
+                ready=panel.HasAcceptedPose&&!panel.PlacementBlocked&&panel.IsReadableFromHead;
+                check(ready,id+"normal gaze-up component update recovers a valid pose"); if(!ready)return;
+                panel.RestorePose(panel.transform.position+Vector3.right*.05f,panel.transform.rotation);
+                var chosen=new Pose(panel.transform.position,panel.transform.rotation);
+                check(panel.HasAcceptedPose&&!panel.PlacementBlocked,id+"retention control owns a guarded chosen pose");
+                controller.Flow.Pause(); Set(controller,"PauseKind","participant"); view.Refresh();
+                check((bool)cache.GetValue(view)&&Vector3.Distance(Get<Vector3>(view,"savedTaskPosition"),chosen.position)<.0001f,
+                    id+"accepted chosen pose is cached");
+                controller.Flow.ResearcherResume(); Set(controller,"PauseKind",""); view.Refresh();
+                check(panel.HasAcceptedPose&&!panel.PlacementBlocked&&Vector3.Distance(panel.transform.position,chosen.position)<.0001f
+                    &&Quaternion.Angle(panel.transform.rotation,chosen.rotation)<.01f,id+"accepted chosen pose survives pause and resume");
+                camera.transform.rotation=Quaternion.Euler(0,180,0);
+                typeof(ResearchPanelMotion).GetField("nextBlockedRetry",Fields).SetValue(panel,Time.unscaledTime);
+                typeof(ResearchPanelMotion).GetMethod("LateUpdate",Fields).Invoke(panel,null);
+                check(panel.HasAcceptedPose&&Vector3.Distance(panel.transform.position,chosen.position)<.0001f
+                    &&Quaternion.Angle(panel.transform.rotation,chosen.rotation)<.01f,id+"accepted chosen pose never chases gaze");
+            }
+            finally { camera.transform.rotation=rotation; }
+        }
+
         static void CheckTaskDetails(ResearchFlowView view, ResearchSessionFlowController controller, Action<bool, string> check)
         {
             string id = controller.Language + " " + controller.Flow.CurrentTask;

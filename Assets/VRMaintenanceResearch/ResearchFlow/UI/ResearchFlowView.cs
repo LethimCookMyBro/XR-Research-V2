@@ -161,7 +161,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public event Action<bool, string> ReferenceVisibilityChanged;
         bool observedReferenceVisible;
-        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R3";
+        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R4";
         enum ReaderFeedback { None, Blocked, Direction }
         ReaderFeedback readerFeedback;
         TMP_Text readerFeedbackLabel, readerMainFeedbackLabel;
@@ -1529,7 +1529,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             bool expandedTutorial = compactTutorialReference && tutorialChecklist && !controller.ReferenceOpen;
             if (state != previousState && (previousState == "Task1Active" || previousState == "Task2Active") && Interrupting(state))
-            { savedTaskPosition = mainPanel.transform.position; savedTaskRotation = mainPanel.transform.rotation; savedTaskMinimized = beforeMinimized; hasTaskPose = true; }
+            {
+                hasTaskPose = mainPanel.HasAcceptedPose;
+                if (hasTaskPose) { savedTaskPosition = mainPanel.transform.position; savedTaskRotation = mainPanel.transform.rotation; savedTaskMinimized = beforeMinimized; }
+            }
             LayoutSecondPass(state, tutorialChecklist, resultState, checkpoint);
             if (confirming && tutorialChecklist && !compactTutorialReference) ShowTutorialConfirmation();
             var mainLayoutSize = mainPanel.GetComponent<RectTransform>().sizeDelta;
@@ -1544,7 +1547,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 helperText.gameObject.SetActive(false); helperCanvas.transform.Find("Bubble").gameObject.SetActive(false);
                 // Tracking blips (e.g. a system screenshot) keep the participant's panel where it was.
                 bool keepPose = state == "tracking" || previousState == "tracking";
-                if (!keepPose && (!mainPanel.movable || state == "TutorialComplete" || (compactTask && !Interrupting(previousState))) && Head) mainPanel.Recenter(false, false);
+                if (!keepPose && (!mainPanel.movable || state == "TutorialComplete" || (compactTask && (!Interrupting(previousState) || !hasTaskPose))) && Head) mainPanel.Recenter(false, false);
                 if (compactTask && recoverTaskOnResume)
                 { mainPanel.Recenter(false, false, reason: "explicit_recovery_resume"); recoverTaskOnResume = false; }
                 if (compactTask && hasTaskPose && Interrupting(previousState) && previousState != "tracking") mainPanel.RestorePose(savedTaskPosition, savedTaskRotation);

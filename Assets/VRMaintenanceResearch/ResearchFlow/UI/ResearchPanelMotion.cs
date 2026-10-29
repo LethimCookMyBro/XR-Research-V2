@@ -169,7 +169,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
             }
             // Explicit recovery may relocate a fixed slate; a temporary obstruction must not move its accepted pose.
-            if (PlacementBlocked && !faceHidden && !RecenterPending && !FixedReader && !(FixedWorkingSlate && placementAccepted)
+            bool unplacedMain = panelId == "task_information" && ResearchUIPolicy.Active == ResearchUIPolicy.OwnerMovable && FixedWorkingSlate && !placementAccepted;
+            if ((PlacementBlocked || unplacedMain) && (!faceHidden || unplacedMain) && !RecenterPending && !FixedReader && !(FixedWorkingSlate && placementAccepted)
                 && view && view.Head && Time.unscaledTime >= nextBlockedRetry)
             { nextBlockedRetry = Time.unscaledTime + 1f; Recenter(false, false, reason: "clearance_retry"); deferredRetryUsed = true; }
             if (!RecenterPending) return;
