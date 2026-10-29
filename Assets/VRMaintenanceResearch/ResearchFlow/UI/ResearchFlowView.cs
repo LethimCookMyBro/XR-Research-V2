@@ -161,7 +161,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public event Action<bool, string> ReferenceVisibilityChanged;
         bool observedReferenceVisible;
-        public const string ReaderFeedbackVersion = "S1_READER_FEEDBACK_20261027";
+        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R2";
         enum ReaderFeedback { None, Blocked, Direction }
         ReaderFeedback readerFeedback;
         TMP_Text readerFeedbackLabel, readerMainFeedbackLabel;
@@ -251,10 +251,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         TMP_Text sectionHeading, waitingLabel, arrivalLabel, pageLabel, safetyLabel, tutorialProgress;
         Button helpUtility, stopUtility, taskDetails;
         bool mainPauseEligible, mainStopChip;
-        // Task card rows; the short/full choice is the participant's and holds for the rest of that task (owner 20 Oct).
+        // Task card stays concise; authoritative detail is in Reference (owner 29 Oct).
         RectTransform taskBrief;
         ScrollRect taskBriefScroll;
-        float taskDetailsScrollY;
         bool taskDetailsOpen;
         string taskBriefKey;
         // Tutorial coach: one current action, animated control demo, reserved success line, practice-object rings.
@@ -1508,7 +1507,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "Task1Active": case "Task2Active":
                     title.text = TaskName(flow); body.text = "";
                     string briefKey = controller.Record?.run_id + "/" + flow.CurrentTask;
-                    if (briefKey != taskBriefKey) { taskBriefKey = briefKey; taskDetailsOpen = false; taskDetailsScrollY = 0; taskBrief.anchoredPosition = Vector2.zero; }
+                    if (briefKey != taskBriefKey) { taskBriefKey = briefKey; taskDetailsOpen = false; taskBrief.anchoredPosition = Vector2.zero; }
                     SetActions(("inspect", "action.inspect"), ("reference", "action.reference")); break;
                 case "checking": title.text = Text("inspect.checking.title"); body.text = Text("inspect.checking.body"); break;
                 case "timeout": title.text = Text("task.timeout.title"); body.text = Text("task.timeout.body");
@@ -1645,9 +1644,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         static bool IsKanji(char c) => c >= '一' && c <= '鿿';
 
-        // Details stays in the summary's body area so expansion never changes the panel pose or size.
+        // Keep task summaries short without moving or resizing the panel.
         float LayoutTaskBrief(float width, float top)
         {
+            // Legacy expanded-card state must not duplicate the authoritative Reference.
+            taskDetailsOpen = false;
             var summary = TaskLines("task." + controller.Flow.CurrentTask + ".summary");
             var lines = taskDetailsOpen ? TaskLines("task." + controller.Flow.CurrentTask + ".body") : summary;
             float inner = width - 88, left = -inner / 2, textLeft = 52, y = 0;
@@ -1694,17 +1695,6 @@ namespace VRMaintenanceResearch.ResearchFlow
             taskBrief.sizeDelta = new Vector2(inner, Mathf.Max(viewportHeight, y));
             taskBrief.anchoredPosition = new Vector2(0, taskDetailsOpen ? Mathf.Clamp(scrollY, 0, taskBrief.rect.height - viewportHeight) : 0);
             bar.gameObject.SetActive(taskDetailsOpen && y > viewportHeight);
-            ResearchUITheme.Button(taskDetails, ResearchButtonVariant.Ghost);
-            var caption = taskDetails.transform.Find("Label").GetComponent<TMP_Text>();
-            caption.text = Text(taskDetailsOpen ? "task.details_hide" : "task.details_show"); caption.font = Font; caption.fontSize = ResearchUITheme.ButtonText;
-            caption.color = ResearchUITheme.Blue; caption.alignment = TextAlignmentOptions.MidlineLeft; caption.textWrappingMode = TextWrappingModes.NoWrap;
-            caption.rectTransform.offsetMin = new Vector2(56, 0); caption.rectTransform.offsetMax = new Vector2(-16, 0);
-            float toggleWidth = Mathf.Min(inner, Mathf.Ceil(caption.GetPreferredValues(caption.text).x) + 72);
-            var toggle = (RectTransform)taskDetails.transform;
-            toggle.sizeDelta = new Vector2(toggleWidth, 60); toggle.anchoredPosition = new Vector2(left + toggleWidth / 2, top - viewportHeight - ResearchUITheme.SpaceL - 30);
-            var chevron = taskDetails.transform.Find("Chevron").GetComponent<ResearchUtilityIcon>();
-            chevron.color = ResearchUITheme.Blue; chevron.rectTransform.anchoredPosition = new Vector2(-toggleWidth / 2 + 30, 0);
-            chevron.rectTransform.localRotation = Quaternion.Euler(0, 0, taskDetailsOpen ? 90 : -90);
             return viewportHeight;
         }
 
@@ -1863,7 +1853,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (var stroke in icon.GetComponentsInChildren<Graphic>(true)) stroke.color = icon == positiveIcon ? Positive : ResearchUITheme.Failure;
             }
             body.gameObject.SetActive(!tutorialChecklist && !technicalSetup && !compactTask);
-            taskBriefScroll.gameObject.SetActive(compactTask); taskBrief.gameObject.SetActive(compactTask); taskDetails.gameObject.SetActive(compactTask);
+            taskBriefScroll.gameObject.SetActive(compactTask); taskBrief.gameObject.SetActive(compactTask); taskDetails.gameObject.SetActive(false);
             if (compactTask) LayoutTaskBrief(width, height / 2 - statusHeight - titleHeight - 58);
             checkpointSteps.gameObject.SetActive(checkpoint);
             checkpointSteps.anchoredPosition = body.rectTransform.anchoredPosition;
@@ -1976,7 +1966,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             foreach (var action in actions) if (action.gameObject.activeSelf) shown.Add(action);
             for (int i = 0; i < shown.Count; i++)
             {
-                int columns = compactTask ? shown.Count + 1 : shown.Count;
+                int columns = shown.Count;
                 float actionWidth = (width - 88 - (columns - 1) * ResearchUITheme.TargetGap) / Mathf.Max(1, columns);
                 var rt = shown[i].GetComponent<RectTransform>(); rt.sizeDelta = new Vector2(actionWidth, compactTask ? 76 : ResearchUITheme.TargetHeight);
                 rt.anchoredPosition = new Vector2((i - (columns - 1) / 2f) * (actionWidth + ResearchUITheme.TargetGap), 0);
@@ -1993,15 +1983,6 @@ namespace VRMaintenanceResearch.ResearchFlow
                     UtilityIcon(shown[i], "recenter", "action.recover_short");
                     shown[i].transform.Find("UtilityIcon").gameObject.SetActive(true);
                 }
-            }
-            if (compactTask)
-            {
-                float detailsWidth = (width - 88 - shown.Count * ResearchUITheme.TargetGap) / (shown.Count + 1);
-                var detailsRect = (RectTransform)taskDetails.transform;
-                detailsRect.sizeDelta = new Vector2(detailsWidth, 76);
-                detailsRect.anchoredPosition = new Vector2((width - 88 - detailsWidth) / 2, actionsRoot.anchoredPosition.y);
-                var chevronRect = taskDetails.transform.Find("Chevron").GetComponent<RectTransform>();
-                chevronRect.anchoredPosition = new Vector2(-detailsWidth / 2 + 30, 0);
             }
             if (technicalSetup) LayoutTechnicalCard(width, height / 2);
             else title.color = Ink;
@@ -2394,7 +2375,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (controller && controller.ReferenceOpen && !controller.ReferenceMinimized && controller.Flow?.Paused == false
                 && !controller.Transitioning && controller.FloorReady && string.IsNullOrEmpty(controller.Error) && referencePanel)
             {
-                if (referencePanel.PlacementBlocked && !referencePanel.RecenterPending)
+                if (referencePanel.PlacementBlocked && (!referencePanel.RecenterPending || (!referencePanel.HasAcceptedPose && previous == ReaderFeedback.Blocked)))
                 { readerFeedback = ReaderFeedback.Blocked; key = "reference.placement_blocked"; }
                 else if (Time.unscaledTime < readerCueUntil && referencePanel.HasAcceptedPose
                     && referencePanel.gameObject.activeInHierarchy && referencePanel.GetComponent<Canvas>().enabled
@@ -2575,12 +2556,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                         || controller.Transitioning || !string.IsNullOrEmpty(controller.Error)) return false;
                     setupDetailsRequested = !setupDetailsRequested; Refresh(); accepted = true; break;
                 case "task_details":
-                    // View state only. Details never opens Reference or changes the card size.
-                    if (!allowed || !compactTask || mainMinimized) return false;
-                    if (taskDetailsOpen) taskDetailsScrollY = taskBrief.anchoredPosition.y;
-                    taskDetailsOpen = !taskDetailsOpen; Refresh();
-                    if (taskDetailsOpen) taskBrief.anchoredPosition = new Vector2(0, Mathf.Clamp(taskDetailsScrollY, 0, taskBrief.rect.height - taskBriefScroll.viewport.rect.height));
-                    accepted = true; break;
+                    return false; // Task detail belongs to Reference, not a second information route.
                 case "panel_recovery":
                     // Geometry recovery also works on a paused/error card; it never changes task state or resumes a study.
                     if (!controller || controller.Flow == null || !Head || controller.Transitioning) return false;

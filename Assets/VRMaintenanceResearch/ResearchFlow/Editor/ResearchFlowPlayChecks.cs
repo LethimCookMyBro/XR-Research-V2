@@ -1787,11 +1787,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var lines = ResearchStrings.Get("task." + controller.Flow.CurrentTask + suffix, requestedLanguage).Split('\n'); var rows = Rows();
                 return rows.Length == lines.Length && rows.Select((t, i) => { t.ForceMeshUpdate(); return t.GetParsedText() == lines[i] && t.preferredHeight <= t.rectTransform.rect.height + 1; }).All(ok => ok);
             }
-            Require(Rows().Length == 2 && Shows(".summary"), "Task card opens with only goal and safety, each fitting its row");
-            Click("task_details");
-            Require(Rows().Length == 4 && Shows(".body"), "Details shows all four authored task paragraphs, each fitting its row");
-            Click("task_details");
-            Require(Shows(".summary"), "The participant returns the card to the short lines");
+            Require(Rows().Length == 2 && Shows(".summary"), "Task card shows two short goal/reference and safety rows");
+            Require(!controller.view.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "task_details")
+                && !controller.view.LocalCommand("task_details", "SimulatedController"), "No duplicate inline-details control or hidden command route");
+            Require(ResearchReferenceScheme.Active.All(controller.ReferenceAvailable), "Full task content remains in all four Reference formats");
             foreach (var utility in controller.view.mainPanel.GetComponentsInChildren<ResearchUIAction>(false).Where(a => a.command == "main_minimize" || a.command == "main_recenter"))
             {
                 Require(utility.GetComponentInChildren<ResearchUtilityIcon>(true) && !utility.transform.Find("Label").gameObject.activeSelf

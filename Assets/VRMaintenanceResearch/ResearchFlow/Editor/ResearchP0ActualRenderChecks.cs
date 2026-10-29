@@ -31,7 +31,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             internal ResearchFlowState state;
             internal Cell(ParticipantLanguage lang, string id, string mode, bool dev = true, bool expanded = false, ResearchFlowState flow = ResearchFlowState.Task1Active)
             { language = lang; task = id; kind = mode; technical = dev; details = expanded; state = flow; }
-            internal string Label => language + "_" + task + "_" + kind + (technical ? "_DEV" : "_STUDY_TEXT") + (details ? "_details" : "");
+            internal string Label => language + "_" + task + "_" + kind + (technical ? "_DEV" : "_STUDY_TEXT") + (details ? "_legacy_details_ignored" : "");
         }
         sealed class Fixture
         {

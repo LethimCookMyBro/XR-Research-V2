@@ -14,6 +14,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
     public static class ResearchCompactUIChecks
     {
+        public const string ContractVersion = "S1_CONCISE_UI_RETRY_20261029_R2";
         const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         public static string Run(string freshDirectory)
         {
@@ -67,7 +68,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     foreach(var state in new[]{ResearchFlowState.Task1Active,ResearchFlowState.Task2Active})
                     {
                         Set(controller,"Flow",new ResearchSessionFlow(TaskOrder.AB,state,5));stage(state==ResearchFlowState.Task1Active?"task_A":"task_B");
-                        check(!view.LocalCommand("task_details","SimulatedController"),lang+" "+controller.Flow.CurrentTask+" unstarted fixture task clock blocks detail commands");
+                        check(!view.LocalCommand("task_details","SimulatedController"),lang+" "+controller.Flow.CurrentTask+" obsolete details command rejected in unstarted fixture");
                         // Owner 20 Oct: the same card with the participant's "full text" choice (verbatim S1 sentences).
                         typeof(ResearchFlowView).GetField("taskDetailsOpen",Fields).SetValue(view,true);
                         stage(state==ResearchFlowState.Task1Active?"task_A_full":"task_B_full");
@@ -146,9 +147,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                             check(controller.Record.test_data && Get<ResearchTaskTiming>(controller,"taskTiming").CanManipulate,
                                 lang+" "+controller.Flow.CurrentTask+" details fixture owns TEST record and started manipulable clock");
                             CheckTaskDetails(view,controller,check);
-                            fullText.SetValue(view,true);Stage(state==ResearchFlowState.Task1Active?"session_task_A_full":"session_task_B_full",view.mainPanel,true);
+                            fullText.SetValue(view,true);Stage(state==ResearchFlowState.Task1Active?"session_task_A_legacy_details_ignored":"session_task_B_legacy_details_ignored",view.mainPanel,true);
                         }
-                    Seed(dev,ResearchFlowState.Task1Active,null,true);Stage("session_reader_A",view.referencePanel,false);
+                    Seed(dev,ResearchFlowState.Task1Active,null,false); CheckReaderRetryFeedback(view,controller,check);
+            Seed(dev,ResearchFlowState.Task1Active,null,true);Stage("session_reader_A",view.referencePanel,false);
                     Seed(dev,ResearchFlowState.Task1Active,"participant",false);Stage("pause_dev",view.mainPanel,true);
                     Seed(study,ResearchFlowState.Task1Active,"participant",false);Stage("pause_study",view.mainPanel,true);
                     Seed(study,ResearchFlowState.Task1Active,"stop",false);Stage("stop_study",view.mainPanel,true);
@@ -168,7 +170,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 finally {owner?.Dispose();}
             }
             if(!(active==SceneManager.GetActiveScene()&&before.SequenceEqual(Scenes())))failures.Add("caller scene list/active/dirty changed");
-            string json=JsonConvert.SerializeObject(new {scope="Owned stopped-Editor fixture with a TEST record (Study = same record with test_data false); render-only state seeds and direct view-only Details commands on an owned TEST record with a started fixture clock; no native clicks; actual Refresh/TMP meshes and mono captures; not workflow, pointer, Quest or language approval",stages,checks,failures,pass=failures.Count==0},Formatting.Indented);
+            string json=JsonConvert.SerializeObject(new {scope="Owned stopped-Editor TEST fixture; render-only state seeds; retired Task Details route rejected; retry feedback state seeded; actual Refresh/TMP mono captures; not workflow, pointer, Quest or language approval",stages,checks,failures,pass=failures.Count==0},Formatting.Indented);
             string output=Path.Combine(dir,"session-stages.json");File.WriteAllText(output,json);return output;
         }
         static void CheckTaskDetails(ResearchFlowView view, ResearchSessionFlowController controller, Action<bool, string> check)
@@ -177,48 +179,76 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var brief = Get<RectTransform>(view, "taskBrief");
             var scroll = Get<UnityEngine.UI.ScrollRect>(view, "taskBriefScroll");
             var panel = (RectTransform)view.mainPanel.transform;
-            var taskActions = Get<UnityEngine.UI.Button[]>(view, "actions");
-            var referenceButton = taskActions.First(b => b.GetComponent<ResearchUIAction>().command == "reference");
-            var inspectButton = taskActions.First(b => b.GetComponent<ResearchUIAction>().command == "inspect");
-            check(referenceButton.targetGraphic.color == inspectButton.targetGraphic.color
-                && referenceButton.GetComponentInChildren<TMPro.TMP_Text>().color == inspectButton.GetComponentInChildren<TMPro.TMP_Text>().color
-                && ((RectTransform)referenceButton.transform).sizeDelta == ((RectTransform)inspectButton.transform).sizeDelta,
-                id + " Reference and Inspect have equal visual weight");
-            var closedSize = panel.sizeDelta;
-            var closedPose = new Pose(panel.position, panel.rotation);
-            var state = controller.Flow.State;
-            bool reference = controller.ReferenceOpen;
-            check(brief.anchoredPosition.y == 0 && !scroll.enabled && brief.GetChild(0).gameObject.activeSelf && brief.GetChild(1).gameObject.activeSelf
-                && !brief.GetChild(2).gameObject.activeSelf && !brief.GetChild(3).gameObject.activeSelf, id + " collapsed brief has two summary rows");
-            bool opened = view.LocalCommand("task_details", "SimulatedController");
-            check(opened, id + " open inline details");
-            if (!opened) return;
-            Canvas.ForceUpdateCanvases();
-            var expected = ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".body", controller.Language).Split('\n');
-            check(expected.Length == 4 && brief.childCount == 4, id + " four authored detail paragraphs");
-            for (int i = 0; i < expected.Length; i++)
+            var actions = Get<UnityEngine.UI.Button[]>(view, "actions");
+            var reference = actions.First(b => b.GetComponent<ResearchUIAction>().command == "reference");
+            var inspect = actions.First(b => b.GetComponent<ResearchUIAction>().command == "inspect");
+            var details = Get<UnityEngine.UI.Button>(view, "taskDetails");
+            check(reference.gameObject.activeSelf && inspect.gameObject.activeSelf && reference.IsInteractable() && inspect.IsInteractable(), id + " Reference and Inspect remain usable");
+            check(reference.targetGraphic.color == inspect.targetGraphic.color
+                && ((RectTransform)reference.transform).sizeDelta == ((RectTransform)inspect.transform).sizeDelta,
+                id + " Reference and Inspect retain equal visual weight");
+            float lane = ((RectTransform)reference.transform).rect.width + ((RectTransform)inspect.transform).rect.width + ResearchUITheme.TargetGap;
+            check(Mathf.Abs(lane - (panel.rect.width - 88)) < 1, id + " two actions fill the lane without an empty details column");
+            check(!details.gameObject.activeSelf && !details.IsActive(), id + " duplicate TaskDetails is absent from interaction");
+            var before = new Pose(panel.position, panel.rotation); var size = panel.sizeDelta;
+            var state = controller.Flow.State; bool open = controller.ReferenceOpen;
+            check(!view.LocalCommand("task_details", "SimulatedController"), id + " obsolete details command is rejected");
+            for (int i = 0; i < 3; i++) view.Refresh();
+            check(!scroll.enabled && brief.anchoredPosition.y == 0 && brief.GetChild(0).gameObject.activeSelf && brief.GetChild(1).gameObject.activeSelf
+                && !brief.GetChild(2).gameObject.activeSelf && !brief.GetChild(3).gameObject.activeSelf, id + " repeated refresh keeps only two short rows");
+            string text = ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".summary", controller.Language);
+            string pointer = controller.Language == "Thai" ? "เอกสาร" : controller.Language == "Japanese" ? "参照" : "Reference";
+            check(text.Contains(pointer), id + " brief points to the authoritative Reference");
+            check(!string.IsNullOrEmpty(controller.ReaderResource) && ResearchReferenceScheme.Active.All(controller.ReferenceAvailable),
+                id + " authoritative Reader content remains available in all four formats");
+            check(panel.sizeDelta == size && Vector3.Distance(panel.position, before.position) < .00001f
+                && Quaternion.Angle(panel.rotation, before.rotation) < .001f, id + " ignored duplicate control never moves or resizes the slate");
+            check(controller.ReferenceOpen == open && controller.Flow.State == state, id + " UI cleanup does not alter Reader or workflow state");
+        }
+
+        static void CheckReaderRetryFeedback(ResearchFlowView view, ResearchSessionFlowController controller, Action<bool, string> check)
+        {
+            string id = controller.Language + " reader retry state fixture";
+            var panel = view.referencePanel;
+            var accepted = typeof(ResearchPanelMotion).GetField("placementAccepted", Fields);
+            var refresh = typeof(ResearchFlowView).GetMethod("RefreshReaderFeedback", Fields);
+            var feedback = typeof(ResearchFlowView).GetField("readerFeedback", Fields);
+            var block = typeof(ResearchPanelMotion).GetMethod("SetPlacementBlocked", Fields);
+            bool oldOpen = controller.ReferenceOpen, oldMinimized = controller.ReferenceMinimized, oldPending = panel.RecenterPending, oldBlocked = panel.PlacementBlocked;
+            bool oldAccepted = panel.HasAcceptedPose, oldPaused = controller.Flow.Paused;
+            Func<int> count = () => {
+                int total = 0;
+                using (var stream = new FileStream(controller.Logger.EventsPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
+                { string line; while ((line = reader.ReadLine()) != null) if ((string)JObject.Parse(line)["event"] == "REFERENCE_PLACEMENT_FEEDBACK") total++; }
+                return total;
+            };
+            Action tick = () => refresh.Invoke(view, null);
+            try
             {
-                var label = brief.GetChild(i).Find("Label").GetComponent<TMPro.TMP_Text>();
-                string text = label.text.Replace("<nobr>", "").Replace("</nobr>", "");
-                check(text == expected[i] && label.fontSize == 32 && !label.enableAutoSizing, id + " complete paragraph " + i + " without font shrink");
+                Set(controller, "ReferenceOpen", true); Set(controller, "ReferenceMinimized", false);
+                accepted.SetValue(panel, false); block.Invoke(panel, new object[] { true });
+                Set(panel, "RecenterPending", false); tick();
+                check(feedback.GetValue(view).ToString() == "Blocked", id + " failed placement reports Blocked honestly");
+                int before = count();
+                for (int i = 0; i < 4; i++) { Set(panel, "RecenterPending", true); tick(); Set(panel, "RecenterPending", false); tick(); }
+                check(feedback.GetValue(view).ToString() == "Blocked" && count() == before, id + " retries do not blank the same failed-placement message or duplicate feedback events");
+                Set(controller, "ReferenceOpen", false); tick();
+                check(feedback.GetValue(view).ToString() == "None", id + " closing clears stale feedback");
+                Set(controller, "ReferenceOpen", true); Set(panel, "RecenterPending", true); tick();
+                check(feedback.GetValue(view).ToString() == "None", id + " first pending placement does not invent a failure");
+                Set(panel, "RecenterPending", false); tick();
+                check(feedback.GetValue(view).ToString() == "Blocked", id + " a later failed attempt is still reported");
+                Set(controller.Flow, "Paused", true); tick();
+                check(feedback.GetValue(view).ToString() == "None", id + " pause guard remains authoritative");
             }
-            check(panel.sizeDelta == closedSize && Vector3.Distance(panel.position, closedPose.position) < .00001f
-                && Quaternion.Angle(panel.rotation, closedPose.rotation) < .001f, id + " details never resizes or relocates panel");
-            check(scroll.viewport.GetComponent<UnityEngine.UI.RectMask2D>() && scroll.content == brief
-                && brief.parent == scroll.viewport && brief.rect.height > scroll.viewport.rect.height, id + " full details scrolls inside bounded body viewport");
-            scroll.verticalNormalizedPosition = 0;
-            Canvas.ForceUpdateCanvases();
-            float bottom = brief.anchoredPosition.y;
-            var last = RectTransformUtility.CalculateRelativeRectTransformBounds(scroll.viewport, brief.GetChild(3));
-            check(bottom > 0 && last.min.y >= scroll.viewport.rect.yMin - 1 && last.max.y <= scroll.viewport.rect.yMax + 1,
-                id + " final paragraph reachable inside viewport at scroll bottom");
-            view.Refresh(); Canvas.ForceUpdateCanvases(); view.Refresh();
-            check(Mathf.Abs(brief.anchoredPosition.y - bottom) < .1f, id + " repeated refresh keeps scroll position");
-            check(view.LocalCommand("task_details", "SimulatedController") && !scroll.enabled, id + " collapse details");
-            check(view.LocalCommand("task_details", "SimulatedController"), id + " reopen details");
-            check(Mathf.Abs(brief.anchoredPosition.y - bottom) < .1f, id + " collapse reopen keeps scroll position");
-            check(controller.ReferenceOpen == reference && controller.Flow.State == state, id + " detail choice never changes Reference or workflow");
-            check(view.LocalCommand("task_details", "SimulatedController"), id + " leave next fixture stage collapsed");
+            finally
+            {
+                Set(controller.Flow, "Paused", oldPaused); Set(controller, "ReferenceOpen", oldOpen);
+                Set(controller, "ReferenceMinimized", oldMinimized);
+                accepted.SetValue(panel, oldAccepted); Set(panel, "RecenterPending", oldPending);
+                block.Invoke(panel, new object[] { oldBlocked }); tick();
+            }
         }
 
         static T Get<T>(object o,string name)=>(T)o.GetType().GetField(name,Fields).GetValue(o);

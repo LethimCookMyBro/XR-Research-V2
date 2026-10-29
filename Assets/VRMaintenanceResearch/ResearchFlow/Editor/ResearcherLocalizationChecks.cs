@@ -29,6 +29,22 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!donor) throw new InvalidOperationException("Current canonical font donor required.");
             var ownedType = typeof(ResearchParticipantSafetyChecks).GetNestedType("Owned", BindingFlags.NonPublic);
             var rows = new List<object>(); var captures = new List<object>(); var failures = new List<string>();
+            foreach (var locale in new[] { "English", "Thai", "Japanese" })
+            {
+                var damaged = ResearchStrings.All(locale).Where(text => text.Contains("???") || text.Contains("\uFFFD")).ToArray();
+                bool pass = damaged.Length == 0;
+                rows.Add(new { check = locale + "/all UI source copy retains Unicode", damaged, pass });
+                if (!pass) failures.Add(locale + "/damaged source copy");
+            }
+            foreach (var locale in new[] { "Thai", "Japanese" })
+            foreach (var key in new[] { "checkpoint.body", "checkpoint.technical.body", "checkpoint2.body", "inspect.checking.body", "inspect.fail.body", "inspect.pass.body", "inspect.s1.A.AssemblyIncomplete", "inspect.s1.A.Pass", "inspect.s1.A.SpecificationMismatch", "inspect.s1.B.Pass", "inspect.s1.B.PreconditionNotReady", "inspect.s1.B.SymptomPresent", "reference.placement_blocked", "researcher.study_authorization_missing", "setup.wait", "task.A.body", "task.A.summary", "task.A.title", "task.B.body", "task.B.summary", "task.B.title", "task.ready.general", "task.start.confirm.action", "task.start.confirm.body", "task.timeout.body", "technical.setup.title", "technical.start", "tutorial.try.cable_connect", "tutorial.try.cable_disconnect", "tutorial.try.examine", "tutorial.try.fasten", "tutorial.try.insert", "tutorial.try.inspect.trainer_ready", "tutorial.try.inspect_fail", "tutorial.try.inspect_fail.start", "tutorial.try.lock.v3", "tutorial.try.loosen", "tutorial.try.reposition.controller", "tutorial.try.reposition.hand", "tutorial.try.restore", "tutorial.try.rotate_access", "tutorial.try.switch", "tutorial.try.unlock", "welcome.body" })
+            {
+                string message = ResearchStrings.Get(key, locale);
+                bool pass = !message.Contains("???") && !message.Contains("\uFFFD") && message.Any(c => locale == "Thai"
+                    ? c >= '\u0E00' && c <= '\u0E7F' : (c >= '\u3040' && c <= '\u30FF') || (c >= '\u4E00' && c <= '\u9FFF'));
+                rows.Add(new { check = locale + "/short participant copy script/" + key, pass });
+                if (!pass) failures.Add(locale + "/short participant copy lost script: " + key);
+            }
             foreach (var locale in new[] { "Thai", "Japanese" })
                 foreach (var key in new[] { "study_authorization_block", "study_auth_provenance", "study_auth_schema", "study_auth_identity", "study_auth_revision", "study_auth_session", "study_auth_references", "study_auth_booleans", "study_auth_size", "study_auth_changed" })
                 {
