@@ -3,7 +3,7 @@
   <ItemGroup>
     <Compile Include="../../HandsLabQuest3/Runtime/HandsLabLogger.cs"/>
     <Compile Include="../Core/ResearchSessionFlow.cs"/>
-    <Compile Include="../Core/ResearchReferenceScheme.cs"/>
+    <Compile Include="../Core/ResearchReferenceScheme.cs"/><Compile Include="../Core/ResearchUIPolicy.cs"/>
     <Compile Include="../Runtime/ResearchTaskPort.cs"/>
     <Compile Include="../UI/ResearchDemoManual.cs"/>
     <Compile Include="../UI/ResearchStrings.cs"/>

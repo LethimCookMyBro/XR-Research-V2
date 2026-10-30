@@ -1,0 +1,2729 @@
+{
+  "task": "T",
+  "training_version": "S1_TRAINING_TRAINER_V4_20261030",
+  "title": {
+    "th": "บทฝึก: แท่นฝึกซ่อม",
+    "ja": "練習：練習台の操作",
+    "en": "Practice: the training station"
+  },
+  "units": {
+    "problem": "practice station only; unrelated to the experiment tasks; mistakes can be retried; start state: module out, latch open, screw loose, plug out",
+    "buttons": "Grip (middle finger) holds the module, latch and turntable; Trigger (index finger) selects buttons and pinches the screw head and plug head",
+    "status": "a short label above the part shows its state; each step counts only when really done",
+    "reader": "Reference: tabs change the format, - minimizes and the small bar reopens, the handle below moves it (hold Trigger), x closes",
+    "inspect_fail": "Inspect now gives the example 'not ready' result (module out, screw loose)",
+    "insert": "insert the fitting way first: cut corners on the same side, level over the slot, press fully down, let go",
+    "lock": "put it back the fitting way, then close the latch with Grip; placed is not secured",
+    "rotate_access": "Grip the front-edge handle or a front corner (blue bar) and move the hand in an arc around the centre until the back screw faces you (120 deg); regrab is fine",
+    "fasten": "tighten in: pinch the head with Trigger, twist clockwise looking at the head; the screw moves in",
+    "regrip": "letting go part-way keeps the progress; grab again and continue",
+    "screw_done": "tight = head down on the surface and label 'Tight: let go to continue'; a small twist back on release keeps it tight; fully loose label",
+    "cable_connect": "pinch the plug head (not the wire) with Trigger and push it straight into the open socket; the other end stays attached",
+    "inspect": "after module in + latch closed + screw tight, Inspect gives the example 'ready' result",
+    "cable_disconnect": "hold the plug head and pull it straight out",
+    "loosen": "loosen out: twist counter-clockwise; the screw moves out until fully loose",
+    "unlock": "open the latch first, then Grip the module and lift it out; a latched module cannot be pulled",
+    "done": "practice complete",
+    "part_feedback": "In later tasks A/B, interacting with a part shows selected part and state or blocking reason on Main; tutorial retains its existing Main instruction and feedback, with no new part-feedback credit; no separate Examine button or required Examine step"
+  },
+  "q_labels": [
+    {
+      "th": "ตอนเริ่ม",
+      "ja": "はじめの状態",
+      "en": "At the start"
+    },
+    {
+      "th": "ต้องทำอะไร",
+      "ja": "やること",
+      "en": "What to do"
+    },
+    {
+      "th": "ต้องสังเกต",
+      "ja": "見るところ",
+      "en": "What to watch"
+    },
+    {
+      "th": "เสร็จเมื่อ",
+      "ja": "終わりの目安",
+      "en": "Done when"
+    }
+  ],
+  "stage_labels": {
+    "problem": {
+      "th": "เริ่ม",
+      "ja": "はじめに",
+      "en": "Start"
+    },
+    "do": {
+      "th": "ทำ",
+      "ja": "やること",
+      "en": "Do"
+    },
+    "watch": {
+      "th": "สังเกต",
+      "ja": "見るところ",
+      "en": "Watch"
+    },
+    "done": {
+      "th": "จบบทฝึก",
+      "ja": "練習の終わり",
+      "en": "Finished"
+    }
+  },
+  "core": {
+    "problem": {
+      "th": "แท่นนี้ใช้ฝึกท่าทางเท่านั้น ไม่เกี่ยวกับงานทดลอง ตอนเริ่ม โมดูลยังไม่ได้ใส่ และสกรูยังหลวม",
+      "ja": "この練習台は操作の練習用で、実験課題とは関係ありません。はじめは、モジュールが入っておらず、ねじも緩んでいます。",
+      "en": "This station is only for practising the moves. It is not part of the experiment tasks. At the start the module is out and the screw is loose.",
+      "units": [
+        "problem"
+      ]
+    },
+    "do": {
+      "th": "ทำตามแผงทีละขั้น: ใส่โมดูล ปิดสลัก หมุนแท่น ขันสกรู เสียบปลั๊ก แล้วถอดกลับทั้งหมด",
+      "ja": "パネルの指示に一つずつ従います。モジュールを入れ、ラッチを閉じ、台を回し、ねじを締め、プラグを差し、最後に元に戻します。",
+      "en": "Follow the panel one step at a time: insert the module, close the latch, turn the station, tighten the screw, plug in, then undo it all.",
+      "units": [
+        "insert",
+        "lock",
+        "rotate_access",
+        "fasten",
+        "cable_connect"
+      ]
+    },
+    "watch": {
+      "th": "ป้ายสั้น ๆ เหนือชิ้นส่วนบอกสภาพตอนนี้ · Grip = จับชิ้นส่วน · Trigger = กดปุ่มและจับหัวเล็ก ๆ",
+      "ja": "部品の上の短い表示が今の状態を教えます。Grip＝部品を持つ、トリガー＝ボタンを押す・小さい頭をつまむ。",
+      "en": "A short label above the part shows its state. Grip holds parts; Trigger selects buttons and pinches small heads.",
+      "units": [
+        "status",
+        "buttons"
+      ]
+    },
+    "done": {
+      "th": "ขั้นสุดท้าย (ปลดสลักแล้วดึงโมดูลออก) ผ่าน แล้วขึ้น “บทฝึกเสร็จแล้ว”",
+      "ja": "最後の手順（ラッチを開けてモジュールを抜く）ができると「練習が終わりました」と出ます。",
+      "en": "When the last step passes (open the latch, pull the module out), you see “Practice Complete”.",
+      "units": [
+        "unlock",
+        "done"
+      ]
+    }
+  },
+  "manual": [
+    {
+      "id": "goal",
+      "title": {
+        "th": "1. เป้าหมายของบทฝึก",
+        "ja": "1. 練習の目的",
+        "en": "1. What this practice is for"
+      },
+      "items": [
+        {
+          "th": "ฝึกท่าทางที่ใช้ในงานจริง: ใส่ ล็อก หมุน ขันสกรู เสียบสาย และตรวจผลงาน",
+          "ja": "本番で使う動きを練習します。入れる・固定する・回す・ねじを締める・ケーブルを差す・「仕上がりを確認」を選ぶ。",
+          "en": "Practise the moves you will use: insert, lock, turn, tighten, plug in and check.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "แท่นนี้ไม่เกี่ยวกับงานทดลอง ทำผิดได้ ลองใหม่ได้",
+          "ja": "この練習台は実験課題とは関係ありません。まちがえても、やり直せます。",
+          "en": "This station is not part of the experiment tasks. Mistakes are fine; you can try again.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "ลำดับฝึก: → ตรวจผลงานครั้งแรก → ใส่โมดูลให้สุด → ปิดสลัก → หมุนแท่น → ขันเข้า → เสียบปลั๊ก → ตรวจผลงานอีกครั้ง → ถอดปลั๊ก → คลายออก → เปิดสลัก → ถอดโมดูล ไม่ต้องลองใส่ผิดด้าน",
+          "ja": "練習の順番：最初の検査 → モジュールを奥まで入れる → ラッチを閉じる → 台を回す → ねじを奥へ締める → プラグを差す → もう一度検査 → プラグを抜く → ねじを手前へ緩める → ラッチを開く → モジュールを抜く。入らない向きを試す必要はありません。",
+          "en": "Practice order: initial Check my work, insert fully, close the latch, turn the station, tighten in, plug in, Check my work again, unplug, loosen out, open the latch and remove the module. There is no required wrong-way attempt.",
+          "units": [
+            "part_feedback",
+            "inspect_fail",
+            "insert",
+            "lock",
+            "rotate_access",
+            "fasten",
+            "cable_connect",
+            "inspect",
+            "cable_disconnect",
+            "loosen",
+            "unlock"
+          ]
+        },
+        {
+          "th": "ก่อนฝึกกับแท่น ลองใช้แผงข้อมูลนี้ก่อน (หัวข้อ 3)",
+          "ja": "台の練習の前に、この資料パネルを使ってみます（3 を参照）。",
+          "en": "Before the station, try this help panel (section 3).",
+          "units": [
+            "reader"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "problem",
+      "title": {
+        "th": "2. สภาพตอนเริ่ม",
+        "ja": "2. はじめの状態",
+        "en": "2. How it starts"
+      },
+      "items": [
+        {
+          "th": "โมดูลวางอยู่บนโต๊ะ ยังไม่ได้ใส่ในช่อง สลักเปิดอยู่",
+          "ja": "モジュールは机の上にあり、まだスロットに入っていません。ラッチは開いています。",
+          "en": "The module lies on the table, not in its slot. The latch is open.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "สกรูด้านหลังแท่นยังหลวม หัวสกรูยกขึ้นจากผิวแท่น",
+          "ja": "台の奥側のねじは緩んでいて、ねじの頭が台の面から浮いています。",
+          "en": "The screw at the back of the station is loose: its head sits up off the surface.",
+          "units": [
+            "problem",
+            "screw_done"
+          ]
+        },
+        {
+          "th": "สายต่ออยู่ปลายหนึ่ง ส่วนหัวปลั๊กอีกปลายยังไม่ได้เสียบ",
+          "ja": "ケーブルは片方だけつながっていて、もう一方のプラグはまだ差していません。",
+          "en": "The cable is attached at one end; the plug at the other end is not in yet.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "เลือก “ตรวจผลงาน” ตอนนี้ จะขึ้น “ผลตัวอย่าง: ยังไม่พร้อม มีบางส่วนยังไม่ได้ใส่หรือยังไม่ได้ยึด”",
+          "ja": "今「仕上がりを確認」を選ぶと「練習の結果: 未完了。まだ取り付けまたは固定されていない部分があります。」と出ます。",
+          "en": "Selecting “Check my work” now gives “Practice result: not ready. Something is not installed or secured yet.”",
+          "units": [
+            "inspect_fail"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parts",
+      "title": {
+        "th": "3. ชิ้นส่วน ปุ่ม และแผงข้อมูล",
+        "ja": "3. 部品・ボタン・資料パネル",
+        "en": "3. Parts, buttons and help panel"
+      },
+      "table": {
+        "units": [
+          "buttons",
+          "insert",
+          "lock",
+          "rotate_access",
+          "fasten",
+          "loosen",
+          "cable_connect"
+        ],
+        "title": {
+          "th": "ชิ้นส่วนและปุ่มที่ใช้",
+          "ja": "部品と使うボタン",
+          "en": "Parts and the button for each"
+        },
+        "head": [
+          {
+            "th": "ชิ้นส่วน",
+            "ja": "部品",
+            "en": "Part"
+          },
+          {
+            "th": "จับอย่างไร",
+            "ja": "持ち方",
+            "en": "How to hold it"
+          },
+          {
+            "th": "จำไว้",
+            "ja": "覚えること",
+            "en": "Remember"
+          }
+        ],
+        "rows": [
+          [
+            {
+              "th": "โมดูลฝึก",
+              "ja": "練習モジュール",
+              "en": "Training module"
+            },
+            {
+              "th": "Grip (นิ้วกลาง)",
+              "ja": "Grip（中指）",
+              "en": "Grip (middle finger)"
+            },
+            {
+              "th": "มีมุมบาก 1 มุม ต้องอยู่ฝั่งเดียวกับมุมบากของช่อง",
+              "ja": "切り欠きの角が 1 つ。スロットの切り欠きと同じ側にする",
+              "en": "One cut corner; it must be on the same side as the slot's cut corner"
+            }
+          ],
+          [
+            {
+              "th": "สลัก (สีฟ้า ข้างช่อง)",
+              "ja": "ラッチ（スロット横の青い部品）",
+              "en": "Latch (blue, beside the slot)"
+            },
+            {
+              "th": "เอื้อมไปแล้วกด Grip หนึ่งครั้ง",
+              "ja": "手を近づけて Gripを一度押す",
+              "en": "Reach to it and press Grip once"
+            },
+            {
+              "th": "ปิด = ยึดโมดูล · เปิด = ดึงออกได้",
+              "ja": "閉じる＝固定・開ける＝抜ける",
+              "en": "Closed = held in; open = can come out"
+            }
+          ],
+          [
+            {
+              "th": "แท่นหมุน",
+              "ja": "回転台",
+              "en": "Turntable"
+            },
+            {
+              "th": "Grip ที่มือจับขอบหน้า หรือมุมหน้า (แถบสีฟ้า)",
+              "ja": "手前の縁のハンドル、または手前の角（青い線）をGrip",
+              "en": "Grip the front-edge handle or a front corner (blue bar)"
+            },
+            {
+              "th": "เลื่อนมือเป็นวงโค้งรอบแกนกลาง",
+              "ja": "中心のまわりに弧を描いて手を動かす",
+              "en": "Move your hand in an arc around the centre"
+            }
+          ],
+          [
+            {
+              "th": "สกรู (ด้านหลังแท่น)",
+              "ja": "ねじ（台の奥側）",
+              "en": "Screw (back of the station)"
+            },
+            {
+              "th": "Trigger (นิ้วชี้) จับหัวสกรู",
+              "ja": "トリガー（人差し指）で頭をつまむ",
+              "en": "Trigger (index finger) pinches the head"
+            },
+            {
+              "th": "ขันเข้า = ตามเข็ม · คลายออก = ทวนเข็ม (มองที่หัวสกรู)",
+              "ja": "締める（奥へ）＝時計回り・緩める（手前へ）＝反時計回り（頭を見て）",
+              "en": "Tighten in = clockwise; loosen out = counter-clockwise (looking at the head)"
+            }
+          ],
+          [
+            {
+              "th": "หัวปลั๊กสาย",
+              "ja": "ケーブルのプラグ",
+              "en": "Cable plug"
+            },
+            {
+              "th": "Trigger จับที่หัวปลั๊ก",
+              "ja": "トリガーでプラグの頭をつまむ",
+              "en": "Trigger pinches the plug head"
+            },
+            {
+              "th": "ไม่จับตัวสาย · ปลายอีกด้านต่ออยู่แล้ว",
+              "ja": "ケーブル部分は持たない・反対側はつながったまま",
+              "en": "Not the wire; the other end stays attached"
+            }
+          ],
+          [
+            {
+              "th": "ปุ่มบนแผง (ตรวจผลงานและแท็บ)",
+              "ja": "パネルのボタン（「仕上がりを確認」・タブ）",
+              "en": "Panel buttons (Check my work and tabs)"
+            },
+            {
+              "th": "ชี้ แล้วกด Trigger",
+              "ja": "指してトリガーを押す",
+              "en": "Point, then press Trigger"
+            },
+            {
+              "th": "ใช้กับแผงข้อมูลด้วย",
+              "ja": "資料パネルでも同じ",
+              "en": "Also used on the help panel"
+            }
+          ]
+        ]
+      },
+      "table2": {
+        "units": [
+          "reader"
+        ],
+        "title": {
+          "th": "แผงข้อมูลนี้",
+          "ja": "この資料パネル",
+          "en": "This help panel"
+        },
+        "head": [
+          {
+            "th": "ปุ่ม",
+            "ja": "ボタン",
+            "en": "Control"
+          },
+          {
+            "th": "ทำอะไร",
+            "ja": "すること",
+            "en": "What it does"
+          }
+        ],
+        "rows": [
+          [
+            {
+              "th": "แท็บ คู่มือ · ทีละขั้นตอน · ภาพประกอบ · วิดีโอ",
+              "ja": "タブ（マニュアル・手順・図解・動画）",
+              "en": "Tabs: Manual, Steps, Illustrated, Video"
+            },
+            {
+              "th": "เปลี่ยนรูปแบบ เนื้อหาเหมือนกันทุกแท็บ",
+              "ja": "形式を変える。中身はどれも同じ",
+              "en": "Change the format; every tab teaches the same things"
+            }
+          ],
+          [
+            {
+              "th": "− (ย่อ)",
+              "ja": "−（最小化）",
+              "en": "− (Minimize)"
+            },
+            {
+              "th": "ย่อแผงเหลือแถบเล็ก เลือกแถบเล็กเพื่อเปิดกลับ",
+              "ja": "小さいバーにする。バーを選ぶとまた開く",
+              "en": "Shrinks the panel to a small bar; select the bar to reopen it"
+            }
+          ],
+          [
+            {
+              "th": "แถบจับใต้แผง",
+              "ja": "パネル下のハンドル",
+              "en": "Handle below the panel"
+            },
+            {
+              "th": "ชี้ กด Trigger ค้าง ลาก แล้วปล่อย เพื่อย้ายแผง",
+              "ja": "指してトリガーを押したまま動かし、離すと移動",
+              "en": "Point, hold Trigger, move, release: the panel moves"
+            }
+          ],
+          [
+            {
+              "th": "× (ปิด)",
+              "ja": "×（閉じる）",
+              "en": "× (Close)"
+            },
+            {
+              "th": "ปิดแผง เปิดใหม่ด้วย “ข้อมูลช่วย 4 แบบ” บน Main",
+              "ja": "パネルを閉じます。Main の「4種類の資料」でまた開けます。",
+              "en": "Closes the panel. Reopen with “Help: 4 formats” on Main."
+            }
+          ]
+        ]
+      },
+      "after": [
+        {
+          "th": "ถ้าใช้มือเปล่า: Grip = หุบนิ้วเพื่อจับ · Trigger = จีบนิ้วโป้งกับนิ้วชี้",
+          "ja": "手で操作するとき：Grip＝指を閉じてつかむ・トリガー＝親指と人差し指でつまむ",
+          "en": "With bare hands: Grip = close your hand; Trigger = pinch thumb and index finger",
+          "units": [
+            "buttons"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cautions",
+      "title": {
+        "th": "4. ข้อควรระวัง",
+        "ja": "4. 注意",
+        "en": "4. Be careful"
+      },
+      "items": [
+        {
+          "th": "ถ้าใส่ไม่ลง ให้ยกขึ้นและจัดมุมบากให้ตรงกับช่องก่อนกดใหม่ ห้ามฝืน นี่เป็นคำแนะนำเมื่อใส่ไม่ลง ไม่ใช่ขั้นที่ต้องทำผิดก่อน",
+          "ja": "入らない場合は持ち上げて、切り欠きをスロットに合わせてから入れ直します。無理に押しません。これは入らないときの対処で、わざと逆向きに入れる手順ではありません。",
+          "en": "If it will not go in, lift it and align the cut corners before pressing again. Do not force it. This is troubleshooting, not a required wrong-way attempt.",
+          "units": [
+            "insert"
+          ],
+          "style": "warn"
+        },
+        {
+          "th": "วางเข้าที่ยังไม่เท่ากับยึดแล้ว ต้องปิดสลักด้วย",
+          "ja": "置いただけでは固定されていません。ラッチも閉じます。",
+          "en": "Placed is not the same as secured: close the latch too.",
+          "units": [
+            "lock"
+          ],
+          "style": "warn"
+        },
+        {
+          "th": "ถ้าสลักยังปิด จะดึงโมดูลไม่ออก ให้ปลดสลักก่อน",
+          "ja": "ラッチが閉じている間はモジュールを抜けません。先にラッチを開けます。",
+          "en": "While the latch is closed, the module cannot be pulled out. Open the latch first.",
+          "units": [
+            "unlock"
+          ],
+          "style": "warn"
+        },
+        {
+          "th": "สกรู (มองตรงหัวสกรู): ขันเข้า = บิดตามเข็มนาฬิกา สกรูจมลงในรู · คลายออก = บิดทวนเข็มนาฬิกา สกรูยกขึ้นมา",
+          "ja": "ねじ（頭を正面から見て）：締める＝時計回りで、ねじは穴の奥へ入ります。緩める＝反時計回りで、ねじは手前へ出てきます。",
+          "en": "Screw, looking straight at the head: tighten in = clockwise, the screw moves in. Loosen out = counter-clockwise, the screw moves out.",
+          "units": [
+            "fasten",
+            "loosen"
+          ],
+          "style": "warn"
+        },
+        {
+          "th": "จับที่หัวปลั๊ก ไม่ดึงที่ตัวสาย",
+          "ja": "プラグの頭を持ちます。ケーブルを引っぱりません。",
+          "en": "Hold the plug head. Never pull on the wire.",
+          "units": [
+            "cable_connect",
+            "cable_disconnect"
+          ],
+          "style": "warn"
+        },
+        {
+          "th": "เมื่อเริ่มงาน แผง Main จะแสดงชิ้นส่วนที่จับ พร้อมสถานะหรือสิ่งที่ขวางอยู่ ตอนฝึกให้ทำตามคำสั่งและข้อความบน Main",
+          "ja": "課題を始めると、Main に持った部品と状態、または動かせない理由が表示されます。練習中は Main の指示と結果に従ってください。",
+          "en": "When the tasks start, Main will show the part you hold and its state or what blocks it. During practice, follow the instructions and feedback on Main.",
+          "units": [
+            "part_feedback"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "title": {
+        "th": "5. ป้ายเหนือชิ้นส่วน และเรื่องที่พบบ่อย",
+        "ja": "5. 部品の上の表示と、よくあること",
+        "en": "5. Labels above the part, and common slips"
+      },
+      "items": [
+        {
+          "th": "ระหว่างจับชิ้นส่วน จะมีป้ายสั้น ๆ ขึ้นเหนือชิ้นนั้น บอกสภาพตอนนี้",
+          "ja": "部品を持つと、その上に短い表示が出て、今の状態を教えます。",
+          "en": "While you hold a part, a short label above it tells you its state.",
+          "units": [
+            "status"
+          ]
+        },
+        {
+          "th": "“ติด: ด้านนี้ใส่ไม่ได้” = มุมบากไม่ตรง ให้ยกขึ้นและจัดให้ตรง ถ้าใส่ถูกและลงสุดแล้ว ให้ปิดสลักต่อได้เลย",
+          "ja": "「止まった：この向きは入らない」＝切り欠きが合っていません。持ち上げて合わせます。正しい向きで奥まで入ったら、そのままラッチを閉じます。",
+          "en": "“Blocked: this way does not fit” means the cut corners do not match. Lift and align them. Once the module is correctly seated, close the latch directly.",
+          "units": [
+            "insert",
+            "status"
+          ]
+        },
+        {
+          "th": "“มุมบากผิดฝั่ง: หมุนกลับ” = หมุนจนมุมบากตรงกับมุมบากของช่อง",
+          "ja": "「切り欠きが逆：回す」＝切り欠きがスロットの切り欠きに合うまで回します。",
+          "en": "“Cut corner on the wrong side: turn it” means turn it until the cut corners match.",
+          "units": [
+            "insert",
+            "status"
+          ]
+        },
+        {
+          "th": "“กดลงให้สุดก่อนปล่อย” = โมดูลยังไม่ลงสุด กดอีกนิดแล้วค่อยปล่อย",
+          "ja": "「奥まで押し込んでから離します」＝まだ奥まで入っていません。もう少し押してから離します。",
+          "en": "“Push it all the way down before letting go” means it is not fully in yet.",
+          "units": [
+            "insert",
+            "status"
+          ]
+        },
+        {
+          "th": "สกรู: ปล่อยมือกลางทางได้ ความคืบหน้าไม่หาย จับใหม่แล้วบิดต่อ",
+          "ja": "ねじ：途中で手を離しても進み具合は残ります。持ち直して続けます。",
+          "en": "Screw: letting go part-way keeps your progress. Grab it again and keep twisting.",
+          "units": [
+            "regrip"
+          ]
+        },
+        {
+          "th": "ขันจนสุดแล้วป้ายขึ้น “แน่นแล้ว: ปล่อยมือเพื่อไปต่อ” ข้อมือบิดกลับเล็กน้อยตอนปล่อยไม่ทำให้หลวม",
+          "ja": "締めきると「締まった：手を離して次へ」と出ます。離すときに手首が少し戻っても緩みません。",
+          "en": "When it is fully in, the label says “Tight: let go to continue”. A small twist back as you let go does not loosen it.",
+          "units": [
+            "screw_done"
+          ]
+        },
+        {
+          "th": "คลายจนสุดแล้วป้ายขึ้น “คลายสุดแล้ว: ปล่อยมือเพื่อไปต่อ”",
+          "ja": "緩めきると「緩みきった：手を離して次へ」と出ます。",
+          "en": "When it is fully out, the label says “Fully loose: let go to continue”.",
+          "units": [
+            "screw_done"
+          ]
+        },
+        {
+          "th": "แท่นไม่หมุน: จับมือจับขอบหน้าหรือมุมหน้า (แถบสีฟ้า) แล้วเลื่อนมือเป็นวงโค้ง ไม่ดึงตรง ๆ",
+          "ja": "台が回らないとき：手前の縁のハンドルか手前の角（青い線）を持ち、まっすぐ引かずに弧を描いて動かします。",
+          "en": "Station not turning? Grip the front-edge handle or a front corner (blue bar) and move your hand in an arc, not straight.",
+          "units": [
+            "rotate_access"
+          ]
+        },
+        {
+          "th": "ป้ายบอกองศาที่หมุนแล้ว เช่น “หมุนแล้ว 120° จาก 120°”",
+          "ja": "表示が回した角度を教えます。例：「120°のうち120°回転」",
+          "en": "The label shows how far it has turned, for example “Turned 120° of 120°”.",
+          "units": [
+            "rotate_access",
+            "status"
+          ]
+        },
+        {
+          "th": "ระหว่างขั้นสกรู หมุนแท่นได้อีก ถ้าเอื้อมไม่ถึง",
+          "ja": "ねじの手順の間も、届きにくければ台を回せます。",
+          "en": "During the screw steps you can turn the station again if the screw is hard to reach.",
+          "units": [
+            "rotate_access"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pass",
+      "title": {
+        "th": "6. เสร็จเมื่อ",
+        "ja": "6. 終わりの目安",
+        "en": "6. Done when"
+      },
+      "items": [
+        {
+          "th": "ใส่โมดูล ปิดสลัก และขันสกรูแน่นแล้ว เลือก “ตรวจผลงาน” จะขึ้น “ผลตัวอย่าง: พร้อม”",
+          "ja": "モジュールを入れ、ラッチを閉じ、ねじを締めてから「仕上がりを確認」を選ぶと「練習の結果: 完了。」と出ます。",
+          "en": "With the module in, the latch closed and the screw tight, “Check my work” gives “Practice result: ready.”",
+          "units": [
+            "inspect"
+          ],
+          "style": "ok"
+        },
+        {
+          "th": "แต่ละขั้นนับเมื่อคุณทำได้จริงด้วยมือตัวเอง แล้วแผงจะไปขั้นถัดไป",
+          "ja": "各手順は、自分の手で実際にできたときに数えられ、パネルが次へ進みます。",
+          "en": "Each step counts when you have really done it with your own hand; then the panel moves on.",
+          "units": [
+            "status"
+          ]
+        },
+        {
+          "th": "ขั้นสุดท้าย: ปลดสลัก ดึงโมดูลออก แล้วขึ้น “บทฝึกเสร็จแล้ว”",
+          "ja": "最後の手順：ラッチを開けてモジュールを抜くと「練習が終わりました」と出ます。",
+          "en": "Last step: open the latch and pull the module out. Then you see “Practice Complete”.",
+          "units": [
+            "unlock",
+            "done"
+          ],
+          "style": "ok"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "group": {
+        "th": "เริ่ม",
+        "ja": "はじめに",
+        "en": "Start"
+      },
+      "do": {
+        "th": "ดูแท่นฝึกบนโต๊ะ",
+        "ja": "机の上の練習台を見ます。",
+        "en": "Look at the practice station on the table."
+      },
+      "look": {
+        "th": "โมดูลบนโต๊ะ · ช่องที่มีมุมบาก · สลักสีฟ้า · สกรูด้านหลัง · สายที่มีหัวปลั๊ก",
+        "ja": "机の上のモジュール・切り欠きのあるスロット・青いラッチ・奥側のねじ・プラグ付きのケーブル。",
+        "en": "The module on the table, the slot with a cut corner, the blue latch, the screw at the back, the cable with its plug."
+      },
+      "ok": {
+        "th": "รู้ว่านี่คือบทฝึก ไม่เกี่ยวกับงานทดลอง · ทำผิดแล้วลองใหม่ได้",
+        "ja": "これは練習で、実験課題とは関係ないとわかります。まちがえてもやり直せます。",
+        "en": "You know this is practice, not an experiment task. You can try again after a mistake."
+      },
+      "units": [
+        "problem"
+      ]
+    },
+    {
+      "group": {
+        "th": "เริ่ม",
+        "ja": "はじめに",
+        "en": "Start"
+      },
+      "do": {
+        "th": "จำปุ่ม 2 ปุ่ม: Grip (นิ้วกลาง) และ Trigger (นิ้วชี้)",
+        "ja": "2 つのボタンを覚えます。Grip（中指）とトリガー（人差し指）。",
+        "en": "Learn two buttons: Grip (middle finger) and Trigger (index finger)."
+      },
+      "look": {
+        "th": "Grip = จับโมดูล สลัก และแท่นหมุน · Trigger = กดปุ่มบนแผง จับหัวสกรู และหัวปลั๊ก",
+        "ja": "Grip＝モジュール・ラッチ・回転台。トリガー＝パネルのボタン・ねじの頭・プラグの頭。",
+        "en": "Grip: the module, the latch, the turntable. Trigger: panel buttons, the screw head, the plug head."
+      },
+      "ok": {
+        "th": "ป้ายสั้น ๆ เหนือชิ้นส่วนบอกสภาพตอนนี้ ทำตามป้ายได้ เมื่อเริ่มงาน แผง Main จะแสดงชิ้นส่วนที่จับ พร้อมสถานะหรือสิ่งที่ขวางอยู่ ตอนฝึกให้ทำตามคำสั่งและข้อความบน Main",
+        "ja": "部品の上の短い表示が今の状態を教えます。表示に従えば大丈夫です。 課題を始めると、Main に持った部品と状態、または動かせない理由が表示されます。練習中は Main の指示と結果に従ってください。",
+        "en": "A short label above the part tells you its state. Follow it. When the tasks start, Main will show the part you hold and its state or what blocks it. During practice, follow the instructions and feedback on Main."
+      },
+      "units": [
+        "buttons",
+        "status",
+        "part_feedback"
+      ]
+    },
+    {
+      "group": {
+        "th": "แผงข้อมูล",
+        "ja": "資料パネル",
+        "en": "Help panel"
+      },
+      "do": {
+        "th": "เลือกแท็บรูปแบบอื่น",
+        "ja": "別の形式のタブを選びます。",
+        "en": "Select another format tab."
+      },
+      "look": {
+        "th": "แท็บ: คู่มือ · ทีละขั้นตอน · ภาพประกอบ · วิดีโอ",
+        "ja": "タブ：マニュアル・手順・図解・動画",
+        "en": "Tabs: Manual, Steps, Illustrated, Video."
+      },
+      "ok": {
+        "th": "เนื้อหาเหมือนเดิม แต่หน้าตาเปลี่ยน เลือกแบบที่อ่านง่ายที่สุด",
+        "ja": "中身は同じで、見せ方だけが変わります。いちばん見やすいものを選びます。",
+        "en": "Same content, a different look. Pick the one that is easiest for you."
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "group": {
+        "th": "แผงข้อมูล",
+        "ja": "資料パネル",
+        "en": "Help panel"
+      },
+      "do": {
+        "th": "เลือก − เพื่อย่อแผง",
+        "ja": "−を選んでパネルを小さくします。",
+        "en": "Select − to minimize the panel."
+      },
+      "look": {
+        "th": "แผงย่อเป็นแถบเล็ก",
+        "ja": "パネルが小さいバーになる",
+        "en": "The panel becomes a small bar."
+      },
+      "ok": {
+        "th": "เลือกแถบเล็กแล้วแผงกลับมาที่เดิม",
+        "ja": "バーを選ぶとパネルが元に戻ります。",
+        "en": "Selecting the bar brings the panel back."
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "group": {
+        "th": "แผงข้อมูล",
+        "ja": "資料パネル",
+        "en": "Help panel"
+      },
+      "do": {
+        "th": "ย้ายแผง: ชี้แถบจับใต้แผง กด Trigger ค้างแล้วลาก",
+        "ja": "移動：パネル下のハンドルを指し、トリガーを押したまま動かします。",
+        "en": "Move it: point at the handle below, hold Trigger and move."
+      },
+      "look": {
+        "th": "แผงเลื่อนตามมือ",
+        "ja": "パネルが手について動きます。",
+        "en": "The panel follows your hand."
+      },
+      "ok": {
+        "th": "ปล่อย Trigger แล้วแผงอยู่ตรงนั้น (ไม่ย้ายก็ได้)",
+        "ja": "トリガーを離すと、そこに止まります（動かさなくてもかまいません）。",
+        "en": "Release Trigger and it stays there. Moving it is optional."
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "group": {
+        "th": "แผงข้อมูล",
+        "ja": "資料パネル",
+        "en": "Help panel"
+      },
+      "do": {
+        "th": "เลือก × เพื่อปิดแผง",
+        "ja": "×を選んでパネルを閉じます。",
+        "en": "Select × to close the panel."
+      },
+      "look": {
+        "th": "แผงหายไป",
+        "ja": "パネルが消えます。",
+        "en": "The panel goes away."
+      },
+      "ok": {
+        "th": "เปิดใหม่ได้ด้วย “ข้อมูลช่วย 4 แบบ” บน Main",
+        "ja": "Main の「4種類の資料」でまた開ける",
+        "en": "Reopen with “Help: 4 formats” on Main."
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตรวจผลงานครั้งแรก",
+        "ja": "最初の検査",
+        "en": "Initial Check my work"
+      },
+      "do": {
+        "th": "เลือก “ตรวจผลงาน” ตอนนี้",
+        "ja": "今「仕上がりを確認」を選びます。",
+        "en": "Select “Check my work” now."
+      },
+      "look": {
+        "th": "โมดูลยังไม่ได้ใส่ และสกรูยังหลวม",
+        "ja": "モジュールはまだ入っておらず、ねじも緩んでいます。",
+        "en": "The module is not in yet and the screw is loose."
+      },
+      "ok": {
+        "th": "ขึ้น “ผลตัวอย่าง: ยังไม่พร้อม” = ตัวอย่างผลเมื่องานยังไม่เสร็จ",
+        "ja": "「練習の結果: 未完了。」と出ます。終わっていないときの結果の例です。",
+        "en": "It shows “Practice result: not ready.” This is what an unfinished job looks like."
+      },
+      "units": [
+        "inspect_fail"
+      ]
+    },
+    {
+      "group": {
+        "th": "โมดูล",
+        "ja": "モジュール",
+        "en": "Module"
+      },
+      "do": {
+        "th": "กดโมดูลลงตรง ๆ ให้สุดช่อง",
+        "ja": "モジュールをまっすぐ奥まで押し込みます。",
+        "en": "Press the module straight down into the slot."
+      },
+      "look": {
+        "th": "จับด้วย Grip และจัดมุมบากให้ตรงกับมุมบากของช่อง ไม่ต้องหมุนครึ่งรอบหรือทดลองด้านที่ผิด",
+        "ja": "Gripで持ち、切り欠きをスロットの切り欠きに合わせます。半回転させたり、逆向きを試したりする必要はありません。",
+        "en": "Hold with Grip and match the cut corners. No half-turn or wrong-way attempt is required."
+      },
+      "ok": {
+        "th": "โมดูลลงสุด ปล่อย Grip แล้วชิ้นอยู่ในช่อง จากนั้นปิดสลักได้เลย",
+        "ja": "奥まで入り、Gripを離すとスロットに収まります。そのままラッチを閉じられます。",
+        "en": "The module is fully seated and stays when Grip is released. Close the latch next."
+      },
+      "units": [
+        "insert"
+      ]
+    },
+    {
+      "group": {
+        "th": "สลัก",
+        "ja": "ラッチ",
+        "en": "Latch"
+      },
+      "do": {
+        "th": "กด Grip ที่สลักสีฟ้าหนึ่งครั้งเพื่อปิด",
+        "ja": "青いラッチでGripを一度押して閉じます。",
+        "en": "Press Grip once on the blue latch to close it."
+      },
+      "look": {
+        "th": "โมดูลต้องลงสุดแล้ว สลักจะเคลื่อนมาปิด ไม่ต้องยกโมดูลออกอีก",
+        "ja": "モジュールが奥まで入っていると、ラッチが閉じます。モジュールを抜き直す必要はありません。",
+        "en": "The module must already be fully seated. The latch closes; do not remove the module again."
+      },
+      "ok": {
+        "th": "วางเข้าที่ยังไม่เท่ากับยึดแล้ว ตอนนี้ปิดสลักแล้วจึงยึดแล้ว",
+        "ja": "置いただけでは固定ではありません。ラッチを閉じたので、今は固定されています。",
+        "en": "Placed is not the same as secured. With the latch closed, it is secured now."
+      },
+      "units": [
+        "lock"
+      ]
+    },
+    {
+      "group": {
+        "th": "แท่นหมุน",
+        "ja": "回転台",
+        "en": "Turntable"
+      },
+      "do": {
+        "th": "จับมือจับขอบหน้าแท่น (หรือมุมหน้าที่มีแถบสีฟ้า) ด้วย Grip",
+        "ja": "台の手前の縁のハンドル（または青い線のある手前の角）をGripで持ちます。",
+        "en": "Grip the handle on the front edge, or a front corner with a blue bar."
+      },
+      "look": {
+        "th": "เลื่อนมือเป็นวงโค้งรอบแกนกลาง แท่นหมุนตามมือ ปล่อยแล้วจับใหม่ได้",
+        "ja": "中心のまわりに弧を描いて手を動かすと、台がついて回ります。持ち直してもかまいません。",
+        "en": "Move your hand in an arc around the centre; the station turns with it. You may let go and grab again."
+      },
+      "ok": {
+        "th": "ป้ายขึ้น “หมุนแล้ว 120° จาก 120°” และสกรูด้านหลังหันมาทางคุณ",
+        "ja": "「120°のうち120°回転」と出て、奥側のねじがこちらを向きます。",
+        "en": "The label says “Turned 120° of 120°” and the back screw faces you."
+      },
+      "units": [
+        "rotate_access"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "ขันเข้า: ใช้ Trigger จับหัวสกรู แล้วบิดตามเข็มนาฬิกา",
+        "ja": "締める（奥へ）：トリガーで頭をつまみ、時計回りにひねります。",
+        "en": "Tighten in: pinch the screw head with Trigger, twist clockwise."
+      },
+      "look": {
+        "th": "มองตรงหัวสกรู · สกรูหมุนและจมลงในรูทีละนิด",
+        "ja": "頭を正面から見ます。ねじは回りながら少しずつ奥へ入ります。",
+        "en": "Look straight at the head. The screw turns and moves in, little by little."
+      },
+      "ok": {
+        "th": "ป้ายขึ้น “กำลังขันเข้า: 50%” ตัวเลขเพิ่มขึ้นเรื่อย ๆ",
+        "ja": "「締めています：50%」のように数字が増えます。",
+        "en": "The label counts up, like “Tightening: 50% in”."
+      },
+      "units": [
+        "fasten"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "ถ้าข้อมือบิดต่อไม่ได้ ปล่อยมือ แล้วจับใหม่",
+        "ja": "手首が回しにくくなったら、手を離して持ち直します。",
+        "en": "If your wrist cannot twist further, let go and grab it again."
+      },
+      "look": {
+        "th": "สกรูอยู่ที่เดิม ไม่ถอยกลับ",
+        "ja": "ねじはその位置のままで、戻りません。",
+        "en": "The screw stays where it is; it does not go back."
+      },
+      "ok": {
+        "th": "บิดต่อจากเดิมได้ ความคืบหน้าไม่หาย",
+        "ja": "続きから回せます。進み具合は残っています。",
+        "en": "You carry on from there; your progress is kept."
+      },
+      "units": [
+        "regrip"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "หมุนต่อจนป้ายขึ้น “แน่นแล้ว: ปล่อยมือเพื่อไปต่อ”",
+        "ja": "「締まった：手を離して次へ」が出るまで回します。",
+        "en": "Keep turning until the label says “Tight: let go to continue”."
+      },
+      "look": {
+        "th": "หัวสกรูลงจนชิดผิวแท่น หมุนต่อไม่ได้แล้ว",
+        "ja": "ねじの頭が台の面まで下がり、それ以上回りません。",
+        "en": "The screw head is down against the surface and will not turn further."
+      },
+      "ok": {
+        "th": "หัวสกรูลงชิดผิวและหมุนเข้าไม่ได้อีก ขั้นถัดไปคือปล่อย Trigger",
+        "ja": "ねじの頭が面まで下がり、それ以上締まりません。次にTriggerを離します。",
+        "en": "The head is down against the surface and cannot turn further in. Release Trigger next."
+      },
+      "units": [
+        "screw_done"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "ปล่อย Trigger",
+        "ja": "Triggerを離します。",
+        "en": "Release Trigger."
+      },
+      "look": {
+        "th": "สกรูแน่นแล้วก่อนปล่อยมือ",
+        "ja": "手を離す前にねじが締まっています。",
+        "en": "The screw is already tight before release."
+      },
+      "ok": {
+        "th": "สกรูยังแน่นและแผงไปขั้นเสียบปลั๊ก",
+        "ja": "ねじは締まったままで、パネルがプラグの手順に進みます。",
+        "en": "The screw stays tight and the panel advances to plugging in."
+      },
+      "units": [
+        "screw_done"
+      ]
+    },
+    {
+      "group": {
+        "th": "สาย",
+        "ja": "ケーブル",
+        "en": "Cable"
+      },
+      "do": {
+        "th": "ใช้ Trigger จับที่หัวปลั๊ก (ไม่จับตัวสาย)",
+        "ja": "トリガーでプラグの頭をつまみます（ケーブル部分は持たない）。",
+        "en": "Pinch the plug head with Trigger (not the wire)."
+      },
+      "look": {
+        "th": "เสียบตรง ๆ เข้าช่องที่ว่าง ปลายอีกด้านต่ออยู่แล้ว",
+        "ja": "空いているソケットにまっすぐ差します。反対側はつながったままです。",
+        "en": "Push it straight into the open socket. The other end stays attached."
+      },
+      "ok": {
+        "th": "ปลั๊กลงสุดในช่อง ปล่อยมือแล้วยังอยู่",
+        "ja": "プラグが奥まで入り、手を離しても抜けません。",
+        "en": "The plug is fully in and stays when you let go."
+      },
+      "units": [
+        "cable_connect"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตรวจผลงาน",
+        "ja": "検査",
+        "en": "Check my work"
+      },
+      "do": {
+        "th": "เลือก “ตรวจผลงาน” อีกครั้ง",
+        "ja": "もう一度「仕上がりを確認」を選びます。",
+        "en": "Select “Check my work” again."
+      },
+      "look": {
+        "th": "ตอนนี้ใส่โมดูล ปิดสลัก และขันสกรูแน่นแล้ว",
+        "ja": "今はモジュールが入り、ラッチが閉じ、ねじが締まっています。",
+        "en": "Now the module is in, the latch is closed and the screw is tight."
+      },
+      "ok": {
+        "th": "ขึ้น “ผลตัวอย่าง: พร้อม” = ผลเมื่อทุกอย่างใส่และยึดครบ",
+        "ja": "「練習の結果: 完了。」と出ます。すべて取り付けて固定したときの結果です。",
+        "en": "It shows “Practice result: ready.” This is the result when everything is in and secured."
+      },
+      "units": [
+        "inspect"
+      ]
+    },
+    {
+      "group": {
+        "th": "สาย",
+        "ja": "ケーブル",
+        "en": "Cable"
+      },
+      "do": {
+        "th": "ดึงหัวปลั๊กออกตรง ๆ",
+        "ja": "プラグの頭をまっすぐ引き抜きます。",
+        "en": "Pull the plug head straight out."
+      },
+      "look": {
+        "th": "ใช้ Trigger จับหัวปลั๊ก ไม่จับตัวสาย",
+        "ja": "Triggerでプラグの頭を持ちます。ケーブルは持ちません。",
+        "en": "Hold the plug head with Trigger, never the wire."
+      },
+      "ok": {
+        "th": "ช่องว่างแล้ว ปล่อยมือแล้วปลั๊กกลับไปที่พัก",
+        "ja": "ソケットが空きます。手を離すとプラグは元の位置に戻ります。",
+        "en": "The socket is empty. When you let go, the plug returns to its resting place."
+      },
+      "units": [
+        "cable_disconnect"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "คลายออก: บิดหัวสกรูทวนเข็มนาฬิกา",
+        "ja": "緩める：ねじの頭を反時計回りに回します。",
+        "en": "Loosen out: twist the screw head counter-clockwise."
+      },
+      "look": {
+        "th": "สกรูหมุนและยกขึ้นมาทีละนิด · ป้ายขึ้น “กำลังคลายออก: เหลือ 40%”",
+        "ja": "ねじは回りながら少しずつ手前へ出てきます。「緩めています：残り40%」と出ます。",
+        "en": "The screw turns and moves out, little by little; the label shows “Loosening: 40% in”."
+      },
+      "ok": {
+        "th": "สกรูยกขึ้นจนป้ายขึ้น “คลายสุดแล้ว: ปล่อยมือเพื่อไปต่อ”",
+        "ja": "ねじが手前へ出て、「緩みきった：手を離して次へ」と出ます。",
+        "en": "The screw rises until the label says “Fully loose: let go to continue”."
+      },
+      "units": [
+        "loosen",
+        "screw_done"
+      ]
+    },
+    {
+      "group": {
+        "th": "สกรู",
+        "ja": "ねじ",
+        "en": "Screw"
+      },
+      "do": {
+        "th": "ปล่อย Trigger",
+        "ja": "Triggerを離します。",
+        "en": "Release Trigger."
+      },
+      "look": {
+        "th": "สกรูคลายสุดแล้วก่อนปล่อยมือ",
+        "ja": "手を離す前にねじが緩みきっています。",
+        "en": "The screw is already fully loose before release."
+      },
+      "ok": {
+        "th": "แผงไปขั้นเปิดสลัก",
+        "ja": "パネルがラッチを開く手順に進みます。",
+        "en": "The panel advances to opening the latch."
+      },
+      "units": [
+        "screw_done"
+      ]
+    },
+    {
+      "group": {
+        "th": "สลัก",
+        "ja": "ラッチ",
+        "en": "Latch"
+      },
+      "do": {
+        "th": "ปลดสลัก: เอื้อมไปที่สลัก แล้วกด Grip หนึ่งครั้ง",
+        "ja": "ラッチを開けます。ラッチに手を近づけ、Gripを一度押します。",
+        "en": "Open the latch: reach to it and press Grip once."
+      },
+      "look": {
+        "th": "ถ้าสลักยังปิด จะดึงโมดูลไม่ออก",
+        "ja": "ラッチが閉じている間は、モジュールは抜けません。",
+        "en": "While the latch is closed, the module cannot come out."
+      },
+      "ok": {
+        "th": "สลักขยับไปตำแหน่งเปิด",
+        "ja": "ラッチが開いた位置に動きます。",
+        "en": "The latch moves to its open position."
+      },
+      "units": [
+        "unlock"
+      ]
+    },
+    {
+      "group": {
+        "th": "จบ",
+        "ja": "終わり",
+        "en": "Finish"
+      },
+      "do": {
+        "th": "จับโมดูลด้วย Grip แล้วดึงขึ้นออกจากช่อง",
+        "ja": "Gripでモジュールを持ち、上へ引き抜きます。",
+        "en": "Grip the module and lift it out of the slot."
+      },
+      "look": {
+        "th": "โมดูลออกจากช่องแล้ว",
+        "ja": "モジュールがスロットから出ました。",
+        "en": "The module is out of the slot."
+      },
+      "ok": {
+        "th": "ขึ้น “บทฝึกเสร็จแล้ว” · งานจริงใช้ท่าเดียวกันนี้",
+        "ja": "「練習が終わりました」と出ます。本番も同じ動きを使います。",
+        "en": "You see “Practice Complete”. The real tasks use these same moves."
+      },
+      "units": [
+        "unlock",
+        "done"
+      ]
+    }
+  ],
+  "illustrated": [
+    {
+      "shot": "T_station",
+      "pick": [
+        0,
+        0
+      ],
+      "card_at": [
+        880,
+        430
+      ],
+      "callouts": [
+        {
+          "anchor": "module",
+          "kind": "info",
+          "label": {
+            "th": "โมดูลฝึก (Grip)",
+            "ja": "練習モジュール（Grip）",
+            "en": "Training module (Grip)"
+          },
+          "dx": -300,
+          "dy": 60
+        },
+        {
+          "anchor": "slot_corner",
+          "kind": "info",
+          "label": {
+            "th": "ช่อง: มุมบาก",
+            "ja": "スロット：切り欠き",
+            "en": "Slot: cut corner"
+          },
+          "dx": -280,
+          "dy": -120
+        },
+        {
+          "anchor": "latch",
+          "kind": "info",
+          "label": {
+            "th": "สลัก (Grip)",
+            "ja": "ラッチ（Grip）",
+            "en": "Latch (Grip)"
+          },
+          "dx": 240,
+          "dy": -70
+        },
+        {
+          "anchor": "plug_head",
+          "kind": "info",
+          "label": {
+            "th": "หัวปลั๊ก (Trigger)",
+            "ja": "プラグの頭（トリガー）",
+            "en": "Plug head (Trigger)"
+          },
+          "dx": 260,
+          "dy": -160
+        },
+        {
+          "anchor": "turn_handle",
+          "kind": "info",
+          "label": {
+            "th": "มือจับแท่น (Grip)",
+            "ja": "台のハンドル（Grip）",
+            "en": "Station handle (Grip)"
+          },
+          "dx": 60,
+          "dy": 180
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "บทฝึก",
+          "ja": "練習",
+          "en": "Practice"
+        },
+        "lines": [
+          {
+            "th": "Grip = จับชิ้นส่วน",
+            "ja": "Grip＝部品を持つ",
+            "en": "Grip = hold a part"
+          },
+          {
+            "th": "Trigger = กดปุ่ม จับหัวเล็ก",
+            "ja": "トリガー＝ボタン・小さい頭",
+            "en": "Trigger = buttons, small heads"
+          },
+          {
+            "th": "ไม่เกี่ยวกับงานทดลอง",
+            "ja": "実験課題とは関係なし",
+            "en": "Not an experiment task"
+          },
+          {
+            "th": "ทำผิดแล้วลองใหม่ได้",
+            "ja": "まちがえても大丈夫",
+            "en": "Mistakes are fine"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>แท่นฝึก</b>\nป้ายเหนือชิ้นส่วนบอกสภาพตอนนี้ · ทำตามแผงทีละขั้น",
+        "ja": "<b>練習台</b>\n部品の上の表示が今の状態を教えます。パネルの順に進みます。",
+        "en": "<b>The practice station</b>\nA label above the part shows its state. Follow the panel step by step."
+      },
+      "units": [
+        "problem",
+        "buttons",
+        "status"
+      ]
+    },
+    {
+      "layout": "reader",
+      "reader": {
+        "title": {
+          "th": "เอกสารอ้างอิง",
+          "ja": "参照資料",
+          "en": "Reference"
+        },
+        "tabs": [
+          {
+            "th": "คู่มือ",
+            "ja": "マニュアル",
+            "en": "Manual"
+          },
+          {
+            "th": "ทีละขั้นตอน",
+            "ja": "手順",
+            "en": "Steps"
+          },
+          {
+            "th": "ภาพประกอบ",
+            "ja": "図解",
+            "en": "Illustrated"
+          },
+          {
+            "th": "วิดีโอ",
+            "ja": "動画",
+            "en": "Video"
+          }
+        ],
+        "handle": {
+          "th": "กด Trigger ค้างไว้เพื่อย้าย",
+          "ja": "トリガーを押したまま動かす",
+          "en": "Hold Trigger to move"
+        },
+        "bar": {
+          "th": "เปิดเอกสารอ้างอิง",
+          "ja": "参照資料を開く",
+          "en": "Open Reference"
+        },
+        "bar_note": {
+          "th": "หลังกด −",
+          "ja": "−を押したあと",
+          "en": "After −"
+        },
+        "notes": [
+          {
+            "at": "tabs",
+            "label": {
+              "th": "1 แท็บ = เปลี่ยนรูปแบบ",
+              "ja": "1 タブで形式を変える",
+              "en": "1 Tabs change the format"
+            },
+            "dx": 560,
+            "dy": -120
+          },
+          {
+            "at": "minimize",
+            "label": {
+              "th": "2 − ย่อแผง",
+              "ja": "2 −で小さくする",
+              "en": "2 − minimizes"
+            },
+            "dx": 260,
+            "dy": 40
+          },
+          {
+            "at": "bar",
+            "label": {
+              "th": "3 เลือกแถบเพื่อเปิดกลับ",
+              "ja": "3 バーを選んで開く",
+              "en": "3 Select the bar to reopen"
+            },
+            "dx": -10,
+            "dy": -150
+          },
+          {
+            "at": "handle",
+            "label": {
+              "th": "4 แถบจับ: Trigger ค้าง แล้วลาก",
+              "ja": "4 ハンドル：トリガーで動かす",
+              "en": "4 Handle: hold Trigger, move"
+            },
+            "dx": 0,
+            "dy": 100
+          },
+          {
+            "at": "close",
+            "label": {
+              "th": "5 × ปิดแผง",
+              "ja": "5 ×で閉じる",
+              "en": "5 × closes"
+            },
+            "dx": 300,
+            "dy": 160
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>ใช้แผงข้อมูล</b>\nแท็บเปลี่ยนแบบ · − ย่อ · แถบเปิดกลับ · หูจับย้าย · × ปิด",
+        "ja": "<b>資料パネルの操作</b>\nタブで切替・−で最小化・バーで戻す・ハンドルで移動・×で閉じる",
+        "en": "<b>Use the help panel</b>\nTabs switch format · − minimizes · bar reopens · handle moves · × closes"
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "shot": "T_station",
+      "pick": [
+        0,
+        0
+      ],
+      "card_at": [
+        840,
+        380
+      ],
+      "callouts": [
+        {
+          "anchor": "module",
+          "kind": "info",
+          "label": {
+            "th": "โมดูลฝึก",
+            "ja": "練習モジュール",
+            "en": "Training module"
+          },
+          "dx": -280,
+          "dy": -80
+        },
+        {
+          "anchor": "slot",
+          "kind": "bad",
+          "label": {
+            "th": "ยังไม่ได้ใส่",
+            "ja": "まだ入っていない",
+            "en": "Not in yet"
+          },
+          "dx": 240,
+          "dy": -90
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "สถานะชิ้นส่วนและตรวจผลงาน",
+          "ja": "部品の状態と検査",
+          "en": "Part feedback and Check my work"
+        },
+        "lines": [
+          {
+            "th": "เมื่อเริ่มงาน แผง Main จะแสดงชิ้นส่วนที่จับ พร้อมสถานะหรือสิ่งที่ขวางอยู่ ตอนฝึกให้ทำตามคำสั่งและข้อความบน Main",
+            "ja": "課題を始めると、Main に持った部品と状態、または動かせない理由が表示されます。練習中は Main の指示と結果に従ってください。",
+            "en": "When the tasks start, Main will show the part you hold and its state or what blocks it. During practice, follow the instructions and feedback on Main."
+          },
+          {
+            "th": "“ตรวจผลงาน” = ตรวจสภาพตอนนี้",
+            "ja": "「仕上がりを確認」＝今の状態を調べる",
+            "en": "“Check my work” = checks the state now"
+          },
+          {
+            "th": "ตอนนี้: ยังไม่พร้อม (ตัวอย่าง)",
+            "ja": "今：未完了（例）",
+            "en": "Now: not ready (an example)"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>อ่าน Main แล้วตรวจผลงาน</b>\nตอนฝึกอ่านคำสั่งกับผลตรวจ เมื่อเริ่มงานจึงมีสถานะชิ้นส่วนที่จับ",
+        "ja": "<b>Main を読んで「仕上がりを確認」を選ぶ</b>\n練習中は指示と結果を確認。持った部品の状態は課題で表示されます。",
+        "en": "<b>Read Main, then Check my work</b>\nPractice shows instructions and results. Held-part feedback starts in tasks."
+      },
+      "units": [
+        "part_feedback",
+        "inspect_fail"
+      ]
+    },
+    {
+      "shot": "T_module",
+      "pick": [
+        0,
+        1
+      ],
+      "card_at": [
+        800,
+        400
+      ],
+      "callouts": [
+        {
+          "anchor": "module_corner",
+          "kind": "ok",
+          "label": {
+            "th": "มุมบากตรงกัน",
+            "ja": "切り欠きを合わせる",
+            "en": "Match the cut corners"
+          },
+          "dx": -220,
+          "dy": -110
+        },
+        {
+          "anchor": "latch",
+          "kind": "info",
+          "label": {
+            "th": "ลงสุดแล้ว ปิดสลักต่อ",
+            "ja": "奥まで入ったらラッチを閉じる",
+            "en": "Fully in: close the latch next"
+          },
+          "dx": 200,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "ใส่ถูกแล้วไปต่อได้เลย",
+          "ja": "正しく入れたら、そのまま次へ",
+          "en": "Correctly seated? Continue directly."
+        },
+        "lines": [
+          {
+            "th": "จับด้วย Grip และกดลงให้สุด แล้วปล่อย",
+            "ja": "Gripで持ち、奥まで押してから離す",
+            "en": "Hold with Grip, press fully down, then release"
+          },
+          {
+            "th": "ถ้าใส่ไม่ลง: ยกขึ้น จัดมุมบากใหม่ ห้ามฝืน",
+            "ja": "入らないときは持ち上げて切り欠きを合わせる。無理に押さない",
+            "en": "If blocked: lift and realign the cut corners. Do not force."
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>ใส่โมดูล</b>\nใส่ถูกและลงสุดแล้ว ปิดสลักได้เลย ไม่ต้องลองใส่ผิด",
+        "ja": "<b>モジュールを入れる</b>\n正しい向きで奥まで入れたら、そのままラッチを閉じます。逆向きを試す必要はありません。",
+        "en": "<b>Insert the module</b>\nOnce correctly seated, close the latch. No wrong-way attempt is required."
+      },
+      "units": [
+        "insert",
+        "status"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "T_module",
+          "pick": [
+            4,
+            1
+          ],
+          "zoom": "latch",
+          "kind": "ok",
+          "tag": {
+            "th": "ปิดสลัก = ยึดแล้ว",
+            "ja": "ラッチを閉じる＝固定",
+            "en": "Latch closed = secured"
+          }
+        },
+        {
+          "shot": "T_module",
+          "pick": [
+            3,
+            0.18
+          ],
+          "zoom": "latch",
+          "kind": "info",
+          "tag": {
+            "th": "เปิดสลัก = ดึงออกได้",
+            "ja": "ラッチを開ける＝抜ける",
+            "en": "Latch open = can come out"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "latch",
+          "kind": "ok",
+          "label": {
+            "th": "สลักสีฟ้า: กด Grip ครั้งเดียว",
+            "ja": "青いラッチ：Gripを一度",
+            "en": "Blue latch: press Grip once"
+          },
+          "dx": -210,
+          "dy": -80
+        },
+        {
+          "frame": 1,
+          "anchor": "latch",
+          "kind": "info",
+          "label": {
+            "th": "เปิดแล้ว",
+            "ja": "開いた",
+            "en": "Open"
+          },
+          "dx": 160,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "วางเข้าที่ ≠ ยึดแล้ว",
+          "ja": "置いただけ ≠ 固定",
+          "en": "Placed ≠ secured"
+        },
+        "lines": [
+          {
+            "th": "ใส่ให้สุดก่อน แล้วปิดสลัก",
+            "ja": "奥まで入れてからラッチを閉じる",
+            "en": "Put it fully in, then close the latch"
+          },
+          {
+            "th": "จะดึงออก: ปลดสลักก่อน",
+            "ja": "抜くとき：先にラッチを開ける",
+            "en": "To take it out: open the latch first"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>สลัก</b>\nปิดสลักจึงยึด · ปลดสลักก่อนจึงดึงออกได้",
+        "ja": "<b>ラッチ</b>\n閉じると固定。抜く前に開けます。",
+        "en": "<b>The latch</b>\nClosed holds it in. Open it before pulling the module out."
+      },
+      "units": [
+        "lock",
+        "unlock"
+      ]
+    },
+    {
+      "shot": "T_turn",
+      "pick": [
+        0,
+        0.2
+      ],
+      "card_at": [
+        880,
+        24
+      ],
+      "callouts": [
+        {
+          "anchor": "turn_handle",
+          "kind": "ok",
+          "label": {
+            "th": "มือจับขอบหน้า (Grip)",
+            "ja": "手前の縁のハンドル（Grip）",
+            "en": "Front-edge handle (Grip)"
+          },
+          "dx": -220,
+          "dy": 110
+        },
+        {
+          "anchor": "turn_grip_left",
+          "kind": "ok",
+          "label": {
+            "th": "มุมหน้า: แถบสีฟ้า",
+            "ja": "手前の角：青い線",
+            "en": "Front corner: blue bar"
+          },
+          "dx": -170,
+          "dy": -100
+        },
+        {
+          "anchor": "turn_grip_right",
+          "kind": "ok",
+          "label": {
+            "th": "จับตรงนี้ก็ได้",
+            "ja": "ここでも持てる",
+            "en": "Or grab here"
+          },
+          "dx": 170,
+          "dy": 90
+        }
+      ],
+      "rotate": [
+        {
+          "anchor": "turn_axis",
+          "dir": "yaw",
+          "label": {
+            "th": "เลื่อนมือเป็นวงโค้ง",
+            "ja": "弧を描いて動かす",
+            "en": "Move in an arc"
+          }
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "หมุนแท่น",
+          "ja": "台を回す",
+          "en": "Turn the station"
+        },
+        "lines": [
+          {
+            "th": "จับด้วย Grip ค้างไว้",
+            "ja": "Gripで持ったまま",
+            "en": "Keep holding Grip"
+          },
+          {
+            "th": "เลื่อนมือรอบแกนกลาง ไม่ดึงตรง ๆ",
+            "ja": "中心のまわりを動かす",
+            "en": "Move around the centre, not straight"
+          },
+          {
+            "th": "ปล่อยแล้วจับใหม่ได้",
+            "ja": "持ち直してよい",
+            "en": "Let go and regrab if needed"
+          },
+          {
+            "th": "จนสกรูด้านหลังหันมาหาคุณ (120°)",
+            "ja": "奥のねじがこちらを向くまで（120°）",
+            "en": "Until the back screw faces you (120°)"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>หมุนแท่น</b>\nจับมือจับหรือมุมหน้า แล้วเลื่อนมือเป็นวงโค้งรอบแกน",
+        "ja": "<b>台を回す</b>\nハンドルか手前の角を持ち、中心のまわりに弧を描きます。",
+        "en": "<b>Turn the station</b>\nHold the handle or a front corner and move your hand in an arc."
+      },
+      "units": [
+        "rotate_access"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "T_screw_face",
+          "pick": [
+            0,
+            0
+          ],
+          "kind": "ok",
+          "tag": {
+            "th": "ขันเข้า: ตามเข็มนาฬิกา",
+            "ja": "締める（奥へ）：時計回り",
+            "en": "Tighten in: clockwise"
+          }
+        },
+        {
+          "shot": "T_screw_face",
+          "pick": [
+            0,
+            0
+          ],
+          "kind": "warn",
+          "tag": {
+            "th": "คลายออก: ทวนเข็มนาฬิกา",
+            "ja": "緩める（手前へ）：反時計回り",
+            "en": "Loosen out: counter-clockwise"
+          }
+        }
+      ],
+      "rotate": [
+        {
+          "frame": 0,
+          "anchor": "screw_head",
+          "dir": "cw",
+          "label": {
+            "th": "ขันเข้า ↻",
+            "ja": "締める ↻",
+            "en": "Tighten ↻"
+          }
+        },
+        {
+          "frame": 1,
+          "anchor": "screw_head",
+          "dir": "ccw",
+          "label": {
+            "th": "คลายออก ↺",
+            "ja": "緩める ↺",
+            "en": "Loosen ↺"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "screw_head",
+          "kind": "info",
+          "label": {
+            "th": "Trigger จับหัวสกรู",
+            "ja": "トリガーで頭をつまむ",
+            "en": "Trigger pinches the head"
+          },
+          "dx": -210,
+          "dy": 120
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "มองตรงหัวสกรู",
+          "ja": "頭を正面から見て",
+          "en": "Looking straight at the head"
+        },
+        "lines": [
+          {
+            "th": "ขันเข้า ↻ = สกรูจมลงในรู",
+            "ja": "締める ↻＝奥へ入る",
+            "en": "Tighten ↻ = the screw goes in"
+          },
+          {
+            "th": "คลายออก ↺ = สกรูยกขึ้นมา",
+            "ja": "緩める ↺＝手前へ出る",
+            "en": "Loosen ↺ = the screw comes out"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>ทิศบิดสกรู</b>\nขันเข้า = ตามเข็ม · คลายออก = ทวนเข็ม (มองที่หัวสกรู)",
+        "ja": "<b>ねじを回す向き</b>\n締める（奥へ）は時計回り、緩める（手前へ）は反時計回り。",
+        "en": "<b>Which way to twist</b>\nTighten in: clockwise. Loosen out: counter-clockwise."
+      },
+      "units": [
+        "fasten",
+        "loosen"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "T_screw_side",
+          "pick": [
+            0,
+            0
+          ],
+          "zoom": "screw_head",
+          "kind": "warn",
+          "tag": {
+            "th": "หลวม: หัวสกรูยกขึ้น",
+            "ja": "緩い：頭が浮いている",
+            "en": "Loose: the head sits up"
+          }
+        },
+        {
+          "shot": "T_screw_side",
+          "pick": [
+            1,
+            0
+          ],
+          "zoom": "screw_head",
+          "kind": "ok",
+          "tag": {
+            "th": "แน่น: หัวสกรูลงชิดผิว",
+            "ja": "締まった：頭が面まで下がる",
+            "en": "Tight: the head is down on the surface"
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "frame": 0,
+          "anchor": "screw_head",
+          "kind": "ok",
+          "label": {
+            "th": "ขันเข้า",
+            "ja": "締める（奥へ）",
+            "en": "Tighten in"
+          }
+        },
+        {
+          "frame": 1,
+          "anchor": "screw_head",
+          "kind": "warn",
+          "dir": "up",
+          "label": {
+            "th": "คลายออก",
+            "ja": "緩める（手前へ）",
+            "en": "Loosen out"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "screw_seat",
+          "kind": "info",
+          "label": {
+            "th": "ผิวแท่น",
+            "ja": "台の面",
+            "en": "Surface"
+          },
+          "dx": -190,
+          "dy": 70
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "ปล่อยแล้วจับใหม่ได้",
+          "ja": "持ち直してよい",
+          "en": "You can let go and regrab"
+        },
+        "lines": [
+          {
+            "th": "ปล่อยกลางทาง ความคืบหน้าไม่หาย",
+            "ja": "途中で離しても進み具合は残る",
+            "en": "Letting go part-way keeps your progress"
+          },
+          {
+            "th": "ขันสุด: ป้าย “แน่นแล้ว: ปล่อยมือเพื่อไปต่อ”",
+            "ja": "締めきると「締まった：手を離して次へ」",
+            "en": "Fully in: “Tight: let go to continue”"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>สกรูเลื่อนเข้าและออก</b>\nขันเข้า หัวสกรูลงชิดผิว · คลายออก หัวสกรูยกขึ้น",
+        "ja": "<b>ねじは奥へ・手前へ動く</b>\n締めると頭が面まで下がり、緩めると上がります。",
+        "en": "<b>The screw moves in and out</b>\nTighten in: the head goes down. Loosen out: it comes up."
+      },
+      "units": [
+        "fasten",
+        "loosen",
+        "regrip",
+        "screw_done"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "T_cable",
+          "pick": [
+            0,
+            0.3
+          ],
+          "kind": "ok",
+          "tag": {
+            "th": "จับที่หัวปลั๊ก (Trigger)",
+            "ja": "プラグの頭をトリガーで",
+            "en": "Pinch the plug head (Trigger)"
+          }
+        },
+        {
+          "shot": "T_cable",
+          "pick": [
+            0,
+            1
+          ],
+          "kind": "ok",
+          "tag": {
+            "th": "เสียบตรง ๆ จนสุด",
+            "ja": "まっすぐ奥まで差す",
+            "en": "Push straight in, all the way"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "plug_head",
+          "kind": "ok",
+          "label": {
+            "th": "หัวปลั๊ก",
+            "ja": "プラグの頭",
+            "en": "Plug head"
+          },
+          "dx": -170,
+          "dy": -80
+        },
+        {
+          "frame": 0,
+          "anchor": "lead_wire",
+          "kind": "bad",
+          "label": {
+            "th": "ไม่จับที่สาย",
+            "ja": "ケーブルは持たない",
+            "en": "Not the wire"
+          },
+          "dx": 170,
+          "dy": 90
+        },
+        {
+          "frame": 1,
+          "anchor": "lead_socket",
+          "kind": "ok",
+          "label": {
+            "th": "ช่องที่ว่าง",
+            "ja": "空いているソケット",
+            "en": "Open socket"
+          },
+          "dx": 170,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "ถอดปลั๊ก",
+          "ja": "プラグを抜く",
+          "en": "Unplugging"
+        },
+        "lines": [
+          {
+            "th": "จับหัวปลั๊ก แล้วดึงออกตรง ๆ",
+            "ja": "頭を持ってまっすぐ抜く",
+            "en": "Hold the head and pull straight out"
+          },
+          {
+            "th": "ปลายอีกด้านต่ออยู่ตลอด",
+            "ja": "反対側はつながったまま",
+            "en": "The other end stays attached"
+          }
+        ]
+      },
+      "caption": {
+        "th": "<b>เสียบและถอดปลั๊ก</b>\nจับที่หัวปลั๊กเสมอ ไม่ดึงที่สาย",
+        "ja": "<b>プラグを差す・抜く</b>\nいつもプラグの頭を持ち、ケーブルは引きません。",
+        "en": "<b>Plug in and unplug</b>\nAlways hold the plug head; never pull the wire."
+      },
+      "units": [
+        "cable_connect",
+        "cable_disconnect"
+      ]
+    },
+    {
+      "layout": "result",
+      "shot": "T_cable",
+      "pick": [
+        0,
+        1
+      ],
+      "results": [
+        {
+          "kind": "bad",
+          "th": "ผลตัวอย่าง: ยังไม่พร้อม มีบางส่วนยังไม่ได้ใส่หรือยังไม่ได้ยึด",
+          "ja": "練習の結果: 未完了。まだ取り付けまたは固定されていない部分があります。",
+          "en": "Practice result: not ready. Something is not installed or secured yet.",
+          "note": {
+            "th": "ตอนเริ่ม: โมดูลยังไม่ใส่ สกรูหลวม",
+            "ja": "はじめ：モジュールなし・ねじが緩い",
+            "en": "At the start: module out, screw loose"
+          }
+        },
+        {
+          "kind": "ok",
+          "th": "ผลตัวอย่าง: พร้อม",
+          "ja": "練習の結果: 完了。",
+          "en": "Practice result: ready.",
+          "note": {
+            "th": "หลังใส่โมดูล ปิดสลัก ขันสกรูแน่น",
+            "ja": "モジュールを入れ、ラッチを閉じ、ねじを締めたあと",
+            "en": "After: module in, latch closed, screw tight"
+          }
+        },
+        {
+          "kind": "ok",
+          "th": "บทฝึกเสร็จแล้ว",
+          "ja": "練習が終わりました",
+          "en": "Practice Complete",
+          "note": {
+            "th": "หลังปลดสลักและดึงโมดูลออก",
+            "ja": "ラッチを開けてモジュールを抜いたあと",
+            "en": "After opening the latch and pulling the module out"
+          }
+        }
+      ],
+      "caption": {
+        "th": "<b>ตรวจผลงาน</b>\nไม่พร้อม = ยังใส่หรือยึดไม่ครบ · พร้อม = ใส่และยึดครบ",
+        "ja": "<b>検査の結果</b>\n未完了＝まだ足りない。完了＝すべて取り付けて固定。",
+        "en": "<b>Check my work results</b>\nNot ready: something is missing. Ready: all in and secured."
+      },
+      "units": [
+        "inspect_fail",
+        "inspect",
+        "done"
+      ]
+    }
+  ],
+  "video": [
+    {
+      "stage": "problem",
+      "shot": "T_station",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "module",
+          "kind": "info",
+          "label": {
+            "th": "โมดูลฝึก",
+            "ja": "練習モジュール",
+            "en": "Training module"
+          },
+          "dx": -300,
+          "dy": -160
+        },
+        {
+          "anchor": "latch",
+          "kind": "info",
+          "label": {
+            "th": "สลัก",
+            "ja": "ラッチ",
+            "en": "Latch"
+          },
+          "dx": 240,
+          "dy": -70
+        },
+        {
+          "anchor": "plug_head",
+          "kind": "info",
+          "label": {
+            "th": "หัวปลั๊ก",
+            "ja": "プラグの頭",
+            "en": "Plug head"
+          },
+          "dx": 260,
+          "dy": -160
+        },
+        {
+          "anchor": "turn_handle",
+          "kind": "info",
+          "label": {
+            "th": "มือจับแท่น",
+            "ja": "台のハンドル",
+            "en": "Station handle"
+          },
+          "dx": 260,
+          "dy": 20
+        }
+      ],
+      "say": {
+        "th": [
+          "นี่คือแท่นฝึก ไว้ฝึกท่าทาง ไม่เกี่ยวกับงานทดลอง",
+          "Grip ที่นิ้วกลาง ใช้จับโมดูล สลัก และแท่นหมุน",
+          "ส่วน Trigger ที่นิ้วชี้ ใช้กดปุ่มบนแผง และจับหัวสกรูกับหัวปลั๊ก",
+          "ป้ายสั้น ๆ เหนือชิ้นส่วนบอกสภาพตอนนี้ ทำผิดก็ลองใหม่ได้"
+        ],
+        "ja": [
+          "これは練習台です。実験課題とは関係ありません。",
+          "中指のGripで、モジュール、ラッチ、回転台を持ちます。",
+          "人差し指のトリガーで、ボタンを押し、ねじやプラグの頭をつまみます。",
+          "部品の上の表示が、今の状態を教えます。まちがえても、やり直せます。"
+        ],
+        "en": [
+          "This is the practice station. It is not part of the experiment tasks.",
+          "Grip, under your middle finger, holds the module, the latch and the turntable.",
+          "Trigger, under your index finger, selects buttons and pinches the screw head and the plug head.",
+          "A short label above the part shows its state. If you make a mistake, just try again."
+        ]
+      },
+      "units": [
+        "problem",
+        "buttons",
+        "status"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "layout": "reader",
+      "say": {
+        "th": [
+          "ก่อนฝึกกับแท่น ลองใช้แผงข้อมูลนี้ก่อน",
+          "แท็บด้านบนเปลี่ยนรูปแบบ เนื้อหาเหมือนกันทุกแท็บ",
+          "ปุ่มลบ ย่อแผงเป็นแถบเล็ก เลือกแถบเพื่อเปิดกลับ",
+          "จะย้ายแผง กด Trigger ค้างที่แถบจับใต้แผงแล้วลาก ปุ่มกากบาทใช้ปิดแผง"
+        ],
+        "ja": [
+          "台の練習の前に、この資料パネルを使ってみます。",
+          "上のタブで形式を変えます。中身はどれも同じです。",
+          "マイナスで小さいバーになり、バーを選ぶとまた開きます。",
+          "下のハンドルをトリガーで押したまま動かすと移動し、バツで閉じます。"
+        ],
+        "en": [
+          "Before the station, try this help panel.",
+          "The tabs at the top change the format. Every tab teaches the same things.",
+          "The minus button shrinks it to a small bar. Select the bar to open it again.",
+          "Hold Trigger on the handle below to move it. The cross button closes it."
+        ]
+      },
+      "units": [
+        "reader"
+      ]
+    },
+    {
+      "stage": "watch",
+      "shot": "T_station",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "module",
+          "kind": "info",
+          "label": {
+            "th": "โมดูลฝึก",
+            "ja": "練習モジュール",
+            "en": "Training module"
+          },
+          "dx": -280,
+          "dy": -80
+        },
+        {
+          "anchor": "slot",
+          "kind": "bad",
+          "label": {
+            "th": "ยังไม่ได้ใส่",
+            "ja": "まだ入っていない",
+            "en": "Not in yet"
+          },
+          "dx": 240,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "เมื่อเริ่มงาน แผง Main จะแสดงชิ้นส่วนที่จับ พร้อมสถานะหรือสิ่งที่ขวางอยู่ ตอนฝึกให้ทำตามคำสั่งและข้อความบน Main",
+          "กดตรวจผลงานตอนนี้ โมดูลยังไม่ได้ใส่และสกรูยังหลวม ผลตัวอย่างคือยังไม่พร้อม"
+        ],
+        "ja": [
+          "課題を始めると、Main に持った部品と状態、または動かせない理由が表示されます。練習中は Main の指示と結果に従ってください。",
+          "今、検査を押します。モジュールは外れ、ねじはゆるんでいるので、未完了の例が表示されます。"
+        ],
+        "en": [
+          "When the tasks start, Main will show the part you hold and its state or what blocks it. During practice, follow the instructions and feedback on Main.",
+          "Select Check my work now. The module is out and the screw is loose, so the example result is not ready."
+        ]
+      },
+      "units": [
+        "part_feedback",
+        "inspect_fail"
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_module",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "slot_corner",
+          "kind": "ok",
+          "label": {
+            "th": "มุมบากของช่อง",
+            "ja": "スロットの切り欠き",
+            "en": "Slot's cut corner"
+          },
+          "dx": 220,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "ใส่โมดูลด้านที่ใส่ได้ก่อน",
+          "จับโมดูลด้วย Grip หันมุมบากไปฝั่งเดียวกับมุมบากของช่อง แล้วถือให้ขนานกับช่อง",
+          "กดลงให้สุด แล้วปล่อยมือ โมดูลจะลงสุดในช่อง"
+        ],
+        "ja": [
+          "まず、入る向きでモジュールを入れます。",
+          "Gripで持ち、切り欠きをスロットの切り欠きと同じ側に向けます。",
+          "水平にして奥まで押し込み、手を離します。"
+        ],
+        "en": [
+          "First, insert the module the way it fits.",
+          "Hold it with Grip. Turn its cut corner to the same side as the slot's cut corner, and keep it level.",
+          "Press it all the way down, then let go. The module sits fully in the slot."
+        ]
+      },
+      "units": [
+        "insert"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_module",
+      "segment": 4,
+      "callouts": [
+        {
+          "anchor": "latch",
+          "kind": "ok",
+          "label": {
+            "th": "สลัก (Grip)",
+            "ja": "ラッチ（Grip）",
+            "en": "Latch (Grip)"
+          },
+          "dx": 240,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "โมดูลลงสุดแล้ว ปิดสลักต่อได้เลย ไม่ต้องยกออกหรือหมุนครึ่งรอบ",
+          "กด Grip ที่สลักสีฟ้าหนึ่งครั้ง สลักปิดและยึดโมดูลไว้"
+        ],
+        "ja": [
+          "モジュールが奥まで入ったら、そのままラッチを閉じます。抜いたり半回転させたりする必要はありません。",
+          "青いラッチでGripを一度押します。ラッチが閉じて、モジュールが固定されます。"
+        ],
+        "en": [
+          "Once the module is fully seated, close the latch directly. Do not remove it or turn it half a turn.",
+          "Press Grip once on the blue latch. It closes and secures the module."
+        ]
+      },
+      "units": [
+        "lock"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_turn",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "turn_handle",
+          "kind": "ok",
+          "label": {
+            "th": "มือจับ (Grip)",
+            "ja": "ハンドル（Grip）",
+            "en": "Handle (Grip)"
+          },
+          "dx": -220,
+          "dy": -20
+        },
+        {
+          "anchor": "turn_grip_left",
+          "kind": "ok",
+          "label": {
+            "th": "มุมหน้า",
+            "ja": "手前の角",
+            "en": "Front corner"
+          },
+          "dx": -170,
+          "dy": -100
+        }
+      ],
+      "rotate": [
+        {
+          "anchor": "turn_axis",
+          "dir": "yaw",
+          "label": {
+            "th": "วงโค้ง",
+            "ja": "弧を描く",
+            "en": "In an arc"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "ต่อไปหมุนแท่น ให้สกรูด้านหลังหันมาหาคุณ",
+          "จับมือจับขอบหน้า หรือมุมหน้าที่มีแถบสีฟ้า ด้วย Grip",
+          "เลื่อนมือเป็นวงโค้งรอบแกนกลาง แท่นจะหมุนตาม ปล่อยแล้วจับใหม่ได้ หมุนให้ได้ 120 องศา"
+        ],
+        "ja": [
+          "次に台を回して、奥のねじをこちらに向けます。",
+          "手前の縁のハンドルか、青い線の角を、Gripで持ちます。",
+          "中心のまわりに弧を描くと、台が回ります。持ち直してもよく、120度まで回します。"
+        ],
+        "en": [
+          "Next, turn the station so the screw at the back faces you.",
+          "Grip the handle on the front edge, or a front corner with a blue bar.",
+          "Move your hand in an arc around the centre and the station turns. You can let go and grab again. Turn it 120 degrees."
+        ]
+      },
+      "units": [
+        "rotate_access"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0.08
+        ],
+        [
+          0.08,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_screw",
+      "segment": 0,
+      "arrows": [
+        {
+          "anchor": "screw_head",
+          "kind": "ok",
+          "label": {
+            "th": "ขันเข้า",
+            "ja": "締める（奥へ）",
+            "en": "Tighten in"
+          }
+        }
+      ],
+      "rotate": [
+        {
+          "anchor": "screw_head",
+          "dir": "cw",
+          "label": {
+            "th": "ตามเข็ม ↻",
+            "ja": "時計回り ↻",
+            "en": "Clockwise ↻"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "ขันเข้า ใช้ Trigger จับหัวสกรู มองที่หัว แล้วบิดตามเข็มนาฬิกา",
+          "สกรูจะหมุน และจมลงในรูทีละนิด",
+          "บิดไม่ถนัด ปล่อยแล้วจับใหม่ได้ ความคืบหน้าไม่หาย",
+          "เมื่อหัวสกรูลงชิดผิว และป้ายขึ้นว่า “แน่นแล้ว: ปล่อยมือเพื่อไปต่อ” ก็ปล่อยมือ"
+        ],
+        "ja": [
+          "ねじを締めます。トリガーで頭をつまみ、頭を見て時計回りにひねります。",
+          "ねじは回りながら、少しずつ奥へ入ります。",
+          "回しにくければ、離して持ち直します。進み具合は残ります。",
+          "頭が面まで下がり、「締まった：手を離して次へ」と出たら、手を離します。"
+        ],
+        "en": [
+          "Tighten the screw in: pinch the head with Trigger, look at the head, and twist clockwise.",
+          "The screw turns and moves in, little by little.",
+          "If it gets awkward, let go and grab again. Your progress is kept.",
+          "When the head is down on the surface and the label says “Tight: let go to continue”, let go."
+        ]
+      },
+      "units": [
+        "fasten",
+        "regrip",
+        "screw_done"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0.12
+        ],
+        [
+          0.12,
+          0.42
+        ],
+        [
+          0.42,
+          0.6
+        ],
+        [
+          0.6,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_cable",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "plug_head",
+          "kind": "ok",
+          "label": {
+            "th": "หัวปลั๊ก (Trigger)",
+            "ja": "プラグの頭（トリガー）",
+            "en": "Plug head (Trigger)"
+          },
+          "dx": -200,
+          "dy": -90
+        },
+        {
+          "anchor": "lead_wire",
+          "kind": "bad",
+          "label": {
+            "th": "ไม่จับที่สาย",
+            "ja": "ケーブルは持たない",
+            "en": "Not the wire"
+          },
+          "dx": 200,
+          "dy": 100
+        },
+        {
+          "anchor": "lead_socket",
+          "kind": "ok",
+          "label": {
+            "th": "ช่องที่ว่าง",
+            "ja": "空いているソケット",
+            "en": "Open socket"
+          },
+          "dx": 220,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "ต่อไปเสียบปลั๊ก ใช้ Trigger จับที่หัวปลั๊ก ไม่จับที่ตัวสาย",
+          "เสียบตรง ๆ เข้าช่องที่ว่างจนสุด ปลายอีกด้านต่ออยู่แล้ว"
+        ],
+        "ja": [
+          "次にプラグを差します。トリガーでプラグの頭をつまみます。ケーブル部分は持ちません。",
+          "空いているソケットに、まっすぐ奥まで差します。反対側はつながったままです。"
+        ],
+        "en": [
+          "Next, plug in. Pinch the plug head with Trigger, not the wire.",
+          "Push it straight into the open socket, all the way. The other end stays attached."
+        ]
+      },
+      "units": [
+        "cable_connect"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0.1
+        ],
+        [
+          0.1,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "watch",
+      "layout": "result",
+      "shot": "T_cable",
+      "pick": [
+        0,
+        1
+      ],
+      "say": {
+        "th": [
+          "ตอนนี้ใส่โมดูล ปิดสลัก และขันสกรูแน่นแล้ว",
+          "เลือก “ตรวจผลงาน” อีกครั้ง จะขึ้นผลตัวอย่างว่า พร้อม",
+          "ตอนเริ่ม ขึ้นว่ายังไม่พร้อม เพราะยังใส่หรือยึดไม่ครบ"
+        ],
+        "ja": [
+          "今は、モジュールが入り、ラッチが閉じ、ねじが締まっています。",
+          "もう一度「仕上がりを確認」を選ぶと、結果の例は「完了」です。",
+          "はじめの「未完了」は、まだ足りないところがあったからです。"
+        ],
+        "en": [
+          "Now the module is in, the latch is closed and the screw is tight.",
+          "Select Check my work again. The example result is: ready.",
+          "At the start it said not ready, because something was not installed or secured."
+        ]
+      },
+      "units": [
+        "inspect"
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_cable",
+      "segment": 1,
+      "callouts": [
+        {
+          "anchor": "plug_head",
+          "kind": "ok",
+          "label": {
+            "th": "จับหัวปลั๊ก",
+            "ja": "プラグの頭を持つ",
+            "en": "Hold the plug head"
+          },
+          "dx": -200,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "ถอดปลั๊ก จับหัวปลั๊กอีกครั้ง แล้วดึงออกจากช่องตรง ๆ",
+          "ดึงที่หัวปลั๊กเสมอ ไม่ดึงที่สาย ปล่อยมือแล้วปลั๊กจะกลับไปที่พัก"
+        ],
+        "ja": [
+          "プラグを抜きます。もう一度頭を持ち、まっすぐ引き抜きます。",
+          "いつもプラグの頭を引き、ケーブルは引きません。手を離すと、プラグは元の位置に戻ります。"
+        ],
+        "en": [
+          "Unplug it. Hold the plug head again and pull it straight out.",
+          "Always pull by the head, never by the wire. When you let go, the plug goes back to its resting place."
+        ]
+      },
+      "units": [
+        "cable_disconnect"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0.85
+        ],
+        [
+          0.85,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_screw",
+      "segment": 1,
+      "arrows": [
+        {
+          "anchor": "screw_head",
+          "kind": "warn",
+          "dir": "up",
+          "label": {
+            "th": "คลายออก",
+            "ja": "緩める（手前へ）",
+            "en": "Loosen out"
+          }
+        }
+      ],
+      "rotate": [
+        {
+          "anchor": "screw_head",
+          "dir": "ccw",
+          "label": {
+            "th": "ทวนเข็ม ↺",
+            "ja": "反時計回り ↺",
+            "en": "Counter-clockwise ↺"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "คลายออก ใช้ Trigger จับหัวสกรู แล้วบิดทวนเข็มนาฬิกา",
+          "สกรูจะหมุน และยกขึ้นมาทีละนิด",
+          "บิดจนป้ายขึ้นว่า “คลายสุดแล้ว: ปล่อยมือเพื่อไปต่อ” แล้วปล่อยมือ"
+        ],
+        "ja": [
+          "ねじを緩めます。トリガーで頭をつまみ、反時計回りにひねります。",
+          "ねじは回りながら、少しずつ手前へ出てきます。",
+          "「緩みきった：手を離して次へ」と出たら、手を離します。"
+        ],
+        "en": [
+          "Loosen the screw out. Pinch the head with Trigger and twist counter-clockwise.",
+          "The screw turns and moves out, little by little.",
+          "When the label says “Fully loose: let go to continue”, let go."
+        ]
+      },
+      "units": [
+        "loosen",
+        "screw_done"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0.15
+        ],
+        [
+          0.15,
+          0.9
+        ],
+        [
+          0.9,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "T_module",
+      "segment": 3,
+      "callouts": [
+        {
+          "anchor": "latch",
+          "kind": "info",
+          "label": {
+            "th": "ปลดสลักก่อน",
+            "ja": "先にラッチを開ける",
+            "en": "Open the latch first"
+          },
+          "dx": 240,
+          "dy": -90
+        }
+      ],
+      "say": {
+        "th": [
+          "ขั้นสุดท้าย ปลดสลักก่อน เอื้อมไปที่สลักแล้วกด Grip หนึ่งครั้ง",
+          "ถ้าสลักยังปิด จะดึงโมดูลไม่ออก",
+          "เมื่อสลักเปิดแล้ว จับโมดูลด้วย Grip แล้วดึงขึ้นออกจากช่อง"
+        ],
+        "ja": [
+          "最後に、先にラッチを開けます。ラッチでGripを一度押します。",
+          "閉じている間は、モジュールは抜けません。",
+          "開いたら、Gripでモジュールを持ち、上へ引き抜きます。"
+        ],
+        "en": [
+          "The last step: open the latch first. Reach to it and press Grip once.",
+          "While the latch is closed, the module cannot come out.",
+          "Once the latch is open, grip the module and lift it out of the slot."
+        ]
+      },
+      "units": [
+        "unlock"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0.2
+        ],
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.2,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "done",
+      "shot": "T_station",
+      "segment": 0,
+      "say": {
+        "th": [
+          "บทฝึกเสร็จแล้ว",
+          "งานจริงใช้ท่าเดียวกันนี้",
+          "ถ้าลืมวิธีทำ กดข้อมูลช่วย 4 แบบบน Main ได้เสมอ"
+        ],
+        "ja": [
+          "これで練習は終わりです。",
+          "本番も同じ動きを使います。",
+          "操作を忘れたら、Main の「4種類の資料」をいつでも開けます。"
+        ],
+        "en": [
+          "The practice is finished.",
+          "The real tasks use these same moves.",
+          "If you forget how, open Help: 4 formats on Main."
+        ]
+      },
+      "units": [
+        "done"
+      ]
+    }
+  ]
+}

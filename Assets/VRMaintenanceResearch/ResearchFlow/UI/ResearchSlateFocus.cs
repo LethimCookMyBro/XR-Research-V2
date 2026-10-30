@@ -15,14 +15,18 @@ namespace VRMaintenanceResearch.ResearchFlow
         readonly HashSet<int> pointers = new HashSet<int>();
         readonly HashSet<int> heldPointers = new HashSet<int>();
         public bool PointerHeld => heldPointers.Count > 0;
-        public void OnPointerDown(PointerEventData data) { if (data != null) heldPointers.Add(data.pointerId); }
-        public void OnPointerUp(PointerEventData data) { if (data != null) heldPointers.Remove(data.pointerId); }
+        public void OnPointerDown(PointerEventData data) { if (data != null) heldPointers.Add(data.pointerId); SyncNavigation(); }
+        public void OnPointerUp(PointerEventData data) { if (data != null) heldPointers.Remove(data.pointerId); SyncNavigation(); }
         float lastFocus = float.NegativeInfinity;
         CanvasGroup[] utilities;
         ResearchDragHandle drag;
         public bool Focused => pointers.Count > 0;
-        public void OnPointerEnter(PointerEventData data) { pointers.Add(data.pointerId); lastFocus = Time.unscaledTime; }
-        public void OnPointerExit(PointerEventData data) { pointers.Remove(data.pointerId); lastFocus = Time.unscaledTime; }
+        public void OnPointerEnter(PointerEventData data) { pointers.Add(data.pointerId); lastFocus = Time.unscaledTime; SyncNavigation(); }
+        public void OnPointerExit(PointerEventData data) { pointers.Remove(data.pointerId); lastFocus = Time.unscaledTime; SyncNavigation(); }
+        void SyncNavigation()
+        {
+            if (view && view.controller) view.controller.UpdateReferenceNavigation(view.controller.ReferenceNavigationInputAvailable, view.controller.ReferenceScrollAxis);
+        }
         void OnDisable() { heldPointers.Clear(); pointers.Clear(); lastFocus = float.NegativeInfinity; }
         void Update()
         {

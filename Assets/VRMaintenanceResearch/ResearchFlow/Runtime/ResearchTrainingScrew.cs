@@ -21,11 +21,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool held;
 
         public float Progress => progress;
-        public bool Tight => progress >= fullDegrees;
+        public bool Tight => ResearchS1FanKinematics.IsTight(progress, fullDegrees);
         public bool Loose => progress <= 0;
         public float Fraction => progress / fullDegrees;
         /// <summary>+1 last moved in (clockwise), -1 last moved out, 0 not moved this grip.</summary>
         public int Direction { get; private set; }
+        float directionAnchor;
         public bool IsHeld => grabbable && grabbable.SelectingPointsCount > 0;
         public bool Allowed = true;
 
@@ -37,7 +38,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void BeginTransform()
         {
             held = true;
-            stopBackoff = 0; Direction = 0;
+            stopBackoff = 0; Direction = 0; directionAnchor = progress;
             previousTurn = HandTurn();
         }
 
@@ -55,9 +56,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             // Seat-local +Z is the insertion axis; clockwise seen from the head is a negative turn about it.
             float clockwise = -Mathf.DeltaAngle(previousTurn, turn);
             previousTurn = turn;
-            float before = progress;
             if (Allowed) progress = (float)ResearchS1FanKinematics.TurnWithDetent(progress, clockwise, fullDegrees, true, ref stopBackoff);
-            if (Mathf.Abs(progress - before) > .05f) Direction = progress > before ? 1 : -1;
+            // Owner 29 Oct log: wrist wobble flipped the label between fasten and loosen ~25 times in 5 s. Report a direction
+            // only after 8 deg of net travel in it, so the label follows deliberate turning.
+            if (Mathf.Abs(progress - directionAnchor) > 8) { Direction = progress > directionAnchor ? 1 : -1; directionAnchor = progress; }
+            else if (Direction != 0 && (progress - directionAnchor) * Direction > 0) directionAnchor = progress;
             Place();
         }
 

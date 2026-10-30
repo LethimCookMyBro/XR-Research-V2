@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using VRMaintenanceResearch.ResearchFlow;
 
-namespace UnityEngine { public class MonoBehaviour { } }
+namespace UnityEngine { public class MonoBehaviour { } public static class Time { public static float unscaledTime; } }
 
 static class ResearchTaskSnapshotChecks
 {
@@ -70,25 +70,29 @@ static class ResearchTaskSnapshotChecks
         var port = new ResearchTaskPort { taskId = "B" };
         port.BindSnapshot(() => { captures++; return raw; }, value => { evaluations++; return ((State)value).Complete; }, _ => { });
         port.SetInteractionAllowed(true);
-        Unavailable(port, "unapproved study content");
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) Unavailable(port, "unapproved study content");
         port.contentApproved = true;
-        Unavailable(port, "missing reference provider");
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) Unavailable(port, "missing reference provider");
         port.BindReference((section, language) => "TEST FIXTURE ONLY");
-        Unavailable(port, "missing complete reference media provider");
+        // S1_OWNER_OPEN_STUDY_20261029: Study no longer needs content approval or a bound reference-media provider; the Reader packages ship in the app.
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) Unavailable(port, "missing complete reference media provider");
         bool mediaReady = false;
         port.BindReferenceMediaReadiness(() => mediaReady);
-        Unavailable(port, "incomplete reference media");
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) Unavailable(port, "incomplete reference media");
         Check(captures == 0 && evaluations == 0, "study approval and reference guards run before state capture");
         mediaReady = true;
         Check(port.TryInspect(out bool passed, out object snapshot) && passed && ReferenceEquals(raw, snapshot) && captures == 1 && evaluations == 1,
             "approved fixture study path returns evaluated raw state without technical wrapper");
         Throws<InvalidOperationException>(() => port.Action("fixture", raw, raw, "SimulatedController"), "study still rejects simulated deliberate input");
-        port.contentApproved = false;
-        Unavailable(port, "revoked content approval");
-        port.contentApproved = true;
-        mediaReady = false;
-        Unavailable(port, "revoked reference media readiness");
-        Check(captures == 1 && evaluations == 1, "revoked approval cannot reuse successful snapshot");
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals)
+        {
+            port.contentApproved = false;
+            Unavailable(port, "revoked content approval");
+            port.contentApproved = true;
+            mediaReady = false;
+            Unavailable(port, "revoked reference media readiness");
+            Check(captures == 1 && evaluations == 1, "revoked approval cannot reuse successful snapshot");
+        }
         port.demoMode = true;
         port.taskId = "invalid";
         Unavailable(port, "invalid task identity");
@@ -131,8 +135,11 @@ static class ResearchTaskSnapshotChecks
         port.BindReference((section, language) => "TEST FIXTURE ONLY");
         port.BindReferenceMediaReadiness(() => throw new InvalidOperationException("fixture readiness failure"));
         port.SetInteractionAllowed(true);
-        Unavailable(port, "throwing readiness provider");
-        Check(errors == 5 && captures == 3, "readiness failure clears outputs and is recorded before capture");
+        if (!ResearchUIPolicy.StudyOpenWithoutDeviceApprovals)
+        {
+            Unavailable(port, "throwing readiness provider");
+            Check(errors == 5 && captures == 3, "readiness failure clears outputs and is recorded before capture");
+        }
         Throws<ArgumentNullException>(() => port.BindSnapshot(null, raw => true), "snapshot binding rejects null capture delegate");
         Throws<ArgumentNullException>(() => port.BindSnapshot(() => new State(1, true), null), "snapshot binding rejects null evaluator delegate");
         Throws<ArgumentNullException>(() => port.Bind(() => new State(1, true), null), "legacy binding rejects null evaluator delegate");
@@ -161,9 +168,47 @@ static class ResearchTaskSnapshotChecks
         Check(originalGateCalls == 3 && replacementGateCalls == 0, "rejected rebind retains original physical gate delegate");
     }
 
+    static void TypedInteractionLifecycle()
+    {
+        var port = new ResearchTaskPort { taskId = "A", demoMode = true };
+        port.BindSnapshot(() => new State(1, false), raw => false, allowed => { });
+        port.SetInteractionAllowed(true);
+        int behaviorEvents = 0;
+        port.Behavior += (category, target, before, after) => behaviorEvents++;
+        UnityEngine.Time.unscaledTime = 12.5f;
+        var first = port.BeginAttempt("A.ram", "Controller");
+        var held = port.CurrentInteraction.Value;
+        Check(held.AttemptId == first.Id && held.TaskId == "A" && held.Target == "A.ram" && held.InputSource == "Controller"
+            && held.Operation == PartOperation.Held && held.Reason == PartBlockReason.None && held.ObservedAt == 12.5f,
+            "held interaction preserves typed identity, input source and monotonic clock sample");
+        int eventsAfterGrab = behaviorEvents;
+        UnityEngine.Time.unscaledTime = 13f;
+        Check(port.UpdateInteraction(first, PartOperation.Turn, PartBlockReason.EndStop), "active typed observation is accepted");
+        var turned = port.CurrentInteraction.Value;
+        Check(turned.Operation == PartOperation.Turn && turned.Reason == PartBlockReason.EndStop && turned.Sequence > held.Sequence
+            && turned.ObservedAt == 13f && behaviorEvents == eventsAfterGrab, "typed observation refreshes state without fabricating behavior events");
+        port.UpdateAttempt(first, "INSTALL", new State(1, false), new State(2, false), true, PartOperation.Insert, PartBlockReason.None);
+        Check(port.CurrentInteraction.Value.Operation == PartOperation.Insert && port.CurrentInteraction.Value.Reason == PartBlockReason.Unspecified,
+            "blocked attempt normalizes missing reason without changing typed operation");
+        port.UpdateAttempt(first, "INSTALL", new State(2, false), new State(3, true), false, PartOperation.Insert, PartBlockReason.CableLimit);
+        Check(port.CurrentInteraction.Value.Reason == PartBlockReason.None, "successful attempt clears stale block reason");
+        var second = port.BeginAttempt("A.gpu", "HandTracking");
+        Check(port.CurrentInteraction.Value.AttemptId == second.Id, "latest active attempt supplies current interaction");
+        port.EndAttempt(second);
+        Check(port.CurrentInteraction.Value.AttemptId == first.Id, "ending latest attempt exposes other active observation");
+        port.EndAttempt(first);
+        Check(!port.CurrentInteraction.HasValue && !port.UpdateInteraction(first, PartOperation.Move, PartBlockReason.Contact),
+            "released attempt cannot leave or refresh stale feedback");
+        var paused = port.BeginAttempt("A.ram", "Controller");
+        port.SetInteractionAllowed(false);
+        Check(!port.CurrentInteraction.HasValue && !port.UpdateInteraction(paused, PartOperation.Move, PartBlockReason.Contact),
+            "pause clears interaction and rejects stale observation");
+        Check(!port.UpdateInteraction(null, PartOperation.Move, PartBlockReason.Contact), "null observation is rejected");
+    }
+
     static int Main()
     {
-        RejectedRebind(); SnapshotAndLegacy(); StudyGuards(); Failures();
+        RejectedRebind(); SnapshotAndLegacy(); StudyGuards(); Failures(); TypedInteractionLifecycle();
         var demo = new ResearchTaskPort { taskId = "B", demoMode = true, demoPassed = true };
         demo.SetInteractionAllowed(true);
         Check(demo.TryInspect(out bool passed, out object snapshot) && passed && (bool)((Dictionary<string, object>)snapshot)["demo_passed"], "unbound legacy demo retains explicit fallback");

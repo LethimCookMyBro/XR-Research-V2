@@ -8,6 +8,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         // (largest measured backward twist 5.8 deg). A thread that has reached an end stop stays there until the hand has turned
         // it away by more than this; a thread that never reached the stop is unaffected.
         public const double StopDetentDegrees = 8;
+        // Owner 29 Oct: a participant who turned to the stop must never fail on a stray degree. Within this of the stop counts
+        // as tight; every seeded loose joint sits far further out (Task B rear ring: 20 deg).
+        public const double TightToleranceDegrees = 3;
+        public static bool IsTight(double progressDegrees, double fullDegrees) => progressDegrees >= fullDegrees - TightToleranceDegrees;
 
         /// <summary>Turn with an end-stop detent. <paramref name="backoff"/> is the caller's per-grip accumulator (reset on grab).</summary>
         public static double TurnWithDetent(double progressDegrees, double clockwiseDeltaDegrees, double fullDegrees, bool rightHanded, ref double backoff)

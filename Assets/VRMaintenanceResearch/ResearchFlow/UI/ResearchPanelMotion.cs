@@ -40,6 +40,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         // placement fault. Treating it as one hid the Canvas/Raycaster and let Main and Reader conceal each other in turn (flicker).
         // New placements (recenter, drag release) still test peers and movable parts.
         bool idleCheck;
+        // Owner 30 Oct: at the Task B pedestal fan the fan head sits ~0.6 m in front of the eyes, so equipment in the sight line rejected
+        // every Reader pose (it never appeared) and every drag sample (it could not be moved off the Main panel). In a task, equipment
+        // may cover part of the Reader; it still may not intersect equipment or overlap the Main panel.
+        bool EquipmentMayCover => panelId == "reference" && !FixedReader && view && view.controller && view.controller.Flow?.IsTaskActive == true;
         bool IgnoreMovableParts => idleCheck || (panelId == "task_information" && placementAccepted && FixedWorkingSlate);
         bool FixedWorkingSlate => ResearchUIPolicy.StationAnchoredPanels && !centered && view && view.controller
             && view.controller.Flow != null && view.controller.Flow.IsTaskActive
@@ -53,6 +57,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool pendingOnlyIfNeeded, pendingRequireView = true;
         string pendingReason = "recenter";
         bool PlacementBusy => IsDragging || (view && view.PanelPlacementBusy);
+        // Owner 29 Oct log: opening the Reader deferred its placement while the app counted the wearer as "busy" and showed
+        // "Placement unavailable" for 8-18 s. A hidden, not-yet-placed panel is under no pointer, so placing it disturbs nothing.
+        bool PlacementWaits => PlacementBusy && !(PlacementBlocked && !placementAccepted);
         public bool PlacementBlocked { get; private set; }
         public bool WorldPlacementBlocked => PlacementBlocked && !faceHidden;
         public string PlacementFailureKind => FailureKind(LastRejection, faceHidden);
@@ -101,7 +108,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             pendingOnlyIfNeeded = onlyIfNeeded; pendingRequireView = true;
             pendingReason = reason;
             deferredRetryUsed = false;
-            bool busy = PlacementBusy;
+            bool busy = PlacementWaits;
             if (FixedReader && !HasAcceptedPose) { LastRejection = "awaiting_authored_pose"; SetPlacementBlocked(true); }
             QueueRecenter(participant, animate, input);
             if (busy) view.controller?.Log("PANEL_PLACEMENT", panelId, "Deferred", source: "System", inputSource: input, reason: reason + ":interaction_busy");
@@ -111,11 +118,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         void QueueRecenter(bool participant, bool animate, string input)
         {
             pendingParticipant = participant; pendingAnimate = animate; pendingInput = input;
-            requestedFrame = Time.frameCount;
+            requestedFrame = Time.frameCount; pendingSince = Time.unscaledTime; forcedLogged = false;
             LastHeadPoseReady = false;
             LastPresenceKnown = LastUserPresent = false;
             RecenterPending = true;
         }
+        float pendingSince; bool forcedLogged, forcing;
+        // Owner 30 Oct log: on Quest a Reader opened in a task queued its placement and never applied it (no Anchored/Blocked
+        // event for 15 s), leaving an empty view. A not-yet-placed hidden panel that waits longer than this is placed anyway.
+        const float UnplacedWaitLimitSeconds = .5f;
+        bool UnplacedTooLong => RecenterPending && PlacementBlocked && !placementAccepted && Time.unscaledTime - pendingSince > UnplacedWaitLimitSeconds;
         void OnDisable() { RecenterPending = false; pendingRestore = null; deferredViewportHead = null; clearanceKnown = false; placementAccepted = false; }
         void OnRectTransformDimensionsChange() { clearanceKnown = false; }
         void OnTransformChildrenChanged() { clearanceKnown = false; }
@@ -170,10 +182,20 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             // Explicit recovery may relocate a fixed slate; a temporary obstruction must not move its accepted pose.
             bool unplacedMain = panelId == "task_information" && ResearchUIPolicy.Active == ResearchUIPolicy.OwnerMovable && FixedWorkingSlate && !placementAccepted;
-            if ((PlacementBlocked || unplacedMain) && (!faceHidden || unplacedMain) && !RecenterPending && !FixedReader && !(FixedWorkingSlate && placementAccepted)
+            // A panel never placed since it opened is re-placed, not left face-hidden at a stale pose from another station.
+            if ((PlacementBlocked || unplacedMain) && (!faceHidden || unplacedMain || !placementAccepted) && !RecenterPending && !FixedReader && !(FixedWorkingSlate && placementAccepted)
                 && view && view.Head && Time.unscaledTime >= nextBlockedRetry)
             { nextBlockedRetry = Time.unscaledTime + 1f; Recenter(false, false, reason: "clearance_retry"); deferredRetryUsed = true; }
             if (!RecenterPending) return;
+            if (UnplacedTooLong)
+            {
+                if (!forcedLogged) view.controller?.Log("PANEL_PLACEMENT", panelId, "ForcedAfterWait", source: "System", reason: pendingReason,
+                    after: new { busy = PlacementBusy,
+                        main_pending = view.mainPanel && view.mainPanel.RecenterPending, deferred_viewport = deferredViewportHead.HasValue });
+                forcedLogged = true; deferredViewportHead = null;
+                ApplyPendingRecenter(true, true, true, Time.frameCount, true);
+                return;
+            }
             if (!Application.isPlaying || Application.isEditor)
             { TryApplyPendingRecenter(true, true, true, pendingOnlyIfNeeded ? Time.frameCount : Time.frameCount + 1); return; }
             var device = InputDevices.GetDeviceAtXRNode(XRNode.Head);
@@ -188,23 +210,27 @@ namespace VRMaintenanceResearch.ResearchFlow
             TryApplyPendingRecenter(ready, presenceKnown, present, Time.frameCount);
         }
         void TryApplyPendingRecenter(bool poseReady, bool presenceKnown, bool userPresent, int frame)
+            => ApplyPendingRecenter(poseReady, presenceKnown, userPresent, frame, false);
+
+        void ApplyPendingRecenter(bool poseReady, bool presenceKnown, bool userPresent, int frame, bool force)
         {
             if (!RecenterPending) return;
             LastHeadPoseReady = poseReady;
             LastPresenceKnown = presenceKnown;
             LastUserPresent = userPresent;
             // Let the InputSystem TrackedPoseDriver consume a later frame's pose before placing UI.
-            if (!poseReady || !presenceKnown || !userPresent || frame <= requestedFrame || !view || !view.Head || PlacementBusy) return;
+            if (!poseReady || !presenceKnown || !userPresent || (frame <= requestedFrame && !force) || !view || !view.Head || (PlacementWaits && !force)) return;
             if (deferredViewportHead.HasValue && Vector3.Distance(deferredViewportHead.Value.position, view.Head.position) < .005f
                 && Quaternion.Angle(deferredViewportHead.Value.rotation, view.Head.rotation) < .5f) return;
             deferredViewportHead = null;
-            if (panelId == "reference" && view.mainPanel && view.mainPanel.gameObject.activeInHierarchy && view.mainPanel.RecenterPending) return;
+            if (!force && panelId == "reference" && view.mainPanel && view.mainPanel.gameObject.activeInHierarchy && view.mainPanel.RecenterPending) return;
             RecenterPending = false;
             if (pendingRestore.HasValue)
             {
                 var pose = pendingRestore.Value; pendingRestore = null;
                 bool clear = ReadableFace(pose.position, pose.rotation) && PlacementClear(pose.position, pose.rotation);
-                if (clear || FixedWorkingSlate)
+                // A saved Reader pose that the Main panel now overlaps is re-placed; idle checks ignore Main, so it would be shown over it.
+                if (clear || (FixedWorkingSlate && !(panelId == "reference" && !FixedReader && LastRejection.StartsWith("other_panel", System.StringComparison.Ordinal))))
                 {
                     var before = Pose();
                     bool moved = Vector3.Distance(transform.position, pose.position) > .0001f || Quaternion.Angle(transform.rotation, pose.rotation) > .01f;
@@ -218,11 +244,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (pendingOnlyIfNeeded && ReadableFace(transform.position, transform.rotation)
                 && (!pendingRequireView || FitsView(transform.position, transform.rotation)) && PlacementClear(transform.position, transform.rotation))
             { faceHidden = false; deferredRetryUsed = true; AcceptPose(); SetPlacementBlocked(false); return; }
-            ApplyRecenter(pendingParticipant, pendingAnimate, pendingInput);
+            forcing = force; try { ApplyRecenter(pendingParticipant, pendingAnimate, pendingInput); } finally { forcing = false; }
         }
         void ApplyRecenter(bool participant, bool animate, string input)
         {
-            if (PlacementBusy) { QueueRecenter(participant, animate, input); return; }
+            if (PlacementWaits && !forcing) { QueueRecenter(participant, animate, input); return; }
             var forward = Vector3.ProjectOnPlane(view.Head.forward, Vector3.up); if (forward.sqrMagnitude < .01f) forward = Vector3.forward; forward.Normalize();
             // Leave the central manipulation area clear; reference opens on the other side.
             float side = panelId == "reference" ? -1 : 1;
@@ -254,7 +280,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (float distance in distances)
                 {
                     // At a native .99 m eye pose, no original Tutorial candidate was both visible and clear near the worktop.
-                    foreach (float height in pass == 1 ? new[] { .2f, .3f, .4f } : preferHeadRelative ? new[] { -.08f, 0f, .12f, .24f } : panelId == "recovery" ? new[] { -.25f, -.4f, .2f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
+                    // Recovery: owner 29 Oct video showed the 0.4 m-down bar at bench height, reading as sunk into the table.
+                    foreach (float height in pass == 1 ? new[] { .2f, .3f, .4f } : preferHeadRelative ? new[] { -.08f, 0f, .12f, .24f } : panelId == "recovery" ? new[] { -.15f, .05f, -.25f } : panelId == "reference" || FullMainPanel ? new[] { -.1f, .2f, .4f } : new[] { -.1f, .2f })
                     {
                         var direction = Quaternion.AngleAxis((pass == 1 ? -side : side) * angle, Vector3.up) * forward;
                         rotation = Quaternion.LookRotation(direction, Vector3.up);
@@ -268,9 +295,25 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (!found && preferHeadRelative)
                 found = TryStationAnchor(out position, out rotation, out anchorId, out anchorFallback);
+            // A Reader the wearer asked for while looking down at the work is still shown, facing them, even if it is not fully in view.
+            if (!found && panelId == "reference" && !FixedReader)
+                foreach (float angle in candidateAngles)
+                foreach (float distance in distances)
+                foreach (float height in new[] { -.1f, .2f, .4f })
+                {
+                    if (found) break;
+                    var direction = Quaternion.AngleAxis(side * angle, Vector3.up) * forward;
+                    rotation = Quaternion.LookRotation(direction, Vector3.up);
+                    position = view.Head.position + direction * distance + Vector3.up * height;
+                    found = ReadableFace(position, rotation) && PlacementClear(position, rotation);
+                }
+            // Owner video 29 Oct: an automatic re-place that failed because the wearer looked at the fan hid a visible panel,
+            // re-shown it 0.25 s later and retried on every head move (flicker). A shown, world-clear panel stays where it is.
+            if (!found && pendingOnlyIfNeeded && !PlacementBlocked && ReadableFace(transform.position, transform.rotation) && IdlePlacementClear())
+            { AcceptPose(); return; }
             if (!found)
             {
-                if (!PlacementBlocked) view.controller?.Log("PANEL_PLACEMENT", panelId, "Blocked", after: anchorFallback != null ? new { anchor_rejection = anchorFallback } : null,
+                if (!PlacementBlocked || pendingReason != "clearance_retry") view.controller?.Log("PANEL_PLACEMENT", panelId, "Blocked", after: anchorFallback != null ? new { anchor_rejection = anchorFallback } : null,
                     source: "System", inputSource: input, reason: pendingReason + ":" + LastRejection);
                 nextBlockedRetry = Mathf.Max(nextBlockedRetry, Time.unscaledTime + .5f);
                 faceHidden = false; SetPlacementBlocked(true);
@@ -545,6 +588,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 foreach (var corner in otherCorners) otherBox.Encapsulate(corner);
                 otherBox.Expand(.08f);
                 if (box.Intersects(otherBox)) { LastRejection = "other_panel"; return false; }
+                if (panelId == "reference" && !FixedReader && view.Head && CoversInView(position, rotation, otherCorners)) { LastRejection = "other_panel_covered"; return false; }
                 peerBounds = otherBox;
             }
             int overlaps = Physics.OverlapBoxNonAlloc(centre, half, overlapBuffer, rotation, ~0, QueryTriggerInteraction.Ignore);
@@ -565,6 +609,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             sightCorners[1] = position + rotation * Vector3.Scale(new Vector3(min.x, max.y, localCentre.z), RestScale);
             sightCorners[2] = position + rotation * Vector3.Scale(new Vector3(max.x, max.y, localCentre.z), RestScale);
             sightCorners[3] = position + rotation * Vector3.Scale(new Vector3(max.x, min.y, localCentre.z), RestScale);
+            // A placed panel is not concealed because the wearer walked so equipment sits in the sight line (design_rule 4).
+            if (idleCheck) return true;
             var camera = view.Head.GetComponent<Camera>();
             if (camera && camera.stereoEnabled)
                 return SightVolumeClear(camera.GetStereoViewMatrix(Camera.StereoscopicEye.Left).inverse.MultiplyPoint(Vector3.zero), centre, rotation, box, peerBounds)
@@ -577,6 +623,33 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool Blocks(Collider collider) => SceneCollider(collider) && !(IgnoreMovableParts && collider.attachedRigidbody);
         bool MovablePart(Renderer renderer) => IgnoreMovableParts
             && (renderer.GetComponentInParent<Rigidbody>() || renderer.GetComponentInParent<ResearchS1Cable>());
+
+        // Owner photo 30 Oct: the Reader opened in front of the Main panel and hid it. The sight-volume test only rejects Main in front
+        // of the Reader, so also reject a Reader whose outline overlaps Main's as seen from the eye (angles, so head turns do not matter).
+        bool CoversInView(Vector3 position, Quaternion rotation, Vector3[] peerCorners)
+        {
+            var eye = view.Head.position;
+            var rect = ((RectTransform)transform).rect;
+            var centre = position + rotation * Vector3.Scale(rect.center, RestScale);
+            var frame = Quaternion.Inverse(Quaternion.LookRotation(((peerCorners[0] + peerCorners[2]) * .5f + centre) * .5f - eye, Vector3.up));
+            Rect Angular(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+            {
+                var min = new Vector2(float.MaxValue, float.MaxValue); var max = -min;
+                foreach (var corner in new[] { a, b, c, d })
+                {
+                    var local = frame * (corner - eye);
+                    var angle = new Vector2(Mathf.Atan2(local.x, local.z), Mathf.Atan2(local.y, new Vector2(local.x, local.z).magnitude));
+                    min = Vector2.Min(min, angle); max = Vector2.Max(max, angle);
+                }
+                return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+            }
+            Vector3 Corner(float x, float y) => position + rotation * Vector3.Scale(new Vector3(x, y, 0), RestScale);
+            var self = Angular(Corner(rect.xMin, rect.yMin), Corner(rect.xMin, rect.yMax), Corner(rect.xMax, rect.yMax), Corner(rect.xMax, rect.yMin));
+            var peer = Angular(peerCorners[0], peerCorners[1], peerCorners[2], peerCorners[3]);
+            const float Tolerance = .01f; // ~0.6 deg of shadow/edge contact
+            return Mathf.Min(self.xMax, peer.xMax) - Mathf.Max(self.xMin, peer.xMin) > Tolerance
+                && Mathf.Min(self.yMax, peer.yMax) - Mathf.Max(self.yMin, peer.yMin) > Tolerance;
+        }
 
         bool SightVolumeClear(Vector3 eye, Vector3 centre, Quaternion rotation, Bounds box, Bounds? peer)
         {
@@ -591,6 +664,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             sightVolume[5] = new Plane(-(rotation * Vector3.forward), centre);
             if (peer.HasValue && GeometryUtility.TestPlanesAABB(sightVolume, peer.Value))
             { LastRejection = "other_panel_occluded"; return false; }
+            if (EquipmentMayCover) return true;
             var reach = box; reach.Encapsulate(eye);
             int overlaps = Physics.OverlapBoxNonAlloc(reach.center, reach.extents, overlapBuffer, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
             if (overlaps == overlapBuffer.Length) { LastRejection = "sight_buffer_full"; return false; }

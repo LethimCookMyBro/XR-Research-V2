@@ -32,7 +32,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
         }
         public void Initialize(IGrabbable value) => grab = value;
-        private void Start() { mateInRoot = transform.worldToLocalMatrix * mate.localToWorldMatrix; accepted = transform.localToWorldMatrix; }
+        private void Start()
+        {
+            mateInRoot = transform.worldToLocalMatrix * mate.localToWorldMatrix;
+            accepted = transform.localToWorldMatrix;
+            gameObject.AddComponent<ResearchS1FreeBody>().Configure(part.body, part.grabbable,
+                () => tray >= 0, () => owner.port && owner.port.InteractionAllowed,
+                pose => owner.wiring.Allows(transform, pose));
+        }
         public void BeginTransform() { held = true; if (tray < 0) accepted = transform.localToWorldMatrix; Rebase(); }
         private void Rebase()
         {
@@ -53,7 +60,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (thumb.IsHeld)
             {
                 if (Vector3.Distance(transform.position, free.GetColumn(3)) > .0005f || Quaternion.Angle(transform.rotation, free.rotation) > .2f)
-                    input.Motion(Hooked ? "REMOVE" : "INSTALL", before, true);
+                    input.Motion(Hooked ? "REMOVE" : "INSTALL", before, true, PartBlockReason.OtherHeld);
                 return;
             }
             int selected = tray;
@@ -68,24 +75,33 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (selected < 0)
             {
-                if (owner.AllowsMotion(transform, free)) Place(free);
-                else input.Motion("MOVE", before, true);
+                var freeReason = owner.MotionBlockReason(transform, free);
+                if (freeReason == PartBlockReason.None) { Place(free); input.Observe(PartOperation.Move); }
+                else input.Motion("MOVE", before, true, freeReason);
                 return;
             }
             var relative = owner.traySeats[selected].worldToLocalMatrix * free * mateInRoot;
             Vector3 pos = relative.GetColumn(3);
             bool aligned = Quaternion.Angle(relative.rotation, Quaternion.identity) <= 6;
-            var next = ResearchS1SledKinematics.Step(motion, pos.x * 1000, -pos.z * 1000, pos.y * 1000,
-                aligned, owner.TrayOccupied(selected, this), thumb.ProgressDegrees > 0);
+            bool occupied = owner.TrayOccupied(selected, this), threaded = thumb.ProgressDegrees > 0;
+            double transverseMm = pos.y * 1000;
+            var next = ResearchS1SledKinematics.Step(motion, pos.x * 1000, -pos.z * 1000, transverseMm, aligned, occupied, threaded);
+            var blockedReason = !next.Blocked ? PartBlockReason.None
+                : threaded ? PartBlockReason.Retained
+                : motion.Phase != S1SledPhase.Hooked && occupied ? PartBlockReason.MountNotReady
+                : motion.Phase == S1SledPhase.Hooked && aligned && Math.Abs(transverseMm) <= 4
+                    ? PartBlockReason.Retained : PartBlockReason.Alignment;
             bool removing = motion.Phase == S1SledPhase.Hooked && (next.SlideMm > motion.SlideMm + .01 || next.Phase == S1SledPhase.Free || -pos.z * 1000 > .3);
             bool meaningful = next.Blocked || next.Phase != motion.Phase || Math.Abs(next.SlideMm - motion.SlideMm) > .01 || Math.Abs(next.DepthMm - motion.DepthMm) > .01;
             var nextPose = next.Phase == S1SledPhase.Free ? free : owner.traySeats[selected].localToWorldMatrix *
                 Matrix4x4.Translate(new Vector3((float)next.SlideMm / 1000, 0, -(float)next.DepthMm / 1000)) * mateInRoot.inverse;
-            if (!owner.AllowsMotion(transform, nextPose)) { input.Motion(removing ? "REMOVE" : "INSTALL", before, true); return; }
+            var motionReason = owner.MotionBlockReason(transform, nextPose);
+            if (motionReason != PartBlockReason.None) { input.Motion(removing ? "REMOVE" : "INSTALL", before, true, motionReason); return; }
             motion = next;
             tray = next.Phase == S1SledPhase.Free ? -1 : selected;
             Place(nextPose);
-            if (meaningful) input.Motion(removing ? "REMOVE" : "INSTALL", before, next.Blocked);
+            input.Observe(removing ? PartOperation.Remove : PartOperation.Insert, blockedReason);
+            if (meaningful) input.Motion(removing ? "REMOVE" : "INSTALL", before, next.Blocked, blockedReason);
         }
         private Matrix4x4 GuidedPose() => owner.traySeats[tray].localToWorldMatrix *
             Matrix4x4.Translate(new Vector3((float)motion.SlideMm / 1000, 0, -(float)motion.DepthMm / 1000)) * mateInRoot.inverse;

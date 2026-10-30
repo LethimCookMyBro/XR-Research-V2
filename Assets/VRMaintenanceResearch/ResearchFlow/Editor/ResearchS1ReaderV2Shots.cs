@@ -53,6 +53,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     var b = UnityEngine.Object.FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single();
                 b.KeepAuthoredGuardDetail();
                     var cables = a.GetComponentsInChildren<ResearchS1Cable>(true);
+                    foreach(var cable in cables) cable.skin.forceMatrixRecalculationPerRender=true;
                     var targets = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Transform>(true)).ToList();
                     var station = shot.task == "T" ? UnityEngine.Object.FindObjectsByType<ResearchTrainingStation>(FindObjectsInactive.Include, FindObjectsSortMode.None).Single() : null;
                     if (station)
@@ -185,6 +186,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 ["spinner"] = () => b.spinner.transform.position,
                 ["rear_guard"] = () => Rim(b.rearGuard.transform),
                 ["rear_lock"] = () => b.rearLock.transform.position,
+                ["rear_lock_grip"] = () => Vector3.Lerp(b.rearLock.transform.position, Extreme(b.rearLock.transform, camera.transform.right), .65f),
                 // Front and rear guard rims overlap from the front; point at each guard's own outermost wire on opposite screen sides.
                 ["front_guard_side"] = () => Extreme(b.frontGuard.transform, camera.transform.right),
                 ["rear_guard_side"] = () => Extreme(b.rearGuard.transform, -camera.transform.right),

@@ -7,7 +7,7 @@ using VRMaintenanceResearch.HandsLabQuest3.Logging;
 using VRMaintenanceResearch.ResearchFlow;
 
 // Source-level adapter contract only. This stub does not simulate Unity lifecycle, physics or input.
-namespace UnityEngine { public class MonoBehaviour { } }
+namespace UnityEngine { public class MonoBehaviour { } public static class Time { public static float unscaledTime; } }
 
 static class ResearchBehaviorChecks
 {
@@ -111,7 +111,7 @@ static class ResearchBehaviorChecks
         Check(!port.IsReadyForStudy, "real task without physical interaction gate cannot start study");
         bool physicalEnabled = true;
         port.Bind(() => Component(true, true, false), () => true, allowed => physicalEnabled = allowed);
-        Check(!port.IsReadyForStudy, "approved text without complete reference media cannot start study");
+        Check(port.IsReadyForStudy == ResearchUIPolicy.StudyOpenWithoutDeviceApprovals, "reference media is required for Study unless the owner opened it (S1_OWNER_OPEN_STUDY_20261029)");
         port.BindReferenceMediaReadiness(() => true);
         Check(port.IsReadyForStudy && !physicalEnabled && !port.InteractionAllowed, "binding starts task mechanics disabled");
         Check(!port.TryInspect(out _), "paused task cannot inspect");

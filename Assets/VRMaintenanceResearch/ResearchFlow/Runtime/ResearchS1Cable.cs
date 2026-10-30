@@ -8,6 +8,11 @@ namespace VRMaintenanceResearch.ResearchFlow
     public sealed class S1CableSpan
     {
         public Transform from, to;
+        public Vector3[] routeGuides;
+        public Vector3 routeSlack;
+        [NonSerialized] public bool cachedGuided;
+        [NonSerialized] public Vector3 cachedPreferred;
+        [NonSerialized] public Matrix4x4 cachedRoutePose;
         public Vector3 fromExit, toExit, fromDirection, toDirection;
         [NonSerialized] public Vector3[] cachedPath;
         [NonSerialized] public Vector3 cachedA, cachedB, cachedDa, cachedDb, cachedSide;
@@ -31,6 +36,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public string assetId;
         public S1CableSpan[] spans;
         public SkinnedMeshRenderer skin;
+        public Vector3 preferredBow;
         public bool sideways; // bow across the chord first, as a short lead lying over; the default arches up
         // Drawn instead of the skinned body when the modelled lead cannot straighten (Training FX1: its coiled body sits up to
         // 16 mm off the bone chords, so posed straight it waved and dipped 9 mm into the base). Zero radius keeps the skin.
@@ -87,16 +93,23 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Allows(Transform moving, Matrix4x4 proposed)
         {
             if (!AuthoredValid()) return false;
+            var routePose = ProposedPose(transform, moving, proposed);
             foreach (var span in spans)
             {
+                if (moving && !Moves(span.from, moving) && !Moves(span.to, moving) && !Moves(transform, moving)) continue;
                 Vector3 a = Exit(span.from, span.fromExit, moving, proposed), b = Exit(span.to, span.toExit, moving, proposed);
                 Bind(span);
                 if (span.carried || Rigid(span,moving,proposed)) continue;
                 Vector3 da = Direction(span.from, span.fromDirection, moving, proposed), db = Direction(span.to, span.toDirection, moving, proposed);
-                if (Path(span,a,b,da,db) == null) return false;
+                if (Path(span,a,b,da,db,routePose) == null) return false;
             }
             return true;
         }
+
+        private static bool Moves(Transform target, Transform moving) => moving && (target == moving || target.IsChildOf(moving));
+
+        private static Matrix4x4 ProposedPose(Transform target, Transform moving, Matrix4x4 proposed) =>
+            Moves(target, moving) ? proposed * moving.worldToLocalMatrix * target.localToWorldMatrix : target.localToWorldMatrix;
 
         private static Vector3 Exit(Transform endpoint, Vector3 offset, Transform moving, Matrix4x4 proposed)
         {
@@ -120,25 +133,51 @@ namespace VRMaintenanceResearch.ResearchFlow
             var relative=a.inverse*b;
             return Vector3.Distance(relative.GetColumn(3),span.restToPosition)<.00001f && Quaternion.Angle(relative.rotation,span.restToRotation)<.01f;
         }
-        private Vector3[] Path(S1CableSpan span,Vector3 a,Vector3 b,Vector3 da,Vector3 db)
+        private Vector3[] Path(S1CableSpan span,Vector3 a,Vector3 b,Vector3 da,Vector3 db,Matrix4x4 routePose)
         {
-            if(span.cached && span.cachedA==a && span.cachedB==b && span.cachedDa==da && span.cachedDb==db)return span.cachedPath;
+            var orientation = routePose.rotation;
+            Vector3 up = orientation * Vector3.up, right = orientation * Vector3.right, forward = orientation * Vector3.forward;
+            Vector3 preferred = preferredBow.sqrMagnitude > .0001f ? orientation * preferredBow : sideways ? Vector3.Cross(up,b-a) : up;
+            if(span.cached && span.cachedRoutePose == routePose && span.cachedA==a && span.cachedB==b && span.cachedDa==da && span.cachedDb==db && span.cachedPreferred==preferred)return span.cachedPath;
+            if(span.cachedRoutePose != routePose || span.cachedPreferred!=preferred || span.cachedSide.sqrMagnitude<.0001f) span.cachedSide=preferred;
+            span.cachedRoutePose=routePose;
+            span.cachedPreferred=preferred;
+            span.cachedGuided=false;
             span.cached=true;span.cachedA=a;span.cachedB=b;span.cachedDa=da;span.cachedDb=db;span.cachedPath=null;
+            if(span.routeGuides != null && span.routeGuides.Length > 0)
+            {
+                var guides=Array.ConvertAll(span.routeGuides,routePose.MultiplyPoint3x4);
+                span.cachedPath=ResearchS1CablePath.SolveGuided(a,b,da,db,span.length,guides,orientation * span.routeSlack,Math.Max(.008,span.minimumRadius));
+                if(span.cachedPath!=null && KeepAbove(span.cachedPath,span.length,Math.Max(.008,span.minimumRadius),.0001))
+                {span.cachedGuided=true;return span.cachedPath;}
+                span.cachedPath=null;
+            }
             // A real cable may bow in any plane. Keep the last valid plane first so the drawn cable does not flip between frames.
-            foreach(var bow in new[]{span.cachedSide,sideways?Vector3.Cross(transform.up,b-a):transform.up,-transform.up,transform.right,-transform.right,transform.forward,-transform.forward})
+            foreach(var bow in new[]{span.cachedSide,sideways?Vector3.Cross(up,b-a):up,-up,right,-right,forward,-forward})
             {
                 Vector3 side=Vector3.ProjectOnPlane(bow,b-a).normalized;
                 if(side.sqrMagnitude<.5f)continue;
                 span.cachedPath=ResearchS1CablePath.Solve(a,b,da,db,span.length,side,span.minimumRadius);
-                if(span.cachedPath!=null){span.cachedSide=bow;KeepAbove(span.cachedPath);break;}
+                if(span.cachedPath==null)continue;
+                if(KeepAbove(span.cachedPath,span.length,span.minimumRadius,.00001)){span.cachedSide=bow;break;}
+                span.cachedPath=null;
             }
             return span.cachedPath;
         }
 
         // The bow solve knows nothing of the bench: laid on it, the SATA data path ran 10 mm under the top. Visual only.
-        private static void KeepAbove(Vector3[] path)
+        private static bool KeepAbove(Vector3[] path, float length, double minimumRadius, double lengthTolerance)
         {
+            Vector3 start=path[0],end=path[path.Length-1];
             for (int i = 0; i < path.Length; i++) path[i].y = Mathf.Max(path[i].y, Floor(path[i]) + Clearance);
+            if(path[0]!=start || path[path.Length-1]!=end || Math.Abs(ResearchS1CablePath.Length(path)-length)>lengthTolerance) return false;
+            for(int i=1;i<path.Length-1;i++)
+            {
+                double x=Vector3.Distance(path[i-1],path[i]),y=Vector3.Distance(path[i],path[i+1]),z=Vector3.Distance(path[i-1],path[i+1]);
+                double semi=(x+y+z)/2,areaSquared=semi*(semi-x)*(semi-y)*(semi-z);
+                if(areaSquared>1e-20 && x*y*z/(4*Math.Sqrt(areaSquared))<minimumRadius) return false;
+            }
+            return true;
         }
 
         private static float Floor(Vector3 p, float margin = EdgeMargin)
@@ -187,7 +226,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         private Vector3[] Path(S1CableSpan span) => Path(span, span.from.TransformPoint(span.fromExit), span.to.TransformPoint(span.toExit),
-            span.from.TransformDirection(span.fromDirection), span.to.TransformDirection(span.toDirection));
+            span.from.TransformDirection(span.fromDirection), span.to.TransformDirection(span.toDirection), transform.localToWorldMatrix);
 
         public void RefreshShape()
         {
@@ -292,6 +331,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             tube.sharedMesh.SetVertices(tubeVertices); tube.sharedMesh.SetNormals(tubeNormals); tube.sharedMesh.RecalculateBounds();
         }
+        private void OnValidate()
+        {
+            if(spans==null)return;
+            foreach(var span in spans)if(span!=null){span.cached=false;span.cachedSide=Vector3.zero;}
+        }
+
         private void LateUpdate() => RefreshShape();
     }
 }

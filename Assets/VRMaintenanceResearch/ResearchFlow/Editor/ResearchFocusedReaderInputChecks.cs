@@ -73,16 +73,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Application.LogCallback onLog = (message, stack, kind) => { if (kind == LogType.Error || kind == LogType.Exception) callbackErrors.Add(message + "\n" + stack); };
             // Reviewed input pins must be refreshed deliberately when package bytes change.
             var frozenHashes = new Dictionary<string, string> {
-                { "ResearchReaderS1/A_th/package", "d5f96e280298030f528227cb4b68fd96e97bb29464652a0099c4b0926f383db5" },
-                { "ResearchReaderS1/A_ja/package", "e3c10bf7630497cfa2efff3ceadb50b042083017180ca9726f3f6535aac78862" },
-                { "ResearchReaderS1/B_th/package", "b38902aa2e48bdfd7d2cce0fa7153249255f8acac6260eb796992021a4f6666d" },
-                { "ResearchReaderS1/B_ja/package", "03e4e4bf0fb6a142d8337248a0e627492c5bf66c1681bccd3c88f45d7a297600" },
+                { "ResearchReaderS1/A_th/package", "b1d034e6c6852a88e79f6f94838af4b4fe8651cb03d0d27b4f7a1bac915429f5" },
+                { "ResearchReaderS1/A_ja/package", "edb116d463c1d5920c1230c31c6b2922fafd0e8b3dc74f64ccb58f5273425095" },
+                { "ResearchReaderS1/B_th/package", "a822d4c6a98f2edc2cef7353e4ae17a60555f2cfa97af3c1754ed556e8cf3477" },
+                { "ResearchReaderS1/B_ja/package", "a154999ee0db3b2e3cea5a6d6481f704fc8c95040b958ab550d45c5a3abd9e65" },
+                { "ResearchReaderS1/A_en/package", "8f25dcdd9dd6c29cf4d4b34c61ad0e2f372eba26c9d7985ee91ddf1d93be9199" },
+                { "ResearchReaderS1/B_en/package", "64abd818c09c78fe4d0a3503bd20836542e839c8c4f937ef56bbd03f07c65eeb" },
                 { "ResearchReaderS1/T2_th/package", "9b2e379a6dfd725a3b2d7faa3da6f3ccfe3ae108df81846e31ae320e58728da2" },
                 { "ResearchReaderS1/T2_ja/package", "ccf38506f48cc7016017d769b33ca467af28deaf0127d6275cb110584f82d4d3" },
                 { "ResearchReaderS1/T2_en/package", "de163e3145e251c84a92521b5a42772bd1588c912560b351758d6c76b0d9007d" },
-                { "ResearchReaderS1/T3_th/package", "e39370ff4330484c7c040df48f056e92be63e8f26366c82d3dabd7c922035663" },
-                { "ResearchReaderS1/T3_ja/package", "fbff10643dd941d0522bd2d7e7cbca4925f69eff2f98faafa86f0c12460d3b60" },
-                { "ResearchReaderS1/T3_en/package", "d4b5041946178be3b083cc10d8f465771ebd5a09aeaaa2e281bbc1a01c7287bb" },
+                { "ResearchReaderS1/T3_th/package", "5a48a492bb5a394a9798d27c16acab25a495e627abb3374c55e2c84578c7fe65" },
+                { "ResearchReaderS1/T3_ja/package", "25c55ec6270d457b1e3ce66e5000466b1697462669b7d80e9a505f8648e23e8c" },
+                { "ResearchReaderS1/T3_en/package", "b746e1cd603f2029bd062558a7c02a61163522f6c92b7b87099b8609968559fe" },
             };
             Directory.CreateDirectory(dir); Application.logMessageReceived += onLog;
             try

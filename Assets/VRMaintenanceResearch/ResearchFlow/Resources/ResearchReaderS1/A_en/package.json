@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.A.en",
+  "version": "v2-54f7827f37ec4f5c.9e093cb2777fd635",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskA_Reference_v2_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/A_en/source_pdf",
+  "source_sha256": "bd9b39f90b7e6fa5f17e2ee281be1fda9267726cc77dbb100409038c084d1f71",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A_en/pages/p01",
+      "sha256": "bcdb541c0ff498b1615c4b4617aac97624657724ada8c8b519055dc3e1a21971"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A_en/pages/p02",
+      "sha256": "679d2c60ac52225cdfa8953354a3808dad72ab7a5a9e473b25515a6263e70cc9"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A_en/pages/p03",
+      "sha256": "70d7be805608f62dcb9706c6efd0b95f8cae117e2fa8caff7624252a9433612c"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A_en/pages/p04",
+      "sha256": "857df631a7b3e1bd1db65af41894f3adcf80210d982f710362d04d4dad69d230"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=46><b>Look at the empty slots</b></size>\n\n<size=34><color=#4A5A6E>Install RAM ×2 · SSD ×1 · GPU ×1 · do not remove CPU/PSU</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> You know what to install · any order</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Pick 2 RAM modules</b></size>\n\n<size=34><color=#4A5A6E>DDR4 · 8 GB each · identical · fitting does not mean right</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both labels match W2</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Open the latch on slot A2</b></size>\n\n<size=34><color=#4A5A6E>The latch is on one side only</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Latch is open</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Press the RAM straight down until fully in</b></size>\n\n<size=34><color=#4A5A6E>Line up the notch · half in does not count</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Latch closes by itself</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Install the second module in slot B2</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> RAM in A2 and B2</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Pick 1 SSD</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5-inch · at least 500 GB and 600 TBW · TBW is not capacity</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Type and both values meet W2</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the stand handle and turn the case to the back</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD tray slot is visible</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Push the SSD tray fully in</b></size>\n\n<size=34><color=#4A5A6E>No screw under the SSD</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Tray is in place</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Tighten the tray fastener</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Tray does not move</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Plug in the SATA data cable</b></size>\n\n<size=34><color=#4A5A6E>Cables do not connect by themselves</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Fully plugged in</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Plug in the SATA power cable</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD has both cables</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Pick 1 graphics card</b></size>\n\n<size=34><color=#4A5A6E>VRAM 8 GB or more · 150 W or less (card power)</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both values pass</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Push the card fully into the primary slot</b></size>\n\n<size=34><color=#4A5A6E>Primary = the long slot wired to the CPU</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Card contacts fully in the slot</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Tighten the bracket screw</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Screw is tight</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Plug the 8-pin power into the card</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Plug fully in</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Inspect</color></size>\n<size=46><b>Select “Inspect”</b></size>\n\n<size=34><color=#4A5A6E>Wait 3 seconds</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> “Inspection passed · W2 requirements met.” = done</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If not passed</color></size>\n<size=46><b>Read the result and fix</b></size>\n\n<size=34><color=#4A5A6E>“Assembly or connections are incomplete.” = not fully in / not fastened / no cable · “W2 requirements are not met yet.” = wrong part or slot · To remove: latch, cable or screw first</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Fix, then select “Inspect” again · system fault: tell the researcher</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_01",
+      "sha256": "faa815c77459c1ecfd5e59dfbbb3b5e3ab18e1f04119b550c60313181e85d9df",
+      "caption_en": "<b>This task</b>\nInstall RAM, SSD and GPU that match W2 · any order"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_02",
+      "sha256": "35b62738cfdacd78069e52b11483c466f3f71350fc61666e525b0f2201d6427d",
+      "caption_en": "<b>Choose parts that match W2</b>\nFits ≠ right · check every label value"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_03",
+      "sha256": "552bbb342dbadadd63bda0d6937a0f12600712d8af19695755e6827c0c15319f",
+      "caption_en": "<b>RAM</b>\nOpen latch → line up notch → press fully in (do not force)"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_04",
+      "sha256": "236d80e7f451a0d738c1c490ba0c19ded15e41b09bacc6bcece67431cb94d759",
+      "caption_en": "<b>The SSD mount is at the back</b>\nTurn the case to see behind the motherboard tray"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_05",
+      "sha256": "acd992ba84d2495956cfde6fb767dded4546ae29c321fbfeb463ce5374ca96f5",
+      "caption_en": "<b>SSD: 2 cables</b>\nPlacing the tray does not connect them · no screw under the SSD"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_06",
+      "sha256": "d20688745dcd078094b49c35360d5a084b4faf0ee0cbc082c570bc3c4c967d70",
+      "caption_en": "<b>GPU: 3 things</b>\nPrimary slot · screw · 8-pin power"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A_en_07",
+      "sha256": "f21c169c2b64701e5e949a1d5646d5f7cb9dca3079f64a397e52f4d29438deb9",
+      "caption_en": "<b>Select “Inspect”</b>\nFix, inspect again · remove latch/cable/screw first · fault: tell researcher"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/A_en.mp4",
+    "sha256": "714ee0ca07f80292cc8e00f33a5d9e92aac8c2b202a59e798c1b0bc347b73a26",
+    "duration_seconds": 115.01,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 14.82
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 14.82,
+        "end_seconds": 22.81
+      },
+      {
+        "stage": "do",
+        "start_seconds": 22.81,
+        "end_seconds": 36.72
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 36.72,
+        "end_seconds": 42.93
+      },
+      {
+        "stage": "do",
+        "start_seconds": 42.93,
+        "end_seconds": 48.45
+      },
+      {
+        "stage": "do",
+        "start_seconds": 48.45,
+        "end_seconds": 55.55
+      },
+      {
+        "stage": "do",
+        "start_seconds": 55.55,
+        "end_seconds": 71.67
+      },
+      {
+        "stage": "do",
+        "start_seconds": 71.67,
+        "end_seconds": 79.92
+      },
+      {
+        "stage": "do",
+        "start_seconds": 79.92,
+        "end_seconds": 95.29
+      },
+      {
+        "stage": "do",
+        "start_seconds": 95.29,
+        "end_seconds": 100.76
+      },
+      {
+        "stage": "done",
+        "start_seconds": 100.76,
+        "end_seconds": 115.01
+      }
+    ]
+  }
+}

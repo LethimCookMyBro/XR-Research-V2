@@ -4,6 +4,23 @@ using UnityEngine;
 
 namespace VRMaintenanceResearch.ResearchFlow
 {
+    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect }
+    public enum PartBlockReason { None, Unspecified, ClipClosed, GuardNotSeated, Retained, Alignment, EndStop, Contact, CableLimit, OtherHeld, FrontGuardPresent, BladeCapPresent, BladePresent, RearRingPresent, LatchClosed, MountNotReady }
+
+    public readonly struct PartInteraction
+    {
+        public readonly string AttemptId, TaskId, Target, InputSource;
+        public readonly PartOperation Operation;
+        public readonly PartBlockReason Reason;
+        public readonly long Sequence;
+        public readonly float ObservedAt;
+        internal PartInteraction(ResearchTaskPort.Attempt attempt, PartOperation operation, PartBlockReason reason, long sequence)
+        {
+            AttemptId = attempt.Id; TaskId = attempt.TaskId; Target = attempt.Target; InputSource = attempt.InputSource;
+            Operation = operation; Reason = reason; Sequence = sequence; ObservedAt = Time.unscaledTime;
+        }
+    }
+
     /// <summary>Connection to real task mechanics. This component does not implement or solve a task.</summary>
     public sealed class ResearchTaskPort : MonoBehaviour
     {
@@ -20,12 +37,27 @@ namespace VRMaintenanceResearch.ResearchFlow
         private Action<bool> interactionGate;
         private readonly HashSet<Attempt> attempts = new HashSet<Attempt>();
 
+        long interactionSequence;
+        public PartInteraction? CurrentInteraction
+        {
+            get
+            {
+                if (!InteractionAllowed || !ValidTask || (!demoMode && !IsReadyForStudy)) return null;
+                PartInteraction? latest = null;
+                foreach (var attempt in attempts)
+                    if (!latest.HasValue || attempt.interaction.Sequence > latest.Value.Sequence)
+                        latest = attempt.interaction;
+                return latest;
+            }
+        }
+
         public sealed class Attempt
         {
             public string Id { get; } = Guid.NewGuid().ToString("N");
             public string Target { get; }
             public string InputSource { get; }
             public string TaskId { get; }
+            internal PartInteraction interaction;
             internal object lastState, operationStart;
             internal string operation;
             internal readonly HashSet<string> rejected = new HashSet<string>();
@@ -54,7 +86,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Arguments: event, target, before payload, after payload. Payloads retain raw provenance.
         public event Action<string, string, object, object> Behavior;
 
-        public bool IsReadyForStudy => ValidTask && !demoMode && contentApproved && state != null && evaluate != null && reference != null && referenceMediaReady != null && referenceMediaReady() && interactionGate != null;
+        public bool IsReadyForStudy => ValidTask && !demoMode && (contentApproved || ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) && state != null && evaluate != null && (ResearchUIPolicy.StudyOpenWithoutDeviceApprovals || (reference != null && referenceMediaReady != null && referenceMediaReady())) && interactionGate != null;
         private bool ValidTask => taskId == "A" || taskId == "B";
 
         public void Bind(Func<object> captureState, Func<bool> evaluator, Action<bool> interactionGate = null)
@@ -163,7 +195,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!ResearchReferenceScheme.Contains(section)) return string.Empty;
             if (demoMode) return ResearchDemoManual.Get(taskId, section, language);
             if (!IsReadyForStudy) return string.Empty;
-            return reference(section, language) ?? string.Empty;
+            // The owner-open Study reads the shipped Reader packages; no per-port text provider is bound in the app.
+            return reference?.Invoke(section, language) ?? string.Empty;
         }
 
         public void Examine(string target, string inputSource)
@@ -188,6 +221,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (inputSource == "None" || !HasBoundMechanics) throw new InvalidOperationException("A physical attempt requires observed input and bound mechanics.");
             var attempt = new Attempt(target, inputSource, taskId);
             attempt.lastState = CaptureState();
+            attempt.interaction = new PartInteraction(attempt, PartOperation.Held, PartBlockReason.None, ++interactionSequence);
             attempts.Add(attempt);
             EmitAttempt(attempt, "GRAB", null, "started", attempt.lastState, attempt.lastState, false, false);
             return attempt;
@@ -196,12 +230,23 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool IsAttemptActive(Attempt attempt) => attempt != null && attempts.Contains(attempt) &&
             InteractionAllowed && ValidTask && (demoMode || IsReadyForStudy);
 
-        public bool UpdateAttempt(Attempt attempt, string actionType, object beforeState, object afterState, bool blocked = false)
+        public bool UpdateInteraction(Attempt attempt, PartOperation operation, PartBlockReason reason)
+        {
+            if (!IsAttemptActive(attempt)) return false;
+            ValidateInteraction(attempt.Target, attempt.InputSource);
+            attempt.interaction = new PartInteraction(attempt, operation, reason, ++interactionSequence);
+            return true;
+        }
+
+        public bool UpdateAttempt(Attempt attempt, string actionType, object beforeState, object afterState, bool blocked = false,
+            PartOperation operation = PartOperation.Manipulate, PartBlockReason reason = PartBlockReason.Unspecified)
         {
             if (attempt == null || !attempts.Contains(attempt)) return false;
             ValidateInteraction(attempt.Target, attempt.InputSource);
             if (string.IsNullOrWhiteSpace(actionType) || beforeState == null || afterState == null)
                 throw new ArgumentException("Attempt operations require a category and full before/after states.");
+            var observedReason = blocked ? (reason == PartBlockReason.None ? PartBlockReason.Unspecified : reason) : PartBlockReason.None;
+            UpdateInteraction(attempt, operation, observedReason);
             var before = AttemptState(attempt, beforeState);
             var after = AttemptState(attempt, afterState);
             if (blocked)

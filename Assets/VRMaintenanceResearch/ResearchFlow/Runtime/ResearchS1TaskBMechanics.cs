@@ -7,6 +7,9 @@ namespace VRMaintenanceResearch.ResearchFlow
     [DefaultExecutionOrder(-200)]
     public sealed class ResearchS1TaskBMechanics : MonoBehaviour
     {
+        // S1_TASKB_SHORT_THREADS_20261029: 720/540 deg made removal and refit the slowest part of Task B (owner target 5-6 min).
+        public const string ThreadVersion = "S1_TASKB_SHORT_THREADS_20261029";
+        public const float SpinnerTurnDegrees = 270, RearLockTurnDegrees = 180, RearLockFaultGapDegrees = 20;
         public ResearchTaskPort port;
         public ResearchSessionFlowController controller;
         public Transform servicePivot;
@@ -104,9 +107,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 MountBinding(rearGuard, fixedAssembly[2], "FAN_PED_GUARD_REAR", "Plate", "SEAT_FAN_PED_HEAD_GuardRear") &&
                 MountBinding(rearLock, fixedAssembly[2], "FAN_PED_GUARD_LOCK", "Thread", "SEAT_FAN_PED_HEAD_GuardLock") &&
                 Anchor(frontClip.transform, rearGuard.transform, "MOV_FAN_PED_GUARD_REAR_GuardClip") &&
-                frontClip.clipAnimationRoot == rearGuard.gameObject && frontClip.clipOpen && frontClip.clipClose &&
+                frontClip.clipAnimationRoot == rearGuard.gameObject && frontClip.ClipPosesAuthored && frontClip.clipOpen && frontClip.clipClose &&
                 frontClip.clipOpen.name == "FAN_PED_GUARD_REAR__GuardClip_open" && frontClip.clipClose.name == "FAN_PED_GUARD_REAR__GuardClip_close" &&
-                ThreadBinding(spinner, 720, 5, false) && ThreadBinding(rearLock, 540, 16.9f, true) &&
+                ThreadBinding(spinner, SpinnerTurnDegrees, 5, false) && ThreadBinding(rearLock, RearLockTurnDegrees, 16.9f, true) &&
                 Finite(frontGuard.insertTurnDegrees) && Mathf.Abs(Mathf.Abs(frontGuard.insertTurnDegrees) - 12) <= .1f;
         }
 
@@ -145,19 +148,27 @@ namespace VRMaintenanceResearch.ResearchFlow
             return value;
         }
 
-        public bool CanManipulate(ResearchS1FanPart part)
+        public bool CanManipulate(ResearchS1FanPart part) => ManipulationBlockReason(part) == PartBlockReason.None;
+
+        public PartBlockReason ManipulationBlockReason(ResearchS1FanPart part)
         {
-            if (!InteractionAllowed || !part || !motorShaft || Quaternion.Angle(motorShaft.localRotation, isolatedShaftRotation) >= .01f) return false;
+            if (!InteractionAllowed || !part || !motorShaft || Quaternion.Angle(motorShaft.localRotation, isolatedShaftRotation) >= .01f) return PartBlockReason.Unspecified;
             bool frontOff = frontGuard.Placement == S1Placement.NotInstalled;
+            bool capOff = spinner.ThreadState == S1ThreadState.Absent && spinner.Placement == S1Placement.NotInstalled;
             switch (part.kind)
             {
-                case S1FanPartKind.FrontClip: return true;
-                case S1FanPartKind.FrontGuard: return !frontClip.ClipClosed;
-                case S1FanPartKind.Spinner: return frontOff;
-                case S1FanPartKind.Blade: return frontOff && spinner.ThreadState == S1ThreadState.Absent && spinner.Placement == S1Placement.NotInstalled;
-                case S1FanPartKind.RearLock: return frontOff && blade.Placement == S1Placement.NotInstalled && spinner.ThreadState == S1ThreadState.Absent && spinner.Placement == S1Placement.NotInstalled;
-                case S1FanPartKind.RearGuard: return frontOff && blade.Placement == S1Placement.NotInstalled && spinner.ThreadState == S1ThreadState.Absent && spinner.Placement == S1Placement.NotInstalled && rearLock.ThreadState == S1ThreadState.Absent && rearLock.Placement == S1Placement.NotInstalled;
-                default: return false;
+                case S1FanPartKind.FrontClip: return PartBlockReason.None;
+                case S1FanPartKind.FrontGuard: return frontClip.ClipClosed ? PartBlockReason.ClipClosed : PartBlockReason.None;
+                case S1FanPartKind.Spinner: return frontOff ? PartBlockReason.None : PartBlockReason.FrontGuardPresent;
+                case S1FanPartKind.Blade: return !frontOff ? PartBlockReason.FrontGuardPresent : !capOff ? PartBlockReason.BladeCapPresent : PartBlockReason.None;
+                case S1FanPartKind.RearLock:
+                case S1FanPartKind.RearGuard:
+                    if (!frontOff) return PartBlockReason.FrontGuardPresent;
+                    if (!capOff) return PartBlockReason.BladeCapPresent;
+                    if (blade.Placement != S1Placement.NotInstalled) return PartBlockReason.BladePresent;
+                    if (part.kind == S1FanPartKind.RearGuard && (rearLock.ThreadState != S1ThreadState.Absent || rearLock.Placement != S1Placement.NotInstalled)) return PartBlockReason.RearRingPresent;
+                    return PartBlockReason.None;
+                default: return PartBlockReason.Unspecified;
             }
         }
 
@@ -201,5 +212,42 @@ namespace VRMaintenanceResearch.ResearchFlow
             => ResearchS1HeldCollision.Allows(part.transform, desired, ThreadContact(part, desired)) ? desired : part.transform.localToWorldMatrix;
 
         private string Observation(string target, string language) => ResearchS1FanObservations.Get(Capture(), target, language);
+
+        // Owner 29 Oct: the ticket names a vibration/knock the participant never heard. The 3 s Inspect spin now sounds like the
+        // reported symptom while the fault remains, and like a smooth fan once fixed. No sound while the guards are not ready.
+        AudioSource testAudio;
+        static AudioClip humClip, knockClip;
+        public void PlayInspectionSound(string feedbackKey)
+        {
+            bool symptom = feedbackKey == "inspect.s1.B.SymptomPresent";
+            if (!symptom && feedbackKey != "inspect.s1.B.Pass") return;
+            if (!testAudio)
+            {
+                testAudio = (servicePivot ? servicePivot : transform).gameObject.AddComponent<AudioSource>();
+                testAudio.playOnAwake = false; testAudio.spatialBlend = 1; testAudio.minDistance = .6f; testAudio.maxDistance = 6;
+            }
+            testAudio.clip = symptom ? knockClip ??= SpinSound(true) : humClip ??= SpinSound(false);
+            testAudio.Play();
+        }
+
+        public static AudioClip SpinSound(bool knock)
+        {
+            const int rate = 24000;
+            var data = new float[(int)(rate * ResearchTaskTiming.InspectionSeconds)];
+            var noise = new System.Random(4);
+            float seconds = data.Length / (float)rate;
+            for (int i = 0; i < data.Length; i++)
+            {
+                float t = i / (float)rate, envelope = Mathf.Clamp01(t / .5f) * Mathf.Clamp01((seconds - t) / .3f);
+                float hum = .22f * Mathf.Sin(2 * Mathf.PI * 100 * t) + .1f * Mathf.Sin(2 * Mathf.PI * 200 * t) + .05f * ((float)noise.NextDouble() * 2 - 1);
+                // A loose guard knocks once per blade pass (3 blades at ~5 rev/s) as the spin comes up to speed.
+                float phase = t * 15 * Mathf.Clamp01(t / .8f) % 1;
+                float rattle = knock && phase < .05f ? .7f * (1 - phase / .05f) * ((float)noise.NextDouble() * 2 - 1) : 0;
+                data[i] = envelope * (hum + rattle);
+            }
+            var clip = AudioClip.Create(knock ? "S1_FanSpin_Knock" : "S1_FanSpin_Smooth", data.Length, 1, rate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
     }
 }

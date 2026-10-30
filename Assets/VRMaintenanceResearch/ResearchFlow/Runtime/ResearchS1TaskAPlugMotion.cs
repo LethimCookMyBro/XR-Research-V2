@@ -4,6 +4,7 @@ using VRMaintenanceResearch.AssetLibraryQA;
 
 namespace VRMaintenanceResearch.ResearchFlow
 {
+    [DefaultExecutionOrder(11000)]
     public sealed class ResearchS1TaskAPlugMotion : MonoBehaviour, ITransformer
     {
         public ResearchS1TaskAMechanics owner;
@@ -18,6 +19,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             grab = value; plug.Initialize(value);
             plug.PoseAllowed = pose => owner.AllowsMotion(transform, pose);
         }
+        private void Start()
+        {
+            gameObject.AddComponent<ResearchS1FreeBody>().Configure(plug.body, plug.grabbable,
+                () => plug.Socket != null, () => owner.port && owner.port.InteractionAllowed,
+                pose => owner.wiring.Allows(transform, pose));
+        }
+
         public void BeginTransform()
         {
             if (grab == null || grab.GrabPoints.Count == 0) return;
@@ -38,7 +46,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (owner.GpuThreadRetained(plug))
             {
                 if (Vector3.Distance(transform.position, free.GetColumn(3)) > .0005f || Quaternion.Angle(transform.rotation, free.rotation) > .2f)
-                    input.Motion("REMOVE", owner.Capture(), true);
+                    input.Motion("REMOVE", owner.Capture(), true, PartBlockReason.Retained);
                 return;
             }
             var before = owner.Capture();
@@ -51,8 +59,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 removing = desired.depthMm > priorSocket.Last.depthMm + .01f || desired.lateralMm > priorSocket.spec.posTolMm || desired.tiltDeg > priorSocket.spec.angTolDeg;
             }
             bool blocked = false;
+            PartBlockReason reason = PartBlockReason.None;
             QASocket proposedSocket;
-            plug.UpdateTransform(pose => !(blocked = !owner.AllowsMotion(transform, pose)), out proposedSocket);
+            plug.UpdateTransform(pose => !(blocked = (reason = owner.MotionBlockReason(transform, pose)) != PartBlockReason.None), out proposedSocket);
             accepted = transform.localToWorldMatrix;
             if (blocked)
             {
@@ -60,15 +69,18 @@ namespace VRMaintenanceResearch.ResearchFlow
                 string action = proposedSocket || priorSocket
                     ? (cable ? (disconnecting ? "DISCONNECT" : "CONNECT") : (disconnecting ? "REMOVE" : "INSTALL"))
                     : "MOVE";
-                input.Motion(action, before, true);
+                input.Motion(action, before, true, reason);
                 return;
             }
             if (!attempted) return;
             var socket = plug.Socket;
             if (socket && socket.Last.captured)
                 input.Motion(cable ? (removing ? "DISCONNECT" : "CONNECT") : (removing ? "REMOVE" : "INSTALL"), before,
-                    removing ? socket.Retained : socket.Last.stop != Stop.Seat);
+                    removing ? socket.Retained : socket.Last.stop != Stop.Seat,
+                    removing ? PartBlockReason.Retained : socket.Last.stop == Stop.Entrance && socket.latches.Exists(l => l.Closed)
+                        ? PartBlockReason.LatchClosed : !socket.PrerequisitesMet ? PartBlockReason.MountNotReady : PartBlockReason.Alignment);
             else if (priorSocket) input.Motion(cable ? "DISCONNECT" : "REMOVE", before, false);
+            else input.Observe(PartOperation.Move);
         }
         public void EndTransform()
         {

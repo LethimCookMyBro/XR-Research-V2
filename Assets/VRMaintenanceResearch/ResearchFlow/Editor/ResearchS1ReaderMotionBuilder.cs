@@ -260,15 +260,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 var zone = new GameObject("TurntableRimGrip").transform; zone.SetParent(t.turnHandle.transform, false);
                 zone.SetPositionAndRotation(t.turntable.TransformPoint(bounds.center), t.turntable.rotation); return zone;
             }).ToArray();
-            rest.cues = layout.zones.Select(bounds =>
-            {
-                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube); cue.name = "TurntableGripCue";
-                UnityEngine.Object.DestroyImmediate(cue.GetComponent<Collider>());
-                cue.transform.SetParent(t.turntable, false);
-                cue.transform.localPosition = new Vector3(bounds.center.x, layout.surfaceY, bounds.center.z);
-                cue.transform.localScale = new Vector3(bounds.size.x, .008f / t.turntable.lossyScale.y, .008f / t.turntable.lossyScale.z);
-                cue.GetComponent<Renderer>().sharedMaterial = rest.lead.tubeMaterial; cue.SetActive(false); return cue;
-            }).ToArray();
+            rest.cues = layout.zones.Select(bounds => t.CreateGripCue(bounds, layout.surfaceY, rest.lead.tubeMaterial)).ToArray();
             return trainingRest = rest;
         }
 

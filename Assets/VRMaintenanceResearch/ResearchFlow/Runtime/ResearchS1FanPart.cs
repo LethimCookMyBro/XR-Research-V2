@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Oculus.Interaction;
 using Oculus.Interaction.HandGrab;
 using UnityEngine;
@@ -26,12 +26,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         [SerializeField] private bool captured;
         [SerializeField] private float progressDegrees;
         [SerializeField] private Quaternion clipClosedRotation;
+        [SerializeField] private Pose clipOpenPose, clipClosedPose;
+        [SerializeField] private bool clipPosesAuthored;
         private IGrabbable grab;
         private Matrix4x4 grabToRoot, mateInRoot, acceptedPose;
         private float previousHandTurn;
         private double stopBackoff;
         private int pointer = -1;
         private bool gesture, rebase, wasBlocked, cancelled, endPending;
+        private PartBlockReason blockReason;
         private ResearchTaskPort.Attempt attempt;
         private string source = "None";
 
@@ -39,6 +42,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool IsHeld => Application.isPlaying && grabbable && grabbable.SelectingPointsCount > 0;
         public float ThreadProgressDegrees => progressDegrees;
         public bool ClipClosed => kind == S1FanPartKind.FrontClip && Quaternion.Angle(transform.localRotation, clipClosedRotation) <= 1;
+        public bool ClipPosesAuthored => clipPosesAuthored;
         public MatePose Pose => SocketRules.Measure(seat.localToWorldMatrix, mate.localToWorldMatrix);
         public bool Aligned
         {
@@ -69,7 +73,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (!IsThread || !captured || progressDegrees <= 0 || !Aligned) return S1ThreadState.Absent;
                 float expected = (float)ResearchS1FanKinematics.ThreadDepthMm(progressDegrees, fullTurnDegrees, threadTravelMm);
                 if (Mathf.Abs(Pose.depthMm - expected) > .3f) return S1ThreadState.Absent;
-                return progressDegrees >= fullTurnDegrees ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
+                return ResearchS1FanKinematics.IsTight(progressDegrees, fullTurnDegrees) ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
             }
         }
 
@@ -95,6 +99,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             mateInRoot = mate ? transform.worldToLocalMatrix * mate.localToWorldMatrix : Matrix4x4.identity;
             acceptedPose = transform.localToWorldMatrix;
             grabbable.WhenPointerEventRaised += Pointer;
+            gameObject.AddComponent<ResearchS1FreeBody>().Configure(body, grabbable,
+                () => kind == S1FanPartKind.FrontClip || captured, () => owner.InteractionAllowed);
         }
 
         private void OnDestroy()
@@ -135,11 +141,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             attempt = owner.port.BeginAttempt(stableId, source);
             gesture = true;
             wasBlocked = cancelled = false;
+            blockReason = PartBlockReason.None;
             if (kind == S1FanPartKind.FrontClip && owner.CanManipulate(this) && source != "None")
             {
                 var before = owner.Capture();
                 bool closing = !ClipClosed;
-                if (closing && !owner.FrontGuardLocked) { RecordMotion(before, "REPAIR", true); return; }
+                if (closing && !owner.FrontGuardLocked) { blockReason = PartBlockReason.GuardNotSeated; RecordMotion(before, "REPAIR", true); return; }
                 SampleClip(closing);
                 acceptedPose = transform.localToWorldMatrix;
                 RecordMotion(before, closing ? "REPAIR" : "ACCESS", false);
@@ -148,22 +155,33 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void SampleClip(bool closed)
         {
-            var root = clipAnimationRoot.transform;
-            var position = root.localPosition;
-            var rotation = root.localRotation;
-            var scale = root.localScale;
-            try
+            if (!clipPosesAuthored) throw new InvalidOperationException("Fan clip open/closed poses have not been authored.");
+            // A two-state latch must not depend on imported animation sampling in the player.
+            var pose = closed ? clipClosedPose : clipOpenPose;
+            transform.SetLocalPositionAndRotation(pose.position, pose.rotation);
+            acceptedPose = transform.localToWorldMatrix;
+            if (body)
             {
-                var clip = closed ? clipClose : clipOpen;
-                clip.SampleAnimation(clipAnimationRoot, clip.length);
-            }
-            finally
-            {
-                // Imported clips also key the assembly root; only the clip may move.
-                root.SetLocalPositionAndRotation(position, rotation);
-                root.localScale = scale;
+                body.position = transform.position;
+                body.rotation = transform.rotation;
             }
         }
+
+#if UNITY_EDITOR
+        public void AuthorClipPoses(Pose open, Pose closed)
+        {
+            if (Application.isPlaying || kind != S1FanPartKind.FrontClip)
+                throw new InvalidOperationException("Author fan clip poses only in the stopped Editor.");
+            float separation = Quaternion.Angle(open.rotation, closed.rotation);
+            if (float.IsNaN(separation) || separation <= 1 ||
+                !float.IsFinite(open.position.sqrMagnitude + closed.position.sqrMagnitude))
+                throw new InvalidOperationException("Authored clip poses must be finite and visibly distinct.");
+            clipOpenPose = open;
+            clipClosedPose = closed;
+            clipClosedRotation = closed.rotation;
+            clipPosesAuthored = true;
+        }
+#endif
 
         private void Rebase()
         {
@@ -196,8 +214,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             float priorProgress = progressDegrees;
             double priorBackoff = stopBackoff;
             wasBlocked = false;
-            if (!owner.CanManipulate(this))
+            blockReason = owner.ManipulationBlockReason(this);
+            if (blockReason != PartBlockReason.None)
             {
+                owner.port.UpdateInteraction(attempt, InteractionOperation(), blockReason);
                 string rejected = ClassifyMotion(kind, priorCaptured, priorCaptured, priorProgress,
                     priorProgress - delta * (rightHanded ? 1 : -1), prior.depthMm, hand.depthMm, prior.turnDeg, hand.turnDeg);
                 if (rejected != null) RecordMotion(before, rejected, true);
@@ -211,9 +231,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                 string rejected = ClassifyMotion(kind, priorCaptured, captured, priorProgress, progressDegrees,
                     prior.depthMm, hand.depthMm, prior.turnDeg, hand.turnDeg);
                 captured = priorCaptured; progressDegrees = priorProgress; stopBackoff = priorBackoff; wasBlocked = true;
+                blockReason = PartBlockReason.Contact;
+                owner.port.UpdateInteraction(attempt, InteractionOperation(), blockReason);
                 if (rejected != null) RecordMotion(before, rejected, true);
                 return;
             }
+            owner.port.UpdateInteraction(attempt, InteractionOperation(), wasBlocked ? blockReason : PartBlockReason.None);
             // Keep accepted thread angle/depth synchronized even below the display-motion epsilon.
             bool moved = Vector3.Distance(transform.position, next.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, next.rotation) > .01f || (IsThread && priorProgress != progressDegrees);
             if (!moved)
@@ -241,19 +264,22 @@ namespace VRMaintenanceResearch.ResearchFlow
                 {
                     return Leave(free);
                 }
-                if (aligned)
+                // The shaft constrains an engaged part even when the wrist moves off-axis.
+                if (progressDegrees > 0 || aligned)
                 {
                     // Turning into a stop is blocked; a small turn held by the end-stop detent is not.
-                    wasBlocked |= Mathf.Abs(delta) > .2f &&
+                    bool atStop = Mathf.Abs(delta) > .2f &&
                         Mathf.Approximately((float)ResearchS1FanKinematics.Turn(progressDegrees, -delta, fullTurnDegrees, rightHanded), progressDegrees);
+                    wasBlocked |= atStop;
+                    if (atStop) blockReason = PartBlockReason.EndStop;
                     progressDegrees = (float)ResearchS1FanKinematics.TurnWithDetent(progressDegrees, -delta, fullTurnDegrees, rightHanded, ref stopBackoff);
                 }
-                else wasBlocked = true;
+                else { wasBlocked = true; blockReason = PartBlockReason.Alignment; }
                 return SocketRules.RootPose(seat.localToWorldMatrix,
                     (float)ResearchS1FanKinematics.ThreadDepthMm(progressDegrees, fullTurnDegrees, threadTravelMm), SignedThreadTurn(), mateInRoot);
             }
-            if (!aligned || hand.depthMm > approachMm || hand.depthMm < -threadTravelMm) return owner.FreePose(this, free);
-            if (!owner.CanMount(this)) { wasBlocked = true; return owner.FreePose(this, free); }
+            if (!aligned || hand.depthMm > approachMm || hand.depthMm < -threadTravelMm) return FreePose(free);
+            if (!owner.CanMount(this)) { wasBlocked = true; blockReason = PartBlockReason.MountNotReady; return FreePose(free); }
             if (hand.depthMm > threadTravelMm + .3f)
                 return SocketRules.RootPose(seat.localToWorldMatrix, hand.depthMm, hand.turnDeg, mateInRoot);
             captured = true;
@@ -274,6 +300,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool aligned = owner.CanMount(this) && ResearchS1FanKinematics.KeyErrorDegrees(hand.turnDeg, key) <= angleToleranceDegrees;
             float stop = aligned ? 0 : kind == S1FanPartKind.Blade ? 3.24f : 2.49f;
             wasBlocked |= !aligned;
+            if (!aligned) blockReason = owner.CanMount(this) ? PartBlockReason.Alignment : PartBlockReason.MountNotReady;
             return SocketRules.RootPose(seat.localToWorldMatrix, Mathf.Clamp(hand.depthMm, stop, approachMm),
                 aligned ? Mathf.Round(hand.turnDeg / key) * key : hand.turnDeg, mateInRoot);
         }
@@ -294,16 +321,26 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             captured = true;
             wasBlocked |= !atEntry;
+            if (!atEntry) blockReason = owner.CanMount(this) ? PartBlockReason.Alignment : PartBlockReason.MountNotReady;
             return SocketRules.RootPose(seat.localToWorldMatrix, Mathf.Clamp(hand.depthMm, atEntry ? 0 : 5.49f, approachMm),
                 atEntry ? insertTurnDegrees : hand.turnDeg, mateInRoot);
         }
 
+        private Matrix4x4 FreePose(Matrix4x4 free)
+        {
+            var accepted = owner.FreePose(this, free);
+            bool requested = Vector3.Distance(transform.position, free.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, free.rotation) > .01f;
+            bool moved = Vector3.Distance(transform.position, accepted.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, accepted.rotation) > .01f;
+            if (requested && !moved) { wasBlocked = true; blockReason = PartBlockReason.Contact; }
+            return accepted;
+        }
+
         private Matrix4x4 Leave(Matrix4x4 free)
         {
-            var next = owner.FreePose(this, free);
+            var next = FreePose(free);
             bool moved = Vector3.Distance(transform.position, next.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, next.rotation) > .01f;
             if (moved) captured = false;
-            else wasBlocked = true;
+            else { wasBlocked = true; blockReason = PartBlockReason.Contact; }
             return next;
         }
 
@@ -331,8 +368,13 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void RecordMotion(S1TaskBState before, string operation, bool blocked)
         {
-            owner.port.UpdateAttempt(attempt, operation, before, owner.Capture(), blocked);
+            owner.port.UpdateAttempt(attempt, operation, before, owner.Capture(), blocked,
+                InteractionOperation(), blocked ? blockReason : PartBlockReason.None);
         }
+
+        private PartOperation InteractionOperation() => kind == S1FanPartKind.FrontClip
+            ? (ClipClosed || blockReason == PartBlockReason.GuardNotSeated ? PartOperation.Close : PartOperation.Open)
+            : IsThread ? PartOperation.Turn : PartOperation.Move;
 
         public void EndTransform()
         {
@@ -377,6 +419,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!allowed) cancelled = true;
             if (interactable) interactable.enabled = allowed;
             if (!allowed) CancelGesture();
+            GetComponent<ResearchS1FreeBody>()?.Refresh();
             rebase = true;
         }
 

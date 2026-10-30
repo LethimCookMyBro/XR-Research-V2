@@ -112,7 +112,8 @@ static class ResearchOperatorApprovalChecks
         Run("missing language reference", false, (r,a,l) => a.language_approval_ref = null);
         Run("available wrong record revision", false, (r,a,l) => a.record_revision = 6, saved: false);
         Run("available requires pre-session not linked", false, (r,a,l) => { a.link_status = "linked"; a.session_id = "UNIT_SESSION"; }, saved: false);
-        Run("missing authorization", false, files: d => File.Delete(Path.Combine(d, authFile)));
+        // S1_OWNER_OPEN_STUDY_20261029: with no authorization file on the device the owner opened Study start; a present file is still validated.
+        Run("missing authorization", ResearchUIPolicy.StudyOpenWithoutDeviceApprovals, files: d => File.Delete(Path.Combine(d, authFile)));
         Run("approval string is not JSON boolean", false, files: d => ChangeJson(d, authFile, j => j["consent_approved"] = "true"));
         Run("oversized authorization rejected before parsing", false, files: d => File.AppendAllText(Path.Combine(d, authFile), new string(' ', 16384)), saved: false);
         Run("oversized link rejected before parsing", false, files: d => File.AppendAllText(Path.Combine(d, linkFile), new string(' ', 16384)));

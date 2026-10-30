@@ -1,0 +1,1737 @@
+{
+  "task": "A",
+  "title": {
+    "th": "ประกอบคอมพิวเตอร์ W2",
+    "ja": "W2 のパソコンを組み立てる",
+    "en": "Assemble computer W2"
+  },
+  "units": {
+    "problem": "slots empty; install RAM, SSD, GPU to W2",
+    "base": "CPU/cooler/PSU/cables ready; power off; no OS; case stays open",
+    "order_free": "any order; not every part is needed",
+    "ram_req": "RAM DDR4, two identical 8 GB modules (16 GB), slots A2 and B2",
+    "ssd_req": "SSD SATA 2.5in x1, >=500 GB and >=600 TBW; TBW is not capacity",
+    "gpu_req": "GPU x1, VRAM >=8 GB, card power <=150 W (not PSU), primary slot",
+    "labels": "values are on part labels; fitting is not meeting W2; check every value; option list",
+    "ram_how": "one-sided latch open, notch aligned, press straight until latch closes",
+    "half_seat": "half-inserted is not connected",
+    "case_turn": "SSD mount is behind the board tray; turn the case with the stand handle",
+    "ssd_how": "SSD comes on its tray; seat tray, tighten tray fastener; no screws under SSD",
+    "ssd_cables": "two separate cables: SATA data and SATA power; placing does not connect",
+    "gpu_how": "insert fully in primary slot; bracket screw is a separate step",
+    "gpu_power": "connect the ready 8-pin PCIe power",
+    "remove": "to remove: open latch / unplug / loosen first, then pull",
+    "inspect": "Inspect takes 3 s; result meanings; retry allowed; system error -> researcher",
+    "done": "Pass message"
+  },
+  "core": {
+    "problem": {
+      "th": "ใส่ RAM, SSD และ GPU ให้ตรงข้อกำหนด W2",
+      "ja": "W2 の条件に合う RAM・SSD・GPU を取り付ける",
+      "en": "Fit RAM, SSD and GPU that meet W2 requirements.",
+      "units": [
+        "problem"
+      ]
+    },
+    "do": {
+      "th": "อ่านฉลากแล้วเลือก RAM, SSD และ GPU ให้ตรงข้อกำหนด ใส่และยึดให้ครบ",
+      "ja": "ラベルと条件を比べて RAM・SSD・GPU を選び、取り付けて固定する",
+      "en": "Compare the labels with the requirements. Fit and secure the matching RAM, SSD and GPU.",
+      "units": [
+        "labels"
+      ]
+    },
+    "watch": {
+      "th": "เลือกทำ RAM, SSD หรือ GPU ก่อนก็ได้ ไม่ต้องใช้ชิ้นส่วนทุกชิ้นบนโต๊ะ",
+      "ja": "RAM・SSD・GPU はどれから始めてもかまいません。机の部品をすべて使う必要はありません。",
+      "en": "Start with RAM, SSD or GPU. You do not need every part on the bench.",
+      "units": [
+        "labels"
+      ]
+    },
+    "done": {
+      "th": "กดตรวจผลงาน รอ 3 วินาที ผลผ่านข้อกำหนด W2 จึงเสร็จ",
+      "ja": "「仕上がりを確認」を選んで 3 秒待ち、W2 合格の表示で完了",
+      "en": "Check my work, wait 3 seconds. A W2-passed result means done.",
+      "units": [
+        "done"
+      ]
+    }
+  },
+  "manual": [
+    {
+      "id": "task",
+      "title": {
+        "th": "ประกอบคอมพิวเตอร์ W2",
+        "ja": "W2 のパソコンを組み立てる",
+        "en": "Assemble computer W2"
+      },
+      "items": [
+        {
+          "th": "ใส่ RAM, SSD และ GPU ให้ตรงข้อกำหนด W2",
+          "ja": "W2 の条件に合う RAM・SSD・GPU を取り付ける",
+          "en": "Fit RAM, SSD and GPU that meet W2 requirements.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "เลือกทำ RAM, SSD หรือ GPU ก่อนก็ได้ ไม่ต้องใช้ชิ้นส่วนทุกชิ้นบนโต๊ะ",
+          "ja": "RAM・SSD・GPU はどれから始めてもかまいません。机の部品をすべて使う必要はありません。",
+          "en": "Start with RAM, SSD or GPU. You do not need every part on the bench.",
+          "units": [
+            "order_free"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ram",
+      "title": {
+        "th": "RAM",
+        "ja": "RAM",
+        "en": "RAM"
+      },
+      "items": [
+        {
+          "th": "DDR4 จำนวน 2 แผงที่เหมือนกัน แผงละ 8 GB (รวม 16 GB) ใส่ช่อง A2 และ B2",
+          "ja": "DDR4・同じもの 2 枚・各 8 GB（合計 16 GB）。A2 と B2 に挿す",
+          "en": "DDR4, 2 identical modules, 8 GB each (16 GB total), in slots A2 and B2",
+          "units": [
+            "ram_req",
+            "ram_how",
+            "half_seat",
+            "labels"
+          ]
+        },
+        {
+          "th": "อ่านฉลาก เลือก RAM 2 แผง",
+          "ja": "ラベルを読み、RAM を 2 枚選ぶ",
+          "en": "Read labels; choose two RAM modules",
+          "units": []
+        },
+        {
+          "th": "แตะสลักช่อง A2 แล้วกด Trigger ครั้งเดียว",
+          "ja": "A2 のラッチに手を近づけ、Trigger を1回押す",
+          "en": "At the A2 latch, press Trigger once",
+          "units": []
+        },
+        {
+          "th": "จับ RAM ด้วย Grip จัดร่องให้ตรง แล้วกดลงจนสุด",
+          "ja": "Grip で RAM を持ち、切り欠きを合わせて奥まで押す",
+          "en": "Hold RAM with Grip. Align its notch and push it fully down",
+          "units": []
+        },
+        {
+          "th": "ใส่ไม่สุดยังไม่ต่อ ถ้าร่องไม่ตรง ให้ยกขึ้นแล้วหันใหม่ ไม่ฝืนกด",
+          "ja": "途中まででは未接続。切り欠きが合わないときは持ち上げて向きを直し、無理に押さない",
+          "en": "Half-inserted RAM is not connected. If the notch does not align, lift and turn it rather than forcing it.",
+          "units": []
+        }
+      ],
+      "after": [
+        {
+          "th": "ใส่แผงที่สองใน B2 สลักปิดเองเมื่อ RAM ลงสุด",
+          "ja": "もう1枚を B2 に入れる。奥まで入るとラッチが閉じる",
+          "en": "Fit the second module in B2. Each latch closes when the RAM is fully seated.",
+          "units": []
+        }
+      ],
+      "figure": {
+        "shot": "A_ram",
+        "pick": [
+          0,
+          0.5
+        ],
+        "anchor": "ram_latch"
+      }
+    },
+    {
+      "id": "ssd",
+      "title": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "items": [
+        {
+          "th": "SATA 2.5 นิ้ว 1 ชุด ความจุ 500 GB ขึ้นไป และ 600 TBW ขึ้นไป",
+          "ja": "SATA 2.5 インチ 1 台。容量 500 GB 以上、かつ 600 TBW 以上",
+          "en": "One SATA 2.5-inch drive, 500 GB or more and 600 TBW or more",
+          "units": [
+            "ssd_req",
+            "ssd_how",
+            "ssd_cables",
+            "case_turn"
+          ]
+        },
+        {
+          "th": "อ่านฉลาก เลือก SSD 1 ชุด",
+          "ja": "ラベルを読み、SSD を 1 台選ぶ",
+          "en": "Read labels; choose one SSD",
+          "units": []
+        },
+        {
+          "th": "ใช้ Grip จับหูจับแท่น เลื่อนมือรอบฐานเพื่อหันด้านหลังมาหาคุณ",
+          "ja": "Grip で台の持ち手を持ち、手を台のまわりに動かして裏を向ける",
+          "en": "Hold the stand handle with Grip. Move your hand around the base to face the back.",
+          "units": []
+        },
+        {
+          "th": "ใช้ Grip ดันถาด SSD เข้ารางจนสุด ใช้ Trigger จับสกรูแล้วขันให้แน่น",
+          "ja": "Grip で SSD トレイを奥まで押す。Trigger でねじを持って締める",
+          "en": "Use Grip to seat the SSD tray fully. Hold its screw with Trigger and tighten it.",
+          "units": []
+        },
+        {
+          "th": "ใช้ Trigger จับหัวสาย SATA data และ SATA power เสียบให้สุดทั้งสองหัว",
+          "ja": "Trigger で SATA データと電源プラグを持ち、両方を奥まで差す",
+          "en": "Use Trigger to insert both the SATA data and SATA power plugs fully.",
+          "units": []
+        }
+      ],
+      "after": [
+        {
+          "th": "ถาดยึดแน่นและต่อครบสองสาย ไม่ต้องขันสกรูใต้ SSD",
+          "ja": "トレイが固定され、2本が接続される。SSD 底面のねじは不要",
+          "en": "The tray is secured and both cables are connected. No underside SSD screws are needed.",
+          "units": []
+        }
+      ],
+      "figure": {
+        "shot": "A_ssd",
+        "pick": [
+          0,
+          0.5
+        ],
+        "anchor": "ssd_tray"
+      }
+    },
+    {
+      "id": "gpu",
+      "title": {
+        "th": "การ์ดจอ (GPU)",
+        "ja": "GPU",
+        "en": "Graphics card (GPU)"
+      },
+      "items": [
+        {
+          "th": "1 ใบ VRAM 8 GB ขึ้นไป และกำลังไฟการ์ดไม่เกิน 150 W ใส่ช่อง PCIe หลัก (ช่องยาวที่ต่อกับ CPU)",
+          "ja": "1 枚。VRAM 8 GB 以上、かつカードの消費電力 150 W 以下。プライマリ PCIe スロット（CPU につながる長いスロット）に挿す",
+          "en": "One card, VRAM 8 GB or more and card power 150 W or less, in the primary PCIe slot (the long slot wired to the CPU)",
+          "units": [
+            "gpu_req",
+            "gpu_how",
+            "gpu_power"
+          ]
+        },
+        {
+          "th": "อ่านฉลาก เลือก GPU 1 ใบ",
+          "ja": "ラベルを読み、GPU を 1 枚選ぶ",
+          "en": "Read labels; choose one GPU",
+          "units": []
+        },
+        {
+          "th": "จับ GPU ด้วย Grip แล้วกดลงช่องหลักจนสุด",
+          "ja": "Grip で GPU を持ち、主スロットの奥まで押す",
+          "en": "Hold the GPU with Grip and push it fully into the primary slot",
+          "units": []
+        },
+        {
+          "th": "จับสกรูยึด GPU ด้วย Trigger แล้วหมุนจนแน่น",
+          "ja": "Trigger で GPU の固定ねじを持ち、止まるまで締める",
+          "en": "Hold the GPU bracket screw with Trigger and turn it until tight",
+          "units": []
+        },
+        {
+          "th": "จับหัวไฟ PCIe 8-pin ด้วย Trigger แล้วเสียบที่ GPU",
+          "ja": "Trigger で PCIe 8 ピンプラグを持ち、GPU に差す",
+          "en": "Hold the PCIe 8-pin plug with Trigger and insert it into the GPU",
+          "units": []
+        }
+      ],
+      "after": [
+        {
+          "th": "ขั้วการ์ดลงสุด สกรูแน่น และหัวไฟ 8-pin เสียบสุด หัว 6+2 รวมไว้แล้ว",
+          "ja": "カードが奥まで入り、ねじが締まり、8ピン電源が接続される。6+2ピンは接合済み",
+          "en": "The card is fully seated, its screw is tight and 8-pin power is fully connected. The 6+2 plug is already joined.",
+          "units": []
+        }
+      ],
+      "figure": {
+        "shot": "A_gpu",
+        "pick": [
+          0,
+          0.5
+        ],
+        "anchor": "gpu_card"
+      }
+    },
+    {
+      "id": "finish",
+      "title": {
+        "th": "ตรวจผลงาน",
+        "ja": "仕上がりを確認",
+        "en": "Check my work"
+      },
+      "items": [
+        {
+          "th": "ตรวจ 3 วินาที ผลผ่าน W2 = เสร็จ ผลประกอบ/สายไม่ครบ = ยังไม่สุด ไม่ยึด หรือไม่ต่อสาย",
+          "ja": "検査は 3 秒です。W2 合格で完了。組み立て・配線未完了なら、差し込み・固定・配線を確認します。",
+          "en": "Inspection takes 3 seconds. W2 passed means done. Incomplete assembly/connections means a part is not seated, secured or connected.",
+          "units": [
+            "inspect",
+            "done"
+          ]
+        },
+        {
+          "th": "ผลไม่ตรง W2 = ชิ้นส่วนหรือช่องไม่ตรงข้อกำหนด เทียบฉลาก แก้แล้วตรวจใหม่ได้ ระบบขัดข้องให้บอกผู้วิจัย",
+          "ja": "W2 未達なら部品やスロットをラベルと照合します。修正後は再検査できます。不具合は研究者に伝えます。",
+          "en": "W2 not met means a part or slot does not meet requirements. Compare labels, correct and retry. Report system faults to the researcher.",
+          "units": []
+        },
+        {
+          "th": "ถ้าจะถอดชิ้นออก ให้ปลดสลัก ถอดสาย หรือคลายน็อตก่อน แล้วค่อยดึง",
+          "ja": "外すときは、先にラッチを開く・ケーブルを抜く・ねじを緩めてから引き抜きます。",
+          "en": "To remove a part, first open the latch, unplug the cable or loosen the screw, then pull.",
+          "units": [
+            "remove"
+          ]
+        }
+      ],
+      "after": []
+    },
+    {
+      "id": "reference",
+      "title": {
+        "th": "ชิ้นส่วนที่ต้องคงไว้",
+        "ja": "そのままにする部品",
+        "en": "Parts to leave in place"
+      },
+      "items": [
+        {
+          "th": "ช่อง RAM ทั้ง 4 ช่อง ช่องการ์ดจอ และที่ใส่ SSD ยังว่าง",
+          "ja": "RAM スロット 4 つ、GPU スロット、SSD の取付位置はすべて空いています。",
+          "en": "All 4 RAM slots, the GPU slot and the SSD mount are empty.",
+          "units": [
+            "base"
+          ]
+        },
+        {
+          "th": "CPU พัดลม CPU, PSU (กล่องจ่ายไฟ) และสายของเครื่องต่อไว้แล้ว ไม่ต้องถอด ไฟถูกตัดแล้ว ไม่ต้องลงระบบปฏิบัติการ และไม่ต้องปิดฝาเคส",
+          "ja": "CPU・CPU クーラー・PSU（電源ユニット）と本体のケーブルは接続済みです。外さないでください。電源は切り離されています。OS のインストールやケースのふたを閉める必要はありません。",
+          "en": "The CPU, CPU cooler, PSU (power supply) and case cables are already connected. Do not remove them. Power is isolated. No operating system install and no case cover needed.",
+          "units": []
+        }
+      ],
+      "after": [
+        {
+          "th": "คำที่ควรรู้: VRAM = หน่วยความจำของการ์ดจอ · W (วัตต์) = กำลังไฟที่การ์ดใช้ · TBW = SSD ทนการเขียนข้อมูลได้มากแค่ไหน (ไม่ใช่ความจุ)",
+          "ja": "用語：VRAM＝GPU のメモリ・W（ワット）＝カードが使う電力・TBW＝SSD がどれだけ書き込みに耐えられるか（容量ではない）",
+          "en": "Terms: VRAM = graphics card memory · W (watts) = power the card uses · TBW = how much data the SSD can write over its life (not capacity)",
+          "units": []
+        },
+        {
+          "th": "ช่อง RAM ชื่อ A1, A2, B1, B2 พิมพ์อยู่บนบอร์ด บอร์ดนี้รับเฉพาะ DDR4",
+          "ja": "RAM スロットの名前 A1・A2・B1・B2 は基板に書かれています。この基板は DDR4 専用です。",
+          "en": "RAM slot names A1, A2, B1, B2 are printed on the board. This board takes DDR4 only.",
+          "units": []
+        }
+      ],
+      "layout": "reference",
+      "table": {
+        "units": [
+          "labels"
+        ],
+        "title": {
+          "th": "ชิ้นส่วนบนโต๊ะ (ค่าเดียวกับบนฉลาก)",
+          "ja": "机の部品（ラベルと同じ数値）",
+          "en": "Parts on the bench (same values as the labels)"
+        },
+        "head": [
+          {
+            "th": "รหัส",
+            "ja": "番号",
+            "en": "ID"
+          },
+          {
+            "th": "ค่าบนฉลาก",
+            "ja": "ラベルの数値",
+            "en": "Label values"
+          }
+        ],
+        "rows": [
+          [
+            "M01",
+            "DDR4 8 GB (K8)"
+          ],
+          [
+            "M02",
+            "DDR4 8 GB (K8)"
+          ],
+          [
+            "M03",
+            "DDR4 16 GB (K16)"
+          ],
+          [
+            "M04",
+            "DDR5 8 GB (K5)"
+          ],
+          [
+            "M05",
+            "DDR5 8 GB (K5)"
+          ],
+          [
+            "S01",
+            "SATA 2.5\" 1000 GB, 300 TBW"
+          ],
+          [
+            "S02",
+            "SATA 2.5\" 500 GB, 600 TBW"
+          ],
+          [
+            "S03",
+            "SATA 2.5\" 250 GB, 800 TBW"
+          ],
+          [
+            "G01",
+            "VRAM 8 GB, 120 W, PCIe 8-pin"
+          ],
+          [
+            "G02",
+            "VRAM 12 GB, 200 W, PCIe 8-pin"
+          ]
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "group": {
+        "th": "เริ่ม",
+        "ja": "はじめに",
+        "en": "Start"
+      },
+      "do": {
+        "th": "ดูตำแหน่ง RAM, SSD และ GPU",
+        "ja": "RAM・SSD・GPU の位置を見る",
+        "en": "Find the RAM, SSD and GPU positions"
+      },
+      "look": {
+        "th": "ไฟตัดแล้ว คง CPU/ชุดระบายความร้อน/PSU/สาย ไม่ลง OS ไม่ปิดฝา",
+        "ja": "電源切離し済み。CPU・冷却装置・PSU・配線はそのまま。OS・ふたは不要",
+        "en": "Power off. Keep CPU/cooler/PSU/cables. No OS or cover."
+      },
+      "ok": {
+        "th": "ทำลำดับใดก็ได้ ไม่ต้องใช้ทุกชิ้นบนโต๊ะ",
+        "ja": "順番は自由。机の部品をすべて使う必要はない",
+        "en": "Any order. Not every bench part is needed."
+      },
+      "units": [
+        "problem",
+        "base",
+        "order_free"
+      ]
+    },
+    {
+      "group": {
+        "th": "RAM",
+        "ja": "RAM",
+        "en": "RAM"
+      },
+      "do": {
+        "th": "อ่านฉลาก เลือก RAM 2 แผง",
+        "ja": "ラベルを読み、RAM を 2 枚選ぶ",
+        "en": "Read labels; choose two RAM modules"
+      },
+      "look": {
+        "th": "DDR4 แผงละ 8 GB เหมือนกัน รวม 16 GB",
+        "ja": "同じ DDR4 8 GB を 2 枚、合計 16 GB",
+        "en": "Identical DDR4, 8 GB each, 16 GB total."
+      },
+      "ok": {
+        "th": "ตรงทุกค่า ใส่ได้ยังไม่พอ",
+        "ja": "全数値が一致。挿せるだけでは不十分",
+        "en": "Every value matches; fitting is not enough."
+      },
+      "units": [
+        "ram_req",
+        "labels"
+      ]
+    },
+    {
+      "group": {
+        "th": "RAM",
+        "ja": "RAM",
+        "en": "RAM"
+      },
+      "do": {
+        "th": "แตะสลักช่อง A2 แล้วกด Trigger ครั้งเดียว",
+        "ja": "A2 のラッチに手を近づけ、Trigger を1回押す",
+        "en": "At the A2 latch, press Trigger once"
+      },
+      "look": {
+        "th": "",
+        "ja": "",
+        "en": ""
+      },
+      "ok": {
+        "th": "สลักเปิดออก อีกด้านของช่องไม่ขยับ",
+        "ja": "片側のラッチが開く。反対側は動かない",
+        "en": "The latch opens. The other end stays fixed."
+      },
+      "units": [
+        "ram_how"
+      ]
+    },
+    {
+      "group": {
+        "th": "RAM",
+        "ja": "RAM",
+        "en": "RAM"
+      },
+      "do": {
+        "th": "จับ RAM ด้วย Grip จัดร่องให้ตรง แล้วกดลงจนสุด",
+        "ja": "Grip で RAM を持ち、切り欠きを合わせて奥まで押す",
+        "en": "Hold RAM with Grip. Align its notch and push it fully down"
+      },
+      "look": {
+        "th": "ใส่ไม่สุดยังไม่ต่อ",
+        "ja": "途中まででは未接続",
+        "en": "Half-inserted is not connected."
+      },
+      "ok": {
+        "th": "สลักปิดเองเมื่อใส่สุด",
+        "ja": "奥まで入るとラッチが閉じる",
+        "en": "The latch closes itself when fully seated."
+      },
+      "units": [
+        "ram_how",
+        "half_seat"
+      ]
+    },
+    {
+      "group": {
+        "th": "RAM",
+        "ja": "RAM",
+        "en": "RAM"
+      },
+      "do": {
+        "th": "ใส่อีกแผงใน B2",
+        "ja": "もう 1 枚を B2 に挿す",
+        "en": "Fit the other module in B2"
+      },
+      "look": {
+        "th": "",
+        "ja": "",
+        "en": ""
+      },
+      "ok": {
+        "th": "RAM อยู่ใน A2 และ B2",
+        "ja": "RAM が A2 と B2 に入る",
+        "en": "RAM is in A2 and B2."
+      },
+      "units": [
+        "ram_req"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "อ่านฉลาก เลือก SSD 1 ชุด",
+        "ja": "ラベルを読み、SSD を 1 台選ぶ",
+        "en": "Read labels; choose one SSD"
+      },
+      "look": {
+        "th": "SATA 2.5 นิ้ว ≥500 GB และ ≥600 TBW",
+        "ja": "SATA 2.5 インチ、500 GB 以上・600 TBW 以上",
+        "en": "SATA 2.5-inch, ≥500 GB and ≥600 TBW."
+      },
+      "ok": {
+        "th": "ผ่านทั้งสองค่า TBW ไม่ใช่ความจุ",
+        "ja": "両条件を満たす。TBW は容量ではない",
+        "en": "Both values pass. TBW is not capacity."
+      },
+      "units": [
+        "ssd_req",
+        "labels"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "จับหูจับแท่นด้วย Grip แล้วเลื่อนมือรอบฐาน",
+        "ja": "Grip で台の持ち手を持ち、台のまわりに手を動かす",
+        "en": "Hold the stand handle with Grip and move your hand around the base"
+      },
+      "look": {
+        "th": "เคสจะหมุนตามมือ ไม่ต้องบิดข้อมือ",
+        "ja": "手の移動に合わせてケースが回る。手首はひねらない",
+        "en": "The case follows your hand. Do not twist your wrist."
+      },
+      "ok": {
+        "th": "เห็นช่องถาด SSD หลังเมนบอร์ด",
+        "ja": "基板の裏に SSD トレイの位置が見える",
+        "en": "The SSD tray mount behind the board is visible."
+      },
+      "units": [
+        "case_turn"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "จับถาด SSD ด้วย Grip แล้วดันเข้ารางจนสุด",
+        "ja": "Grip で SSD トレイを持ち、レールの奥まで押す",
+        "en": "Hold the SSD tray with Grip and push it fully along the rails"
+      },
+      "look": {
+        "th": "SSD อยู่บนถาดแล้ว ไม่ขันสกรูใต้ SSD",
+        "ja": "SSD はトレイに固定済み。底面のねじは不要",
+        "en": "SSD is already on the tray. No underside screws."
+      },
+      "ok": {
+        "th": "ถาดเข้าที่",
+        "ja": "トレイが収まる",
+        "en": "The tray is seated."
+      },
+      "units": [
+        "ssd_how"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "จับหัวสกรูถาดด้วย Trigger แล้วหมุนจนแน่น",
+        "ja": "Trigger でトレイのねじを持ち、止まるまで締める",
+        "en": "Hold the tray screw with Trigger and turn it until tight"
+      },
+      "look": {
+        "th": "",
+        "ja": "",
+        "en": ""
+      },
+      "ok": {
+        "th": "ถาดไม่ขยับ",
+        "ja": "トレイが動かない",
+        "en": "The tray does not move."
+      },
+      "units": [
+        "ssd_how"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "จับหัวสายข้อมูล SATA ด้วย Trigger แล้วเสียบจนสุด",
+        "ja": "Trigger で SATA データプラグを持ち、奥まで差す",
+        "en": "Hold the SATA data plug with Trigger and push it fully in"
+      },
+      "look": {
+        "th": "วางถาดแล้วสายไม่ต่อเอง",
+        "ja": "トレイを置くだけではつながらない",
+        "en": "Seating the tray does not connect cables."
+      },
+      "ok": {
+        "th": "หัวปลั๊กเสียบสุด",
+        "ja": "プラグが奥まで入る",
+        "en": "The plug is fully in."
+      },
+      "units": [
+        "ssd_cables"
+      ]
+    },
+    {
+      "group": {
+        "th": "SSD",
+        "ja": "SSD",
+        "en": "SSD"
+      },
+      "do": {
+        "th": "จับหัวสายไฟ SATA ด้วย Trigger แล้วเสียบจนสุด",
+        "ja": "Trigger で SATA 電源プラグを持ち、奥まで差す",
+        "en": "Hold the SATA power plug with Trigger and push it fully in"
+      },
+      "look": {
+        "th": "",
+        "ja": "",
+        "en": ""
+      },
+      "ok": {
+        "th": "SSD ต่อครบสองสาย",
+        "ja": "SSD の 2 本がつながる",
+        "en": "Both SSD cables are connected."
+      },
+      "units": [
+        "ssd_cables"
+      ]
+    },
+    {
+      "group": {
+        "th": "การ์ดจอ",
+        "ja": "GPU",
+        "en": "GPU"
+      },
+      "do": {
+        "th": "อ่านฉลาก เลือก GPU 1 ใบ",
+        "ja": "ラベルを読み、GPU を 1 枚選ぶ",
+        "en": "Read labels; choose one GPU"
+      },
+      "look": {
+        "th": "VRAM ≥8 GB และกำลังการ์ด ≤150 W",
+        "ja": "VRAM 8 GB 以上、カード電力 150 W 以下",
+        "en": "VRAM ≥8 GB; card power ≤150 W."
+      },
+      "ok": {
+        "th": "ผ่านทั้งสองค่า ใช้กำลังการ์ด ไม่ใช่ PSU",
+        "ja": "両条件を満たす。PSU ではなくカードの電力",
+        "en": "Both values pass. Use card power, not PSU power."
+      },
+      "units": [
+        "gpu_req",
+        "labels"
+      ]
+    },
+    {
+      "group": {
+        "th": "การ์ดจอ",
+        "ja": "GPU",
+        "en": "GPU"
+      },
+      "do": {
+        "th": "จับ GPU ด้วย Grip แล้วกดลงช่องหลักจนสุด",
+        "ja": "Grip で GPU を持ち、主スロットの奥まで押す",
+        "en": "Hold the GPU with Grip and push it fully into the primary slot"
+      },
+      "look": {
+        "th": "ช่องยาวที่ต่อกับ CPU",
+        "ja": "CPU につながる長いスロット",
+        "en": "The long slot wired to the CPU."
+      },
+      "ok": {
+        "th": "ขั้วการ์ดจมสุดช่อง",
+        "ja": "端子が奥まで入る",
+        "en": "The contacts are fully seated."
+      },
+      "units": [
+        "gpu_how",
+        "gpu_req"
+      ]
+    },
+    {
+      "group": {
+        "th": "การ์ดจอ",
+        "ja": "GPU",
+        "en": "GPU"
+      },
+      "do": {
+        "th": "จับสกรูยึด GPU ด้วย Trigger แล้วหมุนจนแน่น",
+        "ja": "Trigger で GPU の固定ねじを持ち、止まるまで締める",
+        "en": "Hold the GPU bracket screw with Trigger and turn it until tight"
+      },
+      "look": {
+        "th": "",
+        "ja": "",
+        "en": ""
+      },
+      "ok": {
+        "th": "สกรูแน่น การเสียบการ์ดไม่ยึดให้",
+        "ja": "ねじが締まる。挿すだけでは固定されない",
+        "en": "Tight. Insertion alone does not secure it."
+      },
+      "units": [
+        "gpu_how"
+      ]
+    },
+    {
+      "group": {
+        "th": "การ์ดจอ",
+        "ja": "GPU",
+        "en": "GPU"
+      },
+      "do": {
+        "th": "จับหัวไฟ PCIe 8-pin ด้วย Trigger แล้วเสียบที่ GPU",
+        "ja": "Trigger で PCIe 8 ピンプラグを持ち、GPU に差す",
+        "en": "Hold the PCIe 8-pin plug with Trigger and insert it into the GPU"
+      },
+      "look": {
+        "th": "หัว 6+2 รวมไว้แล้ว",
+        "ja": "6+2 ピンは合わせてある",
+        "en": "The 6+2 plug is already joined."
+      },
+      "ok": {
+        "th": "หัวปลั๊กเสียบสุด",
+        "ja": "プラグが奥まで入る",
+        "en": "The plug is fully in."
+      },
+      "units": [
+        "gpu_power"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตรวจผลงาน",
+        "ja": "検査",
+        "en": "Check my work"
+      },
+      "do": {
+        "th": "กดตรวจผลงานบน Main",
+        "ja": "Main で「仕上がりを確認」を選ぶ",
+        "en": "Select Check my work on Main"
+      },
+      "look": {
+        "th": "รอ 3 วินาที",
+        "ja": "3 秒待つ",
+        "en": "Wait 3 seconds."
+      },
+      "ok": {
+        "th": "ผลผ่าน W2 = เสร็จ",
+        "ja": "W2 合格で完了",
+        "en": "W2 passed means done."
+      },
+      "units": [
+        "inspect",
+        "done"
+      ]
+    },
+    {
+      "group": {
+        "th": "ถ้ายังไม่ผ่าน",
+        "ja": "未合格のとき",
+        "en": "If not passed"
+      },
+      "do": {
+        "th": "อ่านผล แก้แล้วตรวจใหม่",
+        "ja": "結果を読み、直して再検査",
+        "en": "Read the result, correct and retry"
+      },
+      "look": {
+        "th": "ประกอบไม่ครบ: จุดเสียบ/ตัวยึด/สาย ไม่ตรง W2: ชิ้นส่วน/ช่อง",
+        "ja": "組立未完了：差し込み・固定・配線。W2 未達：部品・スロット",
+        "en": "Incomplete: seating/fastener/cable. W2 failure: part/slot."
+      },
+      "ok": {
+        "th": "ถอดต้องเปิดสลัก/ถอดสาย/คลายสกรูก่อน ระบบขัดข้องให้บอกผู้วิจัย",
+        "ja": "外す前にラッチ・配線・ねじを解除。不具合は研究者へ",
+        "en": "Before removal, release latch/cable/screw. System fault: tell researcher."
+      },
+      "units": [
+        "inspect",
+        "remove"
+      ]
+    }
+  ],
+  "illustrated": [
+    {
+      "shot": "A_board",
+      "pick": [
+        0,
+        1
+      ],
+      "card_at": [
+        880,
+        390
+      ],
+      "callouts": [
+        {
+          "anchor": "slot_A2",
+          "kind": "ok",
+          "label": {
+            "th": "A2 ใส่ RAM",
+            "ja": "A2 に RAM",
+            "en": "A2: RAM"
+          },
+          "dx": 150,
+          "dy": -70
+        },
+        {
+          "anchor": "slot_B2",
+          "kind": "ok",
+          "label": {
+            "th": "B2 ใส่ RAM",
+            "ja": "B2 に RAM",
+            "en": "B2: RAM"
+          },
+          "dx": 170,
+          "dy": 10
+        },
+        {
+          "anchor": "pcie_primary",
+          "kind": "ok",
+          "label": {
+            "th": "ช่องหลัก: การ์ดจอ",
+            "ja": "プライマリ：GPU",
+            "en": "Primary: GPU"
+          },
+          "dx": -260,
+          "dy": -40
+        },
+        {
+          "anchor": "pcie_secondary",
+          "kind": "bad",
+          "label": {
+            "th": "ช่องรอง: ไม่ใช้",
+            "ja": "セカンダリ：使わない",
+            "en": "Secondary: not used"
+          },
+          "dx": -260,
+          "dy": 50
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "จับและขยับอย่างไร",
+          "ja": "持ち方・動かし方",
+          "en": "How to move parts"
+        },
+        "lines": [
+          {
+            "th": "จับชิ้นส่วนด้วย Grip ค้าง แล้วขยับมือ",
+            "ja": "部品は Grip を押したまま手を動かす",
+            "en": "Hold Grip to move parts."
+          },
+          {
+            "th": "เปิดสลัก: แตะสลักแล้วกด Trigger ครั้งเดียว",
+            "ja": "ラッチに手を近づけ、Trigger を1回押して開く",
+            "en": "At a latch, press Trigger once to open it."
+          },
+          {
+            "th": "สกรูและหัวปลั๊ก: จับด้วย Trigger ค้าง แล้วหมุนหรือขยับมือ",
+            "ja": "ねじ・プラグは Trigger を押したまま回す・動かす",
+            "en": "Hold Trigger to turn a screw or move a plug."
+          }
+        ]
+      },
+      "caption": {
+        "th": "ประกอบ W2\nRAM 2 แผง · SSD 1 ชุด · GPU 1 ใบ ให้ตรงข้อกำหนด",
+        "ja": "W2 を組み立てる\n条件に合う RAM 2 枚・SSD 1 台・GPU 1 枚",
+        "en": "Assemble W2\nTwo RAM modules, one SSD and one GPU, all meeting W2 requirements"
+      },
+      "units": [
+        "problem",
+        "base",
+        "order_free",
+        "ram_req",
+        "gpu_req"
+      ]
+    },
+    {
+      "layout": "parts",
+      "caption": {
+        "th": "อ่านฉลากทุกค่า\nเสียบได้ยังไม่แปลว่าตรง W2",
+        "ja": "全数値を照合\n挿せるだけでは W2 合格ではない",
+        "en": "Compare every label value\nFitting alone does not meet W2"
+      },
+      "card": {
+        "title": {
+          "th": "W2 ต้องการ",
+          "ja": "W2 の条件",
+          "en": "W2 needs"
+        },
+        "lines": [
+          {
+            "th": "RAM: DDR4 8 GB × 2 (เหมือนกัน)",
+            "ja": "RAM：DDR4 8 GB × 2（同じもの）",
+            "en": "RAM: DDR4 8 GB × 2 (identical)"
+          },
+          {
+            "th": "SSD: SATA 2.5 นิ้ว · ≥ 500 GB และ ≥ 600 TBW",
+            "ja": "SSD：SATA 2.5インチ・500 GB以上、かつ600 TBW以上",
+            "en": "SSD: SATA 2.5-inch · ≥ 500 GB and ≥ 600 TBW"
+          },
+          {
+            "th": "GPU: VRAM ≥ 8 GB และ ≤ 150 W",
+            "ja": "GPU：VRAM 8 GB 以上 かつ 150 W 以下",
+            "en": "GPU: VRAM ≥ 8 GB and ≤ 150 W"
+          },
+          {
+            "th": "TBW ≠ ความจุ · 150 W = ของการ์ด",
+            "ja": "TBW ≠ 容量・150 W = カードの電力",
+            "en": "TBW ≠ capacity · 150 W = card power"
+          }
+        ]
+      },
+      "units": [
+        "labels",
+        "ram_req",
+        "ssd_req",
+        "gpu_req"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "A_ram",
+          "pick": [
+            1,
+            1
+          ],
+          "zoom": "slot_B2",
+          "kind": "bad",
+          "tag": {
+            "th": "ยังไม่สุด = ยังไม่ต่อ",
+            "ja": "途中まで = 未接続",
+            "en": "Half in = not connected"
+          }
+        },
+        {
+          "shot": "A_ram",
+          "pick": [
+            0,
+            1
+          ],
+          "zoom": "ram_latch",
+          "kind": "ok",
+          "tag": {
+            "th": "กดจนสุด สลักปิด",
+            "ja": "奥まで・ラッチが閉じる",
+            "en": "Fully in, latch closed"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "slot_B2",
+          "kind": "bad",
+          "label": {
+            "th": "ยังลอย",
+            "ja": "浮いている",
+            "en": "Raised"
+          },
+          "dx": 220,
+          "dy": 60
+        },
+        {
+          "frame": 1,
+          "anchor": "ram_latch",
+          "kind": "ok",
+          "label": {
+            "th": "สลักข้างเดียว ปิดแล้ว",
+            "ja": "片側ラッチ・閉",
+            "en": "One-side latch, closed"
+          },
+          "dx": 230,
+          "dy": 190
+        }
+      ],
+      "arrows": [
+        {
+          "frame": 1,
+          "anchor": "slot_A2",
+          "dir": "down",
+          "label": {
+            "th": "กดลงตรง ๆ",
+            "ja": "まっすぐ押す",
+            "en": "Press straight down"
+          }
+        }
+      ],
+      "caption": {
+        "th": "จัดร่อง RAM ให้ตรง\nเปิดสลักข้างเดียว กดจนปิดเอง อีกข้างอยู่กับที่",
+        "ja": "RAM の切り欠きを合わせる\n片側ラッチを開き、閉じるまで押す。反対側は固定",
+        "en": "Align the RAM notch\nOpen one-sided latch; press until it closes. The other end is fixed"
+      },
+      "units": [
+        "ram_how",
+        "half_seat"
+      ]
+    },
+    {
+      "shot": "A_turn",
+      "pick": [
+        0,
+        1
+      ],
+      "rotate": [
+        {
+          "anchor": "service_handle",
+          "dir": "yaw",
+          "at": [
+            640,
+            560
+          ],
+          "label": {
+            "th": "จับที่จับ แล้วหมุนเคส",
+            "ja": "ハンドルを持って回す",
+            "en": "Hold handle, turn case"
+          }
+        }
+      ],
+      "caption": {
+        "th": "หมุนเคสจากหูจับแท่น\nช่องถาด SSD อยู่หลังเมนบอร์ด",
+        "ja": "持ち手でケースを回す\nSSD トレイの位置は基板の裏",
+        "en": "Turn the case by its stand handle\nThe SSD tray mount is behind the board"
+      },
+      "units": [
+        "case_turn"
+      ]
+    },
+    {
+      "shot": "A_ssd",
+      "pick": [
+        1,
+        1
+      ],
+      "callouts": [
+        {
+          "anchor": "ssd_thumb",
+          "kind": "ok",
+          "label": {
+            "th": "1 ใส่ถาด ขันตัวยึด",
+            "ja": "1 トレイ・固定具",
+            "en": "1 Tray, fastener"
+          },
+          "dx": 230,
+          "dy": -40
+        },
+        {
+          "anchor": "sata_data",
+          "kind": "ok",
+          "label": {
+            "th": "2 สายข้อมูล SATA",
+            "ja": "2 SATA データ",
+            "en": "2 SATA data"
+          },
+          "dx": 240,
+          "dy": 40
+        },
+        {
+          "anchor": "sata_power",
+          "kind": "ok",
+          "label": {
+            "th": "3 สายไฟ SATA",
+            "ja": "3 SATA 電源",
+            "en": "3 SATA power"
+          },
+          "dx": -280,
+          "dy": 40
+        }
+      ],
+      "caption": {
+        "th": "ใส่ถาด SSD\nถาดแน่น ตัวยึดแน่น สายสองเส้นเสียบสุด",
+        "ja": "SSD トレイを入れる\nトレイを固定し、2 本を奥まで挿す",
+        "en": "Fit the SSD tray\nTray secure, fastener tight, both cables fully in"
+      },
+      "units": [
+        "ssd_how",
+        "ssd_cables"
+      ],
+      "card": {
+        "title": {
+          "th": "ถาด SSD",
+          "ja": "SSD トレイ",
+          "en": "SSD tray"
+        },
+        "lines": [
+          {
+            "th": "SSD อยู่บนถาดแล้ว ไม่ขันสกรูใต้ SSD",
+            "ja": "SSD は固定済み。底面のねじは不要",
+            "en": "SSD is already attached. No underside screws."
+          },
+          {
+            "th": "วางถาดไม่ต่อสายให้ ต้องเสียบเองสองสาย",
+            "ja": "置くだけではつながらない。2 本とも挿す",
+            "en": "Seating does not connect cables. Insert both."
+          },
+          {
+            "th": "ไฟตัดแล้ว คง CPU/ชุดระบายความร้อน/PSU/สาย ไม่ลง OS ไม่ปิดฝา",
+            "ja": "電源切離し済み。CPU・冷却装置・PSU・配線はそのまま。OS・ふたは不要",
+            "en": "Power off. Keep CPU/cooler/PSU/cables. No OS or cover."
+          },
+          {
+            "th": "ทำลำดับใดก็ได้ ไม่ต้องใช้ทุกชิ้น",
+            "ja": "順番は自由。全部の部品は使わない",
+            "en": "Any order; not every part is needed."
+          }
+        ]
+      },
+      "card_at": [
+        40,
+        40
+      ]
+    },
+    {
+      "shot": "A_gpu",
+      "pick": [
+        1,
+        1
+      ],
+      "callouts": [
+        {
+          "anchor": "pcie_primary",
+          "kind": "ok",
+          "label": {
+            "th": "1 ช่องหลัก เสียบจนสุด",
+            "ja": "1 プライマリに奥まで",
+            "en": "1 Primary slot, fully in"
+          },
+          "dx": 240,
+          "dy": -90
+        },
+        {
+          "anchor": "gpu_screw",
+          "kind": "ok",
+          "label": {
+            "th": "2 ขันน็อตขายึด",
+            "ja": "2 ブラケットのねじ",
+            "en": "2 Bracket screw"
+          },
+          "dx": -60,
+          "dy": -150
+        },
+        {
+          "anchor": "gpu_8pin",
+          "kind": "ok",
+          "label": {
+            "th": "3 เสียบไฟ 8 พิน",
+            "ja": "3 8 ピン電源",
+            "en": "3 8-pin power"
+          },
+          "dx": -40,
+          "dy": 150
+        }
+      ],
+      "caption": {
+        "th": "ใส่ GPU ให้สุด\nขันสกรูยึด แล้วเสียบไฟ PCIe 8-pin",
+        "ja": "GPU を奥まで挿す\n固定ねじを締め、PCIe 8 ピンを接続",
+        "en": "Seat the GPU fully\nTighten its bracket screw, then connect PCIe 8-pin power"
+      },
+      "units": [
+        "gpu_how",
+        "gpu_power"
+      ]
+    },
+    {
+      "layout": "result",
+      "shot": "A_whole",
+      "pick": [
+        0,
+        0
+      ],
+      "results": [
+        {
+          "kind": "ok",
+          "th": "ตรวจผลผ่าน · ตรงข้อกำหนด W2",
+          "ja": "検査に合格しました・W2の要件を満たしました。",
+          "en": "Inspection passed · W2 requirements met.",
+          "note": {
+            "th": "เสร็จแล้ว",
+            "ja": "完了",
+            "en": "Done"
+          }
+        },
+        {
+          "kind": "bad",
+          "th": "ตรวจผลยังไม่ผ่าน · ยังประกอบหรือต่อสายไม่ครบ",
+          "ja": "検査は未合格です・組み立て・接続が未完了です。",
+          "en": "Inspection not passed · Assembly or connections are incomplete.",
+          "note": {
+            "th": "ยังไม่สุด ไม่ยึด หรือขาดสาย ถอดต้องเปิดสลัก/ถอดสาย/คลายสกรูก่อน",
+            "ja": "差し込み・固定・配線を確認。外す前にラッチ・配線・ねじを解除",
+            "en": "Not seated/secured/cabled. Before removal, release latch/cable/screw."
+          }
+        },
+        {
+          "kind": "bad",
+          "th": "ตรวจผลยังไม่ผ่าน · ยังไม่ตรงข้อกำหนด W2",
+          "ja": "検査は未合格です・W2の要件を満たしていません。",
+          "en": "Inspection not passed · W2 requirements are not met yet.",
+          "note": {
+            "th": "เทียบฉลากและช่อง แก้แล้วตรวจใหม่ ระบบขัดข้องให้บอกผู้วิจัย",
+            "ja": "ラベルとスロットを照合し再検査。不具合は研究者へ",
+            "en": "Compare labels/slots, correct and retry. Report system faults to researcher."
+          }
+        }
+      ],
+      "caption": {
+        "th": "กดตรวจผลงานบน Main\nรอ 3 วินาที ผลผ่าน W2 จึงเสร็จ",
+        "ja": "Main で「仕上がりを確認」を選ぶ\n3 秒待ち、W2 合格で完了",
+        "en": "Check my work on Main\nWait 3 seconds. W2 passed means done"
+      },
+      "units": [
+        "inspect",
+        "done",
+        "remove"
+      ]
+    }
+  ],
+  "video": [
+    {
+      "stage": "problem",
+      "shot": "A_board",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "slot_A2",
+          "kind": "info",
+          "label": {
+            "th": "ช่อง RAM",
+            "ja": "RAM スロット",
+            "en": "RAM slots"
+          },
+          "dx": 150,
+          "dy": -70
+        },
+        {
+          "anchor": "pcie_primary",
+          "kind": "info",
+          "label": {
+            "th": "ช่องการ์ดจอ",
+            "ja": "GPU スロット",
+            "en": "GPU slot"
+          },
+          "dx": -260,
+          "dy": -40
+        }
+      ],
+      "say": {
+        "th": [
+          "เลือกและประกอบ RAM, SSD และ GPU ให้ตรงข้อกำหนด W2 เริ่มจากชิ้นไหนก็ได้ ไม่ต้องใช้ทุกชิ้นบนโต๊ะ",
+          "ใช้ Grip จับชิ้นส่วน ใช้ Trigger กดสลักหนึ่งครั้ง หรือกดค้างเพื่อหมุนสกรูและขยับหัวปลั๊ก ไฟตัดแล้ว คง CPU ชุดระบายความร้อน PSU และสายของเครื่องไว้ ไม่ต้องลง OS หรือปิดฝาเคส"
+        ],
+        "ja": [
+          "W2 の条件に合う RAM・SSD・GPU を選んで取り付けます。順番は自由で、机の部品を全部使う必要はありません。",
+          "Grip で部品を持ちます。ラッチは Trigger を1回押し、ねじとプラグは押したまま回すか動かします。電源は切離し済み。CPU・冷却装置・PSU・配線はそのままにします。OS とふたは不要です。"
+        ],
+        "en": [
+          "Choose and fit RAM, SSD and GPU that meet W2 requirements. Start with any part; not every bench part is needed.",
+          "Hold parts with Grip. Press Trigger once at a latch, or hold it to turn screws and move plugs. Power is isolated. Leave the CPU, cooler, PSU and case cables in place. No OS or case cover is needed."
+        ]
+      },
+      "units": [
+        "problem",
+        "base",
+        "order_free"
+      ]
+    },
+    {
+      "stage": "watch",
+      "layout": "parts",
+      "say": {
+        "th": [
+          "เทียบฉลากทุกค่ากับตาราง เสียบได้ยังไม่แปลว่าผ่าน TBW คือความทนเขียน ไม่ใช่ความจุ W คือกำลังการ์ด ไม่ใช่ PSU หยุดภาพอ่านได้"
+        ],
+        "ja": [
+          "表とラベルの全数値を照合します。挿せるだけでは不十分です。TBW は書き込み耐久性、W は PSU でなくカードの電力です。一時停止して読めます。"
+        ],
+        "en": [
+          "Compare every value with the table; fitting is not enough. TBW is write endurance, not capacity. Watts are card power, not PSU power. Pause to read."
+        ]
+      },
+      "units": [
+        "labels"
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_ram",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "ram_latch",
+          "kind": "ok",
+          "label": {
+            "th": "สลัก",
+            "ja": "ラッチ",
+            "en": "Latch"
+          },
+          "dx": 150,
+          "dy": -40
+        }
+      ],
+      "arrows": [
+        {
+          "anchor": "slot_A2",
+          "dir": "down",
+          "label": {
+            "th": "A2",
+            "ja": "A2",
+            "en": "A2"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "RAM สองแผงต้องเหมือนกัน ใส่ช่อง A2 กับ B2",
+          "แตะสลักช่อง A2 แล้วกด Trigger ครั้งเดียว. จับ RAM ด้วย Grip จัดร่องให้ตรง แล้วกดลงจนสุด. สลักปิดเองเมื่อใส่สุด"
+        ],
+        "ja": [
+          "同じ RAM 2 枚を A2 と B2 に挿します。",
+          "A2 のラッチに手を近づけ、Trigger を1回押す. Grip で RAM を持ち、切り欠きを合わせて奥まで押す. 奥まで入るとラッチが閉じる"
+        ],
+        "en": [
+          "Fit two identical RAM modules in A2 and B2.",
+          "At the A2 latch, press Trigger once. Hold RAM with Grip. Align its notch and push it fully down. The latch closes itself when fully seated."
+        ]
+      },
+      "units": [
+        "ram_req",
+        "ram_how"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "watch",
+      "shot": "A_ram",
+      "segment": 1,
+      "arrows": [
+        {
+          "anchor": "slot_B2",
+          "dir": "down",
+          "label": {
+            "th": "ยังไม่สุด",
+            "ja": "途中まで",
+            "en": "Not fully in"
+          },
+          "kind": "bad"
+        }
+      ],
+      "say": {
+        "th": [
+          "RAM ที่ยังลอยไม่ต่อ ต้องจมสุดช่อง ปลายอีกข้างอยู่กับที่"
+        ],
+        "ja": [
+          "浮いている RAM は未接続です。奥まで入れます。反対側は固定です。"
+        ],
+        "en": [
+          "Raised RAM is not connected. Seat it fully; the other end is fixed."
+        ]
+      },
+      "units": [
+        "ram_how",
+        "half_seat"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_ram",
+      "segment": 2,
+      "callouts": [
+        {
+          "anchor": "ram_latch",
+          "kind": "info",
+          "label": {
+            "th": "เปิดสลักก่อนดึง",
+            "ja": "抜く前にラッチを開く",
+            "en": "Open latch before pulling"
+          },
+          "dx": 150,
+          "dy": -40
+        }
+      ],
+      "say": {
+        "th": [
+          "ถอดชิ้นส่วนต้องเปิดสลัก ถอดสาย หรือคลายสกรูที่ยึดก่อน แล้วดึงตรงออก"
+        ],
+        "ja": [
+          "外す前にラッチを開く、配線を抜く、または固定ねじをゆるめます。その後まっすぐ抜きます。"
+        ],
+        "en": [
+          "Before pulling a part out, release its latch, cables or fastener."
+        ]
+      },
+      "units": [
+        "remove",
+        "ram_how"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_turn",
+      "segment": 0,
+      "rotate": [
+        {
+          "anchor": "service_handle",
+          "dir": "yaw",
+          "at": [
+            640,
+            560
+          ],
+          "label": {
+            "th": "หมุนเคส",
+            "ja": "ケースを回す",
+            "en": "Turn case"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "จับหูจับแท่นด้วย Grip แล้วเลื่อนมือรอบฐาน. เคสจะหมุนตามมือ ไม่ต้องบิดข้อมือ. เห็นช่องถาด SSD หลังเมนบอร์ด"
+        ],
+        "ja": [
+          "Grip で台の持ち手を持ち、台のまわりに手を動かす. 手の移動に合わせてケースが回る。手首はひねらない. 基板の裏に SSD トレイの位置が見える"
+        ],
+        "en": [
+          "Hold the stand handle with Grip and move your hand around the base. The case follows your hand. Do not twist your wrist.. The SSD tray mount behind the board is visible."
+        ]
+      },
+      "units": [
+        "case_turn"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_ssd",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "ssd_thumb",
+          "kind": "ok",
+          "label": {
+            "th": "ตัวยึดถาด",
+            "ja": "トレイの固定具",
+            "en": "Tray fastener"
+          },
+          "dx": 230,
+          "dy": -40
+        }
+      ],
+      "say": {
+        "th": [
+          "SSD อยู่บนถาดแล้ว ไม่ต้องขันสกรูใต้ SSD",
+          "ดันถาดเข้าช่องจนสุด ขันตัวยึดให้แน่นแล้วปล่อย"
+        ],
+        "ja": [
+          "SSD はトレイに固定済みです。底面のねじは不要です。",
+          "トレイを奥まで入れ、固定具を締めて離します。"
+        ],
+        "en": [
+          "SSD is already on its tray. No underside screws.",
+          "Push the tray fully in, tighten its fastener and release."
+        ]
+      },
+      "units": [
+        "ssd_req",
+        "ssd_how"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_ssd",
+      "segment": 1,
+      "callouts": [
+        {
+          "anchor": "sata_data",
+          "kind": "ok",
+          "label": {
+            "th": "สายข้อมูล",
+            "ja": "データ",
+            "en": "Data"
+          },
+          "dx": 240,
+          "dy": 40
+        },
+        {
+          "anchor": "sata_power",
+          "kind": "ok",
+          "label": {
+            "th": "สายไฟ",
+            "ja": "電源",
+            "en": "Power"
+          },
+          "dx": -280,
+          "dy": 40
+        }
+      ],
+      "say": {
+        "th": [
+          "เสียบ SATA data และ SATA power ให้สุดทั้งสองสาย วางถาดแล้วสายไม่ต่อเอง"
+        ],
+        "ja": [
+          "SATA データと電源を両方とも奥まで挿します。置くだけではつながりません。"
+        ],
+        "en": [
+          "Fully insert SATA data and power. Seating the tray does not connect them."
+        ]
+      },
+      "units": [
+        "ssd_cables"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_gpu",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "pcie_primary",
+          "kind": "ok",
+          "label": {
+            "th": "ช่องหลัก",
+            "ja": "プライマリ",
+            "en": "Primary slot"
+          },
+          "dx": 240,
+          "dy": -90
+        },
+        {
+          "anchor": "gpu_screw",
+          "kind": "ok",
+          "label": {
+            "th": "น็อตขายึด",
+            "ja": "ブラケットのねじ",
+            "en": "Bracket screw"
+          },
+          "dx": -60,
+          "dy": -150
+        }
+      ],
+      "say": {
+        "th": [
+          "ช่อง GPU หลักคือช่องยาวที่ต่อกับ CPU",
+          "กดการ์ดจนสุด แล้วขันสกรูยึดแยกต่างหาก"
+        ],
+        "ja": [
+          "GPU の主スロットは CPU につながる長いスロットです。",
+          "カードを奥まで押し、別に固定ねじを締めます。"
+        ],
+        "en": [
+          "The primary GPU slot is the long slot wired to the CPU.",
+          "Press the card fully in, then tighten its separate bracket screw."
+        ]
+      },
+      "units": [
+        "gpu_req",
+        "gpu_how"
+      ],
+      "motion_windows": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "A_gpu",
+      "segment": 1,
+      "callouts": [
+        {
+          "anchor": "gpu_8pin",
+          "kind": "ok",
+          "label": {
+            "th": "ไฟ 8 พิน",
+            "ja": "8 ピン電源",
+            "en": "8-pin power"
+          },
+          "dx": -40,
+          "dy": 150
+        }
+      ],
+      "say": {
+        "th": [
+          "เสียบ PCIe 8-pin จนสุดแล้วปล่อย หัว 6+2 รวมไว้แล้ว"
+        ],
+        "ja": [
+          "PCIe 8 ピンを奥まで挿して離します。6+2 ピンは合わせてあります。"
+        ],
+        "en": [
+          "Insert PCIe 8-pin fully and release. The 6+2 plug is already joined."
+        ]
+      },
+      "units": [
+        "gpu_power"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "done",
+      "layout": "result",
+      "shot": "A_whole",
+      "segment": 0,
+      "say": {
+        "th": [
+          "กดตรวจผลงาน รอ 3 วินาที ผลผ่าน W2 จึงเสร็จ",
+          "ประกอบไม่ครบให้ดูที่เสียบ ตัวยึด และสาย ไม่ตรง W2 ให้เทียบฉลากกับช่อง แก้แล้วตรวจใหม่ ระบบขัดข้องให้บอกผู้วิจัย"
+        ],
+        "ja": [
+          "「仕上がりを確認」を選んで 3 秒待ち、W2 合格で完了です。",
+          "組立未完了なら差し込み・固定・配線を確認。W2 未達ならラベルとスロットを照合します。直して再検査。不具合は研究者に伝えます。"
+        ],
+        "en": [
+          "Check my work and wait 3 seconds. W2 passed means done.",
+          "Incomplete: check seating, fasteners and cables. W2 not met: compare labels and slots. Correct and retry. Report system faults to the researcher."
+        ]
+      },
+      "units": [
+        "inspect",
+        "done"
+      ]
+    }
+  ],
+  "manual_layout": "part_cards"
+}

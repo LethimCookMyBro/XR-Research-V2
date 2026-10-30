@@ -70,10 +70,10 @@ internal static class ResearchS1FanKinematicsChecks
         Equal(Grip(539.6, 0), 539.6, "stationary near-end thread cannot become tight");
         Equal(Grip(539.6, -5.8), 533.8, "near-end thread has no unearned detent");
         Equal(Grip(.3, 2.3), 2.6, "near-zero thread is not the zero stop");
-        Equal(Grip(539.6, .2), 539.8, "incomplete last turn cannot snap to full");
+        Equal(Grip(539.6, .2), 539.8, "incomplete last turn cannot snap to the stop angle");
         Equal(Grip(539.6, .6, -5.8), 540, "actual endpoint arrival holds release twist");
         Equal(Grip(.3, -.6, 2.3), 0, "actual zero arrival holds release twist");
-        Equal(Grip(539, .4), 539.4, "1 deg short of the stop is not tight and follows the hand");
+        Equal(Grip(539, .4), 539.4, "1 deg short of the stop follows the hand");
         double regrasp = 540;
         for (int i = 0; i < 6; i++) regrasp = Grip(regrasp, -5.8);
         Equal(regrasp, 540, "six release-and-regrasp twists of 5.8 deg each never loosen a tight thread");
@@ -86,6 +86,15 @@ internal static class ResearchS1FanKinematicsChecks
         double lh = 0, back = 0;
         foreach (var d in new[] { -3.0, -3, -3, -3 }) lh = ResearchS1FanKinematics.TurnWithDetent(lh, d, 720, false, ref back);
         Equal(lh, 12, "left-hand thread: anticlockwise tightens out of the zero detent");
+        Truth(ResearchS1FanKinematics.IsTight(180, 180) && ResearchS1FanKinematics.IsTight(177.5, 180), "a ring turned to (or a stray degree short of) the stop is tight");
+        Truth(!ResearchS1FanKinematics.IsTight(160, 180), "the seeded 20 deg loose rear ring is not tight");
+        double ring = 160, ringBack = 0;
+        foreach (var d in new[] { 30.0, 30, -5.8 }) ring = ResearchS1FanKinematics.TurnWithDetent(ring, d, 180, true, ref ringBack);
+        Truth(ResearchS1FanKinematics.IsTight(ring, 180), "over-turning the ring then letting go leaves it tight");
+        double cap = 0, capBack = 0;
+        for (int i = 0; i < 4; i++) cap = ResearchS1FanKinematics.TurnWithDetent(cap, -80, 270, false, ref capBack);
+        cap = ResearchS1FanKinematics.TurnWithDetent(cap, 5.8, 270, false, ref capBack);
+        Truth(ResearchS1FanKinematics.IsTight(cap, 270), "four 80 deg twists seat the 270 deg left-hand cap and survive release");
         Reject(() => ResearchS1FanKinematics.Turn(double.NaN, 0, 540, true), "NaN");
         Reject(() => ResearchS1FanKinematics.Turn(0, double.PositiveInfinity, 540, true), "Infinity");
         Reject(() => ResearchS1FanKinematics.Turn(-1, 0, 540, true), "negative progress");

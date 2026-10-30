@@ -20,15 +20,22 @@ internal static class ResearchS1FanObservationChecks
             bladePlacement = S1Placement.Seated, bladeKeyAligned = true, spinner = S1ThreadState.Tight,
             rearGuardPlacement = S1Placement.Seated, rearLock = S1ThreadState.EngagedLoose };
         Equal(ResearchS1FanObservations.Get(state, "B.front_guard", ParticipantLanguage.Japanese.ToString()),
-            "合わせ位置が一致し、クリップは閉じています。", "controller Japanese token");
+            "マークが合い、クリップが閉じています。", "controller Japanese token");
         Equal(ResearchS1FanObservations.Get(state, "B.front_guard", ParticipantLanguage.Thai.ToString()),
-            "ตำแหน่งประกบตรงกันและคลิปปิด", "controller Thai token");
+            "เครื่องหมายตรงกัน และคลิปปิด", "controller Thai token");
         Equal(ResearchS1FanObservations.Get(state, "B.blade_mount", ParticipantLanguage.Japanese.ToString()),
-            "前ガードが観察箇所を覆っています。", "Japanese inaccessible blade");
+            "前ガードで羽根が見えません。", "Japanese inaccessible blade");
         Equal(ResearchS1FanObservations.Get(state, "B.blade_mount", ParticipantLanguage.Thai.ToString()),
-            "ตะแกรงหน้าบังบริเวณสังเกต", "Thai inaccessible blade");
+            "ตะแกรงหน้าบังใบพัดอยู่", "Thai inaccessible blade");
+        Equal(ResearchS1FanObservations.Get(state, "B.module", "Thai"),
+            "ตะแกรงหน้า: ตรง คลิปปิด\nตะแกรงหลัง: ขอบขยับ", "whole-fan Examine lists the areas visible with the front guard on");
+        state.frontGuardPlacement = S1Placement.NotInstalled;
+        Equal(ResearchS1FanObservations.Get(state, "B.module", "Japanese").Split('\n').Length.ToString(), "3", "removing the front guard adds the blade line");
+        state.frontGuardPlacement = S1Placement.Seated;
         Equal(ResearchS1FanObservations.Get(state, "B.front_guard", ParticipantLanguage.English.ToString()),
-            ResearchStrings.Get("examine.info.unavailable", "English"), "unsupported language is not Thai");
+            "The marks align and the clip is closed.", "English observations are localized rather than Thai fallback");
+        Equal(ResearchS1FanObservations.Get(state, "B.front_guard", "French"),
+            ResearchStrings.Get("examine.info.unavailable", "French"), "unsupported language is not Thai");
         Equal(ResearchS1FanObservations.Get(state, "B.front_guard", "JP"),
             ResearchStrings.Get("examine.info.unavailable", "JP"), "no caller authorizes JP alias");
         Equal(ResearchS1FanObservations.Get(state, "B.front_guard", "TH"),

@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B4.th",
+  "version": "v4-f61ec35a356dccc1.2241aeb93ece0049",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v4_TH.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B4_th/source_pdf",
+  "source_sha256": "24b1ca7e95f963571eb69f7c68804030065243e7198fa740f995394be991e4fa",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B4_th/pages/p01",
+      "sha256": "7486878b92105270cebcaf0434f3dca6bfe232d438988de69652d81c16dc1366"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B4_th/pages/p02",
+      "sha256": "441c18eaaa8345c1c030358da7c7337e76a9c4a62671564a956208445024c7b7"
+    }
+  ],
+  "steps": [
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจและซ่อมพัดลม F2</color></size>\n<size=46><b>ตรวจและซ่อมพัดลม F2 ที่สั่นหรือมีเสียงกระทบ แล้วประกอบกลับ</b></size>\n\n<size=34>Grip ค้างจับตะแกรง/ใบพัด ขยับแล้วปล่อย\nTrigger ค้างจับคลิป/ตัวล็อกเกลียว ขยับแล้วปล่อย หรือกดเลือกปุ่ม Main</size>\n\n<size=34><color=#2E7D32>ใส่ตะแกรงครบแล้วกดตรวจผลงาน หมุนทดสอบ 3 วินาที ผลผ่านพร้อมใช้งานจึงเสร็จ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=46><b>เลือกจุดที่จะดูใน F2</b></size>\n\n<size=34><color=#4A5A6E>ไฟถูกตัดแล้ว ไม่เปิดมอเตอร์ ไม่ถอดฐาน เสา หรือหัวพัดลม</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ลำดับใดก็ได้ ไม่ต้องตรวจทุกจุด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจ</color></size>\n<size=46><b>ดูตะแกรงหน้าและขอบตะแกรงหลัง</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ปกติ: หน้าประกบเต็ม เครื่องหมายตรง คลิปปิด ขอบหลังไม่ขยับเทียบหัว</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=46><b>ถ้าจะเข้าถึงใบพัด ให้ถอดตะแกรงหน้า</b></size>\n\n<size=34><color=#4A5A6E>เปิดคลิป หมุนตามเครื่องหมาย ดึงตรงออกแล้วปล่อย</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เห็นใบพัด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจ</color></size>\n<size=46><b>เมื่อเปิดหน้าแล้ว ดูใบพัดกับตัวล็อก</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ปกติ: ร่องสวมพินจนสุด ตัวล็อกแน่น</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=46><b>ถ้าจะถอดใบพัด ให้คลายตัวล็อก</b></size>\n\n<size=34><color=#4A5A6E>มองจากด้านหน้า หมุนตามเข็มนาฬิกา</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> หลุดเกลียวแล้วถอดและปล่อย</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เปิด</color></size>\n<size=46><b>เมื่อตัวล็อกออกแล้ว ดึงใบพัดตามแกน</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> วางแล้วเห็นหน้าวงแหวนหลัง</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจ</color></size>\n<size=46><b>ดูวงแหวนและลองขยับตะแกรงหลัง</b></size>\n\n<size=34><color=#4A5A6E>ใส่อยู่หรือเข้าเกลียว ไม่ได้แปลว่าแน่น การถอดชิ้นที่บังไม่ใช่การซ่อม</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ปกติ: วงแหวนขันแน่น</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ถ้าตะแกรงหลังขยับ</color></size>\n<size=46><b>ถ้าหลังหลวมหรือเอียง ถอดวงแหวนแล้วจัดตรง</b></size>\n\n<size=34><color=#4A5A6E>มองจากหน้า: ทวนเข็มคลาย ตามเข็มขัน</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> อย่าดึงขณะติดเกลียว ขันจนขอบไม่ขยับ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=46><b>ใส่ใบพัดกลับ ให้ร่องตรงพิน</b></size>\n\n<size=34><color=#4A5A6E>ดันจนสุดแล้วปล่อย</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ใบพัดไม่โยก</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=46><b>ขันตัวล็อกใบพัดให้แน่น</b></size>\n\n<size=34><color=#4A5A6E>มองจากด้านหน้า หมุนทวนเข็มนาฬิกา</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> แน่นแล้วปล่อย</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=46><b>ใส่ตะแกรงหน้าที่ถอดไว้กลับ</b></size>\n\n<size=34><color=#4A5A6E>จัดเครื่องหมาย ประกบเต็ม หมุนล็อก ปิดคลิป</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ตะแกรงครบ คลิปปิด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจผลงาน</color></size>\n<size=46><b>กดตรวจผลงานบน Main แล้วฟัง</b></size>\n\n<size=34><color=#4A5A6E>หมุน 3 วินาที ใช้ฟังอาการก่อนซ่อมหรือตรวจหลังซ่อม</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผลผ่านพร้อมใช้งาน = เสร็จ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ถ้ายังไม่ผ่าน</color></size>\n<size=46><b>อ่านผล แก้แล้วตรวจใหม่</b></size>\n\n<size=34><color=#4A5A6E>ตะแกรงไม่ครบ: ยังไม่ทดสอบ เสียงผิดปกติ: ยังหลวมหรือไม่เข้าที่</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ระบบขัดข้องให้บอกผู้วิจัย ไม่ใช่ความผิดคุณ</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_01",
+      "sha256": "dc2f2fd22ed69f4cfa073e69b34abaa0cd226ff36c69f0ed56454944061d3e39",
+      "caption_th": "ซ่อม F2 ที่สั่นหรือมีเสียงกระทบ\nเลือกจุดและลำดับเอง ไม่ต้องตรวจทุกจุด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_02",
+      "sha256": "b46f67cc64dcdef91337b15ec1790dc0238aea8100f92ff9918f1e6a21b56abb",
+      "caption_th": "เทียบกับสภาพปกติ\nขอบหลังเห็นจากนอก ใบพัดเห็นเมื่อเปิดหน้า วงแหวนเห็นเมื่อถอดใบพัด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_03",
+      "sha256": "59e7b3cbaafd52efe74e8c97ba1e1ac031322b2568c54cec326243258bc6b7e4",
+      "caption_th": "ถ้าจะเข้าถึงด้านใน\nเปิดคลิป หมุนและดึงหน้าออก ถอดตัวล็อกก่อนดึงใบพัด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_04",
+      "sha256": "603647715b82f352f750404692c00c2a88c8f8b7d18be8ba8e545d6bfdc4801d",
+      "caption_th": "เกลียวสองชิ้นหมุนคนละด้าน\nมองจากด้านหน้า วงแหวนยังติดเกลียวจะดึงไม่ออก"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_05",
+      "sha256": "f60e111d5e014acfbb461a29a05115c69250a2fa855cc81564f48b67210f7c0a",
+      "caption_th": "แก้เฉพาะจุดที่ผิดปกติ\nวางชิ้นส่วนหรือถอดสิ่งที่บัง ยังไม่ใช่การยึดให้แน่น"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_06",
+      "sha256": "141dfb535f19a88fe382383d978581388f5cbe1b58e42c800d7d279af514fdca",
+      "caption_th": "ใส่ชิ้นที่ถอดไว้กลับ\nตะแกรงหลัง → ใบพัด → ตัวล็อก → ตะแกรงหน้า → คลิป"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_th_07",
+      "sha256": "ea632e339d6201c5505e478811b773fdb827875a4ef3d82c3818bb13292fd4e9",
+      "caption_th": "ฟังอาการหรือตรวจหลังซ่อม\nใส่ตะแกรงครบแล้วตรวจผลงาน หมุน 3 วินาที"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B4_th.mp4",
+    "sha256": "26bc936caf6359463dd182e0f9409299fc6c3d95bcef74ab46cc7d768823a335",
+    "duration_seconds": 103.68,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 21.12
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 21.12,
+        "end_seconds": 25.61
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 25.61,
+        "end_seconds": 31.68
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 31.68,
+        "end_seconds": 38.13
+      },
+      {
+        "stage": "do",
+        "start_seconds": 38.13,
+        "end_seconds": 45.47
+      },
+      {
+        "stage": "do",
+        "start_seconds": 45.47,
+        "end_seconds": 50.56
+      },
+      {
+        "stage": "do",
+        "start_seconds": 50.56,
+        "end_seconds": 55.67
+      },
+      {
+        "stage": "do",
+        "start_seconds": 55.67,
+        "end_seconds": 60.97
+      },
+      {
+        "stage": "do",
+        "start_seconds": 60.97,
+        "end_seconds": 66.2
+      },
+      {
+        "stage": "do",
+        "start_seconds": 66.2,
+        "end_seconds": 73.28
+      },
+      {
+        "stage": "do",
+        "start_seconds": 73.28,
+        "end_seconds": 79.8
+      },
+      {
+        "stage": "do",
+        "start_seconds": 79.8,
+        "end_seconds": 88.34
+      },
+      {
+        "stage": "done",
+        "start_seconds": 88.34,
+        "end_seconds": 103.68
+      }
+    ]
+  }
+}

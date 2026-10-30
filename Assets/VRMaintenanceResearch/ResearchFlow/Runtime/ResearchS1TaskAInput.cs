@@ -38,6 +38,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             interactable.enabled = allowed;
             if (plug) plug.grabbable.enabled = allowed;
             if (!allowed) Finish(true);
+            GetComponent<ResearchS1FreeBody>()?.Refresh();
         }
 
         private void Pointer(PointerEvent evt)
@@ -65,11 +66,18 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
         }
 
-        public void Motion(string action, S1TaskAState before, bool blocked)
+        public void Observe(PartOperation operation, PartBlockReason reason = PartBlockReason.None) =>
+            owner.port.UpdateInteraction(attempt, operation, reason);
+
+        public void Motion(string action, S1TaskAState before, bool blocked, PartBlockReason reason = PartBlockReason.Unspecified)
         {
             if (!Allowed) return;
             last = owner.Capture();
-            owner.port.UpdateAttempt(attempt, action, before, last, blocked);
+            var operation = latch ? (action == "FASTEN" ? PartOperation.Close : PartOperation.Open)
+                : action == "FASTEN" || action == "UNFASTEN" || action == "ROTATE_WORKPIECE" ? PartOperation.Turn
+                : action == "INSTALL" ? PartOperation.Insert : action == "REMOVE" ? PartOperation.Remove
+                : action == "CONNECT" ? PartOperation.Connect : action == "DISCONNECT" ? PartOperation.Disconnect : PartOperation.Move;
+            owner.port.UpdateAttempt(attempt, action, before, last, blocked, operation, reason);
         }
 
         private void LateUpdate()

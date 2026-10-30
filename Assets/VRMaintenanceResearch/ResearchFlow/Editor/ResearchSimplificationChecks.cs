@@ -157,7 +157,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 foreach (var language in new[] { "Thai", "Japanese" })
                 {
                     string examine = ResearchStrings.Get("action.examine", language), inspect = ResearchStrings.Get("action.inspect", language);
-                    Check(examine == (language == "Thai" ? "ตรวจดู" : "確認") && inspect == (language == "Thai" ? "ตรวจผล" : "検査"), language + " Examine/Inspect terminology stays distinct");
+                    Check(examine == (language == "Thai" ? "ส่องดู" : "よく見る") && inspect == (language == "Thai" ? "ตรวจผล" : "検査"), language + " Examine/Inspect terminology stays distinct");
                     string fail = ResearchStrings.Get("inspect.fail.body", language);
                     Check(!string.IsNullOrWhiteSpace(fail) && !fail.Contains(ResearchStrings.Get("action.reference", language)), language + " Fail does not direct participant to Reference");
                 }

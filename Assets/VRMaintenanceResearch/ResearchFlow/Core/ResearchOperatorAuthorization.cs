@@ -96,6 +96,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (IsTechnical(record)) return "TechnicalTestData";
             if (record.group != ParticipantGroup.Thai && record.group != ParticipantGroup.Japanese || record.test_data)
                 throw new InvalidOperationException("Participant group and test-data provenance are inconsistent.");
+            if (authorization == null && ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) return "OwnerOpenStudyNoDeviceAuthorization";
             if (authorization == null || authorization.schema != "research.operator-authorization.1")
                 throw new InvalidOperationException("Production operator authorization is missing or has an unsupported schema.");
             if (string.IsNullOrWhiteSpace(authorization.operator_id) || authorization.participant_id != record.participant_id)

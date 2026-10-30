@@ -69,19 +69,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     "Plate", Node(head, "SEAT_FAN_PED_HEAD_GuardRear"), .45f, GrabTypeFlags.Palm, 30, 4);
                 task.rearLock = Part(task, "FAN_PED_GUARD_LOCK", "B.rear_guard_lock", S1FanPartKind.RearLock,
                     "Thread", Node(head, "SEAT_FAN_PED_HEAD_GuardLock"), .04f, GrabTypeFlags.Pinch, 20, 3);
-                task.rearLock.fullTurnDegrees = 540;
+                task.rearLock.fullTurnDegrees = ResearchS1TaskBMechanics.RearLockTurnDegrees;
                 task.rearLock.threadTravelMm = 16.9f;
                 task.rearLock.rightHanded = true;
-                // Source dimensions are estimated. This fixed simulated gap leaves one initial loose joint.
-                task.rearLock.AuthorInitialPose(540 * (1 - .6f / 16.9f));
+                // One initial loose joint, short of the stop by more than grip jitter so touching it cannot fix it by accident.
+                task.rearLock.AuthorInitialPose(ResearchS1TaskBMechanics.RearLockTurnDegrees - ResearchS1TaskBMechanics.RearLockFaultGapDegrees);
                 task.blade = Part(task, "FAN_PED_BLADE", "B.blade", S1FanPartKind.Blade,
                     "Bore", Node(head, "SEAT_FAN_PED_HEAD_Blade"), .22f, GrabTypeFlags.Palm, 60, 3);
                 task.spinner = Part(task, "FAN_PED_SPINNER", "B.spinner", S1FanPartKind.Spinner,
                     "Thread", Node(head, "SEAT_FAN_PED_HEAD_Spinner"), .02f, GrabTypeFlags.Pinch, 15, 3);
-                task.spinner.fullTurnDegrees = 720;
+                task.spinner.fullTurnDegrees = ResearchS1TaskBMechanics.SpinnerTurnDegrees;
                 task.spinner.threadTravelMm = 5;
                 task.spinner.rightHanded = false;
-                task.spinner.AuthorInitialPose(720);
+                task.spinner.AuthorInitialPose(ResearchS1TaskBMechanics.SpinnerTurnDegrees);
                 task.frontGuard = Part(task, "FAN_PED_GUARD_FRONT", "B.front_guard", S1FanPartKind.FrontGuard,
                     "Rim", Node(task.rearGuard.gameObject, "SEAT_FAN_PED_GUARD_REAR_FrontLocked"), .5f, GrabTypeFlags.Palm, 20, 6);
                 task.frontGuard.insertTurnDegrees = SocketRules.Measure(task.frontGuard.seat.localToWorldMatrix,
@@ -160,8 +160,35 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             collider.center = mesh.bounds.center;
             collider.size = mesh.bounds.size + Vector3.one * .004f;
             Grab(part, .01f, GrabTypeFlags.All);
+            BakeClipPoses(part);
             part.AuthorInitialPose();
             return part;
+        }
+
+        public static void BakeClipPoses(ResearchS1FanPart part)
+        {
+            if (EditorApplication.isPlaying || !part || part.kind != S1FanPartKind.FrontClip)
+                throw new InvalidOperationException("A stopped authored fan clip is required.");
+            string path = AnimationUtility.CalculateTransformPath(part.transform, part.clipAnimationRoot.transform);
+            var preview = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            GameObject root = null;
+            try
+            {
+                root = UnityEngine.Object.Instantiate(part.clipAnimationRoot);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, preview);
+                var clip = root.transform.Find(path) ?? throw new InvalidOperationException("Authored clip node missing.");
+                part.clipOpen.SampleAnimation(root, part.clipOpen.length);
+                var open = new Pose(clip.localPosition, clip.localRotation);
+                part.clipClose.SampleAnimation(root, part.clipClose.length);
+                var closed = new Pose(clip.localPosition, clip.localRotation);
+                part.AuthorClipPoses(open, closed);
+                EditorUtility.SetDirty(part);
+            }
+            finally
+            {
+                if (root) UnityEngine.Object.DestroyImmediate(root);
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(preview);
+            }
         }
 
         private static void Grab(ResearchS1FanPart part, float mass, GrabTypeFlags types)

@@ -20,7 +20,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         [Serializable] public sealed class Page { public int page; public float width, height; public string resource, sha256; }
         [Serializable] public sealed class Step { public string text_th, text_ja, text_en; }
         [Serializable] public sealed class Picture { public string resource, sha256, caption_th, caption_ja, caption_en; }
-        [Serializable] public sealed class Movie { public string streaming_path, sha256; }
+        [Serializable] public sealed class Chapter { public string stage; public double start_seconds, end_seconds; }
+        [Serializable] public sealed class Movie { public string streaming_path, sha256; public Chapter[] chapters; }
         [Serializable] public sealed class Package
         {
             public int schema_version;
@@ -307,8 +308,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (state == MediaState.Seeking) { player.Pause(); if (videoAudio) videoAudio.mute = true; Event("REFERENCE_VIDEO_PAUSE_REQUESTED", Actor(input), input); RefreshVideoControls(); return true; }
                     // Native Pause can finish queued frames; acknowledge only the frozen target's decoded frame.
                     return Seek(pauseTime, "None", false, "System", true);
-                case "reference_media.seek_back": return CanSkipVideo && Seek(player.time - 10, input, player.isPlaying);
-                case "reference_media.seek_forward": return CanSkipVideo && Seek(player.time + 10, input, player.isPlaying);
+                case "reference_media.seek_back": return CanSkipVideo && Seek(SkipTarget(player.time, package?.video?.chapters, -1), input, player.isPlaying);
+                case "reference_media.seek_forward": return CanSkipVideo && Seek(SkipTarget(player.time, package?.video?.chapters, 1), input, player.isPlaying);
                 default: return false;
             }
         }
@@ -502,7 +503,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             timeLabel.rectTransform.sizeDelta = new Vector2(180, 48); timeLabel.rectTransform.anchoredPosition = new Vector2(278, 32);
             CreateTimeline();
             var commands = new[] { "play", "seek_back", "seek_forward" };
-            var labels = new[] { Local("เล่น", "再生", "Play"), "-10 s", "+10 s" };
+            bool scenes = package?.video?.chapters?.Length > 1;
+            var labels = new[] { Local("เล่น", "再生", "Play"), scenes ? Local("ย้อน", "前へ", "Back") : "-10 s", scenes ? Local("ถัดไป", "次へ", "Next") : "+10 s" };
             for (int i = 0; i < commands.Length; i++)
             {
                 var button = Control(content, "Video_" + commands[i], labels[i], "reference_media." + commands[i]);
@@ -554,7 +556,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             LoadPhase("preparing");
             var host = new GameObject("ReaderVideoPlayer"); host.transform.SetParent(content, false);
             player = host.AddComponent<VideoPlayer>(); videoAudio = host.AddComponent<AudioSource>();
-            videoAudio.playOnAwake = false; videoAudio.mute = true; videoAudio.spatialBlend = 0; videoAudio.volume = .5f;
+            videoAudio.playOnAwake = false; videoAudio.mute = true; videoAudio.spatialBlend = 0; videoAudio.volume = 1;
             player.playOnAwake = false; player.isLooping = false; player.waitForFirstFrame = true;
             player.sendFrameReadyEvents = true;
             player.source = VideoSource.Url; player.url = url;
@@ -717,6 +719,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         bool CanSkipVideo => CanSeekTimeline && player.length > 20;
+        // Owner 29 Oct: a 2-3 minute narrated video needs scene jumps, not 10 s steps. Back restarts the current scene,
+        // or goes to the previous one when already near its start; videos without chapters keep 10 s steps.
+        public static double SkipTarget(double time, Chapter[] chapters, int direction)
+        {
+            if (chapters == null || chapters.Length < 2) return time + 10 * direction;
+            var starts = chapters.Select(c => c.start_seconds).OrderBy(s => s).ToArray();
+            if (direction > 0) return starts.Where(s => s > time + .25).DefaultIfEmpty(time + 10).First();
+            return starts.Where(s => s < time - 1.5).DefaultIfEmpty(0).Last();
+        }
         static bool ValidDuration(double seconds) => seconds > 0 && !double.IsNaN(seconds) && !double.IsInfinity(seconds);
         static string DisplayTime(double seconds)
         {

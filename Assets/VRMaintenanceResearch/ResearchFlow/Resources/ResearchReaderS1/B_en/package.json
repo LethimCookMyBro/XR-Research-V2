@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B.en",
+  "version": "v2-54f7827f37ec4f5c.840f9e10dd0eeb4c",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v2_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B_en/source_pdf",
+  "source_sha256": "310b5fa1323049be3ab581583ed79f3f6bcc17ee1dba8a53d2c53cedb86a77cb",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B_en/pages/p01",
+      "sha256": "4e29ec9970557b8579ceb2f3dceb0a6222e7431ba61c336be7c0fdf7e4baf537"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B_en/pages/p02",
+      "sha256": "c96b0a26bfbd0ab035a052fa6b787218933badf32ec6285f3c81957667c76a75"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B_en/pages/p03",
+      "sha256": "a0bcef1c1429b51acb3c4b7f967c01daa5218571ac3ef71fbe77ef7f1f03e567"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=46><b>Look at the fan from the front</b></size>\n\n<size=34><color=#4A5A6E>Areas to check: front guard, blade, rear guard · do not open the motor</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Find what is loose · any order</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>Select “Examine” on the task panel</b></size>\n\n<size=34><color=#4A5A6E>Read one line at a time</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: front guard aligned, clip closed · rear rim does not move</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>Release the clip, turn the front guard, pull it off</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Blade is visible</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>Select “Examine” again, read the blade line</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: fully seated, no movement</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>Loosen the blade cap: turn clockwise</b></size>\n\n<size=34><color=#9A5B00>⚠ Viewed from the front of the fan · This one turns the opposite way to normal</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Cap comes off</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>Pull the blade off along the shaft</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Rear locking ring is visible</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>Select “Examine” again, read the rear guard line</b></size>\n\n<size=34><color=#4A5A6E>Threaded on does not mean tight</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: rim does not move</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If the rear guard moves</color></size>\n<size=46><b>Tighten the ring clockwise until it stops</b></size>\n\n<size=34><color=#4A5A6E>Viewed from the front of the fan · To realign the guard, loosen the ring off first</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Rear guard rim does not move</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Push the blade back fully</b></size>\n\n<size=34><color=#4A5A6E>The slot must be on the pin</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Blade does not wobble</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Fit the cap, turn counter-clockwise until it stops</b></size>\n\n<size=34><color=#9A5B00>⚠ Viewed from the front of the fan · Opposite direction to the rear ring</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Cap is tight</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Fit the front guard, turn to lock, close the clip</b></size>\n\n<size=34><color=#4A5A6E>Marks must align · all guards on before inspecting</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Clip closed</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Inspect</color></size>\n<size=46><b>Select “Inspect”</b></size>\n\n<size=34><color=#4A5A6E>The fan runs 3 seconds · listen</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> “Inspection passed · Ready for use.” = done</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If not passed</color></size>\n<size=46><b>Read the result and fix</b></size>\n\n<size=34><color=#4A5A6E>“Test pending” = parts missing · “Abnormal noise is still detected.” = still something loose</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Fix, then select “Inspect” again · system fault: tell the researcher</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_01",
+      "sha256": "6c3405b728091b9745f43577f5330a507663731eed1685a6971d63b761dea0df",
+      "caption_en": "<b>This task</b>\nFind what is loose or not seated, fix it, select “Inspect” · any order"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_02",
+      "sha256": "0f157c7c6dd22815b7e6c1d725ed8c85f29559b041d7f7e9cfd0270dbbfc7ed9",
+      "caption_en": "<b>Select “Examine”, compare ✓ / ×</b>\nBlade visible with front guard off · attached does not mean tight"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_03",
+      "sha256": "62a14887329c6b6e1d856fa98ae000a0df435372aa0adb532d1e41201f845478",
+      "caption_en": "<b>How to open</b>\nFront guard → blade cap → blade → rear guard locking ring visible"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_04",
+      "sha256": "c6d305a8f59289b21b13d89fc4abe31c86d30f461e1c0341cbb858f750ea0015",
+      "caption_en": "<b>Turning direction (seen from the front)</b>\nThese two turn opposite ways"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_05",
+      "sha256": "7136e5d69a3f6ecff6399e14c467929d39eab0005e74baeb344a47a066746ab0",
+      "caption_en": "<b>Fix what you find</b>\nFix only what is wrong, then put every removed part back"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_06",
+      "sha256": "0853435b5027afb9b00ed6adff873be5d315ec99bc5ddde0d6ebaa6904e6bb56",
+      "caption_en": "<b>Reassemble everything</b>\nAll guards must be on before “Inspect”"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B_en_07",
+      "sha256": "14b2ce4e3a4bb749927608876aaf46512a8dc5667932cb05425e5f4c06c3856e",
+      "caption_en": "<b>Select “Inspect”</b>\nFix and inspect again · system fault = tell the researcher"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B_en.mp4",
+    "sha256": "a7f096be963c23d227b58d836765038d7a3c59a9395053db64e9d12fcea99634",
+    "duration_seconds": 124.25,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 18.46
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 18.46,
+        "end_seconds": 24.74
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 24.74,
+        "end_seconds": 32.8
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 32.8,
+        "end_seconds": 40.65
+      },
+      {
+        "stage": "do",
+        "start_seconds": 40.65,
+        "end_seconds": 46.07
+      },
+      {
+        "stage": "do",
+        "start_seconds": 46.07,
+        "end_seconds": 55.41
+      },
+      {
+        "stage": "do",
+        "start_seconds": 55.41,
+        "end_seconds": 60.66
+      },
+      {
+        "stage": "do",
+        "start_seconds": 60.66,
+        "end_seconds": 73.76
+      },
+      {
+        "stage": "do",
+        "start_seconds": 73.76,
+        "end_seconds": 80.65
+      },
+      {
+        "stage": "do",
+        "start_seconds": 80.65,
+        "end_seconds": 91.47
+      },
+      {
+        "stage": "do",
+        "start_seconds": 91.47,
+        "end_seconds": 100.11
+      },
+      {
+        "stage": "do",
+        "start_seconds": 100.11,
+        "end_seconds": 110.32
+      },
+      {
+        "stage": "done",
+        "start_seconds": 110.32,
+        "end_seconds": 124.25
+      }
+    ]
+  }
+}

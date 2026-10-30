@@ -38,10 +38,28 @@ namespace VRMaintenanceResearch.ResearchFlow
         readonly Vector3[] screenCorners = new Vector3[4];
         readonly Plane[] targetFrustum = new Plane[6];
 
-        public bool Available => training ? isActiveAndEnabled && training.Active : isActiveAndEnabled && controller && task && controller.Flow != null && controller.Flow.IsTaskActive
+        public bool Available => controller && controller.UsesDirectPartFeedback ? false : training ? isActiveAndEnabled && training.Active : isActiveAndEnabled && controller && task && controller.Flow != null && controller.Flow.IsTaskActive
             && controller.Flow.CanInteract && controller.Flow.CurrentTask == task.taskId && task.InteractionAllowed
             && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
-        public bool ChipVisible => focused == this && Available && (!stationCanvas || stationCanvas.enabled);
+        public bool ChipVisible => false;
+
+        public static ResearchExamineTarget[] AvailableOnMain(ResearchSessionFlowController owner)
+        {
+            return Targets.FindAll(t => t && t.controller == owner && t.Available).ToArray();
+        }
+
+        public static bool TryExamineFromMain(ResearchSessionFlowController owner, string targetId, string input, out string information)
+        {
+            information = null;
+            if (!owner || !owner.LocalUICommandsAllowed || string.IsNullOrEmpty(input) ||
+                (!owner.IsTechnical && (input == "None" || input.StartsWith("Simulated", StringComparison.Ordinal)))) return false;
+            var target = Targets.Find(t => t && t.controller == owner && t.stableTarget == targetId && t.Available);
+            if (!target || (target.training && owner.TutorialArmedFact != "examine")) return false;
+            information = target.training ? target.training.ExamineInfo(targetId, owner.Language) : target.task.ExamineInfo(targetId, owner.Language);
+            if (target.training) target.training.Examine(targetId, input);
+            else target.task.Examine(targetId, input);
+            return string.IsNullOrEmpty(owner.Error);
+        }
 
         // Each target needs its own compact canvas and SDK canvas interactions. No invisible focus canvas.
         public void ConfigureFocus(Collider[] colliders, Transform anchor)
@@ -77,22 +95,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             SetVisible(false);
         }
 
-        void Update()
-        {
-            if (Targets.Count > 0 && Targets[0] == this) UpdateFocus();
-            if (!Available && focused == this) SetFocus(null);
-            bool visible = focused == this && Available;
-            if (visible && focusAnchor && stationCanvas && controller.origin && controller.origin.Camera)
-            {
-                visible = TryFocusBounds(out var bounds) && PlaceBesidePanels(controller.origin.Camera, bounds);
-            }
-            SetVisible(visible);
-            if (!controller || !label || shownLanguage == controller.Language) return;
-            shownLanguage = controller.Language;
-            if (controller.view) label.font = shownLanguage == "Thai" ? controller.view.thaiFont
-                : shownLanguage == "Japanese" ? controller.view.japaneseFont : controller.view.englishFont;
-            RefreshLabel();
-        }
+        void Update() { SetVisible(false); }
 
         void RefreshLabel()
         {
@@ -143,13 +146,16 @@ namespace VRMaintenanceResearch.ResearchFlow
                 AttachConnector(bounds); return true;
             }
             float half = rect.rect.width * Mathf.Abs(rect.lossyScale.x) * .5f;
+            // Owner 29 Oct: a chip beside a part lying on the bench sank into the bench once it grew to show information.
+            // Its bottom edge never goes below the bottom of the part it labels.
+            float floor = bounds.min.y + rect.rect.height * Mathf.Abs(rect.lossyScale.y) * .5f + .02f;
             // Try the same beside-part poses lower before concealing expanded information above the viewport.
             for (int level = 0; level < 2; level++)
             {
                 var offset = chipOffset + Vector3.down * (level * .20f);
                 for (int side = 0; side < 2; side++)
                 {
-                    var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset);
+                    var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset); position.y = Mathf.Max(position.y, floor);
                     rect.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
                     if (ReadablePlacement(camera, rect)) { AttachConnector(bounds); return true; }
                 }
@@ -162,7 +168,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var offset = chipOffset + Vector3.down * (level * .20f);
                     for (int side = 0; side < 2; side++)
                     {
-                        var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset);
+                        var position = PositionBesideBounds(bounds, side == 0 ? head.right : -head.right, head.forward, half, offset); position.y = Mathf.Max(position.y, floor);
                         rect.SetPositionAndRotation(position, Quaternion.LookRotation(position - head.position, Vector3.up));
                         if (ViewportPlacementOnly(camera, rect)) { AttachConnector(bounds); return true; }
                     }
@@ -339,6 +345,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void SetVisible(bool visible)
         {
+            visible = false;
             if (button) button.interactable = visible;
             if (stationCanvas) stationCanvas.enabled = visible;
             if (stationGroup) { stationGroup.alpha = visible ? 1 : 0; stationGroup.interactable = visible; stationGroup.blocksRaycasts = visible; }

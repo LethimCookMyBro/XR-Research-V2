@@ -155,7 +155,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         var body = (TMP_Text)Field(view, "body"); body.ForceMeshUpdate(true);
                         string copy = ResearchStrings.Get("tutorial.examine_difference", language.ToString());
                         string[] tokens = language == ParticipantLanguage.English ? new[] { "task", "point", "Examine", "button" }
-                            : language == ParticipantLanguage.Thai ? new[] { "งาน", "ชี้", "ตรวจดู", "ปุ่ม" } : new[] { "課題", "指", "確認", "ボタン" };
+                            : language == ParticipantLanguage.Thai ? new[] { "งาน", "ชี้", "ส่องดู", "ปุ่ม" } : new[] { "課題", "指", "よく見る", "ボタン" };
                         Check(tokens.All(token => copy.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) && body.text.Contains(copy),
                             prefix + "Tutorial explains the task-only point-to-part and appearing Examine-button affordance");
                         Check(AuthoredVisible(body.transform, view.mainPanel.transform) && body.preferredHeight <= body.rectTransform.rect.height + 1,

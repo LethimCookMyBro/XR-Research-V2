@@ -33,9 +33,18 @@ namespace VRMaintenanceResearch.ResearchFlow
         // at a stop holds there until turned back past ResearchS1FanKinematics.StopDetentDegrees; part-side status labels. Same skills, new order.
         public const string TrainingTrainerV2 = "S1_TRAINING_TRAINER_V2_20261028";
         public const string TrainingTrainerV3 = "S1_TRAINING_TRAINER_V3_20261029";
+        public const string TrainingTrainerV4 = "S1_TRAINING_TRAINER_V4_20261030";
+        public const string TrainingTrainerV5 = "S1_TRAINING_TRAINER_V5_20261030";
+        public const string InteractionFeedbackVersion = "S1_MAIN_PART_FEEDBACK_20261030";
+        public static bool UsesDirectPartFeedback(string trainingVersion) => trainingVersion == TrainingTrainerV4 || trainingVersion == TrainingTrainerV5;
         // Table/station/Task A P/Q geometry is unchanged from the Q5 source in this revision.
         public const string LegacyLayoutVersion = "S1_LAYOUT_ENV_V2_FAN_TASK_FALLBACK_20261015";
         public const string LayoutVersion = "S1_LAYOUT_REACH_20261029";
+
+        // Owner 29 Oct 2026: Study sessions start without the on-device authorization file, content approval or bilingual-review
+        // flags. Every session logs this version; consent and approvals are then handled outside the app by the researcher.
+        public const string StudyGateVersion = "S1_OWNER_OPEN_STUDY_20261029";
+        public const bool StudyOpenWithoutDeviceApprovals = true;
 
         public const string Default = OwnerMovable;
 
@@ -68,7 +77,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public static string ProtocolFor(string policy) => policy == FixedDemo ? ProtocolFixedDemo : policy == DevMovable ? ProtocolDevMovable
             : policy == OwnerMovable ? ProtocolOwnerMovable : ProtocolBaseline;
-        public static string TrainingFor(string policy) => policy == OwnerMovable ? TrainingTrainerV3
+        public static string TrainingFor(string policy) => policy == OwnerMovable ? TrainingTrainerV5
             : policy == FixedDemo || policy == DevMovable ? TrainingFixedDemo : TrainingBaseline;
 
         /// <summary>Accepts the ids above plus short operator aliases ("fixed", "dev_movable", "legacy_movable").</summary>

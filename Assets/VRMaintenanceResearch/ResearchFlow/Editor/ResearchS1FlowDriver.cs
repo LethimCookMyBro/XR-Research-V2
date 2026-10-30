@@ -48,6 +48,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             active_seconds = activeTime, focus_wait_seconds = focusWait, focus_blocked = clockBlocked, focus_interrupted = focusInterrupted
         });
 
+        public static string InspectRenderTrace => JsonConvert.SerializeObject(FaultRows);
+
         // eyeHeight is the synthetic HMD height above the tracking floor (master §10: also check 1.0 m).
         public static string BeginToFirstTask(string language = "Thai", bool orderAB = true, string layout = null, float eyeHeight = 1.65f) =>
             Start(ToFirstTask(language == "Japanese" ? 1 : 0, layout == null ? 0 : (orderAB ? 1 : 3) + (layout == "Q" ? 1 : 0), eyeHeight), 420);
@@ -376,6 +378,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             {
                 Require(activeTime < until, "Inspect produced no result.");
                 yield return null;
+            }
+            var panel = controller.view.mainPanel;
+            if (!panel.IsReadableFromHead)
+            {
+                FaultRows.Add(new { case_id = "inspect_before_simulated_head_turn", state = ResearchButtonDiagnostics.InspectRenderSnapshot() });
+                ResearchFlowVisualInput.SetHeadFacing(((RectTransform)panel.transform).TransformPoint(((RectTransform)panel.transform).rect.center));
+                yield return AwaitViewerless(() => panel.IsReadableFromHead, "Simulated head looks at Inspect feedback without moving the panel", 8);
+                FaultRows.Add(new { case_id = "inspect_after_simulated_head_turn", state = ResearchButtonDiagnostics.InspectRenderSnapshot() });
             }
             until = activeTime + 8;
             while (!controller.InspectionFeedbackVisible)

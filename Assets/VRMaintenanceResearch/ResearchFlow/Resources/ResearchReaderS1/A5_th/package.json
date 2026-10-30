@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.A5.th",
+  "version": "v5-acfb88ee0c807332.11f7c736ee9d7237",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskA_Reference_v5_TH.pdf",
+  "source_pdf_resource": "ResearchReaderS1/A5_th/source_pdf",
+  "source_sha256": "0599fee85c36c2462d5fef275ce9b3a64348d8792ae87da14711aeba0e1a8519",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_th/pages/p01",
+      "sha256": "946da67cd4299d9e3e176631131845a5c4d70b434f370a541e9098b0c7ba5d1b"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_th/pages/p02",
+      "sha256": "0d42c22c67ea41e7ae8cf78ee9368947ef94d47f2ad31c62cf98d406cd1ce7b0"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_th/pages/p03",
+      "sha256": "6ffd6bc01d361c050e71a1cecff4496cec428dcd27ea26f49e26e38156df3dbe"
+    }
+  ],
+  "steps": [
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบคอมพิวเตอร์ W2</color></size>\n<size=46><b>ใส่ RAM, SSD และ GPU ให้ตรงข้อกำหนด W2</b></size>\n\n<size=34>อ่านฉลากแล้วเลือก RAM, SSD และ GPU ให้ตรงข้อกำหนด ใส่และยึดให้ครบ</size>\n\n<size=34><color=#2E7D32>กดตรวจผลงาน รอ 3 วินาที ผลผ่านข้อกำหนด W2 จึงเสร็จ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=46><b>ดูตำแหน่ง RAM, SSD และ GPU</b></size>\n\n<size=34><color=#4A5A6E>ไฟตัดแล้ว คง CPU/ชุดระบายความร้อน/PSU/สาย ไม่ลง OS ไม่ปิดฝา</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ทำลำดับใดก็ได้ ไม่ต้องใช้ทุกชิ้นบนโต๊ะ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>อ่านฉลาก เลือก RAM 2 แผง</b></size>\n\n<size=34><color=#4A5A6E>DDR4 แผงละ 8 GB เหมือนกัน รวม 16 GB</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ตรงทุกค่า ใส่ได้ยังไม่พอ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>แตะสลักช่อง A2 แล้วกด Trigger ครั้งเดียว</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> สลักเปิดออก อีกด้านของช่องไม่ขยับ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>จับ RAM ด้วย Grip จัดร่องให้ตรง แล้วกดลงจนสุด</b></size>\n\n<size=34><color=#4A5A6E>ใส่ไม่สุดยังไม่ต่อ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> สลักปิดเองเมื่อใส่สุด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>ใส่อีกแผงใน B2</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> RAM อยู่ใน A2 และ B2</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>อ่านฉลาก เลือก SSD 1 ชุด</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5 นิ้ว ≥500 GB และ ≥600 TBW</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผ่านทั้งสองค่า TBW ไม่ใช่ความจุ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับหูจับแท่นด้วย Grip แล้วเลื่อนมือรอบฐาน</b></size>\n\n<size=34><color=#4A5A6E>เคสจะหมุนตามมือ ไม่ต้องบิดข้อมือ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เห็นช่องถาด SSD หลังเมนบอร์ด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับถาด SSD ด้วย Grip แล้วดันเข้ารางจนสุด</b></size>\n\n<size=34><color=#4A5A6E>SSD อยู่บนถาดแล้ว ไม่ขันสกรูใต้ SSD</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ถาดเข้าที่</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับหัวสกรูถาดด้วย Trigger แล้วหมุนจนแน่น</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ถาดไม่ขยับ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับหัวสายข้อมูล SATA ด้วย Trigger แล้วเสียบจนสุด</b></size>\n\n<size=34><color=#4A5A6E>วางถาดแล้วสายไม่ต่อเอง</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> หัวปลั๊กเสียบสุด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับหัวสายไฟ SATA ด้วย Trigger แล้วเสียบจนสุด</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD ต่อครบสองสาย</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>อ่านฉลาก เลือก GPU 1 ใบ</b></size>\n\n<size=34><color=#4A5A6E>VRAM ≥8 GB และกำลังการ์ด ≤150 W</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผ่านทั้งสองค่า ใช้กำลังการ์ด ไม่ใช่ PSU</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>จับ GPU ด้วย Grip แล้วกดลงช่องหลักจนสุด</b></size>\n\n<size=34><color=#4A5A6E>ช่องยาวที่ต่อกับ CPU</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ขั้วการ์ดจมสุดช่อง</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>จับสกรูยึด GPU ด้วย Trigger แล้วหมุนจนแน่น</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> สกรูแน่น การเสียบการ์ดไม่ยึดให้</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>จับหัวไฟ PCIe 8-pin ด้วย Trigger แล้วเสียบที่ GPU</b></size>\n\n<size=34><color=#4A5A6E>หัว 6+2 รวมไว้แล้ว</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> หัวปลั๊กเสียบสุด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจผลงาน</color></size>\n<size=46><b>กดตรวจผลงานบน Main</b></size>\n\n<size=34><color=#4A5A6E>รอ 3 วินาที</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผลผ่าน W2 = เสร็จ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ถ้ายังไม่ผ่าน</color></size>\n<size=46><b>อ่านผล แก้แล้วตรวจใหม่</b></size>\n\n<size=34><color=#4A5A6E>ประกอบไม่ครบ: จุดเสียบ/ตัวยึด/สาย ไม่ตรง W2: ชิ้นส่วน/ช่อง</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ถอดต้องเปิดสลัก/ถอดสาย/คลายสกรูก่อน ระบบขัดข้องให้บอกผู้วิจัย</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_01",
+      "sha256": "b995e227f0c30f91a7fee1dd4ffe5d027981702edf9ad26666cad5d26d5213ea",
+      "caption_th": "ประกอบ W2\nRAM 2 แผง · SSD 1 ชุด · GPU 1 ใบ ให้ตรงข้อกำหนด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_02",
+      "sha256": "ad425026d7182bf9863f7077c5a7311829ed48a9b4a07432ed031d4ba0bc9e82",
+      "caption_th": "อ่านฉลากทุกค่า\nเสียบได้ยังไม่แปลว่าตรง W2"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_03",
+      "sha256": "9ad40941573a40666a6d333de1c256b7f0055aa0591c481f19f7c7101a6708d6",
+      "caption_th": "จัดร่อง RAM ให้ตรง\nเปิดสลักข้างเดียว กดจนปิดเอง อีกข้างอยู่กับที่"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_04",
+      "sha256": "7457a57f513712adc3241b1b28fc2ef051ca3c1d0133f859d4f0a9de6de78a67",
+      "caption_th": "หมุนเคสจากหูจับแท่น\nช่องถาด SSD อยู่หลังเมนบอร์ด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_05",
+      "sha256": "bafc3c2d4fb14cecde02b8cc3f7535c5a0f02f7ef87b82af6c3763c195cbe66c",
+      "caption_th": "ใส่ถาด SSD\nถาดแน่น ตัวยึดแน่น สายสองเส้นเสียบสุด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_06",
+      "sha256": "722911577c9dff84971acc2ddc82dc61d93c75328e0fb461f30d92e97bab9226",
+      "caption_th": "ใส่ GPU ให้สุด\nขันสกรูยึด แล้วเสียบไฟ PCIe 8-pin"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_th_07",
+      "sha256": "657404525f4864052b103f5515ad86c21240b4bbec5b0b3eab189571d23cce0d",
+      "caption_th": "กดตรวจผลงานบน Main\nรอ 3 วินาที ผลผ่าน W2 จึงเสร็จ"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/A5_th.mp4",
+    "sha256": "13bb1e66297a03912eac851d8896c5b1f5d5690bc59bdeec8e60f2b378fc1c3f",
+    "duration_seconds": 117.34,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 23.36
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 23.36,
+        "end_seconds": 35.12
+      },
+      {
+        "stage": "do",
+        "start_seconds": 35.12,
+        "end_seconds": 48.53
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 48.53,
+        "end_seconds": 54.0
+      },
+      {
+        "stage": "do",
+        "start_seconds": 54.0,
+        "end_seconds": 61.07
+      },
+      {
+        "stage": "do",
+        "start_seconds": 61.07,
+        "end_seconds": 69.9
+      },
+      {
+        "stage": "do",
+        "start_seconds": 69.9,
+        "end_seconds": 79.61
+      },
+      {
+        "stage": "do",
+        "start_seconds": 79.61,
+        "end_seconds": 86.19
+      },
+      {
+        "stage": "do",
+        "start_seconds": 86.19,
+        "end_seconds": 95.17
+      },
+      {
+        "stage": "do",
+        "start_seconds": 95.17,
+        "end_seconds": 101.51
+      },
+      {
+        "stage": "done",
+        "start_seconds": 101.51,
+        "end_seconds": 117.34
+      }
+    ]
+  }
+}

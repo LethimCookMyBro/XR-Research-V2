@@ -44,6 +44,53 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             return "S1 assemblies bound; legacy props disabled.";
         }
 
+        public static string InspectRenderState() => Newtonsoft.Json.JsonConvert.SerializeObject(InspectRenderSnapshot());
+
+        public static object InspectRenderSnapshot()
+        {
+            var controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>();
+            if (!Application.isPlaying || !controller || !controller.view || controller.Flow == null
+                || !controller.origin || !controller.origin.Camera) return "No active controller/view";
+            var view = controller.view;
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var type = typeof(ResearchFlowView);
+            var body = (TMPro.TMP_Text)type.GetField("body", flags).GetValue(view);
+            var content = (GameObject)type.GetField("mainContent", flags).GetValue(view);
+            var group = (CanvasGroup)type.GetField("mainGroup", flags).GetValue(view);
+            var camera = controller.origin.Camera;
+            var corners = new Vector3[4];
+            ((RectTransform)view.mainPanel.transform).GetWorldCorners(corners);
+            var panelPosition = view.mainPanel.transform.position; var panelRotation = view.mainPanel.transform.rotation;
+            var headPosition = camera.transform.position; var headForward = camera.transform.forward;
+            return new {
+                frame = Time.frameCount, state = controller.Flow.State.ToString(), passed = controller.Flow.InspectPassed,
+                feedback_visible = controller.InspectionFeedbackVisible, inspection_id = controller.InspectionId,
+                surface_ready = type.GetProperty("FeedbackSurfaceReady", flags).GetValue(view),
+                camera_ready = type.GetMethod("FeedbackCameraReady", flags).Invoke(view, new object[] { camera }),
+                render_started = type.GetField("inspectionRenderStarted", flags).GetValue(view),
+                rendered = type.GetField("inspectionRendered", flags).GetValue(view),
+                panel_active = view.mainPanel.gameObject.activeInHierarchy,
+                canvas_enabled = view.mainPanel.GetComponent<Canvas>().enabled,
+                placement_blocked = view.mainPanel.PlacementBlocked, readable = view.mainPanel.IsReadableFromHead,
+                last_rejection = view.mainPanel.LastRejection,
+                panel_position = new[] { panelPosition.x, panelPosition.y, panelPosition.z },
+                panel_rotation = new[] { panelRotation.x, panelRotation.y, panelRotation.z, panelRotation.w },
+                head_position = new[] { headPosition.x, headPosition.y, headPosition.z }, head_forward = new[] { headForward.x, headForward.y, headForward.z },
+                panel_viewport_corners = corners.Select(p => camera.WorldToViewportPoint(p)).Select(p => new[] { p.x, p.y, p.z }).ToArray(),
+                content_active = content.activeInHierarchy, group_alpha = group.alpha,
+                body = new { text = body.text, active = body.gameObject.activeInHierarchy, body.enabled,
+                    body.havePropertiesChanged, body.canvasRenderer.cull, inherited_alpha = body.canvasRenderer.GetInheritedAlpha(),
+                    renderer_alpha = body.canvasRenderer.GetAlpha(), color_alpha = body.color.a,
+                    face_alpha = body.faceColor.a, characters = body.textInfo.characterCount,
+                    expected_text = type.GetMethod("InspectionFeedbackText", flags).Invoke(view, new object[] { controller.Flow.InspectPassed == true }) },
+                camera = new { camera.name, camera.enabled, target_texture = camera.targetTexture ? camera.targetTexture.name : null,
+                    camera.targetDisplay, camera.pixelWidth, camera.pixelHeight, camera.cullingMask },
+                game_cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)
+                    .Where(c => c.isActiveAndEnabled && c.cameraType == CameraType.Game)
+                    .Select(c => new { c.name, c.depth, target_texture = c.targetTexture ? c.targetTexture.name : null, c.targetDisplay }).ToArray()
+            };
+        }
+
         public static string InspectLiveState()
         {
             var controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>();

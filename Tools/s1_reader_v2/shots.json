@@ -455,7 +455,7 @@
         1
       ],
       "min": 0.25,
-      "fill": 1.0,
+      "fill": 0.25,
       "orbit": 0,
       "segments": [
         {
@@ -490,7 +490,7 @@
         1
       ],
       "min": 0.3,
-      "fill": 1.0,
+      "fill": 0.25,
       "orbit": 0,
       "segments": [
         {
@@ -510,7 +510,8 @@
       ],
       "anchors": [
         "rear_lock",
-        "rear_guard"
+        "rear_guard",
+        "rear_lock_grip"
       ]
     },
     {

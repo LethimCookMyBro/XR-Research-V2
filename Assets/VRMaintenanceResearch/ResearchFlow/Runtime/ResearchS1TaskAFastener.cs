@@ -24,7 +24,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         private bool held, rebase;
         public float ProgressDegrees => progress;
         public int SocketIndex => socketIndex;
-        public float FullDegrees => travelMm / .79375f * 360;
+        // S1_TASKA_SHORT_THREADS_20261029: the real 0.79 mm pitch meant 3-6.4 full turns per screw in VR; one 3/4 turn now seats it.
+        public const string ThreadVersion = "S1_TASKA_SHORT_THREADS_20261029";
+        public const float TurnDegrees = 270;
+        public float FullDegrees => TurnDegrees;
         public bool Captive => sled;
         public bool IsHeld => Application.isPlaying && grabbable.SelectingPointsCount > 0;
         private Matrix4x4 Seat => SeatAt(socketIndex);
@@ -37,7 +40,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var pose = SocketRules.Measure(Seat, mate.localToWorldMatrix);
                 float expected = (float)ResearchS1FanKinematics.ThreadDepthMm(progress, FullDegrees, travelMm);
                 if (pose.lateralMm > .3f || pose.tiltDeg > 1 || Mathf.Abs(pose.depthMm - expected) > .3f) return S1ThreadState.Absent;
-                return progress >= FullDegrees ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
+                return ResearchS1FanKinematics.IsTight(progress, FullDegrees) ? S1ThreadState.Tight : S1ThreadState.EngagedLoose;
             }
         }
         public void AuthorOpen()
@@ -48,7 +51,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Captive) Place(ThreadPose());
         }
         public void Initialize(IGrabbable value) => grab = value;
-        private void Start() { mateInRoot = transform.worldToLocalMatrix * mate.localToWorldMatrix; accepted = transform.localToWorldMatrix; }
+        private void Start()
+        {
+            mateInRoot = transform.worldToLocalMatrix * mate.localToWorldMatrix;
+            accepted = transform.localToWorldMatrix;
+            gameObject.AddComponent<ResearchS1FreeBody>().Configure(body, grabbable,
+                () => Captive || socketIndex >= 0, () => owner.port && owner.port.InteractionAllowed,
+                pose => owner.wiring.Allows(transform, pose));
+        }
         public void BeginTransform() { held = true; Rebase(); }
         private void Rebase()
         {
@@ -77,16 +87,18 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var offer = SocketRules.Measure(seat, free * mateInRoot);
                     if (offer.lateralMm > 3 || offer.tiltDeg > 6 || offer.depthMm > travelMm + 3 || offer.depthMm < -1) continue;
                     if (!owner.GpuSeated(i) || owner.ScrewOccupied(i, this))
-                    { input.Motion("FASTEN", before, true); return; }
+                    { input.Motion("FASTEN", before, true, PartBlockReason.Retained); return; }
                     var offeredPose = ThreadPose(i, progress);
-                    if (!owner.AllowsMotion(transform, offeredPose)) { input.Motion("ALIGN", before, true); return; }
+                    var offeredReason = owner.MotionBlockReason(transform, offeredPose);
+                    if (offeredReason != PartBlockReason.None) { input.Motion("ALIGN", before, true, offeredReason); return; }
                     socketIndex = i; previousTurn = offer.turnDeg;
                     Place(offeredPose);
                     input.Motion("ALIGN", before, false);
                     return;
                 }
-                if (owner.AllowsMotion(transform, free)) Place(free);
-                else input.Motion("MOVE", before, true);
+                var freeReason = owner.MotionBlockReason(transform, free);
+                if (freeReason == PartBlockReason.None) { Place(free); input.Observe(PartOperation.Move); }
+                else input.Motion("MOVE", before, true, freeReason);
                 return;
             }
             var hand = SocketRules.Measure(Seat, free * mateInRoot);
@@ -95,21 +107,31 @@ namespace VRMaintenanceResearch.ResearchFlow
             previousTurn = hand.turnDeg;
             if (!Captive && progress <= 0 && hand.depthMm > travelMm + 2)
             {
-                if (!owner.AllowsMotion(transform, free)) { input.Motion("REMOVE", before, true); return; }
+                var removalReason = owner.MotionBlockReason(transform, free);
+                if (removalReason != PartBlockReason.None) { input.Motion("REMOVE", before, true, removalReason); return; }
                 socketIndex = -1; Place(free); input.Motion("REMOVE", before, false); return;
             }
-            bool blocked = hand.lateralMm > 4 || hand.tiltDeg > 8 || (Captive ? sled.Placement != S1Placement.Seated || sled.part.IsHeld : !owner.GpuSeated(socketIndex));
+            // The shaft constrains an engaged thread, including a captive screw.
+            // Alignment still gates entry of a free screw; wrist orbit does not lock an engaged one.
+            var reason = (Captive ? sled.Placement != S1Placement.Seated || sled.part.IsHeld : !owner.GpuSeated(socketIndex))
+                ? PartBlockReason.Retained
+                : !Captive && progress <= 0 && (hand.lateralMm > 4 || hand.tiltDeg > 8)
+                    ? PartBlockReason.Alignment : PartBlockReason.None;
+            bool blocked = reason != PartBlockReason.None;
             double backoff = stopBackoff;
             float next = blocked ? progress : (float)ResearchS1FanKinematics.TurnWithDetent(progress, clockwiseDelta, FullDegrees, true, ref backoff);
             // Turning into a stop is blocked; a small turn held by the end-stop detent is not.
-            blocked |= Mathf.Abs(clockwiseDelta) > .2f && Mathf.Approximately((float)ResearchS1FanKinematics.Turn(progress, clockwiseDelta, FullDegrees, true), progress);
+            if (!blocked && Mathf.Abs(clockwiseDelta) > .2f && Mathf.Approximately((float)ResearchS1FanKinematics.Turn(progress, clockwiseDelta, FullDegrees, true), progress))
+            { blocked = true; reason = PartBlockReason.EndStop; }
             bool changed = !Mathf.Approximately(next, progress);
             var nextPose = ThreadPose(socketIndex, next);
-            if (!owner.AllowsMotion(transform, nextPose)) { input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, true); return; }
+            var motionReason = owner.MotionBlockReason(transform, nextPose);
+            if (motionReason != PartBlockReason.None) { input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, true, motionReason); return; }
             stopBackoff = backoff;
             progress = next;
             Place(nextPose);
-            if (changed || blocked && Mathf.Abs(clockwiseDelta) > .2f) input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, blocked);
+            input.Observe(PartOperation.Turn, blocked ? reason : PartBlockReason.None);
+            if (changed || blocked && Mathf.Abs(clockwiseDelta) > .2f) input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, blocked, reason);
         }
         private Matrix4x4 ThreadPose() => ThreadPose(socketIndex, progress);
         private Matrix4x4 ThreadPose(int index, float degrees) => SocketRules.RootPose(SeatAt(index),

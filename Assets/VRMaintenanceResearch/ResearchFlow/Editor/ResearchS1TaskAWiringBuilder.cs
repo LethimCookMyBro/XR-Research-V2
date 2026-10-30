@@ -15,6 +15,34 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 {
     public static partial class ResearchS1TaskABuilder
     {
+        public static void ConfigureCaseCableRoutes(ResearchS1TaskAWiring wiring)
+        {
+            foreach(var cable in wiring.cables)
+            {
+                cable.preferredBow=cable.assetId=="CABLE_AC_C13_JP"?Vector3.zero:new Vector3(1,-1,0);
+                foreach(var span in cable.spans){span.routeGuides=null;span.cached=false;span.cachedSide=Vector3.zero;}
+                if(cable.assetId=="CABLE_MX_MB24")
+                    for(int i=0;i<cable.spans.Length;i++)
+                    {
+                        var span=cable.spans[i];
+                        float depth=i==0?.015f:-.0125f;
+                        span.routeGuides=new[]{new Vector3(.35f,.10f,depth),new Vector3(.35f,.35f,depth),new Vector3(.29f,.35f,depth)};
+                        span.routeSlack=Vector3.up;
+                    }
+                if(cable.assetId=="CABLE_MX_EPS8")
+                {
+                    cable.spans[0].routeGuides=new[]{new Vector3(.185f,.103f,.035f),new Vector3(0,.103f,.035f),new Vector3(0,.4f,.035f)};
+                    cable.spans[0].routeSlack=Vector3.back;
+                }
+                if(cable.assetId=="CABLE_FANLEAD_4PIN_300")
+                {
+                    cable.spans[0].routeGuides=new[]{new Vector3(.04f,.37f,-.005f),new Vector3(.04f,.44f,.025f),new Vector3(.14f,.44f,.025f)};
+                    cable.spans[0].routeSlack=Vector3.right;
+                }
+                cable.RefreshShape();
+            }
+        }
+
         private static ResearchS1TaskAWiring Wiring(ResearchS1TaskAMechanics task, List<ResearchS1TaskAInput> inputs)
         {
             var wiring = task.gameObject.AddComponent<ResearchS1TaskAWiring>(); wiring.owner = task;
@@ -75,7 +103,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             wiring.acSeat = Node(psu, "SEAT_PSU_ATX_MX650_AC"); wiring.acMate = Mate(ac,"A");
             wiring.acSocket = wiring.acSeat.gameObject.AddComponent<QASocket>(); wiring.acSocket.fixtureId = "A.psu"; wiring.acSocket.seatName = "AC"; wiring.acSocket.seat = wiring.acSeat;
             wiring.cables = new[] { atx, eps, fan, front, data, sata, pcie, ac };
-            foreach (var cable in wiring.cables) cable.RefreshShape();
+            ConfigureCaseCableRoutes(wiring);
             return wiring;
         }
 

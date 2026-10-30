@@ -26,9 +26,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         public ResearchS1ServiceYaw serviceYaw;
         // shortcut: collision geometry and service rotation remain unverified until actual SDK/Unity acceptance.
 
-        public bool AllowsMotion(Transform moving, Matrix4x4 pose) =>
-            !inputs.Any(i => i != (serviceYaw ? serviceYaw.input : null) && i.transform != moving && i.transform.IsChildOf(moving) && i.pointable.SelectingPointsCount > 0) &&
-            wiring && wiring.Allows(moving, pose) && ResearchS1HeldCollision.Allows(moving, pose);
+        public bool AllowsMotion(Transform moving, Matrix4x4 pose) => MotionBlockReason(moving, pose) == PartBlockReason.None;
+
+        public PartBlockReason MotionBlockReason(Transform moving, Matrix4x4 pose)
+        {
+            if (inputs.Any(i => i != (serviceYaw ? serviceYaw.input : null) && i.transform != moving && i.transform.IsChildOf(moving) && i.pointable.SelectingPointsCount > 0))
+                return PartBlockReason.OtherHeld;
+            if (!wiring || !wiring.Allows(moving, pose)) return PartBlockReason.CableLimit;
+            return ResearchS1HeldCollision.Allows(moving, pose) ? PartBlockReason.None : PartBlockReason.Contact;
+        }
 
         private void Start() => Bind();
 
@@ -37,7 +43,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!AuthoredBindingsValid()) throw new InvalidOperationException("Task A authored bindings are incomplete or inconsistent.");
             port.BindSnapshot(() => Capture(), EvaluateSnapshot, Gate);
             port.BindFeedback(value => "inspect.s1.A." + ResearchS1TaskEvaluator.Evaluate((S1TaskAState)value).Category);
-            port.BindExamineInfo((target, language) => ResearchS1TaskACatalog.Ids.Contains(target) ? ResearchS1TaskACatalog.Label(target) : null);
+            port.BindExamineInfo((target, language) => ResearchS1TaskACatalog.Ids.Contains(target) ? ResearchS1TaskACatalog.Label(target)
+                : target == "A.module" ? ResearchStrings.Get("examine.info.A.module", language) : null);
         }
 
         // Mirrors each option category in place (ResearchS1TaskACatalog.LayoutIndex) before any part has been touched.

@@ -32,7 +32,7 @@ Do not restore them unless explicitly requested.
 - Check the actual working-tree state; earlier reports of a dirty tree are historical. Preserve any current uncommitted work. Never broad reset/clean/stash/checkout/pull/revert.
 - Do not say fixed/pass/ready without direct evidence.
 - Editor/synthetic pass != Quest hardware pass.
-- Preserve TH/JP study gate. Production Task A/B content remains blocked until approved; do not invent task answers/criteria.
+- Owner decision 29 Oct 2026 (`S1_OWNER_OPEN_STUDY_20261029`, `ResearchUIPolicy.StudyOpenWithoutDeviceApprovals`): TH/JP Study sessions start without the on-device authorization file, content-approval or bilingual-review flags; consent and approvals are handled by the researcher outside the app, and every session logs `study_gate_version`. Do not re-close the gate without the owner. Do not invent task answers/criteria.
 - Tutorial may teach. Experimental tasks must not provide answer hints/strategy labels.
 - Before saving a scene, check dirty/unsaved state.
 

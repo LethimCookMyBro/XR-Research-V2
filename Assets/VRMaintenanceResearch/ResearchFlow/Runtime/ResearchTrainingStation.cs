@@ -28,7 +28,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         // Owner 29 Oct: correct insertion goes straight to the latch; wrong-way contact is feedback, not a required exercise.
         public static readonly string[] TrainerV3Sequence = { "examine", "inspect_fail", "insert", "lock", "rotate_access",
             "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
+        public static readonly string[] TrainerV4Sequence = { "inspect_fail", "insert", "lock", "rotate_access",
+            "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
         public static string[] SequenceFor(string trainingVersion) =>
+            ResearchUIPolicy.UsesDirectPartFeedback(trainingVersion) ? TrainerV4Sequence :
             trainingVersion == ResearchUIPolicy.TrainingTrainerV3 ? TrainerV3Sequence :
             trainingVersion == ResearchUIPolicy.TrainingTrainerV2 ? FixedSequence : FixedSequence20261015;
 
@@ -290,16 +293,50 @@ namespace VRMaintenanceResearch.ResearchFlow
             var cues = new System.Collections.Generic.List<GameObject>();
             foreach (var bounds in layout.zones)
             {
-                var cue = GameObject.CreatePrimitive(PrimitiveType.Cube); cue.name = "TurntableGripCue";
-                Destroy(cue.GetComponent<Collider>());
-                cue.transform.SetParent(turntable, false);
-                cue.transform.localPosition = new Vector3(bounds.center.x, layout.surfaceY, bounds.center.z);
-                cue.transform.localScale = new Vector3(bounds.size.x, .008f / turntable.lossyScale.y, .008f / turntable.lossyScale.z);
-                cue.GetComponent<Renderer>().sharedMaterial = cueMaterial;
-                cue.SetActive(false); cues.Add(cue);
+                cues.Add(CreateGripCue(bounds, layout.surfaceY, cueMaterial));
             }
             gripCues = cues.ToArray();
         }
+        public GameObject CreateGripCue(Bounds bounds, float surfaceY, Material material)
+        {
+            var cue = new GameObject("TurntableGripCue");
+            cue.transform.SetParent(turntable, false);
+            cue.transform.localPosition = new Vector3(bounds.center.x, surfaceY, bounds.center.z);
+            var scale = turntable.lossyScale;
+            var inset = Divide(new Vector3(.002f, 0, .002f), scale);
+            var size = new Vector3(bounds.size.x - inset.x * 2, .003f / scale.y, bounds.size.z - inset.z * 2);
+            AddPad("GripBorder", Vector3.zero, size, new Color(.94f, .97f, 1f, 1));
+            var border = Divide(new Vector3(.003f, 0, .003f), scale);
+            AddPad("GripPad", Vector3.up * (.002f / scale.y),
+                new Vector3(size.x - border.x * 2, size.y, size.z - border.z * 2), new Color(.02f, .25f, .78f, 1));
+            cue.SetActive(false);
+            return cue;
+
+            void AddPad(string name, Vector3 position, Vector3 dimensions, Color color)
+            {
+                var pad = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pad.name = name;
+                var collider = pad.GetComponent<Collider>();
+                collider.enabled = false;
+                if (Application.isPlaying) Destroy(collider); else DestroyImmediate(collider);
+                pad.transform.SetParent(cue.transform, false);
+                pad.transform.localPosition = position;
+                pad.transform.localScale = dimensions;
+                var renderer = pad.GetComponent<Renderer>();
+                renderer.sharedMaterial = material;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                var properties = new MaterialPropertyBlock();
+                properties.SetTexture("_BaseMap", Texture2D.whiteTexture);
+                properties.SetColor("_BaseColor", color);
+                properties.SetFloat("_BumpScale", 0);
+                properties.SetTexture("_MetallicGlossMap", Texture2D.blackTexture);
+                properties.SetFloat("_Metallic", 0);
+                properties.SetFloat("_Smoothness", 0);
+                renderer.SetPropertyBlock(properties);
+            }
+        }
+
         static Vector3 Divide(Vector3 a, Vector3 b) => new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
 
         // Quest 28 Oct: 147 s on rotate_access left no turntable trace at all.
@@ -328,19 +365,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 text = ResearchStrings.Get("training.status." + key, language);
                 if (key == "screw.fasten" || key == "screw.loosen") text = string.Format(text, Mathf.RoundToInt(screw.Fraction * 100));
                 if (key == "turn.turning") text = string.Format(text, Mathf.RoundToInt(TurnedDegrees), Mathf.RoundToInt(accessYaw));
-                if (!statusLabel) statusLabel = CreateStatusLabel();
-                if (language != statusLanguage && controller.view)
-                {
-                    statusLanguage = language; statusLabel.font = controller.view.Font;
-                    statusLabel.outlineColor = Color.white; statusLabel.outlineWidth = .18f;
-                }
-                statusLabel.text = text;
-                var camera = controller.origin && controller.origin.Camera ? controller.origin.Camera.transform : null;
-                var bounds = PartBounds(anchor);
-                statusLabel.transform.position = new Vector3(bounds.center.x, bounds.max.y + .06f, bounds.center.z);
-                if (camera) statusLabel.transform.rotation = Quaternion.LookRotation(statusLabel.transform.position - camera.position);
             }
-            if (statusLabel && statusLabel.gameObject.activeSelf != (key != null)) statusLabel.gameObject.SetActive(key != null);
+            if (statusLabel) statusLabel.gameObject.SetActive(false);
+            controller.view?.ShowTrainingStatus(text);
             if (key != statusKey)
             {
                 statusKey = key;

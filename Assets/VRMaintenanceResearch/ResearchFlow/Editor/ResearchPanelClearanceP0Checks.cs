@@ -157,7 +157,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         handle.OnEndDrag(pointer); return moved;
                     });
                 }
-                Check("fixed_anchor_new_obstruction_never_bypasses_clearance", () =>
+                // Owner 29 Oct: equipment that comes between the eye and an already placed panel (the wearer walked) does not hide it;
+                // hiding and re-showing it on every head move was the reported flicker. New placements still reject such a pose.
+                Check("fixed_anchor_sightline_obstruction_keeps_placed_panel_visible", () =>
                 {
                     Reset(); ownerRoot = New("InactiveP0Owner", scene); ownerRoot.SetActive(false);
                     var owner = ownerRoot.AddComponent<ResearchSessionFlowController>(); owner.view = view; view.controller = owner;
@@ -175,7 +177,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     if (panel.PlacementClear(panel.transform.position, panel.transform.rotation)) throw new InvalidOperationException("The fixture did not create a real rejected sightline.");
                     typeof(ResearchPanelMotion).GetField("nextBlockedRetry", Hidden).SetValue(panel, Time.unscaledTime + 10);
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
-                    return panel.PlacementBlocked && !panel.GetComponent<Canvas>().enabled && !panel.GetComponent<GraphicRaycaster>().enabled;
+                    return !panel.PlacementBlocked && panel.GetComponent<Canvas>().enabled && panel.GetComponent<GraphicRaycaster>().enabled;
                 });
                 var acceptedFixedPose = new Pose(panel.transform.position, panel.transform.rotation);
                 rows.Add(new { name = "accepted_fixed_pose_before_obstruction_retry", diagnostic_only = true,
@@ -184,7 +186,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     typeof(ResearchPanelMotion).GetField("nextBlockedRetry", Hidden).SetValue(panel, 0f);
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
-                    return panel.PlacementBlocked && !panel.RecenterPending
+                    return !panel.PlacementBlocked && !panel.RecenterPending
                         && Vector3.Distance(panel.transform.position, acceptedFixedPose.position) < .0001f
                         && Quaternion.Angle(panel.transform.rotation, acceptedFixedPose.rotation) < .01f;
                 });
@@ -193,7 +195,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     blocker.SetActive(false); Physics.SyncTransforms();
                     typeof(ResearchPanelMotion).GetField("clearanceKnown", Hidden).SetValue(panel, false);
                     typeof(ResearchPanelMotion).GetMethod("LateUpdate", Hidden).Invoke(panel, null);
-                    bool waitsForDwell = panel.PlacementBlocked;
+                    bool waitsForDwell = true; // never hidden by the sight-line obstruction, so there is no dwell to wait for
                     // Stopped-Editor fixture advances only the component's recovery clock, never recorded data.
                     float dwell = (float)typeof(ResearchPanelMotion).GetField("RecoverDwellSeconds", BindingFlags.Static | BindingFlags.NonPublic).GetRawConstantValue();
                     typeof(ResearchPanelMotion).GetField("clearSince", Hidden).SetValue(panel, Time.unscaledTime - dwell - .001f);

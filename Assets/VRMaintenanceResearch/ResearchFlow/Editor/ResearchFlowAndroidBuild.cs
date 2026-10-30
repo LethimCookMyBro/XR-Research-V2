@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Xml.Linq;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.Android;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -33,7 +35,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         // Deliberately a technical identity. Never reuse a production/study package id.
         public const string TechnicalApplicationId = "th.ac.tmu.vr.researchflow.quest3.technical";
         const string ProfileManifest = "Assets/Plugins/Android/QuestProfile.androidlib/AndroidManifest.xml";
-        const string AppIcon = "Assets/VRMaintenanceResearch/ResearchFlow/UI/AppIcon/ResearchFlow_AppIcon.png";
+        internal const string AppIcon = "Assets/VRMaintenanceResearch/ResearchFlow/UI/AppIcon/ResearchFlow_AppIcon.png";
+        internal static bool BuildingResearchApk { get; private set; }
 
         static string Out => Directory.CreateDirectory(
             Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "QuestFinalQA", "build"))).FullName;
@@ -131,8 +134,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 // The provider is not declared in normal/study builds. Runtime also enforces exact technical identity and shell/app UID.
                 File.WriteAllText(ProfileManifest, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                     "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"th.ac.tmu.vr.researchflow.transport\">" +
-                    "<application android:label=\"@string/app_name\" android:icon=\"@mipmap/app_icon\">" +
-                    "<activity android:name=\"com.unity3d.player.UnityPlayerGameActivity\" android:label=\"@string/app_name\" android:icon=\"@mipmap/app_icon\" />" +
+                    "<application android:label=\"@string/app_name\" android:icon=\"@drawable/research_launcher_icon\">" +
+                    "<activity android:name=\"com.unity3d.player.UnityPlayerGameActivity\" android:label=\"@string/app_name\" android:icon=\"@drawable/research_launcher_icon\" />" +
                     "<provider android:name=\"th.ac.tmu.vr.researchflow.transport.QuestProfileProvider\" android:authorities=\"" + TechnicalApplicationId +
                     ".quest-profile\" android:exported=\"true\" android:grantUriPermissions=\"false\" /></application></manifest>\n");
                 AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport);
@@ -171,6 +174,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 });
 
                 ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
+                BuildingResearchApk = true;
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
                     scenes = new[] { ScenePath },
@@ -204,6 +208,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             finally
             {
+                BuildingResearchApk = false;
                 var restoreErrors = new List<Exception>();
                 TryRestore(() => File.WriteAllBytes(ProfileManifest, oldProfileManifest), restoreErrors);
                 TryRestore(() => AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport), restoreErrors);
@@ -297,6 +302,45 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (events.Length != 1) throw new Exception("Expected exactly 1 EventSystem, found " + events.Length);
             if (flows.Length != 1) throw new Exception("Expected exactly 1 ResearchSessionFlowController, found " + flows.Length);
             if (ports.Length != 2) throw new Exception("Expected exactly 2 ResearchTaskPort, found " + ports.Length);
+        }
+    }
+
+    // Give sideload launchers a single bitmap resource instead of relying on their
+    // AdaptiveIconDrawable support. Only generated Gradle files are changed.
+    public sealed class ResearchFlowLauncherIconPostprocessor : IPostGenerateGradleAndroidProject
+    {
+        public int callbackOrder => 10000;
+
+        public void OnPostGenerateGradleAndroidProject(string path)
+        {
+            if (ResearchFlowAndroidBuild.BuildingResearchApk)
+                Apply(path, ResearchFlowAndroidBuild.AppIcon);
+        }
+
+        public static void Apply(string unityLibraryPath, string iconPath)
+        {
+            const string resource = "@drawable/research_launcher_icon";
+            XNamespace android = "http://schemas.android.com/apk/res/android";
+            string launcherPath = Path.Combine(Path.GetDirectoryName(unityLibraryPath), "launcher", "src", "main", "AndroidManifest.xml");
+            string libraryPath = Path.Combine(unityLibraryPath, "src", "main", "AndroidManifest.xml");
+            var launcher = XDocument.Load(launcherPath);
+            var library = XDocument.Load(libraryPath);
+            var application = launcher.Root.Element("application") ?? throw new InvalidDataException("Launcher application missing");
+            var activity = library.Root.Element("application")?.Elements("activity")
+                .SingleOrDefault(e => (string)e.Attribute(android + "name") == "com.unity3d.player.UnityPlayerGameActivity")
+                ?? throw new InvalidDataException("Unity launcher activity missing");
+            // Read all required inputs before writing any generated output.
+            byte[] png = File.ReadAllBytes(iconPath);
+            if (png.Length < 24 || !png.Take(8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+                throw new InvalidDataException("Launcher icon must be a PNG");
+            string destination = Path.Combine(unityLibraryPath, "src", "main", "res", "drawable-nodpi", "research_launcher_icon.png");
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            File.WriteAllBytes(destination, png);
+            application.SetAttributeValue(android + "icon", resource);
+            application.SetAttributeValue(android + "roundIcon", resource);
+            activity.SetAttributeValue(android + "icon", resource);
+            launcher.Save(launcherPath);
+            library.Save(libraryPath);
         }
     }
 }

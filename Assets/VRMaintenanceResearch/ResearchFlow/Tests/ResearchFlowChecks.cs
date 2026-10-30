@@ -290,9 +290,19 @@ static class ResearchFlowChecks
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
             // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
             Check(th.ui_policy == ResearchUIPolicy.OwnerMovable && th.protocol_version == ResearchUIPolicy.ProtocolOwnerMovable
-                && th.training_version == ResearchUIPolicy.TrainingTrainerV2 && th.layout_version == ResearchUIPolicy.LayoutVersion,
-                "new study session records the 28 Oct movable UI policy, protocol, training and layout versions");
+                && th.training_version == ResearchUIPolicy.TrainingTrainerV5 && th.layout_version == ResearchUIPolicy.LayoutVersion,
+                "new study session records movable UI policy, protocol, V4 training and layout versions");
             Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
+            Check(!ResearchUIPolicy.UsesDirectPartFeedback(ResearchUIPolicy.TrainingTrainerV3)
+                && ResearchUIPolicy.UsesDirectPartFeedback(ResearchUIPolicy.TrainingTrainerV4), "historical T3 and new V4 keep distinct feedback policies");
+            var recordedProtocols = JObject.Parse(File.ReadAllText(r.ProtocolPath));
+            string beforeT3Fixture = recordedProtocols.ToString();
+            recordedProtocols["sessions"][th.session_id]["training_version"] = ResearchUIPolicy.TrainingTrainerV3;
+            File.WriteAllText(r.ProtocolPath, recordedProtocols.ToString());
+            var resumedT3 = new ResearchParticipantRegistry(root).StartOrResume(th.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller);
+            Check(resumedT3.training_version == ResearchUIPolicy.TrainingTrainerV3, "historical T3 session resumes without upgrade to V4");
+            File.WriteAllText(r.ProtocolPath, beforeT3Fixture);
+
             var legacyDev = r.CreateNext(ParticipantGroup.Dev);
             legacyDev = r.StartOrResume(legacyDev.participant_id, ParticipantLanguage.Thai, ExperimentInputMode.Controller, uiPolicy: ResearchUIPolicy.LegacyMovable);
             Check(legacyDev.ui_policy == ResearchUIPolicy.LegacyMovable && legacyDev.training_version == ResearchUIPolicy.TrainingBaseline

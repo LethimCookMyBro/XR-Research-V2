@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B4.en",
+  "version": "v4-f61ec35a356dccc1.2241aeb93ece0049",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v4_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B4_en/source_pdf",
+  "source_sha256": "1b18ac48658fbcd1e5bfef717b511586b2a8ec5b3f525435a6ffbfd58ad0056a",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B4_en/pages/p01",
+      "sha256": "e8b57fd227e923bd90d38de793ba38932189b5d6dd70e5abd3281b77504a5560"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B4_en/pages/p02",
+      "sha256": "2d19724756c1217b816c570af3731e069b7b5aa515540f61b04b8ee9c338d0c8"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B4_en/pages/p03",
+      "sha256": "2458f8bd23e658c89371d60e4465af4b92f840489fdecb02c9218fc92c417737"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check my work and repair fan F2</color></size>\n<size=46><b>Check and repair fan F2 for vibration or knocking, then reassemble.</b></size>\n\n<size=34>Grip: hold guards/blade, move, release.\nTrigger: hold clip/threaded fasteners, move, release; press for Main.</size>\n\n<size=34><color=#2E7D32>Fit all guards and Check my work. It runs for 3 seconds. Passed/ready means done.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=46><b>Choose an area of F2 to check</b></size>\n\n<size=34><color=#4A5A6E>Power isolated. Leave motor, base, pole and head alone.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Any order; not every area is required.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>Look at the front guard and rear rim</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: front flush, marks aligned, clip closed; rear rim still against head.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>To reach the blade, remove the front guard</b></size>\n\n<size=34><color=#4A5A6E>Open clip, turn along marks, pull straight off and release.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The blade is visible.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>With the front off, look at the blade and cap</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: groove fully on pin; cap tight.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>To remove the blade, loosen its cap</b></size>\n\n<size=34><color=#4A5A6E>Clockwise, viewed from the front.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Once unthreaded, remove and release.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Open</color></size>\n<size=46><b>With the cap off, pull the blade along the shaft</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Put it down. The rear ring face is visible.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check</color></size>\n<size=46><b>Check the ring and rear guard movement</b></size>\n\n<size=34><color=#4A5A6E>Fitted/threaded is not tight. Removing access parts is not a repair.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Normal: the ring is tight.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If the rear guard moves</color></size>\n<size=46><b>If rear is loose/misaligned, remove ring and realign</b></size>\n\n<size=34><color=#4A5A6E>From front: loosen counterclockwise, tighten clockwise.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Do not pull while threaded on. Tighten until rim stays still.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Refit blade: groove on pin</b></size>\n\n<size=34><color=#4A5A6E>Push fully in and release.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The blade does not wobble.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Tighten the blade cap</b></size>\n\n<size=34><color=#4A5A6E>Counterclockwise, viewed from the front.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Release when tight.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Refit the removed front guard</b></size>\n\n<size=34><color=#4A5A6E>Align marks, seat flush, turn to lock and close clip.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both guards on; clip closed.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check my work</color></size>\n<size=46><b>Select Check my work on Main and listen</b></size>\n\n<size=34><color=#4A5A6E>A 3-second run: hear the symptom before repair or check afterwards.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Passed/ready means done.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If not passed</color></size>\n<size=46><b>Read the result, correct and retry</b></size>\n\n<size=34><color=#4A5A6E>Missing guards: no test. Abnormal sound: still loose or misaligned.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> System fault: tell researcher. Not your fault.</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_01",
+      "sha256": "7ce6c33a6907f03b8bf6651f063af15a259af81b84ac88295933989efaa59fe1",
+      "caption_en": "Repair F2's vibration or knocking\nChoose your area and order; not every area needs checking"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_02",
+      "sha256": "7b710d0a626aaf3f9a417489a69e758cfa23d9b8110bed8f1acad9fca29b6fef",
+      "caption_en": "Compare with normal states\nRear rim outside; blade after front off; ring after blade off"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_03",
+      "sha256": "d39054f172dd1bbd5da3d02778a9d2a4802505b8730551b2f553165c035bbccc",
+      "caption_en": "To reach inside\nOpen clip, turn and pull off front. Remove cap before pulling blade"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_04",
+      "sha256": "f96798ba2f1d201d0f933535e162a9841a9e226851825f2853c0338a2cb83802",
+      "caption_en": "The two threads turn opposite ways\nViewed from the front. Do not pull the ring off while threaded on"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_05",
+      "sha256": "5d10ce62d997e839fa75556e998ad107e83d33acdb8ab4f61c29f26f99aa0faf",
+      "caption_en": "Correct what is abnormal\nPlacing parts or removing access parts does not secure them"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_06",
+      "sha256": "a0459eb2bd764ae7e74ac743bd49b4e301a5af7b651638ccc3516a891ccbd099",
+      "caption_en": "Refit removed parts\nRear guard → blade → cap → front guard → clip"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B4_en_07",
+      "sha256": "916662578672e23fa9daa63b43e2f9fc6f0403f961fd8bfc0b7812c4337832df",
+      "caption_en": "Hear the symptom or check the repair\nFit both guards and Check my work. It runs for 3 seconds"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B4_en.mp4",
+    "sha256": "ea7c8e36fcaaf11c6475bc9fa8b385a0a886acc934d8e10ee1553eb8388023f9",
+    "duration_seconds": 139.18,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 29.23
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 29.23,
+        "end_seconds": 34.75
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 34.75,
+        "end_seconds": 41.88
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 41.88,
+        "end_seconds": 50.39
+      },
+      {
+        "stage": "do",
+        "start_seconds": 50.39,
+        "end_seconds": 59.34
+      },
+      {
+        "stage": "do",
+        "start_seconds": 59.34,
+        "end_seconds": 65.27
+      },
+      {
+        "stage": "do",
+        "start_seconds": 65.27,
+        "end_seconds": 72.52
+      },
+      {
+        "stage": "do",
+        "start_seconds": 72.52,
+        "end_seconds": 80.72
+      },
+      {
+        "stage": "do",
+        "start_seconds": 80.72,
+        "end_seconds": 88.23
+      },
+      {
+        "stage": "do",
+        "start_seconds": 88.23,
+        "end_seconds": 98.53
+      },
+      {
+        "stage": "do",
+        "start_seconds": 98.53,
+        "end_seconds": 107.12
+      },
+      {
+        "stage": "do",
+        "start_seconds": 107.12,
+        "end_seconds": 117.69
+      },
+      {
+        "stage": "done",
+        "start_seconds": 117.69,
+        "end_seconds": 139.18
+      }
+    ]
+  }
+}

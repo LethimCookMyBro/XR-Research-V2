@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "content_id": "s1.reader.A.ja",
-  "version": "v2-6d693550421389cf.854468bd8356132e",
+  "version": "v2-54f7827f37ec4f5c.9e093cb2777fd635",
   "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
   "source_pdf": "S1_TaskA_Reference_v2_JA.pdf",
   "source_pdf_resource": "ResearchReaderS1/A_ja/source_pdf",
-  "source_sha256": "d1c16c83a0c9a2787ee558aa0d7ec036fed5801e2f24e56bb40abfc0c3d69061",
+  "source_sha256": "43e6b206603cea1e0c7ac6cfb3945a1822c5719eeea0da004a0a6602e5581583",
   "pages": [
     {
       "page": 1,
       "width": 1273,
       "height": 1800,
       "resource": "ResearchReaderS1/A_ja/pages/p01",
-      "sha256": "3fdb16f1ca6db67a855218add17c41148694c436953021d7b1e1e4bd1a25b77d"
+      "sha256": "9315708cdabb81638baf21b7d144f4419f5a0125101d266e5043b78e8efb7f89"
     },
     {
       "page": 2,
@@ -26,166 +26,166 @@
       "width": 1273,
       "height": 1800,
       "resource": "ResearchReaderS1/A_ja/pages/p03",
-      "sha256": "13556d916f730fcb2b69e6ad780aba412e41e7a7563adc8ace8297422ddc360f"
+      "sha256": "b5e85f7ac6b22a16a022e516edd644529e56e749fca65e85202eaac45956a43e"
     },
     {
       "page": 4,
       "width": 1273,
       "height": 1800,
       "resource": "ResearchReaderS1/A_ja/pages/p04",
-      "sha256": "84ce2b3f1004afb9e507b5118b3653032ff17e2a8a0a2f2184c1be4d64fe3347"
+      "sha256": "39606cec5c0baad43f66384f3d2443b95e6efd113bb9bd92726f8197638851bc"
     }
   ],
   "steps": [
     {
-      "text_ja": "<size=24><color=#5B6B7F>はじめに</color></size>\n<size=36><b>パソコンの中を見ます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> RAM スロット 4 つ・GPU スロット・SSD の位置が空いています。CPU と PSU は接続済みです。外さないでください。\n\n<color=#2E7D32><b>正しい状態:</b></color> RAM 2 枚・SSD 1 台・GPU 1 枚を入れる作業だとわかります。どれから始めてもかまいません。"
+      "text_ja": "<size=24><color=#5B6B7F>はじめに</color></size>\n<size=46><b>本体の空きを見る</b></size>\n\n<size=34><color=#4A5A6E>RAM 2 枚・SSD 1 台・GPU 1 枚。CPU・PSU は外さない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> やることがわかる。順番は自由</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>RAM を 2 枚選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラベルが DDR4・各 8 GB・2 枚とも同じであること（差し込めても正しいとは限りません）。\n\n<color=#2E7D32><b>正しい状態:</b></color> 合計 16 GB になる 2 枚がそろいます。"
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>RAM を 2 枚選ぶ</b></size>\n\n<size=34><color=#4A5A6E>DDR4・各 8 GB・同じもの。入っても正しいとは限らない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 2 枚ともラベルが W2 どおり</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>A2 スロットのラッチを開きます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラッチは片側だけです。反対側は固定です。スロット名は基板に書かれています。\n\n<color=#2E7D32><b>正しい状態:</b></color> ラッチが開きます。"
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>A2 のラッチを開く</b></size>\n\n<size=34><color=#4A5A6E>ラッチは片側だけ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ラッチが開いた</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>RAMをまっすぐ奥まで押し込みます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 押す前に切り欠きをスロットの突起に合わせます。合わないときは無理に押しません。途中までは未接続です。\n\n<color=#2E7D32><b>正しい状態:</b></color> RAM が奥まで入り、ラッチが自然に閉じます。"
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>RAM をまっすぐ奥まで押す</b></size>\n\n<size=34><color=#4A5A6E>切り欠きを合わせる。途中までは数えない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ラッチが自動で閉じる</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>2 枚目を同じ方法で B2 に挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 使うスロットは A2 と B2 だけです。\n\n<color=#2E7D32><b>正しい状態:</b></color> A2 と B2 に RAM が入り、両方のラッチが閉じています。"
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>2 枚目を B2 に入れる</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> A2 と B2 に RAM がある</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSD を 1 台選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラベルの 2 つの数値：容量 500 GB 以上、かつ 600 TBW 以上（TBW は容量ではありません）。\n\n<color=#2E7D32><b>正しい状態:</b></color> 選んだ SSD が 2 つの数値を両方満たしています。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>SSD を 1 台選ぶ</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5インチ・500 GB以上、かつ600 TBW以上。TBWは容量ではない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 種類と2つの数値がW2の要件に合う</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>台のハンドルを持ち、ケースを回して裏側を見ます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> SSD の取付位置はマザーボードトレイの裏側です。\n\n<color=#2E7D32><b>正しい状態:</b></color> SSD トレイの取付位置が見えます。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>台の取っ手を持ち、ケースを裏へ回す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD トレイの差込口が見える</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSDトレイを取付位置の奥まで入れます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> SSD はトレイに固定済みです。SSD 底面のねじは不要です。\n\n<color=#2E7D32><b>正しい状態:</b></color> トレイが収まります。固定具はまだ締まっていません。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>SSD トレイを奥まで入れる</b></size>\n\n<size=34><color=#4A5A6E>SSD の下のねじは不要</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> トレイが収まる</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SSDトレイの固定具を締めます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> トレイを奥まで入れてから固定具の頭を回します。SSD底面のねじではありません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 固定具が締まり、トレイが動きません。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>トレイの固定ねじを締める</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> トレイが動かない</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SATA データケーブルを SSD に挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> コネクタの形と向きを合わせます。トレイを置いてもケーブルはつながりません。\n\n<color=#2E7D32><b>正しい状態:</b></color> コネクタが奥まで入ります。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>SATA データケーブルを挿す</b></size>\n\n<size=34><color=#4A5A6E>ケーブルは自動ではつながらない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 奥まで挿さる</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>SATA 電源ケーブルを SSD に挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> データケーブルとは別のケーブルです。\n\n<color=#2E7D32><b>正しい状態:</b></color> SSD に 2 本のケーブルが奥まで挿さっています。"
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>SATA 電源ケーブルを挿す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD にケーブルが 2 本</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=36><b>GPU を 1 枚選びます。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> ラベルの 2 つの数値：VRAM 8 GB 以上、かつ消費電力 150 W 以下（カードの電力で、PSU ではありません）。\n\n<color=#2E7D32><b>正しい状態:</b></color> 選んだ GPU が 2 つの数値を両方満たしています。"
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>GPU を 1 枚選ぶ</b></size>\n\n<size=34><color=#4A5A6E>VRAM 8 GB 以上・150 W 以下（カードの値）</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 2 つとも満たす</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=36><b>GPU をプライマリ PCIe スロットに奥まで挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> プライマリは CPU につながる長いスロットです。セカンダリではありません。\n\n<color=#2E7D32><b>正しい状態:</b></color> 端子がスロットの奥まで入ります。"
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>GPU をメインスロットに奥まで挿す</b></size>\n\n<size=34><color=#4A5A6E>メイン＝CPU につながる長いスロット</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 端子が奥まで入る</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=36><b>ブラケットのねじでカードをケースに固定します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 挿すだけでは固定されません。\n\n<color=#2E7D32><b>正しい状態:</b></color> ねじが締まっています。"
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>GPU の固定ねじを締める</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ねじが締まる</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=36><b>PCIe 8 ピン補助電源をカードに挿します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 6+2 のコネクタは 8 ピンにまとめてあります。そのまま挿します。\n\n<color=#2E7D32><b>正しい状態:</b></color> 8 ピンが奥まで入ります。"
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>8 ピン電源を GPU に挿す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> 奥まで挿さる</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>検査</color></size>\n<size=36><b>「検査」ボタンを押します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 3 秒で確認します。\n\n<color=#2E7D32><b>正しい状態:</b></color> 「合格：要件どおりに組み立てられ、テストの準備ができています。」と出たら完了です。"
+      "text_ja": "<size=24><color=#5B6B7F>検査</color></size>\n<size=46><b>「検査」を押す</b></size>\n\n<size=34><color=#4A5A6E>3 秒待つ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 「検査に合格しました・W2の要件を満たしました。」で完了</color></size>"
     },
     {
-      "text_ja": "<size=24><color=#5B6B7F>未合格のとき</color></size>\n<size=36><b>結果を読んで直します。</b></size>\n\n<color=#1F5FAF><b>見るところ:</b></color> 「まだ完了していません」= 奥まで入っていない・固定なし・ケーブルなし。「W2 と一致していません」= 部品かスロットが違う。外すときは先にラッチ・ケーブル・ねじを外します。\n\n<color=#2E7D32><b>正しい状態:</b></color> 直したら、もう一度「検査」できます。システムの不具合は研究者に伝えます。"
+      "text_ja": "<size=24><color=#5B6B7F>未合格のとき</color></size>\n<size=46><b>結果を読んで直す</b></size>\n\n<size=34><color=#4A5A6E>「組み立て・接続が未完了です」＝奥まで・固定・ケーブル不足。「W2の要件を満たしていません」＝部品かスロット違い。外すときは先にラッチ・ケーブル・ねじ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 直したら再び「検査」。不具合は研究者へ</color></size>"
     }
   ],
   "images": [
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_01",
-      "sha256": "80cc47b2758cf021dbc59a44c0ed5096723ee6999364ff1c4c7c797b2a227a4f",
+      "sha256": "14eaac8cf9f9d7e962f83bcd3a00126a2210af924183e53de143ef677c1b3648",
       "caption_ja": "<b>この作業</b>\nW2 に合う RAM・SSD・GPU を入れます。順番は自由です。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_02",
-      "sha256": "e0ceb26531135c4e1c79e93996bef2ae7b00d5e515e5a8b8cec7998d065d5a37",
+      "sha256": "76b5c141ee3c4eeb14cdaec8f95ebbe55d868afb9beeb2bec3076a030d302c0b",
       "caption_ja": "<b>W2 に合うものを選ぶ</b>\n差し込める ≠ 正しい。ラベルの数値をすべて見ます。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_03",
-      "sha256": "9acf3833cb464af5099a88b03ca9b5dfa6736b9fa058555417cfba7f9e97eedf",
+      "sha256": "dc0c25217b7468179b9f4f473a8f91eec04c7c7cecfe94bf4909758e36a81ecf",
       "caption_ja": "<b>RAM</b>\nラッチを開く → 切り欠きを合わせる → 奥まで押す（合わなければ無理に押さない）"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_04",
-      "sha256": "6bab773a2d6cc2d0b7cc2effd993a07d6ba84aeafbe2295fe9a35fb633e49a3b",
+      "sha256": "d1eda9a66d54252d66ffd37e0d9f3bd01c8f2418e4fe46c75943da7fc80b8869",
       "caption_ja": "<b>SSD は裏側</b>\nケースを回してマザーボードトレイの裏を見ます。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_05",
-      "sha256": "dd2f843910f68f9b9c8650b03a003bf49f8408f596f96a011b03dd564388f627",
+      "sha256": "6801e7d6961bf00f43ecfb5a1e1fb55ce7747203c9c7f2f89b703c33d385ab3e",
       "caption_ja": "<b>SSD：ケーブルは 2 本</b>\nトレイを置いてもつながりません。SSD 底面のねじは不要です。"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_06",
-      "sha256": "ef1d18fc38b85b40e5409ab7f41ad4dee2bf9215028e18c3dfce76abfece48d6",
+      "sha256": "e526b6f8cb2dc7c0374c76001d7c471fb670da7da0127fe3a026aea8788ff4a5",
       "caption_ja": "<b>GPU：3 つの作業</b>\nプライマリに挿す・ねじ・8 ピン電源"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_ja_07",
-      "sha256": "24bd1f266d06d7d510c7a16a1853c69fe4c50e9ea71126505555444a8faf7e1a",
+      "sha256": "d3e0e086b48d2b93e3e22d5c6baee8c951d7f3d39a7d34b4f1b52eb1de51be79",
       "caption_ja": "<b>「検査」を押す</b>\n直して何度でも検査できます。外すときはラッチ・ケーブル・ねじが先。不具合は研究者へ。"
     }
   ],
   "video": {
     "streaming_path": "ResearchReaderS1/A_ja.mp4",
-    "sha256": "100255bbfc6ae4a95f587bbed5ce235cd2b3030d9999477944d7dfc01552ea2c",
-    "duration_seconds": 185.18,
+    "sha256": "2b1e90065f86573ac99da53a39104c183f97d35aab08487c7d95cad9efd755db",
+    "duration_seconds": 120.98,
     "audio": "narration",
     "chapters": [
       {
         "stage": "problem",
         "start_seconds": 0.0,
-        "end_seconds": 26.47
+        "end_seconds": 18.11
       },
       {
         "stage": "watch",
-        "start_seconds": 26.47,
-        "end_seconds": 44.87
+        "start_seconds": 18.11,
+        "end_seconds": 26.99
       },
       {
         "stage": "do",
-        "start_seconds": 44.87,
-        "end_seconds": 65.27
+        "start_seconds": 26.99,
+        "end_seconds": 41.64
       },
       {
         "stage": "watch",
-        "start_seconds": 65.27,
-        "end_seconds": 73.07
+        "start_seconds": 41.64,
+        "end_seconds": 47.23
       },
       {
         "stage": "do",
-        "start_seconds": 73.07,
-        "end_seconds": 82.23
+        "start_seconds": 47.23,
+        "end_seconds": 53.49
       },
       {
         "stage": "do",
-        "start_seconds": 82.23,
-        "end_seconds": 93.23
+        "start_seconds": 53.49,
+        "end_seconds": 60.9
       },
       {
         "stage": "do",
-        "start_seconds": 93.23,
-        "end_seconds": 120.32
+        "start_seconds": 60.9,
+        "end_seconds": 78.89
       },
       {
         "stage": "do",
-        "start_seconds": 120.32,
-        "end_seconds": 134.03
+        "start_seconds": 78.89,
+        "end_seconds": 86.55
       },
       {
         "stage": "do",
-        "start_seconds": 134.03,
-        "end_seconds": 159.21
+        "start_seconds": 86.55,
+        "end_seconds": 102.25
       },
       {
         "stage": "do",
-        "start_seconds": 159.21,
-        "end_seconds": 165.81
+        "start_seconds": 102.25,
+        "end_seconds": 107.92
       },
       {
         "stage": "done",
-        "start_seconds": 165.81,
-        "end_seconds": 185.18
+        "start_seconds": 107.92,
+        "end_seconds": 120.98
       }
     ]
   }

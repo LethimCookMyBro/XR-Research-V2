@@ -1,6 +1,6 @@
 # Start here: S1 current-source handoff
 
-Updated 2026-10-29. **Use `main` as the single current working and delivery branch.** Read the actual checkout and remote identities, not the historical checkpoint IDs below. Source availability does not establish APK/source identity, installation, Quest input, wearer acceptance or Study approval.
+Updated 2026-10-30. **Use `main` as the single current working and delivery branch.** Read the actual checkout and remote identities, not the historical checkpoint IDs below. Source availability does not establish APK/source identity, installation, Quest input, wearer acceptance or Study approval.
 
 ```powershell
 git status --short --branch
@@ -11,7 +11,8 @@ git remote get-url origin
 ## Current owner-fix source
 
 - Read `OWNER_UI_DIRECTION_20261028.md` and root `design_rule.md` before UI work. The 28 Oct owner direction supersedes the earlier no-drag amendment.
-- New sessions use `S1_TRAINING_TRAINER_V3_20261029`: a correct insertion proceeds directly to the latch. Existing T2/legacy session versions and their Reader routes remain frozen; do not relabel old sessions.
+- Read `OWNER_TASK_EASE_AMENDMENT_20261029.md` before changing Task A/B mechanics, thread angles, sounds or Reader content: shorter threads, a 3 deg tight tolerance, the Inspect fan sound and the 29 Oct content changes.
+- New sessions use `S1_TRAINING_TRAINER_V5_20261030` with A5/B5/T5 Reader packages. Existing V4/T3/T2/legacy sessions retain their original routes; do not relabel recorded sessions.
 - `S1_LAYOUT_REACH_20261029` is a new-session geometry version. Do not apply it retrospectively to an older recorded session.
 - Reader generation lives in `Tools/s1_reader_v2/`. Training packages T2/T3 retain their separate versions; English remains existing Training support, not an English experimental A/B group. Source-version hashing normalizes text newlines and generated package JSON is LF so recipient checkout hashes match.
 - The Japanese source-font dependency is intentionally not redistributed as a loose font. Follow `Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/SOURCE.md` for the pinned download, SHA256 and existing `.meta` GUID before opening Unity.
@@ -19,6 +20,14 @@ git remote get-url origin
 - An old APK is not a compatible resume target for an InProgress V3/Reach session. Rollback requires preserved/exported data, closed writers and no resumption of newer-version sessions in an older binary; do not rewrite registry history to make a downgrade fit.
 
 Do not create extra branches/worktrees by default. Use one writer per checkout, commit reviewed batches, and deliver them to `main` without force-push. If a host requires a temporary branch, integrate reviewed changes into `main` before reporting delivery complete. Never overwrite newer local/cloud edits.
+
+## Latest local delivery (30 Oct 2026)
+
+- Installed/readback-verified technical APK: `3.4.1.20261030.1554` (435834), SHA256 `598013012fc87951866c3778f55fbc875fd48791f3c59fa45b1c12fd5065d2bd`. APK and local evidence are not published in Git.
+- Current changes include free/selected/bound Rigidbody ownership, release velocity, tutorial grip markers, shorter TH/JA/EN actions, V5 four-format media, thread interaction feedback and cable collision/route work.
+- Local evidence: `Logs/CloseInteraction20261030/VERIFICATION.txt`, `SOURCE_MANIFEST.json` and installed readback. Editor startup/physics/Reader checks and nine source suites passed. These are not native-controller or wearer acceptance. Whole-scene blur, physical gestures and icon appearance remain unverified.
+- Generator provenance limitation: `build.py` version digest does not include `manual_part_cards.py`; use the full source manifest and generated-file hashes, not the short source-version string alone.
+- Sections below describe the historical 14 Oct handoff; their APK, session-version and UI directions are not current delivery status.
 
 ## Historical cloud session (14 Oct 2026 night)
 

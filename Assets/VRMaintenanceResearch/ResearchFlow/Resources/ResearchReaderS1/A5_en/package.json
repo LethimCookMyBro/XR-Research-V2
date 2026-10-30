@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.A5.en",
+  "version": "v5-acfb88ee0c807332.11f7c736ee9d7237",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskA_Reference_v5_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/A5_en/source_pdf",
+  "source_sha256": "f9d4b95333ad0e3f8e19e88bfad33a19994be3863f90f66fe2910cda9ffd2441",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_en/pages/p01",
+      "sha256": "663463c2341a222cf55846181d75e191e5f471ab46a91a6fff35fa2daeada0c1"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_en/pages/p02",
+      "sha256": "47ac078439ea6d41b36e0ee1a9df18b2d079787478a6d78362420224ee567e11"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_en/pages/p03",
+      "sha256": "b1c2e70cb61c1be528bca3701efc3f0b1498765a718aa239b085a1df60b0d65d"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Assemble computer W2</color></size>\n<size=46><b>Fit RAM, SSD and GPU that meet W2 requirements.</b></size>\n\n<size=34>Compare the labels with the requirements. Fit and secure the matching RAM, SSD and GPU.</size>\n\n<size=34><color=#2E7D32>Check my work, wait 3 seconds. A W2-passed result means done.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Start</color></size>\n<size=46><b>Find the RAM, SSD and GPU positions</b></size>\n\n<size=34><color=#4A5A6E>Power off. Keep CPU/cooler/PSU/cables. No OS or cover.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Any order. Not every bench part is needed.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Read labels; choose two RAM modules</b></size>\n\n<size=34><color=#4A5A6E>Identical DDR4, 8 GB each, 16 GB total.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Every value matches; fitting is not enough.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>At the A2 latch, press Trigger once</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> The latch opens. The other end stays fixed.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Hold RAM with Grip. Align its notch and push it fully down</b></size>\n\n<size=34><color=#4A5A6E>Half-inserted is not connected.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The latch closes itself when fully seated.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Fit the other module in B2</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> RAM is in A2 and B2.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Read labels; choose one SSD</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5-inch, ≥500 GB and ≥600 TBW.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both values pass. TBW is not capacity.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the stand handle with Grip and move your hand around the base</b></size>\n\n<size=34><color=#4A5A6E>The case follows your hand. Do not twist your wrist.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The SSD tray mount behind the board is visible.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the SSD tray with Grip and push it fully along the rails</b></size>\n\n<size=34><color=#4A5A6E>SSD is already on the tray. No underside screws.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The tray is seated.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the tray screw with Trigger and turn it until tight</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> The tray does not move.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the SATA data plug with Trigger and push it fully in</b></size>\n\n<size=34><color=#4A5A6E>Seating the tray does not connect cables.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The plug is fully in.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Hold the SATA power plug with Trigger and push it fully in</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both SSD cables are connected.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Read labels; choose one GPU</b></size>\n\n<size=34><color=#4A5A6E>VRAM ≥8 GB; card power ≤150 W.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both values pass. Use card power, not PSU power.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Hold the GPU with Grip and push it fully into the primary slot</b></size>\n\n<size=34><color=#4A5A6E>The long slot wired to the CPU.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The contacts are fully seated.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Hold the GPU bracket screw with Trigger and turn it until tight</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> Tight. Insertion alone does not secure it.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Hold the PCIe 8-pin plug with Trigger and insert it into the GPU</b></size>\n\n<size=34><color=#4A5A6E>The 6+2 plug is already joined.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The plug is fully in.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check my work</color></size>\n<size=46><b>Select Check my work on Main</b></size>\n\n<size=34><color=#4A5A6E>Wait 3 seconds.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> W2 passed means done.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>If not passed</color></size>\n<size=46><b>Read the result, correct and retry</b></size>\n\n<size=34><color=#4A5A6E>Incomplete: seating/fastener/cable. W2 failure: part/slot.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Before removal, release latch/cable/screw. System fault: tell researcher.</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_01",
+      "sha256": "b9976400ab1b92ae6306f798bb396d01b8b1607ff165ad861609627542d23d70",
+      "caption_en": "Assemble W2\nTwo RAM modules, one SSD and one GPU, all meeting W2 requirements"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_02",
+      "sha256": "35b62738cfdacd78069e52b11483c466f3f71350fc61666e525b0f2201d6427d",
+      "caption_en": "Compare every label value\nFitting alone does not meet W2"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_03",
+      "sha256": "ebee254a85a0b812b35155fda6894ada96dc83acedca96e248542bba129826eb",
+      "caption_en": "Align the RAM notch\nOpen one-sided latch; press until it closes. The other end is fixed"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_04",
+      "sha256": "8306471426b60da582af8a04980e1e0f96bb5f26890dde5c2b9432ae9b847d79",
+      "caption_en": "Turn the case by its stand handle\nThe SSD tray mount is behind the board"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_05",
+      "sha256": "7c2b28c616a3dfaa9187825bf228c74bc89bfb44055f03713c27c6e9203b5653",
+      "caption_en": "Fit the SSD tray\nTray secure, fastener tight, both cables fully in"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_06",
+      "sha256": "563e08026864517eee661ca79dd523bf0354cc8b2b1551da9e0268ad0ad01d2f",
+      "caption_en": "Seat the GPU fully\nTighten its bracket screw, then connect PCIe 8-pin power"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_en_07",
+      "sha256": "dbe8c3f4acd0f0aac7596b71d8ec25dc6153c26702b1a832bf0aea6ea5c78150",
+      "caption_en": "Check my work on Main\nWait 3 seconds. W2 passed means done"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/A5_en.mp4",
+    "sha256": "2fba18c90ecd5a39eb00b847358abc14fbfcf443fec1ecd1009b3f3e063c8bdb",
+    "duration_seconds": 152.14,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 29.63
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 29.63,
+        "end_seconds": 44.87
+      },
+      {
+        "stage": "do",
+        "start_seconds": 44.87,
+        "end_seconds": 63.36
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 63.36,
+        "end_seconds": 70.77
+      },
+      {
+        "stage": "do",
+        "start_seconds": 70.77,
+        "end_seconds": 77.2
+      },
+      {
+        "stage": "do",
+        "start_seconds": 77.2,
+        "end_seconds": 91.65
+      },
+      {
+        "stage": "do",
+        "start_seconds": 91.65,
+        "end_seconds": 103.4
+      },
+      {
+        "stage": "do",
+        "start_seconds": 103.4,
+        "end_seconds": 110.81
+      },
+      {
+        "stage": "do",
+        "start_seconds": 110.81,
+        "end_seconds": 122.1
+      },
+      {
+        "stage": "do",
+        "start_seconds": 122.1,
+        "end_seconds": 130.64
+      },
+      {
+        "stage": "done",
+        "start_seconds": 130.64,
+        "end_seconds": 152.14
+      }
+    ]
+  }
+}

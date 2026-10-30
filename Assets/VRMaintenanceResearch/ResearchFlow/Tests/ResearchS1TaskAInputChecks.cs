@@ -6,7 +6,7 @@ using VRMaintenanceResearch.ResearchFlow;
 using Oculus.Interaction;
 namespace UnityEngine
 {
-    public class MonoBehaviour { public bool enabled = true; public static implicit operator bool(MonoBehaviour value) => value != null; }
+    public class MonoBehaviour { public bool enabled = true; public T GetComponent<T>() where T : class => null; public static implicit operator bool(MonoBehaviour value) => value != null; }
     public sealed class DefaultExecutionOrder : Attribute { public DefaultExecutionOrder(int order) { } }
 }
 namespace Oculus.Interaction
@@ -39,6 +39,9 @@ namespace VRMaintenanceResearch.AssetLibraryQA
 }
 namespace VRMaintenanceResearch.ResearchFlow
 {
+    public sealed class ResearchS1FreeBody { public void Refresh() { } }
+    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect }
+    public enum PartBlockReason { None, Unspecified, ClipClosed, GuardNotSeated, Retained, Alignment, EndStop, Contact, CableLimit, OtherHeld, FrontGuardPresent, BladeCapPresent, BladePresent, RearRingPresent, LatchClosed, MountNotReady }
     public sealed class S1TaskAState { public int Sequence; }
     public sealed class ResearchSessionFlowController { }
     public sealed class ResearchS1TaskAMechanics : UnityEngine.MonoBehaviour
@@ -55,9 +58,24 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Allowed = true;
         public List<string> events = new List<string>();
         public Attempt Current;
+        public PartOperation LastOperation;
+        public PartBlockReason LastReason;
+        public string ObservationSource;
+        public int Observations;
+        public bool UpdateInteraction(Attempt value, PartOperation operation, PartBlockReason reason)
+        {
+            if (!IsAttemptActive(value)) return false;
+            LastOperation = operation; LastReason = reason; ObservationSource = value.InputSource; Observations++; return true;
+        }
         public Attempt BeginAttempt(string id, string source) { Current = new Attempt { InputSource = source }; events.Add("GRAB:" + source); return Current; }
         public bool IsAttemptActive(Attempt value) => value != null && value.Active && Allowed;
-        public bool UpdateAttempt(Attempt value, string action, object before, object after, bool blocked) { if (!IsAttemptActive(value)) throw new Exception("Closed attempt updated"); events.Add(action + ":" + value.InputSource); return true; }
+        public bool UpdateAttempt(Attempt value, string action, object before, object after, bool blocked,
+            PartOperation operation = PartOperation.Manipulate, PartBlockReason reason = PartBlockReason.Unspecified)
+        {
+            if (!IsAttemptActive(value)) throw new Exception("Closed attempt updated");
+            UpdateInteraction(value, operation, blocked ? (reason == PartBlockReason.None ? PartBlockReason.Unspecified : reason) : PartBlockReason.None);
+            events.Add(action + ":" + value.InputSource); return true;
+        }
         public bool EndAttempt(Attempt value, bool system = false) { if (!value.Active) return false; value.Active = false; events.Add((system ? "CANCEL:" : "RELEASE:") + value.InputSource); return true; }
     }
 }
@@ -71,6 +89,35 @@ internal static class ResearchS1TaskAInputChecks
         var value = new ResearchS1TaskAInput { owner = new ResearchS1TaskAMechanics(), stableId = "S01", pointable = new PointableElement { AddNewPointsToFront = front }, interactable = new Oculus.Interaction.HandGrab.HandGrabInteractable() };
         Call(value, "Start"); return value;
     }
+    static void TypedObservations()
+    {
+        var input = Fixture(); var port = input.owner.port;
+        input.Observe(PartOperation.Turn, PartBlockReason.EndStop);
+        Check(port.Observations == 0, "Observation before selection cannot create interaction.");
+        input.pointable.Emit(1, PointerEventType.Select);
+        int events = port.events.Count;
+        input.Observe(PartOperation.Turn, PartBlockReason.EndStop);
+        Check(port.LastOperation == PartOperation.Turn && port.LastReason == PartBlockReason.EndStop && port.ObservationSource == "ControllerRight", "Observe preserves typed operation, reason and live input source.");
+        Check(port.events.Count == events, "Observe does not fabricate a logged assembly operation.");
+        input.Motion("INSTALL", input.owner.Capture(), true, PartBlockReason.CableLimit);
+        Check(port.LastOperation == PartOperation.Insert && port.LastReason == PartBlockReason.CableLimit, "Blocked install carries typed insert and cable reason.");
+        input.Motion("INSTALL", input.owner.Capture(), false, PartBlockReason.CableLimit);
+        Check(port.LastReason == PartBlockReason.None, "Accepted motion clears the old blocked reason.");
+        foreach (var pair in new[] { ("REMOVE", PartOperation.Remove), ("CONNECT", PartOperation.Connect), ("DISCONNECT", PartOperation.Disconnect), ("FASTEN", PartOperation.Turn), ("ROTATE_WORKPIECE", PartOperation.Turn), ("MOVE", PartOperation.Move) })
+        {
+            input.Motion(pair.Item1, input.owner.Capture(), false);
+            Check(port.LastOperation == pair.Item2, "Motion category maps to typed operation " + pair.Item1);
+        }
+        int observations = port.Observations; port.Allowed = false;
+        input.Observe(PartOperation.Move, PartBlockReason.Contact);
+        Check(port.Observations == observations, "Paused Observe cannot update stale interaction.");
+        var latch = Fixture(); latch.latch = new VRMaintenanceResearch.AssetLibraryQA.QALatch();
+        latch.pointable.Emit(1, PointerEventType.Select);
+        Check(latch.owner.port.LastOperation == PartOperation.Close, "Latch selection reports close instead of generic turn.");
+        latch.Motion("UNFASTEN", latch.owner.Capture(), false);
+        Check(latch.owner.port.LastOperation == PartOperation.Open, "Latch opening reports typed open.");
+    }
+
     static void Main()
     {
         foreach (bool front in new[] { false, true })
@@ -109,6 +156,7 @@ internal static class ResearchS1TaskAInputChecks
         Check(!changed.Allowed, "Changed source cannot inherit old effort.");
         var cancelled = Fixture(); cancelled.pointable.Emit(1, PointerEventType.Select); cancelled.pointable.Emit(1, PointerEventType.Cancel); Call(cancelled, "LateUpdate");
         Check(cancelled.owner.port.events[1] == "CANCEL:ControllerRight", "Actual cancellation retained.");
+        TypedObservations();
         Console.WriteLine("S1_TASK_A_INPUT_SOURCE_FIXTURE_PASS checks=" + checks + "; actual_sdk_runtime=false");
     }
 }

@@ -25,7 +25,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         RawImage[] objectImages;
         static Texture2D mug, module;
         static bool ShowsMug(string action) => action == "grab" || action == "move" || action == "rotate" || action == "release";
-        static bool ShowsModule(string action) => action == "examine" || action == "insert" || action == "insert_wrong" || action == "lock" || action == "unlock";
+        static bool ShowsModule(string action) => action == "insert" || action == "insert_wrong" || action == "lock" || action == "unlock";
         protected override void OnRectTransformDimensionsChange() { base.OnRectTransformDimensionsChange(); PlaceObjects(); }
         protected override void OnEnable() { base.OnEnable(); PlaceObjects(); }
         void PlaceObjects()
@@ -155,12 +155,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 case "examine":
                 {
-                    Module(mesh, new Vector2(196, y - 4), false, stage >= 1);
-                    Line(mesh, new Vector2(80, y + 2), new Vector2(160, y - 2), stage == 1 ? Blue : Ink, 2);
+                    Box(mesh, new Vector2(196, y + 3), new Vector2(90, 56), Pale);
+                    Line(mesh, new Vector2(166, y + 20), new Vector2(220, y + 20), Ink, 3);
+                    Line(mesh, new Vector2(178, y - 14), new Vector2(214, y - 14), Blue, 5);
+                    Line(mesh, new Vector2(80, y + 2), new Vector2(178, y - 14), stage == 1 ? Blue : Ink, 2);
                     if (stage == 2)
                     {
                         // Information only: an "i" marker beside the unchanged module.
-                        var info = new Vector2(250, y + 22); Ring(mesh, info, 13, Blue);
+                        var info = new Vector2(196, y + 2); Ring(mesh, info, 13, Blue);
                         Box(mesh, info + new Vector2(0, -3), new Vector2(4, 11), Blue); Box(mesh, info + new Vector2(0, 6), new Vector2(4, 4), Blue);
                     }
                     break;

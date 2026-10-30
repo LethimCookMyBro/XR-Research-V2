@@ -37,14 +37,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (Mathf.Abs(delta) < .01f) return;
             var before = owner.Capture();
             var next = Matrix4x4.TRS(pivot.position, Quaternion.AngleAxis(delta, Vector3.up) * pivot.rotation, pivot.lossyScale);
-            bool blocked = owner.inputs.Any(i => i != input && i.pointable.SelectingPointsCount > 0) || !owner.AllowsMotion(pivot, next);
+            var reason = owner.inputs.Any(i => i != input && i.pointable.SelectingPointsCount > 0)
+                ? PartBlockReason.OtherHeld : owner.MotionBlockReason(pivot, next);
+            bool blocked = reason != PartBlockReason.None;
             if (!blocked)
             {
                 pivot.SetPositionAndRotation(next.GetColumn(3), next.rotation);
                 Physics.SyncTransforms();
                 acceptedHandle = transform.localToWorldMatrix;
             }
-            input.Motion("ROTATE_WORKPIECE", before, blocked);
+            input.Motion("ROTATE_WORKPIECE", before, blocked, reason);
         }
         public void EndTransform()
         {

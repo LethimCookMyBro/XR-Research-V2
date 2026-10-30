@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.A5.ja",
+  "version": "v5-acfb88ee0c807332.11f7c736ee9d7237",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskA_Reference_v5_JA.pdf",
+  "source_pdf_resource": "ResearchReaderS1/A5_ja/source_pdf",
+  "source_sha256": "35b252bad8b7afc71c984e2915d92f2bf3eb788a4b087d3b3f6cd4d5bd69523f",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_ja/pages/p01",
+      "sha256": "1b468170eb8b4df066b3f1d773104c2ae420fe323726fad36d710d88ab0b23e1"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_ja/pages/p02",
+      "sha256": "7c9941b1c0880dce86b6f5c9cdd91de6f38d321956de06742ad7a3dee275b3f2"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A5_ja/pages/p03",
+      "sha256": "a508071360c009fb3e5caf42cc59b8f1ce5acf2bd4dbb9425a0e22f56c1d315c"
+    }
+  ],
+  "steps": [
+    {
+      "text_ja": "<size=24><color=#5B6B7F>W2 のパソコンを組み立てる</color></size>\n<size=46><b>W2 の条件に合う RAM・SSD・GPU を取り付ける</b></size>\n\n<size=34>ラベルと条件を比べて RAM・SSD・GPU を選び、取り付けて固定する</size>\n\n<size=34><color=#2E7D32>「仕上がりを確認」を選んで 3 秒待ち、W2 合格の表示で完了</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>はじめに</color></size>\n<size=46><b>RAM・SSD・GPU の位置を見る</b></size>\n\n<size=34><color=#4A5A6E>電源切離し済み。CPU・冷却装置・PSU・配線はそのまま。OS・ふたは不要</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 順番は自由。机の部品をすべて使う必要はない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>ラベルを読み、RAM を 2 枚選ぶ</b></size>\n\n<size=34><color=#4A5A6E>同じ DDR4 8 GB を 2 枚、合計 16 GB</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 全数値が一致。挿せるだけでは不十分</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>A2 のラッチに手を近づけ、Trigger を1回押す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> 片側のラッチが開く。反対側は動かない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>Grip で RAM を持ち、切り欠きを合わせて奥まで押す</b></size>\n\n<size=34><color=#4A5A6E>途中まででは未接続</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 奥まで入るとラッチが閉じる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>もう 1 枚を B2 に挿す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> RAM が A2 と B2 に入る</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>ラベルを読み、SSD を 1 台選ぶ</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5 インチ、500 GB 以上・600 TBW 以上</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 両条件を満たす。TBW は容量ではない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Grip で台の持ち手を持ち、台のまわりに手を動かす</b></size>\n\n<size=34><color=#4A5A6E>手の移動に合わせてケースが回る。手首はひねらない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 基板の裏に SSD トレイの位置が見える</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Grip で SSD トレイを持ち、レールの奥まで押す</b></size>\n\n<size=34><color=#4A5A6E>SSD はトレイに固定済み。底面のねじは不要</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> トレイが収まる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Trigger でトレイのねじを持ち、止まるまで締める</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> トレイが動かない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Trigger で SATA データプラグを持ち、奥まで差す</b></size>\n\n<size=34><color=#4A5A6E>トレイを置くだけではつながらない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> プラグが奥まで入る</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>Trigger で SATA 電源プラグを持ち、奥まで差す</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD の 2 本がつながる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>ラベルを読み、GPU を 1 枚選ぶ</b></size>\n\n<size=34><color=#4A5A6E>VRAM 8 GB 以上、カード電力 150 W 以下</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 両条件を満たす。PSU ではなくカードの電力</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Grip で GPU を持ち、主スロットの奥まで押す</b></size>\n\n<size=34><color=#4A5A6E>CPU につながる長いスロット</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 端子が奥まで入る</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Trigger で GPU の固定ねじを持ち、止まるまで締める</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ねじが締まる。挿すだけでは固定されない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>GPU</color></size>\n<size=46><b>Trigger で PCIe 8 ピンプラグを持ち、GPU に差す</b></size>\n\n<size=34><color=#4A5A6E>6+2 ピンは合わせてある</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> プラグが奥まで入る</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>検査</color></size>\n<size=46><b>Main で「仕上がりを確認」を選ぶ</b></size>\n\n<size=34><color=#4A5A6E>3 秒待つ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> W2 合格で完了</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>未合格のとき</color></size>\n<size=46><b>結果を読み、直して再検査</b></size>\n\n<size=34><color=#4A5A6E>組立未完了：差し込み・固定・配線。W2 未達：部品・スロット</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 外す前にラッチ・配線・ねじを解除。不具合は研究者へ</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_01",
+      "sha256": "f106e6e8c6e8352ab9d8e26f8f306f52759e584b554ec7aff1c74f378713f0af",
+      "caption_ja": "W2 を組み立てる\n条件に合う RAM 2 枚・SSD 1 台・GPU 1 枚"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_02",
+      "sha256": "76b5c141ee3c4eeb14cdaec8f95ebbe55d868afb9beeb2bec3076a030d302c0b",
+      "caption_ja": "全数値を照合\n挿せるだけでは W2 合格ではない"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_03",
+      "sha256": "5504fbe4836603d0dc8c66d2c880468846e0c0711e5f0c476c4cacf87cb31dd1",
+      "caption_ja": "RAM の切り欠きを合わせる\n片側ラッチを開き、閉じるまで押す。反対側は固定"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_04",
+      "sha256": "a915bfb4ab39b1a59381424809a382372fd062352baa3ab25db5514c5f168e3a",
+      "caption_ja": "持ち手でケースを回す\nSSD トレイの位置は基板の裏"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_05",
+      "sha256": "1710efbea157d865060187833532d234c690aee8ddeaaf92b71414b304d22fd4",
+      "caption_ja": "SSD トレイを入れる\nトレイを固定し、2 本を奥まで挿す"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_06",
+      "sha256": "4b482f153e4065e2b95f17810bd21737d5ef70fabc70446a84b727592e6055d9",
+      "caption_ja": "GPU を奥まで挿す\n固定ねじを締め、PCIe 8 ピンを接続"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/A5_ja_07",
+      "sha256": "714aa2237c087b934d57882e90550a68dcc8d3bb785e5584368c090441d5028f",
+      "caption_ja": "Main で「仕上がりを確認」を選ぶ\n3 秒待ち、W2 合格で完了"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/A5_ja.mp4",
+    "sha256": "5cae7f7e048b7c744c7fc4f1177bb40cdbffa2172c3434a7679386ffff1a1307",
+    "duration_seconds": 175.75,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 35.56
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 35.56,
+        "end_seconds": 53.82
+      },
+      {
+        "stage": "do",
+        "start_seconds": 53.82,
+        "end_seconds": 73.15
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 73.15,
+        "end_seconds": 82.24
+      },
+      {
+        "stage": "do",
+        "start_seconds": 82.24,
+        "end_seconds": 92.78
+      },
+      {
+        "stage": "do",
+        "start_seconds": 92.78,
+        "end_seconds": 109.17
+      },
+      {
+        "stage": "do",
+        "start_seconds": 109.17,
+        "end_seconds": 121.83
+      },
+      {
+        "stage": "do",
+        "start_seconds": 121.83,
+        "end_seconds": 130.35
+      },
+      {
+        "stage": "do",
+        "start_seconds": 130.35,
+        "end_seconds": 142.48
+      },
+      {
+        "stage": "do",
+        "start_seconds": 142.48,
+        "end_seconds": 151.76
+      },
+      {
+        "stage": "done",
+        "start_seconds": 151.76,
+        "end_seconds": 175.75
+      }
+    ]
+  }
+}

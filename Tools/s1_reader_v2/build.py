@@ -7,7 +7,8 @@
   python Tools/s1_reader_v2/build.py narration --task T --work <t3_work>
 
 A/B support Thai and Japanese. Training defaults to T3 in Thai, Japanese and English;
---training-version v2 preserves the historical T2 lesson. Original T_* assets are untouched.
+--training-version v2 preserves the historical T2 lesson.
+--training-version v4 uses separate A4/B4/T4 content and resources for new sessions. Original T_* assets are untouched.
 --keep-manual rebuilds A/B Steps, Illustrated and Video without changing accepted PDF/pages.
 Package versions include the authored scripts and captured PNG bytes, not filenames alone.
 Manual is reference; Steps use one action; Illustrated leads with pictures; Video synchronizes
@@ -17,6 +18,7 @@ authored script is sent. --install writes Resources and StreamingAssets; Unity c
 """
 import argparse, asyncio, base64, concurrent.futures, hashlib, html, io, json, math, re, shutil, subprocess, sys, time, wave
 from pathlib import Path
+import manual_part_cards
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -24,12 +26,14 @@ RES = ROOT / "Assets/VRMaintenanceResearch/ResearchFlow/Resources/ResearchReader
 STREAM = ROOT / "Assets/StreamingAssets/ResearchReaderS1"
 APPROVAL = "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW"
 LANGS = ("th", "ja")
-TASK_LANGS = {"A": LANGS, "B": LANGS, "T": ("th", "ja", "en")}
+TASK_LANGS = {"A": ("th", "ja", "en"), "B": ("th", "ja", "en"), "T": ("th", "ja", "en")}
 # Package id per task: T2 is the TrainingTrainerV2 Reader; the old T_* packages stay byte-identical for sessions that used them.
 PACKAGE = {"A": "A", "B": "B", "T": "T2"}
 PDF_NAME = {"A": "S1_TaskA_Reference_v2", "B": "S1_TaskB_Reference_v2", "T": "S1_Training_T2_Reference"}
 TRAINER_V2 = "S1_TRAINING_TRAINER_V2_20261028"
 TRAINER_V3 = "S1_TRAINING_TRAINER_V3_20261029"
+TRAINER_V4 = "S1_TRAINING_TRAINER_V4_20261030"
+TRAINER_V5 = "S1_TRAINING_TRAINER_V5_20261030"
 VOICE = {"th": ("th-TH-PremwadeeNeural", "-8%"), "ja": ("ja-JP-NanamiNeural", "-5%"), "en": ("en-US-AriaNeural", "-5%")}
 W, H, FPS = 1280, 720, 24
 FONT = {"th": "'Leelawadee UI','Noto Sans Thai',sans-serif", "ja": "'Yu Gothic UI','Yu Gothic','Meiryo',sans-serif",
@@ -72,8 +76,24 @@ def missing_glyphs(text, lang, _cache={}):
     return sorted({ch for ch in strip(text) if ch != "\n" and not any(ord(ch) in cmap for cmap in _cache[lang])})
 
 
+def content_files(training_version="v3"):
+    if training_version not in ("v2", "v3", "v4", "v5"):
+        raise ValueError(f"Unsupported training version: {training_version}")
+    if training_version in ("v4", "v5"):
+        return {task: HERE / f"content_{task}{training_version[1:]}.json" for task in "ABT"}
+    return {task: HERE / ("content_T3.json" if task == "T" and training_version == "v3" else f"content_{task}.json") for task in "ABT"}
+
+
+def package_ids(training_version="v3"):
+    if training_version in ("v4", "v5"):
+        return {task: task + training_version[1:] for task in "ABT"}
+    if training_version in ("v2", "v3"):
+        return {"A": "A", "B": "B", "T": "T3" if training_version == "v3" else "T2"}
+    raise ValueError(f"Unsupported training version: {training_version}")
+
+
 def load(training_version="v3"):
-    return {t: json.loads((HERE / ("content_T3.json" if t == "T" and training_version == "v3" else f"content_{t}.json")).read_text(encoding="utf-8")) for t in "ABT"}
+    return {task: json.loads(path.read_text(encoding="utf-8")) for task, path in content_files(training_version).items()}
 
 
 def strip(text):
@@ -112,7 +132,7 @@ def coverage(c):
             "video": set().union(*(set(v["units"]) for v in c["video"]))}
 
 
-def check(content):
+def check(content, concise=False):
     errors, report = [], []
     for task, c in content.items():
         langs = TASK_LANGS[task]
@@ -122,11 +142,12 @@ def check(content):
             if missing: errors.append(f"{task} {fmt}: missing essential units {sorted(missing)}")
             if unknown: errors.append(f"{task} {fmt}: unknown units {sorted(unknown)}")
             report.append(f"{task} {fmt}: {len(got & units)}/{len(units)} essential units")
+        hints = [s["look"] for s in c["steps"]]  # a step may have no hint line
         empty = [f"{task}: empty {lang} text near {str(node)[:60]}" for node in texts(c) for lang in langs
-                 if not node.get(lang) or not joined(node[lang]) or not all(isinstance(v, str) and v.strip() for v in (node[lang] if isinstance(node[lang], list) else [node[lang]]))]
+                 if not any(node is h for h in hints) and (not node.get(lang) or not joined(node[lang]) or not all(isinstance(v, str) and v.strip() for v in (node[lang] if isinstance(node[lang], list) else [node[lang]])))]
         if empty:
             errors += empty; continue
-        if [s["id"] for s in c["manual"]] != ["goal", "problem", "parts", "cautions", "notes", "pass"]:
+        if [s["id"] for s in c["manual"]] != (manual_part_cards.SECTION_IDS.get(task, []) if c.get("manual_layout") == "part_cards" else ["goal", "problem", "parts", "cautions", "notes", "pass"]):
             errors.append(f"{task} manual: sections must be goal/problem/parts/cautions/notes/pass")
         for i, s in enumerate(c["steps"], 1):
             for key in ("do", "look", "ok"):
@@ -142,7 +163,7 @@ def check(content):
             if not (p.get("callouts") or p.get("arrows") or p.get("rotate") or p.get("layout") in ("parts", "areas", "result", "triple", "pair", "reader")):
                 errors.append(f"{task} panel {i}: picture has no arrows or callouts")
         for lang in langs:
-            tmp_text = "".join(steps_text(lang, c)) + "".join(tmp_safe(p["caption"][lang]) for p in c["illustrated"])
+            tmp_text = "".join(steps_text(lang, c, concise=concise)) + "".join(tmp_safe(p["caption"][lang]) for p in c["illustrated"])
             if missing_glyphs(tmp_text, lang):
                 errors.append(f"{task} {lang}: in-app fonts lack {missing_glyphs(tmp_text, lang)}")
         stages = [v["stage"] for v in c["video"]]
@@ -156,6 +177,8 @@ def check(content):
         if "problem" not in first or "done" not in last or "problem" not in c["steps"][0]["units"] or "done" not in c["steps"][-2]["units"] + c["steps"][-1]["units"]:
             errors.append(f"{task}: steps/illustrated must start with the problem and end with the completion check")
         scrutinized = [c["steps"], c["video"], [p["caption"] for p in c["illustrated"]]]
+        if concise and task in ("A", "B"):
+            scrutinized += [c["core"][key] for key in ("problem", "do", "done")]
         for node in texts(scrutinized):
             for lang in langs:
                 text = joined(node[lang])
@@ -190,8 +213,10 @@ DRAWN_SYMBOLS = set("↻↺✓✗→↓↑·≠")  # drawn by the browser in pic
 
 def app_sequence(training_version):
     """The actual station sequence for the recorded training version."""
-    name = "TrainerV3Sequence" if training_version == TRAINER_V3 else "FixedSequence"
+    name = {TRAINER_V3: "TrainerV3Sequence", TRAINER_V4: "TrainerV4Sequence", TRAINER_V5: "TrainerV4Sequence"}.get(training_version, "FixedSequence")
     match = re.search(r"string\[\] " + name + r" = \{([^}]*)\}", STATION_CS.read_text(encoding="utf-8"))
+    if match is None:
+        raise ValueError(f"Training station sequence not found: {name}")
     return re.findall(r'"(\w+)"', match.group(1))
 
 
@@ -211,7 +236,7 @@ def in_app(quote, values):
 def check_training(c):
     errors, langs = [], TASK_LANGS["T"]
     sequence = app_sequence(c["training_version"])
-    if c["training_version"] not in (TRAINER_V2, TRAINER_V3) or c["training_version"] not in POLICY_CS.read_text(encoding="utf-8"):
+    if c["training_version"] not in (TRAINER_V2, TRAINER_V3, TRAINER_V4, TRAINER_V5) or c["training_version"] not in POLICY_CS.read_text(encoding="utf-8"):
         errors.append(f"T: unknown training version {c['training_version']}")
     if not set(sequence) <= set(c["units"]):
         errors.append(f"T: app steps without an essential unit: {sorted(set(sequence) - set(c['units']))}")
@@ -422,7 +447,8 @@ def panel_body(lang, panel, frames, content, video=False):
             svg.append(s); divs.append(d)
         if "card" in panel: divs.append(card_html(lang, panel["card"], 120, top + h + 20, 1040))
     elif layout == "parts":
-        values = {row[0]: row[1] for row in next(s for s in content["manual"] if s["id"] == "parts")["table2"]["rows"]}
+        catalog = next(s for s in content["manual"] if s["id"] == ("reference" if content.get("manual_layout") == "part_cards" else "parts"))
+        values = {row[0]: row[1] for row in catalog["table" if content.get("manual_layout") == "part_cards" else "table2"]["rows"]}
         quads = [("A_parts_ram", 0, 0), ("A_parts_ssd", 1, 0), ("A_parts_G01", 0, 1), ("A_parts_G02", 1, 1)]
         iw, ih, lw, top = 352, 198, 250, 112
         for shot, gx, gy in quads:
@@ -439,36 +465,40 @@ def panel_body(lang, panel, frames, content, video=False):
             for k, (pid, ax, ay) in enumerate(sorted(pts, key=lambda p: p[1])):
                 px, py = place((ax, ay), (x, y, iw, ih, (cx, cy, cw_, ch_)))
                 svg.append(ring_svg(px, py, "#22313F"))
-                divs.append(f'<div class="chip" data-x="{px:.0f}" data-y="{py + (-34 if k % 2 == 0 else 34):.0f}" style="background:#22313F;font-size:20px;padding:2px 8px">{pid}</div>')
+                divs.append(f'<div class="chip" data-x="{px:.0f}" data-y="{py + (-34 if k % 2 == 0 else 34):.0f}" style="background:#22313F;font-size:22px;padding:2px 8px">{pid}</div>')
                 legend.append(f"<div><b>{pid}</b> {html.escape(values[pid])}</div>")
-            divs.append(f'<div class="card" style="left:{x + iw + 8}px;top:{y}px;width:{lw}px;padding:8px 10px;font-size:18px;line-height:1.35">{"".join(legend)}</div>')
+            divs.append(f'<div class="card" style="left:{x + iw + 8}px;top:{y}px;width:{lw}px;padding:8px 10px;font-size:21px;line-height:1.3">{"".join(legend)}</div>')
         req = panel["card"]
         line = " &nbsp;|&nbsp; ".join(html.escape(l[lang]) for l in req["lines"][:3])
         # In video the stage chip sits top-left and the subtitle owns the bottom, so the requirement card shifts right and the note is spoken.
         left = 200 if video else 20
-        divs.append(f'<div class="card" style="left:{left}px;top:10px;width:{W - left - 20}px;padding:10px 16px"><div style="font-size:{21 if video else 23}px"><b style="color:#1F5FAF">{html.escape(req["title"][lang])}:</b> {line}</div></div>')
+        divs.append(f'<div class="card" style="left:{left}px;top:10px;width:{W - left - 20}px;padding:10px 16px"><div style="font-size:{22 if video else 25}px"><b style="color:#1F5FAF">{html.escape(req["title"][lang])}:</b> {line}</div></div>')
         if not video:
             divs.append(f'<div class="card" style="left:20px;top:{H - 56}px;width:1240px;padding:6px 16px"><div style="font-size:22px">{html.escape(req["lines"][3][lang])}</div></div>')
     elif layout == "areas":
-        w, h = 400, 225
+        # Owner 29 Oct: a loose part looks the same as a tight one in a still, so each column shows where to look (one 2x photo)
+        # and the exact "Examine" line for normal and abnormal, which is what the participant actually reads in the task.
+        w, h = 400, 300
         for i, row in enumerate(panel["rows"]):
             seg = frames.segment(panel["shot"], row["segment"])
             x = 20 + i * (w + 20)
-            divs.append(f'<div class="tag" style="left:{x}px;top:12px;width:{w}px;background:#22313F;text-align:center">{html.escape(row["title"][lang])}</div>')
-            for j, (kind, at) in enumerate((("ok", .2), ("bad", .9))):
-                f = seg[min(len(seg) - 1, round(at * (len(seg) - 1)))]
-                ax, ay, _ = f["anchors"][row["anchor"]]
-                cw_, ch_ = 640, 360
-                cx = min(max(ax - cw_ / 2, 0), W - cw_); cy = min(max(ay - ch_ / 2, 0), H - ch_)
-                y = 70 + j * (h + 92)
-                color = KIND_COLOR[kind]
-                imgs.append(f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;overflow:hidden;border:6px solid {color};border-radius:10px">'
-                            f'<img src="{frames.path(panel["shot"], f)}" style="position:absolute;left:{-cx * w / cw_:.0f}px;top:{-cy * h / ch_:.0f}px;width:{W * w / cw_:.0f}px;height:{H * h / ch_:.0f}px"></div>')
-                px, py = place((ax, ay), (x, y, w, h, (cx, cy, cw_, ch_)))
-                svg.append(ring_svg(px, py, color))
-                if kind == "bad":  # the wobble is too small to see in a still, so mark the movement explicitly
-                    svg.append(arrow_svg(px - 20, py + 40, px - 70, py + 40, color, 6) + arrow_svg(px + 20, py + 40, px + 70, py + 40, color, 6))
-                divs.append(f'<div class="tag" style="left:{x}px;top:{y + h + 8}px;width:{w}px;background:{color};font-size:22px">{"✓" if kind == "ok" else "✗"} {html.escape(row[kind][lang])}</div>')
+            divs.append(f'<div class="tag" style="left:{x}px;top:12px;width:{w}px;background:#22313F;text-align:center;font-size:28px">{html.escape(row["title"][lang])}</div>')
+            f = seg[min(len(seg) - 1, round(.2 * (len(seg) - 1)))]
+            ax, ay, _ = f["anchors"][row["anchor"]]
+            cw_, ch_ = w / 2, h / 2
+            cx = min(max(ax - cw_ / 2, 0), W - cw_); cy = min(max(ay - ch_ / 2, 0), H - ch_)
+            y = 74
+            imgs.append(f'<div style="position:absolute;left:{x}px;top:{y}px;width:{w}px;height:{h}px;overflow:hidden;border:4px solid #1F5FAF;border-radius:10px">'
+                        f'<img src="{frames.path(panel["shot"], f)}" style="position:absolute;left:{-cx * w / cw_:.0f}px;top:{-cy * h / ch_:.0f}px;width:{W * w / cw_:.0f}px;height:{H * h / ch_:.0f}px"></div>')
+            px, py = place((ax, ay), (x, y, w, h, (cx, cy, cw_, ch_)))
+            svg.append(ring_svg(px, py, KIND_COLOR["info"]))
+            for j, kind in enumerate(("ok", "bad")):
+                top = y + h + 14 + j * 66
+                divs.append(f'<div class="tag" style="left:{x}px;top:{top}px;width:{w}px;background:{KIND_COLOR[kind]};font-size:26px">'
+                            f'{"✓" if kind == "ok" else "✗"} {html.escape(row[kind][lang])}</div>')
+        if "footer" in panel:
+            divs.append(f'<div class="card" style="left:20px;top:{74 + 300 + 14 + 2 * 66 + 24}px;width:{W - 72}px;padding:14px 16px;text-align:center">'
+                        f'<div style="font-size:28px;font-weight:700;color:#1F5FAF">{html.escape(panel["footer"][lang])}</div></div>')
     elif layout == "reader":
         reader_schematic(lang, panel["reader"], imgs, svg, divs)
     else:
@@ -544,17 +574,44 @@ th{background:#E3ECF7} caption{font-size:30px;font-weight:700;text-align:left;pa
 """
 
 
+CONCISE_MANUAL_CSS = """
+.brief{margin:0 0 20px;padding:0 0 18px;border-bottom:2px solid #D6E0E9}
+.brief h2{margin:0 0 14px}
+.brief p{margin:0;font-size:31px;line-height:1.5;white-space:pre-line}
+.brief-goal{padding:24px 28px;background:#F2F6FB;border-left:8px solid #1F5FAF;border-bottom:0}
+.brief-goal p{font-size:36px;font-weight:700;line-height:1.45}
+.brief-done{color:#1E5E22}
+"""
+
+MANUAL_CSS += manual_part_cards.CSS
+
+
 def cell(value, lang):
     return html.escape(value if isinstance(value, str) else value[lang])
 
 
-def manual_blocks(lang, c):
+def manual_blocks(lang, c, concise=False, frames=None):
+    if concise and c.get("manual_layout") == "part_cards":
+        return manual_part_cards.blocks(lang, c, frames)
     q = [label[lang] for label in c["q_labels"]] if "q_labels" in c else UI[lang]["q"]
     core = c["core"]
     blocks = ["<div class='q'>" + "".join(
         f"<div style='border-left-color:{col}'><b style='color:{col}'>{q[i]}</b>{html.escape(core[k][lang])}</div>"
         for i, (k, col) in enumerate(zip(("problem", "do", "watch", "done"), ("#B3261E", "#1F5FAF", "#9A5B00", "#2E7D32")))) + "</div>"]
+    if concise:
+        blocks = []
     for s in c["manual"]:
+        if concise and s["id"] == "goal":
+            items = s.get("items", [])
+            if not items or any(key in s for key in ("table", "table2", "after")):
+                raise ValueError("V4 manual goal must contain authored introductory items only")
+            if c["task"] in ("A", "B") and len(items) != 3:
+                raise ValueError("V4 A/B manual goal must contain goal, controls and completion items")
+            roles = ("goal", "controls", "done") if c["task"] in ("A", "B") else ("goal",) + ("detail",) * (len(items) - 1)
+            for index, (item, role) in enumerate(zip(items, roles)):
+                heading = f"<h2>{html.escape(s['title'][lang])}</h2>" if index == 0 else ""
+                blocks.append(f"<section class='brief brief-{role}' data-brief='{role}'>{heading}<p>{html.escape(item[lang])}</p></section>")
+            continue
         # One block per bullet/table so pages break between items; the heading travels with the first block.
         section = [f"<ul><li class='{i.get('style', '')}'>{html.escape(i[lang])}</li></ul>" for i in s.get("items", [])]
         for key in ("table", "table2"):
@@ -585,13 +642,15 @@ PAGINATE_JS = """(args) => { const [blocks, title, label, pageWord] = args; cons
   return pages.length; }"""
 
 
-def build_manual(browser, lang, task, c, out_dir):
+def build_manual(browser, lang, task, c, out_dir, concise=False, frames=None):
     browser.page.set_viewport_size({"width": PAGE_W, "height": PAGE_H})
-    browser.page.set_content(f"<!doctype html><html><head><meta charset='utf-8'><style>{MANUAL_CSS} body{{font-family:{FONT[lang]}}} @page{{size:{PAGE_W}px {PAGE_H}px;margin:0}}</style></head><body></body></html>")
-    count = browser.page.evaluate(PAGINATE_JS, [manual_blocks(lang, c), html.escape(c["title"][lang]), UI[lang]["manual"], UI[lang]["page"]])
+    browser.page.set_content(f"<!doctype html><html><head><meta charset='utf-8'><style>{MANUAL_CSS + (CONCISE_MANUAL_CSS if concise else '')} body{{font-family:{FONT[lang]}}} @page{{size:{PAGE_W}px {PAGE_H}px;margin:0}}</style></head><body></body></html>")
+    count = browser.page.evaluate(PAGINATE_JS, [manual_blocks(lang, c, concise=concise, frames=frames), html.escape(c["title"][lang]), UI[lang]["manual"], UI[lang]["page"]])
     pages = []
     for i, element in enumerate(browser.page.query_selector_all(".page")):
         out = out_dir / f"page{i + 1:02d}.png"
+        element.scroll_into_view_if_needed()
+        browser.page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
         element.screenshot(path=str(out))
         pages.append(out)
     pdf = out_dir / "manual.pdf"
@@ -602,13 +661,21 @@ def build_manual(browser, lang, task, c, out_dir):
 
 
 # ---------------------------------------------------------------- steps
-def steps_text(lang, c):
-    ui, out = UI[lang], []
+def steps_text(lang, c, concise=False):
+    out = []
+    if concise and c["task"] in ("A", "B"):
+        core = c["core"]
+        out.append(tmp_safe(f"<size=24><color=#5B6B7F>{c['title'][lang]}</color></size>\n"
+                            f"<size=46><b>{core['problem'][lang]}</b></size>\n\n"
+                            f"<size=34>{core['do'][lang]}</size>\n\n"
+                            f"<size=34><color=#2E7D32>{core['done'][lang]}</color></size>"))
     for s in c["steps"]:
+        # Owner 29 Oct: short and scannable. Action large; optional hint grey (amber for a caution); result after a check mark.
+        hint = s["look"][lang]
+        hint = f"<size=34><color={'#9A5B00' if hint.startswith('⚠') else '#4A5A6E'}>{hint}</color></size>\n\n" if hint else ""
         out.append(tmp_safe(f"<size=24><color=#5B6B7F>{s['group'][lang]}</color></size>\n"
-                            f"<size=36><b>{s['do'][lang]}</b></size>\n\n"
-                            f"<color=#1F5FAF><b>{ui['look']}:</b></color> {s['look'][lang]}\n\n"
-                            f"<color=#2E7D32><b>{ui['ok']}:</b></color> {s['ok'][lang]}"))
+                            f"<size=46><b>{s['do'][lang]}</b></size>\n\n"
+                            f"{hint}<size=34><color=#2E7D32><b>✓</b> {s['ok'][lang]}</color></size>"))
     return out
 
 
@@ -641,6 +708,20 @@ def pcm(path):
 
 
 # ---------------------------------------------------------------- video
+def fan_knock_pcm(seconds=2.5, rate=48000):
+    """The reported symptom, synthesized like ResearchS1TaskBMechanics.SpinSound(knock: true) so the video plays the in-task sound."""
+    import random
+    noise, out = random.Random(4), bytearray()
+    for i in range(int(rate * seconds)):
+        t = i / rate
+        envelope = min(1, t / .5) * min(1, max(0, (seconds - t) / .3))
+        hum = .22 * math.sin(2 * math.pi * 100 * t) + .1 * math.sin(2 * math.pi * 200 * t) + .05 * (noise.random() * 2 - 1)
+        phase = (t * 15 * min(1, t / .8)) % 1
+        rattle = .7 * (1 - phase / .05) * (noise.random() * 2 - 1) if phase < .05 else 0
+        out += int(max(-1, min(1, .8 * envelope * (hum + rattle))) * 32767).to_bytes(2, "little", signed=True)
+    return bytes(out)
+
+
 def motion_position(windows, starts, ends, t, duration):
     if not windows:
         return min(t / max(duration - .9, .5), 1)
@@ -681,7 +762,10 @@ def build_video(browser, lang, task, c, frames, work, out_mp4):
         voiced = [tts(s, lang, cache) for s in scene["say"][lang]]
         audio += silence(LEAD); starts, ends, t = [], [], LEAD
         for i, (wav, d) in enumerate(voiced):
-            starts.append(t); audio += pcm(wav); t += d; ends.append(t)
+            starts.append(t); audio += pcm(wav); t += d
+            if i == 0 and scene.get("sound") == "fan_knock":
+                knock = fan_knock_pcm(); audio += silence(.2) + knock; t += .2 + len(knock) / 2 / 48000
+            ends.append(t)
             if i < len(voiced) - 1: audio += silence(GAP); t += GAP
         audio += silence(TAIL); duration = t + TAIL
         # Base footage: real motion for this segment, or the composed still for parts/result layouts.
@@ -845,14 +929,19 @@ def main():
     parser.add_argument("--shots"); parser.add_argument("--work"); parser.add_argument("--install", action="store_true")
     parser.add_argument("--only", help="e.g. A_th or T_en")
     parser.add_argument("--task", choices=["A", "B", "T"], help="build one task; without it, build makes A and B")
-    parser.add_argument("--training-version", choices=["v2", "v3"], default="v3")
+    parser.add_argument("--training-version", choices=["v2", "v3", "v4", "v5"], default="v3")
     parser.add_argument("--keep-manual", action="store_true", help="Rebuild A/B media without touching accepted PDF/pages")
     args = parser.parse_args()
     if args.keep_manual and args.task == "T": parser.error("--keep-manual applies only to A/B")
     content = load(args.training_version)
-    PACKAGE["T"] = "T3" if args.training_version == "v3" else "T2"
+    PACKAGE.update(package_ids(args.training_version))
+    if args.training_version in ("v4", "v5"):
+        # Keep one narrator across V4 Thai chapters. Premwadee returns NoAudioReceived
+        # for an authored SSD sentence; the same exact text succeeds with Niwat.
+        VOICE["th"] = ("th-TH-NiwatNeural", "-8%")
+        PDF_NAME.update({task: f"S1_Task{task}_Reference_{args.training_version}" for task in "AB"})
     PDF_NAME["T"] = "S1_Training_" + PACKAGE["T"] + "_Reference"
-    errors, report = check(content)
+    errors, report = check(content, concise=args.training_version in ("v4", "v5"))
     print("\n".join(report))
     if errors:
         print("\n".join("ERROR " + e for e in errors)); return 1
@@ -863,9 +952,10 @@ def main():
     if args.command == "narration":
         return narration(content, tasks, work)
     frames = Frames(args.shots)
-    version = "v2-" + version_digest(HERE / n for n in ("content_A.json", "content_B.json", "shots.json", "build.py"))
+    sources = content_files(args.training_version)
+    version = (args.training_version + "-" if args.training_version in ("v4", "v5") else "v2-") + version_digest([sources["A"], sources["B"], HERE / "shots.json", HERE / "build.py"])
     versions = {"A": version, "B": version,
-                "T": f"{content['T']['training_version']}.reader-{PACKAGE['T'].lower()}-" + version_digest(HERE / n for n in (("content_T3.json" if args.training_version == "v3" else "content_T.json"), "shots.json", "build.py"))}
+                "T": f"{content['T']['training_version']}.reader-{PACKAGE['T'].lower()}-" + version_digest([sources["T"], HERE / "shots.json", HERE / "build.py"])}
     for task in tasks:
         versions[task] += "." + capture_digest(args.shots, task)[:16]
     browser = Browser()
@@ -877,7 +967,7 @@ def main():
                 if args.only and args.only != name: continue
                 out = work / "out" / name; out.mkdir(parents=True, exist_ok=True)
                 c = content[task]
-                pages, pdf = ([], None) if args.keep_manual else build_manual(browser, lang, task, c, out)
+                pages, pdf = ([], None) if args.keep_manual else build_manual(browser, lang, task, c, out, concise=args.training_version in ("v4", "v5"), frames=frames)
                 images = []
                 for i, panel in enumerate(c["illustrated"], 1):
                     png = out / f"img{i:02d}.png"
@@ -886,7 +976,7 @@ def main():
                     images.append((png, tmp_safe(panel["caption"][lang])))
                 mp4 = out / f"{name}.mp4"
                 chapters, duration = build_video(browser, lang, task, c, frames, work, mp4)
-                built = {"pages": pages, "pdf": pdf, "images": images, "steps": steps_text(lang, c), "video": mp4, "chapters": chapters, "duration": duration}
+                built = {"pages": pages, "pdf": pdf, "images": images, "steps": steps_text(lang, c, concise=args.training_version in ("v4", "v5")), "video": mp4, "chapters": chapters, "duration": duration}
                 summary[name] = {"version": versions[task], "pages": len(pages), "steps": len(built["steps"]), "images": len(images), "video_seconds": round(duration, 1), "scenes": len(chapters)}
                 if args.install:
                     package = install(task, lang, c, built, versions[task], keep_manual=args.keep_manual)

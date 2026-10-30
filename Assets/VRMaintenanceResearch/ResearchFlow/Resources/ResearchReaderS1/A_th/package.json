@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "content_id": "s1.reader.A.th",
-  "version": "v2-6d693550421389cf.854468bd8356132e",
+  "version": "v2-54f7827f37ec4f5c.9e093cb2777fd635",
   "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
   "source_pdf": "S1_TaskA_Reference_v2_TH.pdf",
   "source_pdf_resource": "ResearchReaderS1/A_th/source_pdf",
-  "source_sha256": "1474c4983293254bc24265e4ba9f6f5ddba34df92dd5f3b3290c72f8608b141a",
+  "source_sha256": "c501f88a5f1821f3b2d115bd4afa274038e7743988039b00a4e288e4cc1b8987",
   "pages": [
     {
       "page": 1,
       "width": 1273,
       "height": 1800,
       "resource": "ResearchReaderS1/A_th/pages/p01",
-      "sha256": "7cf338fca81085bca5ddffd4476e03cca91908dac5fb0290540d36903f5ec52a"
+      "sha256": "25dea14cb800d0ec933c6f70416bd498175481307bca531a197bb75b5ad550ed"
     },
     {
       "page": 2,
@@ -26,159 +26,159 @@
       "width": 1273,
       "height": 1800,
       "resource": "ResearchReaderS1/A_th/pages/p03",
-      "sha256": "62a1cf2806877faa7dd02653c56fa1bb1e30234780dd0a17137df1cbdc029dc8"
+      "sha256": "e5d3de468704faa183920f962c8362dd38765f275ba3760ef3c72194c51ac0e7"
     }
   ],
   "steps": [
     {
-      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=36><b>มองเข้าไปในเครื่อง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ช่อง RAM 4 ช่อง ช่องการ์ดจอ และที่ใส่ SSD ยังว่าง · CPU กับ PSU ต่อไว้แล้ว ห้ามถอด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> รู้ว่างานนี้คือใส่ RAM 2 แผง SSD 1 ชุด และการ์ดจอ 1 ใบ · ทำส่วนไหนก่อนก็ได้"
+      "text_th": "<size=24><color=#5B6B7F>เริ่ม</color></size>\n<size=46><b>ดูช่องว่างในเครื่อง</b></size>\n\n<size=34><color=#4A5A6E>ใส่ RAM 2 แผง · SSD 1 · การ์ดจอ 1 · ห้ามถอด CPU/PSU</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> รู้ว่าต้องใส่อะไร · เริ่มอันไหนก่อนก็ได้</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>เลือก RAM 2 แผง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ฉลากต้องเป็น DDR4 แผงละ 8 GB และเหมือนกันทั้ง 2 แผง (ใส่ลงช่องได้ ไม่ได้แปลว่าถูก)\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ได้ 2 แผงที่รวมกันเป็น 16 GB"
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>เลือก RAM 2 แผง</b></size>\n\n<size=34><color=#4A5A6E>DDR4 · แผงละ 8 GB · เหมือนกัน · ใส่ช่องได้ไม่ได้แปลว่าถูก</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ฉลากตรง W2 ทั้ง 2 แผง</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>เปิดสลักของช่อง A2</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> สลักมีข้างเดียว อีกข้างอยู่กับที่ · ชื่อช่องพิมพ์อยู่บนบอร์ด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> สลักกางออก"
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>เปิดสลักช่อง A2</b></size>\n\n<size=34><color=#4A5A6E>สลักมีข้างเดียว</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> สลักกางออก</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>กด RAM ลงตรง ๆ จนสุดช่อง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ก่อนกด ร่องบากต้องตรงกับสันในช่อง ถ้าไม่ตรงอย่าฝืน เสียบครึ่งทางยังไม่นับ\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> RAM จมเต็มช่อง และสลักปิดเอง"
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>กด RAM ลงตรง ๆ จนสุด</b></size>\n\n<size=34><color=#4A5A6E>ร่องบากตรงสันในช่อง · ครึ่งทางยังไม่นับ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> สลักปิดเอง</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=36><b>ใส่ RAM แผงที่สองในช่อง B2 แบบเดียวกัน</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ช่องที่ใช้คือ A2 และ B2 เท่านั้น\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> มี RAM ใน A2 และ B2 สลักปิดทั้งคู่"
+      "text_th": "<size=24><color=#5B6B7F>RAM</color></size>\n<size=46><b>ใส่แผงที่สองที่ช่อง B2</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> มี RAM ใน A2 และ B2</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>เลือก SSD 1 ชุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ฉลากต้องผ่าน 2 ค่า: ความจุ 500 GB ขึ้นไป และ 600 TBW ขึ้นไป (TBW ไม่ใช่ความจุ)\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> SSD ที่เลือกผ่านทั้ง 2 ค่า"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>เลือก SSD 1 ชุด</b></size>\n\n<size=34><color=#4A5A6E>SATA 2.5 นิ้ว · อย่างน้อย 500 GB และ 600 TBW · TBW ไม่ใช่ความจุ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ชนิดและค่าทั้งสองตรงข้อกำหนด W2</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>จับที่จับของแท่นวาง แล้วหมุนเคสให้เห็นด้านหลัง</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ที่ใส่ SSD อยู่หลังแผ่นเมนบอร์ด\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> เห็นช่องใส่ถาด SSD"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>จับที่จับแท่น หมุนเคสไปด้านหลัง</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> เห็นช่องใส่ถาด SSD</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>ใส่ถาด SSD ลงที่ใส่ให้สุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> SSD ติดถาดมาแล้ว ไม่ต้องขันน็อตใต้ SSD\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ถาดเข้าที่ แต่ตัวยึดยังไม่แน่น"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>ใส่ถาด SSD จนสุด</b></size>\n\n<size=34><color=#4A5A6E>ไม่ต้องขันน็อตใต้ SSD</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ถาดเข้าที่</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>ขันตัวยึดถาด SSD ให้แน่น</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> จับหัวตัวยึดแล้วหมุนเข้า ถาดต้องเข้าที่ก่อน ไม่ใช่น็อตใต้ SSD\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ตัวยึดแน่น ถาดไม่ขยับ"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>ขันตัวยึดถาดจนแน่น</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> ถาดไม่ขยับ</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>เสียบสายข้อมูล SATA เข้า SSD</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> หันหัวสายให้ตรงรูปช่อง · วางถาดแล้วสายไม่ต่อเอง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> หัวสายเข้าจนสุด"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>เสียบสายข้อมูล SATA</b></size>\n\n<size=34><color=#4A5A6E>สายไม่ต่อเอง</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เสียบจนสุด</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=36><b>เสียบสายไฟ SATA เข้า SSD</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> เป็นคนละเส้นกับสายข้อมูล\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> SSD มีสาย 2 เส้น เสียบสุดทั้งคู่"
+      "text_th": "<size=24><color=#5B6B7F>SSD</color></size>\n<size=46><b>เสียบสายไฟ SATA</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> SSD มีสายครบ 2 เส้น</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=36><b>เลือกการ์ดจอ 1 ใบ</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ฉลากต้องผ่าน 2 ค่า: VRAM 8 GB ขึ้นไป และกำลังไฟไม่เกิน 150 W (เป็นของการ์ด ไม่ใช่ PSU)\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> การ์ดที่เลือกผ่านทั้ง 2 ค่า"
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>เลือกการ์ดจอ 1 ใบ</b></size>\n\n<size=34><color=#4A5A6E>VRAM 8 GB ขึ้นไป · ไฟไม่เกิน 150 W (ค่าของการ์ด)</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผ่านทั้ง 2 ค่า</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=36><b>เสียบการ์ดลงช่อง PCIe หลักจนสุด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ช่องหลักคือช่องยาวที่ต่อกับ CPU ไม่ใช่ช่องยาวรอง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ขั้วการ์ดจมเต็มช่อง"
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>เสียบการ์ดลงช่องหลักจนสุด</b></size>\n\n<size=34><color=#4A5A6E>ช่องหลัก = ช่องยาวที่ต่อกับ CPU</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ขั้วการ์ดจมเต็มช่อง</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=36><b>ขันน็อตยึดขาการ์ดกับเคส</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> การเสียบการ์ดไม่ได้ยึดให้เอง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> น็อตแน่น"
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>ขันน็อตยึดขาการ์ด</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> น็อตแน่น</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=36><b>เสียบสายไฟ PCIe 8 พินเข้าการ์ด</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> หัว 6+2 ประกอบเป็น 8 พินไว้แล้ว เสียบได้เลย\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> หัว 8 พินเข้าเต็ม"
+      "text_th": "<size=24><color=#5B6B7F>การ์ดจอ</color></size>\n<size=46><b>เสียบสายไฟ 8 พินเข้าการ์ด</b></size>\n\n<size=34><color=#2E7D32><b>✓</b> หัวสายเข้าเต็ม</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>ตรวจผล</color></size>\n<size=36><b>กดปุ่ม “ตรวจผล”</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> ระบบตรวจ 3 วินาที\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> ขึ้นว่า “ผ่าน: ประกอบเครื่องตรงข้อกำหนดและพร้อมทดสอบ” = เสร็จ"
+      "text_th": "<size=24><color=#5B6B7F>ตรวจผล</color></size>\n<size=46><b>กด “ตรวจผล”</b></size>\n\n<size=34><color=#4A5A6E>รอ 3 วินาที</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ขึ้น “ตรวจผลผ่าน · ตรงข้อกำหนด W2” = เสร็จ</color></size>"
     },
     {
-      "text_th": "<size=24><color=#5B6B7F>ถ้ายังไม่ผ่าน</color></size>\n<size=36><b>อ่านผล แล้วกลับไปแก้</b></size>\n\n<color=#1F5FAF><b>ดู:</b></color> “ยังไม่ครบ” = มีชิ้นที่ไม่สุด ไม่ยึด หรือไม่มีสาย · “ยังไม่ตรง W2” = ชิ้นหรือช่องผิด · ถอด: ปลดสลัก ถอดสาย หรือคลายน็อตก่อนดึง\n\n<color=#2E7D32><b>ถูกต้องเมื่อ:</b></color> แก้แล้วกด “ตรวจผล” ใหม่ได้ · ระบบขัดข้อง = บอกผู้วิจัย"
+      "text_th": "<size=24><color=#5B6B7F>ถ้ายังไม่ผ่าน</color></size>\n<size=46><b>อ่านผล แล้วแก้</b></size>\n\n<size=34><color=#4A5A6E>“ยังประกอบหรือต่อสายไม่ครบ” = ไม่สุด/ไม่ยึด/ไม่มีสาย · “ยังไม่ตรงข้อกำหนด W2” = ชิ้นหรือช่องผิด · ถอด: ปลดสลัก สาย หรือน็อตก่อน</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> แก้แล้วกด “ตรวจผล” ใหม่ได้ · ระบบขัดข้อง บอกผู้วิจัย</color></size>"
     }
   ],
   "images": [
     {
       "resource": "ResearchReaderS1/images_v2/A_th_01",
-      "sha256": "8d1e2c37dbb10fcebe52b4adb7e494ec0048aafdb1c037bd59ac89d814324d42",
+      "sha256": "d7a62a1ee8d5f19b368bfac1a81d943183a3a4ae2902dcf1cf7292b493ce3018",
       "caption_th": "<b>งานนี้</b>\nใส่ RAM, SSD และการ์ดจอให้ตรง W2 · ทำอันไหนก่อนก็ได้"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_02",
-      "sha256": "586aceeb08f3a125f47edb6ee90e8042cc52c6e81a2a772a4ce89fc88d5894fb",
+      "sha256": "ad425026d7182bf9863f7077c5a7311829ed48a9b4a07432ed031d4ba0bc9e82",
       "caption_th": "<b>เลือกให้ตรง W2</b>\nใส่ได้ ≠ ถูก · ดูค่าบนฉลากทุกค่า"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_03",
-      "sha256": "3b27c0656c128ab19283a12a894951b57e081f317c644e47fa6905d9a209dc99",
+      "sha256": "0f9715493c2d8b5e51fd70f3e3ee3ab935cfe6eaddb0e87f08144802e5714159",
       "caption_th": "<b>RAM</b>\nเปิดสลัก → ร่องบากตรง → กดจนสุด (ร่องไม่ตรง อย่าฝืน)"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_04",
-      "sha256": "08ebf25c7c8101cc4b1404c8893a226393e7b72554a44fca0cb81864129b3cb1",
+      "sha256": "3e0cdbfe64ce67e13caffcbc1b6345fcdb2a2116293f01dae85deedb778e650d",
       "caption_th": "<b>ที่ใส่ SSD อยู่ด้านหลัง</b>\nหมุนเคสเพื่อมองด้านหลังแผ่นเมนบอร์ด"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_05",
-      "sha256": "20d7a227c09fdc1d78e0ea9db6751a9fb049d9c6d36eb2252c3558e6def55556",
+      "sha256": "0f4e96945b96d2e58b75154656f86f00ac1b2336fac4dc64916704e2708fc8b2",
       "caption_th": "<b>SSD: ต้องเสียบ 2 สาย</b>\nวางถาดแล้วสายไม่ต่อเอง · ไม่ต้องขันน็อตใต้ SSD"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_06",
-      "sha256": "430e1f32f7a17d2870096c88e859bda16f4badf1430c6a833fbcce659a0c6d96",
+      "sha256": "227c928a35a73c818ed29840dce509ae4dae4c7df3e9451561f021e05bc7c258",
       "caption_th": "<b>การ์ดจอ: 3 อย่าง</b>\nเสียบช่องหลัก · ขันน็อต · เสียบไฟ 8 พิน"
     },
     {
       "resource": "ResearchReaderS1/images_v2/A_th_07",
-      "sha256": "f04bf42ca4f3f6b9636f037e29232ab91700e11516e0aa7792a5d7ed6fa94c64",
+      "sha256": "74bb2a46b3bc36541215416a6181bd12a0db590a50daf43b87dc1a0019b21515",
       "caption_th": "<b>กด “ตรวจผล”</b>\nแก้แล้วตรวจใหม่ได้ · ถอด: ปลดสลัก/สาย/น็อตก่อน · ขัดข้อง = บอกผู้วิจัย"
     }
   ],
   "video": {
     "streaming_path": "ResearchReaderS1/A_th.mp4",
-    "sha256": "0423cc7cd2ea923b89b01abd357da301616065904d097bb00653df25b81a7f27",
-    "duration_seconds": 132.52,
+    "sha256": "dbdde23f504af93b52ded8eacc1bf4bd040189767f6576bcaf58f0444325e1a2",
+    "duration_seconds": 89.5,
     "audio": "narration",
     "chapters": [
       {
         "stage": "problem",
         "start_seconds": 0.0,
-        "end_seconds": 18.24
+        "end_seconds": 13.09
       },
       {
         "stage": "watch",
-        "start_seconds": 18.24,
-        "end_seconds": 29.7
+        "start_seconds": 13.09,
+        "end_seconds": 19.93
       },
       {
         "stage": "do",
-        "start_seconds": 29.7,
-        "end_seconds": 45.28
+        "start_seconds": 19.93,
+        "end_seconds": 31.41
       },
       {
         "stage": "watch",
-        "start_seconds": 45.28,
-        "end_seconds": 50.7
+        "start_seconds": 31.41,
+        "end_seconds": 35.92
       },
       {
         "stage": "do",
-        "start_seconds": 50.7,
-        "end_seconds": 58.06
+        "start_seconds": 35.92,
+        "end_seconds": 40.77
       },
       {
         "stage": "do",
-        "start_seconds": 58.06,
-        "end_seconds": 66.47
+        "start_seconds": 40.77,
+        "end_seconds": 45.54
       },
       {
         "stage": "do",
-        "start_seconds": 66.47,
-        "end_seconds": 86.41
+        "start_seconds": 45.54,
+        "end_seconds": 58.83
       },
       {
         "stage": "do",
-        "start_seconds": 86.41,
-        "end_seconds": 96.79
+        "start_seconds": 58.83,
+        "end_seconds": 64.63
       },
       {
         "stage": "do",
-        "start_seconds": 96.79,
-        "end_seconds": 114.04
+        "start_seconds": 64.63,
+        "end_seconds": 75.78
       },
       {
         "stage": "do",
-        "start_seconds": 114.04,
-        "end_seconds": 119.03
+        "start_seconds": 75.78,
+        "end_seconds": 80.36
       },
       {
         "stage": "done",
-        "start_seconds": 119.03,
-        "end_seconds": 132.52
+        "start_seconds": 80.36,
+        "end_seconds": 89.5
       }
     ]
   }
