@@ -55,6 +55,8 @@ class EnrollAndBucket(unittest.TestCase):
     def test_installs_get_sequential_quest_folders_and_reinstall_keeps_folder(self):
         status, a = self.enroll(INSTALL_A); self.assertEqual((status, a["label"], a["allow_study"]), (200, "Quest_01", False))
         status, b = self.enroll(INSTALL_B); self.assertEqual((status, b["label"]), (200, "Quest_02"))
+        self.assertEqual(self.enroll("devsim" + "c" * 26)[1]["label"], "SIM_01")
+        self.assertEqual(self.enroll("d" * 32)[1]["label"], "Quest_03", "simulators do not take headset numbers")
         status, again = self.enroll(INSTALL_A)
         self.assertEqual((status, again["label"]), (200, "Quest_01"))
         self.assertNotEqual(again["device_token"], a["device_token"])

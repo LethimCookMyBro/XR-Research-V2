@@ -85,10 +85,12 @@ class Enrollment:
                 if len(devices) >= int(os.environ.get("S1_RELAY_MAX_DEVICES", "20")):
                     raise PermissionError("Device limit reached")
                 taken = {d["label"] for d in devices.values()}
+                # Simulated test clients never consume real headset numbers.
+                pattern = "SIM_%02d" if install_id.startswith("devsim") else "Quest_%02d"
                 n = 1
-                while "Quest_%02d" % n in taken:
+                while pattern % n in taken:
                     n += 1
-                entry = {"label": "Quest_%02d" % n, "enrolled_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+                entry = {"label": pattern % n, "enrolled_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             # Reinstalling the app loses its token: the same install ID keeps its folder and gets a fresh token.
             token = base64.urlsafe_b64encode(os.urandom(32)).rstrip(b"=").decode()
             devices[install_id] = dict(entry, token_sha256=sha(token.encode()))
