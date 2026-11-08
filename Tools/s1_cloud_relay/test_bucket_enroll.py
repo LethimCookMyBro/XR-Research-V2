@@ -29,6 +29,16 @@ class FakeS3:
             raise self.exceptions.NoSuchKey()
         return {"Body": io.BytesIO(self.objects[Key])}
 
+    def get_paginator(self, name):
+        objects = self.objects
+        class P:
+            def paginate(self, Bucket):
+                return [{"Contents": [{"Key": k, "Size": len(v)} for k, v in objects.items()]}]
+        return P()
+
+    def download_file(self, Bucket, Key, Filename):
+        Path(Filename).write_bytes(self.objects[Key])
+
 
 class EnrollAndBucket(unittest.TestCase):
     def setUp(self):
@@ -95,6 +105,14 @@ class EnrollAndBucket(unittest.TestCase):
         puts = s3.puts
         drive_sink.sync_pending(self.store, sink)
         self.assertEqual(s3.puts, puts, "verified bundles are not re-uploaded")
+        import pull_bucket
+        with tempfile.TemporaryDirectory() as dest:
+            report = pull_bucket.pull(sink, dest)
+            self.assertEqual((report["bundles"], report["verified"]), (2, 2))
+            self.assertEqual(sorted(b["quest"] for b in report["items"]), ["Quest_01", "Quest_02"])
+            self.assertEqual(pull_bucket.pull(sink, dest)["skipped_existing"], report["downloaded"], "second pull downloads nothing")
+            s3.objects[next(k for k in s3.objects if k.endswith("events.jsonl"))] += b"x"
+            self.assertEqual(pull_bucket.pull(sink, dest)["verified"], 1, "a changed object is re-downloaded and flagged")
 
     def test_corrupted_bucket_bytes_stay_pending(self):
         two.TOKENS[INSTALL_A] = self.enroll(INSTALL_A)[1]["device_token"]
