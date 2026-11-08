@@ -35,7 +35,8 @@ def safe(value):
     return value
 
 
-def configured_tokens():
+def device_registry():
+    """Enrolled Quests: {"<device_id>": "<sha256>"} or {"<device_id>": {"token_sha256": "...", "label": "Quest 1"}}."""
     registry = os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON", "")
     if registry:
         try:
@@ -44,10 +45,33 @@ def configured_tokens():
             return {}
         if not isinstance(tokens, dict):
             return {}
-        return {key: value for key, value in tokens.items()
-                if TOKEN.fullmatch(key) and isinstance(value, str) and HEX.fullmatch(value)}
+        devices = {}
+        for key, value in tokens.items():
+            entry = value if isinstance(value, dict) else {"token_sha256": value}
+            digest = entry.get("token_sha256")
+            if TOKEN.fullmatch(key) and isinstance(digest, str) and HEX.fullmatch(digest):
+                devices[key] = {"token_sha256": digest, "label": str(entry.get("label") or key)[:60]}
+        return devices
     legacy = os.environ.get("S1_RELAY_TOKEN_SHA256", "")
-    return {"": legacy} if HEX.fullmatch(legacy) else {}
+    return {"": {"token_sha256": legacy, "label": "legacy DEV device"}} if HEX.fullmatch(legacy) else {}
+
+
+def configured_tokens():
+    return {key: value["token_sha256"] for key, value in device_registry().items()}
+
+
+STUDY_APPROVAL_FIELDS = ("approved_by", "ethics_ref", "approved_utc", "region", "access_scope")
+
+
+def study_approval():
+    """Study (TH/JP) uploads stay refused unless the real approval is configured server-side; the relay does not validate it."""
+    try:
+        approval = json.loads(os.environ.get("S1_RELAY_STUDY_APPROVAL_JSON", "") or "null")
+    except ValueError:
+        return None
+    if not isinstance(approval, dict) or approval.get("encryption_at_rest") is not True:
+        return None
+    return approval if all(isinstance(approval.get(k), str) and approval[k].strip() for k in STUDY_APPROVAL_FIELDS) else None
 
 
 class Store:
@@ -55,10 +79,11 @@ class Store:
         self.root = Path(root).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
 
-    def folder(self, bundle):
-        return self.root / safe(bundle)
+    def folder(self, bundle, device=""):
+        # Each enrolled Quest has its own namespace, so equal participant codes or bundle IDs on two headsets never meet.
+        return (self.root / ("device_" + safe(device)) if device else self.root) / safe(bundle)
 
-    def request(self, payload):
+    def request(self, payload, device="", label=None):
         m = base64.b64decode(payload["manifest_b64"], validate=True)
         c = base64.b64decode(payload["complete_b64"], validate=True)
         if len(m) > 100_000 or len(c) > 10_000:
@@ -73,8 +98,9 @@ class Store:
         for k in ("participant_code", "session_id", "run_id"):
             safe(ident[k])
         group = ident.get("group")
-        if not ident.get("test_data") or not re.fullmatch(r"(DEV|TEST|PILOT)[0-9]+", ident["participant_code"]) or group not in ("Dev", "Test", "Pilot"):
-            # Deliberately no participant-study uploads in this release.
+        technical = ident.get("test_data") is True and re.fullmatch(r"(DEV|TEST|PILOT)[0-9]+", ident["participant_code"]) and group in ("Dev", "Test", "Pilot")
+        study = ident.get("test_data") is False and group in ("Thai", "Japanese") and study_approval() is not None
+        if not technical and not study:
             raise PermissionError("Study data is disabled pending ethics/provider authorization")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) != FILES:
@@ -82,9 +108,12 @@ class Store:
         for name, info in files.items():
             if not isinstance(info.get("bytes"), int) or not 0 <= info["bytes"] <= 2_000_000_000 or not HEX.fullmatch(info.get("sha256", "")):
                 raise ValueError("Invalid size or digest " + name)
-        folder = self.folder(bundle)
+        folder = self.folder(bundle, device)
         with LOCK:
-            folder.mkdir(exist_ok=True)
+            folder.mkdir(parents=True, exist_ok=True)
+            enrolled = {"schema_version": "s1.relay-device.1", "device_id": device or "legacy", "device_label": label or device or "legacy"}
+            if not (folder / "relay_device.json").exists():
+                (folder / "relay_device.json").write_bytes(encoded(dict(enrolled, first_seen_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))))
             for name, data in (("manifest.json", m), ("COMPLETE.json", c)):
                 target = folder / name
                 if target.exists() and target.read_bytes() != data:
@@ -92,10 +121,10 @@ class Store:
                 if not target.exists():
                     target.write_bytes(data)
             (folder / "raw").mkdir(exist_ok=True)
-            return self.status(bundle)
+            return self.status(bundle, device)
 
-    def status(self, bundle):
-        folder = self.folder(bundle)
+    def status(self, bundle, device=""):
+        folder = self.folder(bundle, device)
         manifest = parse((folder / "manifest.json").read_bytes())
         files = {}
         for name, meta in manifest["files"].items():
@@ -108,11 +137,12 @@ class Store:
             record = parse(receipt.read_bytes())
             state = record["status"]
             confirmed = record.get("provider_upload_confirmed") is True
+        pending = parse(receipt.read_bytes()).get("pending_reason") if receipt.exists() else None
         return {"bundle_id": safe(bundle), "state": state, "offsets": files,
-                "provider_upload_confirmed": confirmed}
+                "provider_upload_confirmed": confirmed, "pending_reason": pending, "device_id": device or "legacy"}
 
-    def chunk(self, bundle, name, offset, chunk, digest):
-        folder = self.folder(bundle)
+    def chunk(self, bundle, name, offset, chunk, digest, device=""):
+        folder = self.folder(bundle, device)
         manifest = parse((folder / "manifest.json").read_bytes())
         if name not in FILES or not HEX.fullmatch(digest or "") or sha(chunk) != digest or not chunk or len(chunk) > MAX_CHUNK:
             raise ValueError("Invalid chunk")
@@ -138,8 +168,8 @@ class Store:
                 os.fsync(f.fileno())
             return {"next_offset": current + len(chunk), "retry": False}
 
-    def finish(self, bundle):
-        folder = self.folder(bundle)
+    def finish(self, bundle, device=""):
+        folder = self.folder(bundle, device)
         with LOCK:
             data = (folder / "manifest.json").read_bytes()
             marker = parse((folder / "COMPLETE.json").read_bytes())
@@ -158,14 +188,18 @@ class Store:
                     raise ValueError("Hash mismatch: " + name)
             receipt = folder / "relay_receipt.json"
             if not receipt.exists():
+                enrolled = parse((folder / "relay_device.json").read_bytes()) if (folder / "relay_device.json").exists() else {}
                 receipt.write_bytes(encoded({"schema_version": "s1.relay-receipt.1",
                     "bundle_id": bundle, "manifest_sha256": sha(data),
+                    "device_id": enrolled.get("device_id", device or "legacy"), "device_label": enrolled.get("device_label"),
+                    "staged_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "status": "staged_verified", "provider_upload_confirmed": False}))
-            return self.status(bundle)
+            return self.status(bundle, device)
 
 
 class Handler(BaseHTTPRequestHandler):
     store = None
+    device, label = "", None
     def log_message(self, fmt, *args):
         # Do not emit bearer tokens, request bodies, participant IDs or file paths.
         print("relay", self.command, self.path.split("?")[0].split("/")[1:3], flush=True)
@@ -187,8 +221,11 @@ class Handler(BaseHTTPRequestHandler):
             device_id = safe(self.headers.get("X-Device-Id")) if os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON") else ""
         except ValueError:
             return False
-        expected = configured_tokens().get(device_id, "")
-        return bool(expected) and hmac.compare_digest(expected, sha(supplied[7:].encode()))
+        entry = device_registry().get(device_id)
+        if not entry or not hmac.compare_digest(entry["token_sha256"], sha(supplied[7:].encode())):
+            return False
+        self.device, self.label = device_id, entry["label"]
+        return True
 
     def api(self):
         if not self.allowed():
@@ -225,14 +262,14 @@ class Handler(BaseHTTPRequestHandler):
                 return
             data = self.rfile.read(length)
             if self.command == "POST" and len(pieces) == 2:
-                result = self.store.request(parse(data))
+                result = self.store.request(parse(data), self.device, self.label)
             elif self.command == "GET" and len(pieces) == 3:
-                result = self.store.status(safe(pieces[2]))
+                result = self.store.status(safe(pieces[2]), self.device)
             elif self.command == "PUT" and len(pieces) == 4 and pieces[3] == "chunk":
                 result = self.store.chunk(safe(pieces[2]), self.headers.get("X-File"),
-                    int(self.headers.get("X-Offset", -1)), data, self.headers.get("X-Chunk-SHA256"))
+                    int(self.headers.get("X-Offset", -1)), data, self.headers.get("X-Chunk-SHA256"), self.device)
             elif self.command == "POST" and len(pieces) == 4 and pieces[3] == "finalize":
-                result = self.store.finish(safe(pieces[2]))
+                result = self.store.finish(safe(pieces[2]), self.device)
             else:
                 self.send(404, {"error": "not_found"})
                 return

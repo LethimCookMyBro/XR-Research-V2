@@ -15,7 +15,7 @@ def ready():
 
 
 def digest(path):
-    h=hashlib.md5()
+    h=hashlib.sha256()
     with Path(path).open("rb") as f:
         for buf in iter(lambda:f.read(1024*1024),b""):h.update(buf)
     return h.hexdigest()
@@ -30,9 +30,9 @@ class DriveSink:
             token_uri="https://oauth2.googleapis.com/token",
             client_id=os.environ["S1_GOOGLE_CLIENT_ID"],
             client_secret=os.environ["S1_GOOGLE_CLIENT_SECRET"],
-            scopes=["https://www.googleapis.com/auth/drive"]),cache_discovery=False)
+            scopes=["https://www.googleapis.com/auth/drive.file"]),cache_discovery=False)
         self.parent=os.environ["S1_GOOGLE_FOLDER_ID"]
-        self.confirm_restricted()
+        self.access=self.confirm_restricted()
 
     def confirm_restricted(self):
         result=self.api.files().get(fileId=self.parent,fields="id,mimeType,capabilities(canAddChildren)",supportsAllDrives=True).execute()
@@ -40,8 +40,16 @@ class DriveSink:
             raise ValueError("Cloud target is not a writable Drive folder")
         # Google may restrict listing permissions if credentials lack share ownership. Fail closed.
         p=self.api.permissions().list(fileId=self.parent,fields="nextPageToken,permissions(type,role)",supportsAllDrives=True).execute()
-        if p.get("nextPageToken") or any(x.get("type") in ("anyone","domain") for x in p.get("permissions",[])):
-            raise PermissionError("Drive folder must be Restricted, with no public/domain access")
+        if p.get("nextPageToken"):
+            raise PermissionError("Drive folder permissions could not be listed completely")
+        broad=sorted({x.get("type")+"/"+x.get("role","") for x in p.get("permissions",[]) if x.get("type") in ("anyone","domain")})
+        if not broad:
+            return "restricted"
+        # Owner keeps "anyone with link / editor" on purpose (28 Oct). That never admits study data; an explicit, recorded
+        # owner acknowledgement admits DEV/TEST/PILOT bundles only. Without it the sink stays closed.
+        if not os.environ.get("S1_GOOGLE_BROAD_FOLDER_ACK"):
+            raise PermissionError("Drive folder is shared broadly ("+",".join(broad)+"); configure a Restricted intake folder or an owner acknowledgement for DEV data")
+        return "broad_acknowledged:"+",".join(broad)
 
     def find(self,parent,name,mime=None):
         q="'"+parent.replace("'","\\'")+"' in parents and name = '"+name.replace("'","\\'")+"' and trashed = false"
@@ -59,33 +67,53 @@ class DriveSink:
                                   fields="id",supportsAllDrives=True).execute()
         return r["id"]
 
+    def readback(self,file_id):
+        """SHA-256 of the bytes Google returns for this file ID (server-side check, not a local cache)."""
+        from googleapiclient.http import MediaIoBaseDownload
+        import io
+        h=hashlib.sha256();buf=io.BytesIO();size=0
+        down=MediaIoBaseDownload(buf,self.api.files().get_media(fileId=file_id,supportsAllDrives=True),chunksize=8*1024*1024)
+        done=False
+        while not done:
+            _,done=down.next_chunk(num_retries=2)
+            data=buf.getvalue();h.update(data);size+=len(data);buf.seek(0);buf.truncate()
+        return size,h.hexdigest()
+
     def file(self,parent,name,path):
         from googleapiclient.http import MediaFileUpload
         path=Path(path)
-        size=path.stat().st_size;md5=digest(path)
+        size=path.stat().st_size;expected=digest(path)
         existing=self.find(parent,name)
         if existing:
-            if int(existing.get("size",-1))!=size or existing.get("md5Checksum")!=md5:
+            file_id=existing["id"]
+            if int(existing.get("size",-1))!=size:
                 raise ValueError("Remote file conflict " + name)
-            return existing["id"]
-        upload=MediaFileUpload(str(path),mimetype="application/octet-stream",resumable=True,chunksize=8*1024*1024)
-        request=self.api.files().create(body={"name":name,"parents":[parent]},media_body=upload,
-                                        fields="id,size,md5Checksum",supportsAllDrives=True)
-        response=None
-        while response is None:
-            _,response=request.next_chunk(num_retries=2)
-        if int(response.get("size",-1))!=size or response.get("md5Checksum")!=md5:
-            raise ValueError("Drive did not verify uploaded bytes")
-        return response["id"]
+        else:
+            upload=MediaFileUpload(str(path),mimetype="application/octet-stream",resumable=True,chunksize=8*1024*1024)
+            request=self.api.files().create(body={"name":name,"parents":[parent]},media_body=upload,
+                                            fields="id,size",supportsAllDrives=True)
+            response=None
+            while response is None:
+                _,response=request.next_chunk(num_retries=2)
+            file_id=response["id"]
+        got_size,got=self.readback(file_id)
+        if got_size!=size or got!=expected:
+            raise ValueError("Drive bytes differ from relay copy " + name)
+        return {"id":file_id,"bytes":size,"sha256":got}
 
     def sync(self,bundle):
         base=Path(bundle)
         m=json.loads((base/"manifest.json").read_text(encoding="utf-8"))
         i=m["identity"]
-        group={"Dev":"DEV","Test":"TEST","Pilot":"PILOT"}[i["group"]]
-        folder=self.parent
-        path=["research_s1","site_TMU","cohort_"+group,"participant_"+i["participant_code"],
+        if self.access!="restricted" and i.get("test_data") is not True:
+            raise PermissionError("Study bundles are never written to a broadly shared folder")
+        device=json.loads((base/"relay_device.json").read_text(encoding="utf-8")) if (base/"relay_device.json").exists() else {}
+        device_id=device.get("device_id") or "legacy"
+        group=i["group"];cohort="TH" if group=="Thai" else "JP" if group=="Japanese" else group.upper()
+        # Same tree as the PC route (Tools/research_cloud_sync.py remote_dir with a pinned folder ID): no extra research_s1 level.
+        path=["site_"+os.environ.get("S1_SITE_CODE","TMU"),"device_"+device_id,"cohort_"+cohort,"participant_"+i["participant_code"],
               "session_"+i["session_id"],"run_"+i["run_id"],"bundle_"+m["bundle_id"]]
+        folder=self.parent
         for name in path:
             folder=self.folder(folder,name)
         uploaded={}
@@ -94,11 +122,38 @@ class DriveSink:
             file=base/name
             destination=raw_folder if name.startswith("raw/") else folder
             uploaded[name]=self.file(destination,name[4:] if destination==raw_folder else name,file)
-        return dict(schema_version="s1.drive-receipt.1",bundle_id=m["bundle_id"],
+            if name in m["files"] and uploaded[name]["sha256"]!=m["files"][name]["sha256"]:
+                raise ValueError("Drive bytes differ from device manifest " + name)
+        return dict(schema_version="s1.drive-receipt.2",bundle_id=m["bundle_id"],
                     manifest_sha256=hashlib.sha256((base/"manifest.json").read_bytes()).hexdigest(),
-                    status="drive_verified",provider_upload_confirmed=True,
-                    target="google_drive_restricted",destination= "/".join(path),
-                    provider_file_count=len(uploaded))
+                    device_id=device_id,device_label=device.get("device_label"),
+                    status="provider_verified",provider_upload_confirmed=True,
+                    target_folder_id=self.parent,folder_access=self.access,destination="/".join(path),
+                    verified_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+                    verification="sha256 of bytes downloaded from Google Drive by file ID",
+                    provider_files=uploaded)
+
+
+def _write(receipt,body):
+    temp=receipt.with_suffix(".next")
+    temp.write_text(json.dumps(body,sort_keys=True),encoding="utf-8")
+    os.replace(temp,receipt)
+
+
+def sync_pending(store,sink):
+    """One pass over every device namespace. Failures keep the relay copy and record why, then retry next pass."""
+    receipts=sorted([*store.root.glob("*/relay_receipt.json"),*store.root.glob("device_*/*/relay_receipt.json")])
+    for receipt in receipts:
+        body=json.loads(receipt.read_text(encoding="utf-8"))
+        if body.get("status") in ("provider_verified","drive_verified"):continue
+        try:
+            cloud=sink.sync(receipt.parent)
+            _write(receipt,dict(body,**cloud,pending_reason=None))
+        except Exception as ex:
+            _write(receipt,dict(body,status="staged_verified",provider_upload_confirmed=False,
+                                pending_reason=type(ex).__name__+": "+str(ex)[:160],last_attempt_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())))
+            print("[S1Drive] Pending: "+type(ex).__name__,flush=True)
+    return receipts
 
 
 def sync_forever(store,period=90):
@@ -108,16 +163,7 @@ def sync_forever(store,period=90):
             try:
                 with _DRIVE_LOCK:
                     sink=DriveSink()
-                    for receipt in sorted(store.root.glob("*/relay_receipt.json")):
-                        body=json.loads(receipt.read_text(encoding="utf-8"))
-                        if body.get("status")=="drive_verified":continue
-                        try:
-                            cloud=sink.sync(receipt.parent)
-                            temp=receipt.with_suffix(".next")
-                            temp.write_text(json.dumps(cloud,sort_keys=True),encoding="utf-8")
-                            os.replace(temp,receipt)
-                        except Exception as ex:
-                            print("[S1Drive] Pending: "+type(ex).__name__,flush=True)
+                    sync_pending(store,sink)
             except Exception as ex:
                 print("[S1Drive] Disabled by target/auth check: "+type(ex).__name__,flush=True)
         time.sleep(period)

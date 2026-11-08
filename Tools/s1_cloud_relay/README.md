@@ -38,12 +38,22 @@ Place JSON in Application.persistentDataPath/s1_cloud_relay.json (on current Que
 
 Use guarded adb push per-device; restart Unity app. Do not uninstall/clear data. Wi-Fi can then send without PC, and failed/incomplete chunks retry from server offsets. The relay supports a JSON map of **per-device token hashes**, so different Quest units can be independently disabled/rotated. This is bearer authentication, NOT hardware attestation; study use still needs audited enrollment and review. Status "cloud_verified" is written to CloudReceipts only after confirmed Drive receipt, not after relay receipt.
 
-Drive hierarchy created by backend:
-research_s1/site_TMU/cohort_DEV/participant_DEVnnn/session_ID/run_ID/bundle_snapshot_x/
-  manifest.json, COMPLETE.json, raw__events.jsonl, raw__movement.csv,
-  raw__session_metadata.json, raw__research-session.json
+Drive hierarchy (2026-11-08, same tree as the PC route with a pinned folder ID; no extra research_s1 level):
+site_<S1_SITE_CODE>/device_<device_id>/cohort_<DEV|TEST|PILOT|TH|JP>/participant_<code>/session_<id>/run_<id>/bundle_<id>/
+  manifest.json, COMPLETE.json, raw/events.jsonl, raw/movement.csv, raw/session_metadata.json, raw/research-session.json
+
+- device_id is the authenticated enrolled ID (provision with Tools/delivery/Provision-QuestCloud.ps1, which uses the headset serial);
+  the relay stores each device under its own device_<id>/ folder and every receipt records device_id and device_label.
+- States: receiving -> staged_verified (relay SHA-256 verified; Drive pending, pending_reason explains) -> provider_verified
+  (each file downloaded back from Google by file ID and its SHA-256 matches the device manifest). The Quest writes CloudReceipts only
+  for provider_verified.
+- Folder access: a folder shared to anyone/domain is refused unless S1_GOOGLE_BROAD_FOLDER_ACK records the owner decision; even then only
+  DEV/TEST/PILOT bundles are written there. Study bundles need S1_RELAY_STUDY_APPROVAL_JSON (approved_by, ethics_ref, approved_utc,
+  region, access_scope, encryption_at_rest=true) and a Restricted folder.
+- Owner setup guide (Thai): Tools/delivery/CLOUD_AUTO_UPLOAD_TH.md
 
 ## Tests
-C:\Users\DMI\AppData\Local\Programs\Python\Python311\python.exe -B Tools\s1_cloud_relay\test_relay.py
-
+python -B Tools/s1_cloud_relay/test_relay.py
+python -B Tools/s1_cloud_relay/test_multidevice.py
+python -B Tools/s1_cloud_relay/test_http_transport.py
 The existing PC / USB route Tools/research_export.py pull-queue remains an independent backup and QC path; it does not need internet and was not modified.
