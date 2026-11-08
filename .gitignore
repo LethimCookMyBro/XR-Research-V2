@@ -130,3 +130,7 @@ __pycache__/
 
 # Hand-written test projects under Assets (used by Run-*Checks.ps1); their .meta files are tracked
 !/Assets/VRMaintenanceResearch/**/Tests/*.csproj
+
+# S1 auto-enroll install key (also embedded in the APK; keep it out of the public repo)
+Assets/VRMaintenanceResearch/ResearchFlow/Resources/S1CloudRelay.json
+Assets/VRMaintenanceResearch/ResearchFlow/Resources/S1CloudRelay.json.meta

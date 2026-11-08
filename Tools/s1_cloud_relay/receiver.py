@@ -60,6 +60,48 @@ def configured_tokens():
     return {key: value["token_sha256"] for key, value in device_registry().items()}
 
 
+def enroll_key_sha():
+    value = os.environ.get("S1_RELAY_ENROLL_KEY_SHA256", "")
+    return value if HEX.fullmatch(value) else ""
+
+
+class Enrollment:
+    """Self-enrolled Quests on the relay volume: {install_id: {token_sha256, label, enrolled_utc}}.
+    The shared install key in the APK can only enroll (capped by S1_RELAY_MAX_DEVICES); each Quest then uploads with its own token
+    and only into its own Quest_NN namespace. Nothing here can read, list or delete stored data."""
+
+    def __init__(self, root):
+        self.path = Path(root) / "_enrolled_devices.json"
+
+    def load(self):
+        return json.loads(self.path.read_text(encoding="utf-8")) if self.path.exists() else {}
+
+    def enroll(self, install_id):
+        safe(install_id)
+        with LOCK:
+            devices = self.load()
+            entry = devices.get(install_id)
+            if entry is None:
+                if len(devices) >= int(os.environ.get("S1_RELAY_MAX_DEVICES", "20")):
+                    raise PermissionError("Device limit reached")
+                taken = {d["label"] for d in devices.values()}
+                n = 1
+                while "Quest_%02d" % n in taken:
+                    n += 1
+                entry = {"label": "Quest_%02d" % n, "enrolled_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            # Reinstalling the app loses its token: the same install ID keeps its folder and gets a fresh token.
+            token = base64.urlsafe_b64encode(os.urandom(32)).rstrip(b"=").decode()
+            devices[install_id] = dict(entry, token_sha256=sha(token.encode()))
+            temp = self.path.with_suffix(".next")
+            temp.write_text(json.dumps(devices, indent=1, sort_keys=True), encoding="utf-8")
+            os.replace(temp, self.path)
+            return {"device_id": install_id, "device_token": token, "label": entry["label"], "allow_study": study_approval() is not None}
+
+    def get(self, install_id):
+        entry = self.load().get(install_id)
+        return {"token_sha256": entry["token_sha256"], "label": entry["label"]} if entry else None
+
+
 STUDY_APPROVAL_FIELDS = ("approved_by", "ethics_ref", "approved_utc", "region", "access_scope")
 
 
@@ -217,17 +259,37 @@ class Handler(BaseHTTPRequestHandler):
         supplied = self.headers.get("Authorization", "")
         if not supplied.startswith("Bearer "):
             return False
+        header = self.headers.get("X-Device-Id")
         try:
-            device_id = safe(self.headers.get("X-Device-Id")) if os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON") else ""
+            device_id = safe(header) if header or os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON") else ""
         except ValueError:
             return False
-        entry = device_registry().get(device_id)
+        entry = device_registry().get(device_id) or (Enrollment(self.store.root).get(device_id) if device_id else None)
+        if entry is None and not os.environ.get("S1_RELAY_DEVICE_TOKENS_JSON"):
+            device_id, entry = "", device_registry().get("")  # legacy single-token DEV mode ignores the device header
         if not entry or not hmac.compare_digest(entry["token_sha256"], sha(supplied[7:].encode())):
             return False
         self.device, self.label = device_id, entry["label"]
         return True
 
+    def enroll(self):
+        supplied = self.headers.get("Authorization", "")
+        key = enroll_key_sha()
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        if not key or not supplied.startswith("Bearer ") or not hmac.compare_digest(key, sha(supplied[7:].encode())) or not 0 < length <= 2000:
+            self.send(401, {"error": "unauthorized"})
+            return
+        try:
+            self.send(200, Enrollment(self.store.root).enroll(parse(self.rfile.read(length))["install_id"]))
+        except PermissionError:
+            self.send(403, {"error": "device_limit"})
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+            self.send(400, {"error": "invalid_install_id"})
+
     def api(self):
+        if self.command == "POST" and urlsplit(self.path).path.rstrip("/") == "/v1/enroll":
+            self.enroll()
+            return
         if not self.allowed():
             self.send(401, {"error": "unauthorized"})
             # Drain accepted-size bodies before close so clients receive the denial instead of a reset.
@@ -281,7 +343,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            self.send(200, {"status": "ok", "upload_enabled": bool(configured_tokens())})
+            from bucket_sink import ready as bucket_ready
+            self.send(200, {"status": "ok", "upload_enabled": bool(configured_tokens() or enroll_key_sha()),
+                            "auto_enroll": bool(enroll_key_sha()), "bucket_ready": bucket_ready()})
         else:
             self.api()
 
@@ -297,7 +361,7 @@ def main():
     if not root or not Path(root).is_absolute():
         raise SystemExit("S1_RELAY_DATA_ROOT must be an explicit persistent absolute path")
     Handler.store = Store(root)
-    from drive_sink import sync_forever
+    from bucket_sink import sync_forever
     threading.Thread(target=sync_forever, args=(Handler.store,), daemon=True).start()
     port = int(os.environ.get("PORT", "8080"))
     ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
