@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B6.th",
+  "version": "v6-4573e1fd698feb10.7aa3bc66dff54e59",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v6_TH.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B6_th/source_pdf",
+  "source_sha256": "d3109277971054f7f891f85778ef973aaf00d01f1dc452dc7f65a4be7d97dadb",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p01",
+      "sha256": "dedb7ef22687b738d5c4a59cf22009ccffc4f394c187319fa1e880fcab7901b2"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p02",
+      "sha256": "770ddfa931e0f781a26666ac17df48b5df5df374e8f25e1f8f0be5121680ee93"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p03",
+      "sha256": "4d14bf648117a11f8ebd9ecba47d917fd37f99fd601e4c52077c97777a10f0b4"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p04",
+      "sha256": "dd08d82a89c9b118b16e8965ba94befe6bb97551601de4b5d769180ae956b939"
+    },
+    {
+      "page": 5,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p05",
+      "sha256": "28215bde481de5eb1ca8070f037f9d1085deff3d7ea2ee50748b361598ebe6d2"
+    },
+    {
+      "page": 6,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_th/pages/p06",
+      "sha256": "8758fc187435aa20dc2512efe9f2f4bb2813322980fed322d0e484434ad2c8b4"
+    }
+  ],
+  "steps": [
+    {
+      "text_th": "<size=24><color=#5B6B7F>เลือกหัวข้อ</color></size>\n<size=46><b>ตรวจพัดลม F2 ที่สั่นหรือมีเสียงกระทบ</b></size>\n\n<size=34><color=#4A5A6E>เลือกดูหน้า ใบพัด หรือหลังได้ ไม่ต้องตรวจทุกจุด</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ระหว่างซ่อมพัดลมไม่มีไฟเข้า ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหน้า</color></size>\n<size=46><b>ตรวจขอบตะแกรงหน้า</b></size>\n\n<size=34><color=#4A5A6E>ดูเครื่องหมายและคลิปที่ขอบ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เครื่องหมายตรง ขอบแนบ คลิปปิด ใส่อยู่แต่เครื่องหมายเยื้องหรือคลิปเปิด ยังไม่ล็อก</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหน้า</color></size>\n<size=46><b>ถอดตะแกรงหน้า: เปิดคลิป หมุนตามเครื่องหมาย แล้วดึงตรงออก</b></size>\n\n<size=34><color=#4A5A6E>กด Trigger ที่คลิปหนึ่งครั้ง แล้วจับขอบตะแกรงด้วย Grip</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เห็นใบพัดและฝาล็อก</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ใบพัดและฝาล็อก</color></size>\n<size=46><b>ตรวจใบพัดและฝาล็อก</b></size>\n\n<size=34><color=#4A5A6E>ฝาล็อกคือชิ้นกลมกลางใบพัด</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ใบพัดสวมพินสุด ฝาล็อกแน่น ฝาล็อกที่เข้าเกลียวแล้วอาจยังไม่แน่น</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ใบพัดและฝาล็อก</color></size>\n<size=46><b>ถอดใบพัด: คลายฝาล็อกจนหลุดเกลียว แล้วดึงใบพัดตรงออก</b></size>\n\n<size=34><color=#4A5A6E>ฝาล็อกใช้ Trigger หมุนตามเข็มจากด้านหน้า ใบพัดใช้ Grip ดึงตามแกน</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> เห็นวงแหวนรอบแกน</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหลัง</color></size>\n<size=46><b>ลองขยับขอบตะแกรงหลัง</b></size>\n\n<size=34><color=#4A5A6E>จับขอบที่เห็นจากด้านนอกด้วย Grip</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ขอบต้องไม่โยก วงแหวนที่เข้าเกลียวแล้วอาจยังไม่แน่น</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหลัง</color></size>\n<size=46><b>ถ้าต้องจัดตะแกรงหลังใหม่ ให้คลายวงแหวนแล้วดึงออก</b></size>\n\n<size=34><color=#4A5A6E>ใช้ Trigger หมุนทวนเข็มจากด้านหน้าจนหลุดเกลียว</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ตะแกรงพร้อมจัดตำแหน่งใหม่</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหลัง</color></size>\n<size=46><b>จัดตะแกรงหลังให้ตรง ใส่วงแหวนแล้วขันให้แน่น</b></size>\n\n<size=34><color=#4A5A6E>ตะแกรงใช้ Grip วงแหวนใช้ Trigger หมุนตามเข็มจากด้านหน้า</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ขอบตะแกรงไม่โยก</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=46><b>ใส่ใบพัดให้ร่องตรงพิน แล้วขันฝาล็อกให้แน่น</b></size>\n\n<size=34><color=#4A5A6E>ใบพัดใช้ Grip ดันจนสุด ฝาล็อกใช้ Trigger หมุนทวนเข็มจากด้านหน้า</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ใบพัดสวมสุด ฝาล็อกแน่น</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ประกอบกลับ</color></size>\n<size=46><b>ใส่ตะแกรงหน้า หมุนล็อกตามเครื่องหมาย แล้วปิดคลิป</b></size>\n\n<size=34><color=#4A5A6E>จับขอบด้วย Grip ดันให้แนบแล้วหมุน กด Trigger ที่คลิปหนึ่งครั้ง</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ตะแกรงครบ คลิปปิด</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตรวจผลงาน</color></size>\n<size=46><b>กดตรวจผลงานบนแผงงาน แล้วฟังเสียง</b></size>\n\n<size=34><color=#4A5A6E>หมุน 3 วินาที ใช้ได้ทั้งก่อนและหลังซ่อม ตะแกรงไม่ครบจะไม่หมุน ระบบขัดข้องให้แจ้งผู้วิจัย</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ผลผ่านพร้อมใช้งานคือเสร็จ เสียงผิดปกติคือยังหลวมหรือไม่เข้าที่ แก้แล้วตรวจใหม่ได้</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_01",
+      "sha256": "f873a9c7f38694122d29297a66ac1279ef69c06883c370ea7bd12a60187553a6",
+      "caption_th": "เลือกจุดที่จะตรวจ\nซ่อม F2 ที่สั่นหรือมีเสียงกระทบ ไม่ต้องตรวจทุกจุด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_02",
+      "sha256": "c058c441e2ae02687a3f3717cdf310a85b6a401199a0ad8035130d1d9bcd54e5",
+      "caption_th": "ตะแกรงหน้า\nเทียบเครื่องหมาย ขอบตะแกรง และคลิปกับภาพ"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_03",
+      "sha256": "8f654b93d29fe66560c03282e6a4f4eb719b934b1119d1c0d8eb999c12479be7",
+      "caption_th": "ใบพัดและฝาล็อก\nฝาล็อกคือชิ้นกลมกลางใบพัด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_04",
+      "sha256": "984d439298b949056c3ef3678e2b529dee61a5223ccd325964a28ebbcce5f2ea",
+      "caption_th": "ตะแกรงหลังและวงแหวน\nขอบเห็นจากด้านนอก ถอดใบพัดจึงเห็นหน้าวงแหวน"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_05",
+      "sha256": "e8b256836f6d5bbae93b887cd7eec0cf5d7d4cb885b7eb6e5a943ab3898e2fa8",
+      "caption_th": "เปิดด้านในเมื่อจำเป็น\nถอดฝาล็อกก่อนดึงใบพัด จึงจะเห็นวงแหวนรอบแกน"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_06",
+      "sha256": "7e249680c7626b6700aed10d72cf329c2d77013d12c1360fce44070e7e57569a",
+      "caption_th": "เลือกดูชิ้นที่กำลังหมุน\nมองจากด้านหน้า คลายจนหลุดเกลียวก่อนดึงออก"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_07",
+      "sha256": "ad1d26742f4a53eaa3aa15d3704fb68474917559827eaa1ba7cb13d1bf583b81",
+      "caption_th": "จัดตะแกรงหลังใหม่เมื่อจำเป็น\nมองจากด้านหน้า ขันวงแหวนตามเข็มจนแน่น"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_08",
+      "sha256": "889a08bd0b17d5985e0f8b372ab6d3bb51295d89fc770618fce30f0842c0fa9c",
+      "caption_th": "ประกอบชิ้นที่ถอดกลับ\nตะแกรงหลังและวงแหวน ใบพัด ฝาล็อก ตะแกรงหน้า แล้วปิดคลิป"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_09",
+      "sha256": "de753fe671d4f35718f8aa72f29724a109f0122a4e1059b6ba31e2023a4c2dd3",
+      "caption_th": "ซ่อมชิ้นส่วนด้านนอก\nฐาน เสา และหัวพัดลมไม่ต้องถอด"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_th_10",
+      "sha256": "1bd6d7d10ba8373d03ffa5ead268ed76ac4ee4bb86379a46583bde73fac01662",
+      "caption_th": "ใส่ตะแกรงครบก่อนตรวจผลงาน\nหมุน 3 วินาที ใช้ฟังอาการก่อนซ่อมหรือตรวจหลังซ่อม"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B6_th.mp4",
+    "sha256": "2a55f0740aedb44d164eb13dac872cf87f260039834a181a7542632a7a1532f5",
+    "duration_seconds": 129.91,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 18.03
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 18.03,
+        "end_seconds": 26.41
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 26.41,
+        "end_seconds": 35.02
+      },
+      {
+        "stage": "do",
+        "start_seconds": 35.02,
+        "end_seconds": 50.85
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 50.85,
+        "end_seconds": 60.95
+      },
+      {
+        "stage": "do",
+        "start_seconds": 60.95,
+        "end_seconds": 68.99
+      },
+      {
+        "stage": "do",
+        "start_seconds": 68.99,
+        "end_seconds": 76.31
+      },
+      {
+        "stage": "do",
+        "start_seconds": 76.31,
+        "end_seconds": 84.01
+      },
+      {
+        "stage": "do",
+        "start_seconds": 84.01,
+        "end_seconds": 91.57
+      },
+      {
+        "stage": "do",
+        "start_seconds": 91.57,
+        "end_seconds": 97.66
+      },
+      {
+        "stage": "do",
+        "start_seconds": 97.66,
+        "end_seconds": 104.36
+      },
+      {
+        "stage": "do",
+        "start_seconds": 104.36,
+        "end_seconds": 113.67
+      },
+      {
+        "stage": "done",
+        "start_seconds": 113.67,
+        "end_seconds": 129.91
+      }
+    ]
+  }
+}

@@ -30,6 +30,54 @@ namespace VRMaintenanceResearch.ResearchFlow
         public float length, minimumRadius;
     }
 
+    [Serializable]
+    public sealed class S1CableSlot
+    {
+        public Vector3 position;
+        public Quaternion rotation = Quaternion.identity;
+    }
+
+    [Serializable]
+    public sealed class S1CablePark
+    {
+        public Transform head;
+        public VRMaintenanceResearch.AssetLibraryQA.QAPlug plug;
+        public S1CableSlot[] slots;
+        // Corner slot tried first while the other end sits in a port; 0 = the corner on that port's side of the board tray.
+        // The SATA data lead (0.5 m) cannot reach the front corner from a board port without cutting through the PSU.
+        public int waitSlot;
+    }
+
+    // A knot of an authored lead route: a point of the case (anchor 0, cable space) or an offset from where the lead leaves the
+    // from head (1) or the to head (2), so the same route fits every port of a family.
+    [Serializable]
+    public sealed class S1CableKnot
+    {
+        public int anchor;
+        public Vector3 offset;
+    }
+
+    // Used while each lead exit lies in its box (cable space), e.g. the PSU end in a PSU port and the other end at the SSD.
+    [Serializable]
+    public sealed class S1CableRoute
+    {
+        public Bounds from, to;
+        public S1CableKnot[] knots;
+        public Vector3 slack;
+        // Share of the spare length each segment takes (knots + 1 entries); the short runs into the plugs take none.
+        public float[] weights;
+    }
+
+    // The folded cable as it lies in its start slots, in the space of spans[0].from.
+    [Serializable]
+    public sealed class S1CableFold
+    {
+        public Vector3 toPosition;
+        public Quaternion toRotation = Quaternion.identity;
+        public Vector3[] bonePositions;
+        public Quaternion[] boneRotations;
+    }
+
     [DefaultExecutionOrder(14000)]
     public sealed class ResearchS1Cable : MonoBehaviour
     {
@@ -37,7 +85,37 @@ namespace VRMaintenanceResearch.ResearchFlow
         public S1CableSpan[] spans;
         public SkinnedMeshRenderer skin;
         public Vector3 preferredBow;
+        // Plane tried first when the shape is (re)seeded, e.g. the loose SATA lead at task start. Only the order changes:
+        // preferredBow and every fallback plane are still tried, so Allows (CableLimit) accepts exactly the same poses.
+        public Vector3 restBow;
         public bool sideways; // bow across the chord first, as a short lead lying over; the default arches up
+        // S1_LAYOUT_CABLE_TRAY_20261110: both heads of a task cable are loose and lie in tray slots given in cable space. In
+        // slot 0 the cable is folded along parkGuides. With its ends on opposite sides of the motherboard tray (the plane
+        // z = passPlane) the lead runs through the board-edge channel (passGuides, listed from the open side to the rear).
+        public S1CablePark[] parks;
+        // While both ends are loose the cable stays folded and rigid: picked up by one head, the whole fold comes along, and
+        // it never limits the hand. Bowing a cable between two free heads a few centimetres apart had no solution in some
+        // wrist poses, which froze the held plug on its tray (CableLimit).
+        public S1CableFold fold;
+        public bool Loose => parks != null && parks.Length == 2 && parks[0].plug && parks[1].plug && !parks[0].plug.Socket && !parks[1].plug.Socket;
+        public Pose FoldedPose(Transform head)
+        {
+            var span = spans[0];
+            if (head == span.to) return new Pose(span.from.TransformPoint(fold.toPosition), span.from.rotation * fold.toRotation);
+            var rotation = span.to.rotation * Quaternion.Inverse(fold.toRotation);
+            return new Pose(span.to.position - rotation * fold.toPosition, rotation);
+        }
+        bool Folded(S1CableSpan span) => fold != null && fold.bonePositions != null && span == spans[0] && Loose &&
+            Vector3.Distance(span.from.InverseTransformPoint(span.to.position), fold.toPosition) < .0005f &&
+            Quaternion.Angle(Quaternion.Inverse(span.from.rotation) * span.to.rotation, fold.toRotation) < .1f;
+        // Authored leads for the plugged states (10 Nov): the free bow between two ports cut through the motherboard tray and
+        // the drive cage. The first route whose boxes hold both exits is tried before passGuides.
+        public S1CableRoute[] routes;
+        public Vector3[] parkGuides, passGuides;
+        public Vector3 parkSlack, passSlack;
+        public float passPlane;
+        public S1CablePark ParkOf(Transform head) => parks == null ? null : Array.Find(parks, p => p != null && p.head == head);
+        public Pose SlotPose(S1CableSlot slot) => new Pose(transform.TransformPoint(slot.position), transform.rotation * slot.rotation);
         // Drawn instead of the skinned body when the modelled lead cannot straighten (Training FX1: its coiled body sits up to
         // 16 mm off the bone chords, so posed straight it waved and dipped 9 mm into the base). Zero radius keeps the skin.
         public Material tubeMaterial;
@@ -93,6 +171,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool Allows(Transform moving, Matrix4x4 proposed)
         {
             if (!AuthoredValid()) return false;
+            // A task cable limits a move only through an end that sits in a port and is not the one being moved: with the
+            // other end free, the cable simply comes along.
+            if (parks != null && parks.Length == 2 && !parks.Any(p => p.plug && p.plug.Socket && !Moves(p.head, moving))) return true;
             var routePose = ProposedPose(transform, moving, proposed);
             foreach (var span in spans)
             {
@@ -139,30 +220,74 @@ namespace VRMaintenanceResearch.ResearchFlow
             Vector3 up = orientation * Vector3.up, right = orientation * Vector3.right, forward = orientation * Vector3.forward;
             Vector3 preferred = preferredBow.sqrMagnitude > .0001f ? orientation * preferredBow : sideways ? Vector3.Cross(up,b-a) : up;
             if(span.cached && span.cachedRoutePose == routePose && span.cachedA==a && span.cachedB==b && span.cachedDa==da && span.cachedDb==db && span.cachedPreferred==preferred)return span.cachedPath;
-            if(span.cachedRoutePose != routePose || span.cachedPreferred!=preferred || span.cachedSide.sqrMagnitude<.0001f) span.cachedSide=preferred;
+            if(span.cachedRoutePose != routePose || span.cachedPreferred!=preferred || span.cachedSide.sqrMagnitude<.0001f) span.cachedSide=restBow.sqrMagnitude > .0001f ? orientation * restBow : preferred;
             span.cachedRoutePose=routePose;
             span.cachedPreferred=preferred;
             span.cachedGuided=false;
             span.cached=true;span.cachedA=a;span.cachedB=b;span.cachedDa=da;span.cachedDb=db;span.cachedPath=null;
-            if(span.routeGuides != null && span.routeGuides.Length > 0)
+            var routeGuides=span.routeGuides;
+            var routeSlack=span.routeSlack;
+            float[] routeWeights=null;
+            // An authored route turns into a port within a centimetre or two; the 4 cm bone chords cannot show a tighter bend anyway.
+            double guidedRadius=Math.Max(.008,span.minimumRadius);
+            if(parks!=null && parks.Length>0 && span==spans[0])
             {
-                var guides=Array.ConvertAll(span.routeGuides,routePose.MultiplyPoint3x4);
-                span.cachedPath=ResearchS1CablePath.SolveGuided(a,b,da,db,span.length,guides,orientation * span.routeSlack,Math.Max(.008,span.minimumRadius));
-                if(span.cachedPath!=null && KeepAbove(span.cachedPath,span.length,Math.Max(.008,span.minimumRadius),.0001))
+                var toLocal=routePose.inverse;
+                Vector3 la=toLocal.MultiplyPoint3x4(a),lb=toLocal.MultiplyPoint3x4(b);
+                var fromSlot=SlotAt(span.from,la,span.fromExit);var toSlot=SlotAt(span.to,lb,span.toExit);
+                var route=routes==null?null:Array.Find(routes,r=>r!=null && r.knots!=null && r.from.Contains(la) && r.to.Contains(lb));
+                if(fromSlot!=null && toSlot!=null && fromSlot==ParkOf(span.from).slots[0] && toSlot==ParkOf(span.to).slots[0]){routeGuides=parkGuides;routeSlack=parkSlack;}
+                else if(route!=null){routeGuides=Array.ConvertAll(route.knots,k=>k.anchor==1?la+k.offset:k.anchor==2?lb+k.offset:k.offset);routeSlack=route.slack;routeWeights=route.weights!=null && route.weights.Length==route.knots.Length+1?route.weights:null;guidedRadius=RouteRadius;}
+                else if(passGuides!=null && passGuides.Length>0 && (la.z-passPlane)*(lb.z-passPlane)<0)
+                {routeGuides=la.z<passPlane?passGuides:passGuides.Reverse().ToArray();routeSlack=passSlack;}
+            }
+            if(routeGuides != null && routeGuides.Length > 0)
+            {
+                var guides=Array.ConvertAll(routeGuides,routePose.MultiplyPoint3x4);
+                span.cachedPath=ResearchS1CablePath.SolveGuided(a,b,da,db,span.length,guides,orientation * routeSlack,guidedRadius,routeWeights);
+                if(span.cachedPath!=null && KeepAbove(span.cachedPath,span.length,guidedRadius,.0001))
                 {span.cachedGuided=true;return span.cachedPath;}
                 span.cachedPath=null;
             }
             // A real cable may bow in any plane. Keep the last valid plane first so the drawn cable does not flip between frames.
-            foreach(var bow in new[]{span.cachedSide,sideways?Vector3.Cross(up,b-a):up,-up,right,-right,forward,-forward})
+            // A task cable takes the first plane whose lead touches no solid; with none clear it keeps the first valid plane, so
+            // the poses Allows accepts are unchanged.
+            Vector3[] fallback=null;Vector3 fallbackBow=default;
+            foreach(var bow in new[]{span.cachedSide,preferred,sideways?Vector3.Cross(up,b-a):up,-up,right,-right,forward,-forward})
             {
                 Vector3 side=Vector3.ProjectOnPlane(bow,b-a).normalized;
                 if(side.sqrMagnitude<.5f)continue;
-                span.cachedPath=ResearchS1CablePath.Solve(a,b,da,db,span.length,side,span.minimumRadius);
-                if(span.cachedPath==null)continue;
-                if(KeepAbove(span.cachedPath,span.length,span.minimumRadius,.00001)){span.cachedSide=bow;break;}
-                span.cachedPath=null;
+                var path=ResearchS1CablePath.Solve(a,b,da,db,span.length,side,span.minimumRadius);
+                if(path==null || !KeepAbove(path,span.length,span.minimumRadius,.00001))continue;
+                if(parks==null || Clear(path,span)){span.cachedSide=bow;return span.cachedPath=path;}
+                if(fallback==null){fallback=path;fallbackBow=bow;}
             }
-            return span.cachedPath;
+            if(fallback!=null)span.cachedSide=fallbackBow;
+            return span.cachedPath=fallback;
+        }
+
+        static readonly Collider[] touched=new Collider[8];
+        const float LeadRadius=.003f;
+        public const double RouteRadius=.004;
+        // Sweeps the lead between its heads in short chords, so a 1 mm panel is not stepped over (the first and last 3 cm
+        // belong to the plugs and their ports).
+        private static bool Clear(Vector3[] path,S1CableSpan span)
+        {
+            for(int i=0;i+4<path.Length;i+=4)
+            {
+                if(Vector3.Distance(path[i],path[0])<.03f || Vector3.Distance(path[i+4],path[path.Length-1])<.03f)continue;
+                int count=Physics.OverlapCapsuleNonAlloc(path[i],path[i+4],LeadRadius,touched,~0,QueryTriggerInteraction.Ignore);
+                for(int c=0;c<count;c++)
+                    if(!touched[c].transform.IsChildOf(span.from) && !touched[c].transform.IsChildOf(span.to))return false;
+            }
+            return true;
+        }
+
+        // The slot a head lies in, judged by where its lead leaves it (exit in cable space), so proposed poses are judged too.
+        private S1CableSlot SlotAt(Transform head,Vector3 exit,Vector3 exitInHead)
+        {
+            var park=ParkOf(head);
+            return park==null?null:Array.Find(park.slots,s=>Vector3.Distance(exit,s.position+s.rotation*exitInHead)<.002f);
         }
 
         // The bow solve knows nothing of the bench: laid on it, the SATA data path ran 10 mm under the top. Visual only.
@@ -239,6 +364,12 @@ namespace VRMaintenanceResearch.ResearchFlow
                     Hang(span, false);
                     // Too taut to bow from the hung pose: ride on the head as authored rather than freeze in an old shape.
                     if (!Rigid(span) && Path(span) == null) Hang(span, true);
+                }
+                if (Folded(span))
+                {
+                    for (int i = 0; i < span.bones.Length; i++)
+                        span.bones[i].SetPositionAndRotation(span.from.TransformPoint(fold.bonePositions[i]), span.from.rotation * fold.boneRotations[i]);
+                    continue;
                 }
                 if (Rigid(span))
                 {

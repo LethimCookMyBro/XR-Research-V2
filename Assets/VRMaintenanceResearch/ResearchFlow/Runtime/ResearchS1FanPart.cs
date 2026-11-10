@@ -38,6 +38,15 @@ namespace VRMaintenanceResearch.ResearchFlow
         private ResearchTaskPort.Attempt attempt;
         private string source = "None";
 
+        // Owner 31 Oct: guards "would not turn or come off". The hand had to stay within 4-7 mm and 8 deg of the axis and within 6 deg
+        // of a key; any wobble dropped the part off its guide into the cap (Contact) and it froze. A part on its guide now stays on it until
+        // pulled out along the axis, the guide captures within these limits, and keys and the front bayonet snap.
+        const float GuideLateralMm = 15, GuideTiltDegrees = 15, KeySnapDegrees = 20;
+        // The front guard's filled 56 mm shell clears the blade cap 50 mm out along the axis (donor scene, 31 Oct).
+        const float FrontGuardClearMm = 50;
+        float GuideDepthMm => kind == S1FanPartKind.FrontGuard ? Mathf.Max(approachMm, FrontGuardClearMm) : approachMm;
+        static bool OnGuide(MatePose hand) => hand.lateralMm <= GuideLateralMm && hand.tiltDeg <= GuideTiltDegrees;
+
         public bool IsThread => kind == S1FanPartKind.Spinner || kind == S1FanPartKind.RearLock;
         public bool IsHeld => Application.isPlaying && grabbable && grabbable.SelectingPointsCount > 0;
         public float ThreadProgressDegrees => progressDegrees;
@@ -61,7 +70,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 if (!captured || !seat || !mate) return S1Placement.NotInstalled;
                 var pose = Pose;
-                if (pose.lateralMm > positionToleranceMm + 1 || pose.tiltDeg > angleToleranceDegrees + 2 || pose.depthMm > approachMm + 1 || pose.depthMm < -.3f)
+                if (pose.lateralMm > positionToleranceMm + 1 || pose.tiltDeg > angleToleranceDegrees + 2 || pose.depthMm > GuideDepthMm + 1 || pose.depthMm < -.3f)
                     return S1Placement.NotInstalled;
                 return pose.depthMm <= .3f && Aligned ? S1Placement.Seated : S1Placement.Partial;
             }
@@ -111,6 +120,8 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void Pointer(PointerEvent evt)
         {
+            if (evt.Type == PointerEventType.Hover) owner.port.Hover(stableId, owner.InputSource(evt.Identifier), evt.Identifier);
+            else if (evt.Type == PointerEventType.Unhover) owner.port.Unhover(stableId, evt.Identifier);
             if (evt.Type == PointerEventType.Select)
             {
                 if (grabbable.SelectingPointsCount != 1) { CancelGesture(); return; }
@@ -226,6 +237,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (rebase) { Rebase(); return; }
             Matrix4x4 next = IsThread ? ThreadPose(hand, delta, free) : kind == S1FanPartKind.FrontGuard ? FrontPose(hand, free) : KeyedPose(hand, free);
+            float attemptedProgress = priorProgress - delta * (rightHanded ? 1 : -1);
+            if (IsThread && Mathf.Abs(attemptedProgress - priorProgress) > ResearchS1TaskAFastener.TurnDirectionDeadbandDegrees)
+                turnOperation = attemptedProgress > priorProgress ? PartOperation.Tighten : PartOperation.Loosen;
             if (IsThread && !owner.AllowsThreadPose(this, next, priorCaptured))
             {
                 string rejected = ClassifyMotion(kind, priorCaptured, captured, priorProgress, progressDegrees,
@@ -257,12 +271,14 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private Matrix4x4 ThreadPose(MatePose hand, float delta, Matrix4x4 free)
         {
-            bool aligned = hand.lateralMm <= positionToleranceMm + 1 && hand.tiltDeg <= angleToleranceDegrees + 2;
+            bool aligned = OnGuide(hand);
             if (captured)
             {
                 if (progressDegrees <= 0 && hand.depthMm > threadTravelMm + 2)
                 {
-                    return Leave(free);
+                    if (!aligned || hand.depthMm > approachMm) return Leave(free);
+                    captured = false;
+                    return SocketRules.RootPose(seat.localToWorldMatrix, hand.depthMm, hand.turnDeg, mateInRoot);
                 }
                 // The shaft constrains an engaged part even when the wrist moves off-axis.
                 if (progressDegrees > 0 || aligned)
@@ -291,13 +307,10 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private Matrix4x4 KeyedPose(MatePose hand, Matrix4x4 free)
         {
-            if (hand.lateralMm > positionToleranceMm + 1 || hand.tiltDeg > angleToleranceDegrees + 2 || hand.depthMm > approachMm + 1)
-            {
-                return Leave(free);
-            }
+            if (hand.depthMm > approachMm + 1 || (!captured && !OnGuide(hand))) return Leave(free);
             captured = true;
             float key = kind == S1FanPartKind.Blade ? 180 : 120;
-            bool aligned = owner.CanMount(this) && ResearchS1FanKinematics.KeyErrorDegrees(hand.turnDeg, key) <= angleToleranceDegrees;
+            bool aligned = owner.CanMount(this) && ResearchS1FanKinematics.KeyErrorDegrees(hand.turnDeg, key) <= KeySnapDegrees;
             float stop = aligned ? 0 : kind == S1FanPartKind.Blade ? 3.24f : 2.49f;
             wasBlocked |= !aligned;
             if (!aligned) blockReason = owner.CanMount(this) ? PartBlockReason.Alignment : PartBlockReason.MountNotReady;
@@ -307,22 +320,22 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private Matrix4x4 FrontPose(MatePose hand, Matrix4x4 free)
         {
-            bool near = hand.lateralMm <= positionToleranceMm + 1 && hand.tiltDeg <= angleToleranceDegrees + 2 && hand.depthMm <= approachMm + 1;
-            bool atEntry = owner.CanMount(this) && Mathf.Abs(Mathf.DeltaAngle(hand.turnDeg, insertTurnDegrees)) <= angleToleranceDegrees;
-            if (captured && Pose.depthMm <= .3f)
+            var current = Pose;
+            if (captured && current.depthMm <= .3f)
             {
-                float turn = Mathf.Clamp(hand.turnDeg, Mathf.Min(0, insertTurnDegrees), Mathf.Max(0, insertTurnDegrees));
-                if (!atEntry || hand.depthMm <= 2)
-                    return SocketRules.RootPose(seat.localToWorldMatrix, 0, turn, mateInRoot);
+                // Two-position bayonet: twist two thirds of the way to unlock, back past one third to lock; the guard snaps to either end.
+                bool wasUnlocked = Mathf.Abs(Mathf.DeltaAngle(current.turnDeg, insertTurnDegrees)) < Mathf.Abs(Mathf.DeltaAngle(current.turnDeg, 0));
+                float progress = Mathf.DeltaAngle(0, hand.turnDeg) / insertTurnDegrees;
+                bool unlocked = wasUnlocked ? progress > 1 / 3f : progress >= 2 / 3f;
+                if (!unlocked || hand.depthMm <= 2)
+                    return SocketRules.RootPose(seat.localToWorldMatrix, 0, unlocked ? insertTurnDegrees : 0, mateInRoot);
             }
-            if (!near)
-            {
-                return Leave(free);
-            }
+            if (hand.depthMm > GuideDepthMm + 1 || (!captured && !OnGuide(hand))) return Leave(free);
+            bool atEntry = owner.CanMount(this) && Mathf.Abs(Mathf.DeltaAngle(hand.turnDeg, insertTurnDegrees)) <= KeySnapDegrees;
             captured = true;
             wasBlocked |= !atEntry;
             if (!atEntry) blockReason = owner.CanMount(this) ? PartBlockReason.Alignment : PartBlockReason.MountNotReady;
-            return SocketRules.RootPose(seat.localToWorldMatrix, Mathf.Clamp(hand.depthMm, atEntry ? 0 : 5.49f, approachMm),
+            return SocketRules.RootPose(seat.localToWorldMatrix, Mathf.Clamp(hand.depthMm, atEntry ? 0 : 5.49f, GuideDepthMm),
                 atEntry ? insertTurnDegrees : hand.turnDeg, mateInRoot);
         }
 
@@ -330,8 +343,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             var accepted = owner.FreePose(this, free);
             bool requested = Vector3.Distance(transform.position, free.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, free.rotation) > .01f;
-            bool moved = Vector3.Distance(transform.position, accepted.GetColumn(3)) > .00001f || Quaternion.Angle(transform.rotation, accepted.rotation) > .01f;
-            if (requested && !moved) { wasBlocked = true; blockReason = PartBlockReason.Contact; }
+            if (requested && ResearchS1HeldCollision.Moved(accepted, free)) { wasBlocked = true; blockReason = PartBlockReason.Contact; }
             return accepted;
         }
 
@@ -374,7 +386,9 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private PartOperation InteractionOperation() => kind == S1FanPartKind.FrontClip
             ? (ClipClosed || blockReason == PartBlockReason.GuardNotSeated ? PartOperation.Close : PartOperation.Open)
-            : IsThread ? PartOperation.Turn : PartOperation.Move;
+            : IsThread ? turnOperation : PartOperation.Move;
+        // Direction follows thread progress (it grows when tightening, for either thread hand), including a push against a stop.
+        PartOperation turnOperation = PartOperation.Turn;
 
         public void EndTransform()
         {

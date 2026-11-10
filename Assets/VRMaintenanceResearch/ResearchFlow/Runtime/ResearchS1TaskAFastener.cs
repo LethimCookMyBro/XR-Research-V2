@@ -16,6 +16,9 @@ namespace VRMaintenanceResearch.ResearchFlow
         public Grabbable grabbable;
         public float travelMm;
         [SerializeField] private float progress;
+        // Wrist jitter below this keeps the last shown direction, so tighten/loosen does not flicker or flood the log.
+        public const float TurnDirectionDeadbandDegrees = .5f;
+        private PartOperation turnOperation = PartOperation.Turn;
         [SerializeField] private int socketIndex = -1;
         private IGrabbable grab;
         private Matrix4x4 grabToRoot, mateInRoot, accepted;
@@ -96,8 +99,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                     input.Motion("ALIGN", before, false);
                     return;
                 }
-                var freeReason = owner.MotionBlockReason(transform, free);
-                if (freeReason == PartBlockReason.None) { Place(free); input.Observe(PartOperation.Move); }
+                var reached = owner.FreeMove(transform, free, out var freeReason);
+                if (ResearchS1HeldCollision.Moved(transform.localToWorldMatrix, reached)) Place(reached);
+                if (freeReason == PartBlockReason.None) input.Observe(PartOperation.Move);
                 else input.Motion("MOVE", before, true, freeReason);
                 return;
             }
@@ -130,7 +134,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             stopBackoff = backoff;
             progress = next;
             Place(nextPose);
-            input.Observe(PartOperation.Turn, blocked ? reason : PartBlockReason.None);
+            if (Mathf.Abs(clockwiseDelta) > TurnDirectionDeadbandDegrees) turnOperation = clockwiseDelta > 0 ? PartOperation.Tighten : PartOperation.Loosen;
+            input.Observe(turnOperation, blocked ? reason : PartBlockReason.None);
             if (changed || blocked && Mathf.Abs(clockwiseDelta) > .2f) input.Motion(clockwiseDelta >= 0 ? "FASTEN" : "UNFASTEN", before, blocked, reason);
         }
         private Matrix4x4 ThreadPose() => ThreadPose(socketIndex, progress);

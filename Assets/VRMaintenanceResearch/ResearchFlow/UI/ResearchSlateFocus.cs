@@ -66,14 +66,20 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!Focused || !scroll || !scroll.gameObject.activeInHierarchy || !view || !view.controller || !view.controller.LocalUICommandsAllowed
                 || !view.controller.ReferenceOpen || view.controller.ReferenceMinimized || Mathf.Abs(axis) < .2f
                 || float.IsNaN(axis) || float.IsInfinity(axis) || float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds <= 0) return;
-            if (titleScroll && (titleScroll.Focused || titleScroll.Held))
+            var reader = view.ReferenceViewer;
+            if ((!reader || !reader.ContentsOpen) && titleScroll && (titleScroll.Focused || titleScroll.Held))
             {
                 titleScroll.Scroll(axis, seconds, view.controller.ReferenceScrollInputSource); return;
             }
-            float range = scroll.content.rect.height - scroll.viewport.rect.height;
+            var target = reader ? reader.ScrollTarget : scroll;
+            if (!target || (reader && !reader.ContentsOpen && !reader.CanScrollDocument)) return;
+            float range = target.content.rect.height - target.viewport.rect.height;
             if (range <= 0) return;
-            int page = view.ReferencePageIndex; float before = scroll.verticalNormalizedPosition;
-            scroll.verticalNormalizedPosition = Mathf.Clamp01(before + axis * 420 * seconds / range);
+            int page = view.ReferencePageIndex; float before = target.verticalNormalizedPosition;
+            target.verticalNormalizedPosition = Mathf.Clamp01(before + axis * 420 * seconds / range);
+            if (Mathf.Approximately(before, target.verticalNormalizedPosition)) return;
+            if (reader) reader.RecordScroll(view.controller.ReferenceScrollInputSource);
+            if (reader && reader.ContentsOpen) return;
             int next = view.ReferencePageIndex;
             if (next != page)
             {

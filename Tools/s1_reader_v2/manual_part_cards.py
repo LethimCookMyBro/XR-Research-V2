@@ -28,14 +28,15 @@ def figure(node,frames):
  anchor=frame['anchors'].get(node['anchor'])
  if not anchor or not anchor[2]:raise ValueError('Manual target anchor is not visible: '+node['anchor'])
  x,y=anchor[:2];width,height=600,450
- cx=max(0,min(1280-width,x-width/2));cy=max(0,min(720-height,y-height/2));scale=.5
+ cx=max(0,min(1280-width,x-width/2));cy=max(0,min(720-height,y-height/2));scale=node.get("scale",.5)
  marker_x=(x-cx)*scale;marker_y=(y-cy)*scale
- return ('<div class="part-image"><img src="'+frames.path(node['shot'],frame)+'" style="width:640px;height:360px;left:'+str(-cx*scale)+'px;top:'+str(-cy*scale)+'px">'
-  +'<svg width="300" height="225"><circle cx="'+str(marker_x)+'" cy="'+str(marker_y)+'" r="18" fill="none" stroke="white" stroke-width="7"/><circle cx="'+str(marker_x)+'" cy="'+str(marker_y)+'" r="18" fill="none" stroke="#1F5FAF" stroke-width="3"/></svg></div>')
+ return ('<div class="part-image" style="width:'+str(width*scale)+'px;height:'+str(height*scale)+'px"><img src="'+frames.path(node['shot'],frame)+'" style="width:'+str(1280*scale)+'px;height:'+str(720*scale)+'px;left:'+str(-cx*scale)+'px;top:'+str(-cy*scale)+'px">'
+  +'<svg width="'+str(width*scale)+'" height="'+str(height*scale)+'"><circle cx="'+str(marker_x)+'" cy="'+str(marker_y)+'" r="18" fill="none" stroke="white" stroke-width="7"/><circle cx="'+str(marker_x)+'" cy="'+str(marker_y)+'" r="18" fill="none" stroke="#1F5FAF" stroke-width="3"/></svg></div>')
 def blocks(lang,c,frames=None):
  if [s['id'] for s in c['manual']]!=SECTION_IDS.get(c['task']):raise ValueError('Invalid part-card manual sections')
  out=[]
  for section in c['manual']:
+  paged=c.get("manual_pagination")=="part_pages"
   if section['id']=='task':
    out.extend('<p class="'+('manual-goal' if i==0 else 'manual-note')+'">'+text(item,lang)+'</p>' for i,item in enumerate(section['items']))
   elif section.get('layout')=='reference':
@@ -44,7 +45,7 @@ def blocks(lang,c,frames=None):
    out.extend('<p class="manual-note">'+text(item,lang)+'</p>' for item in section.get('after',[]))
   else:
    body=''.join('<p>'+text(item,lang)+'</p>' for item in section['items'])
-   if 'figure' in section:body='<div class="part-body">'+figure(section['figure'],frames)+'<div>'+body+'</div></div>'
+   if 'figure' in section:body='<div class="part-body"'+(' style="display:block"' if paged else '')+'>'+figure(dict(section['figure'],**({'scale':1} if paged else {})),frames)+'<div>'+body+'</div></div>'
    body+=''.join('<p class="result">'+text(item,lang)+'</p>' for item in section.get('after',[]))
-   out.append('<section class="action-card"><h2>'+text(section['title'],lang)+'</h2>'+body+'</section>')
+   out.append('<section class="action-card"'+(' data-page-break="true"' if paged else '')+'><h2>'+text(section['title'],lang)+'</h2>'+body+'</section>')
  return out

@@ -62,13 +62,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     var part = Part(task, id, "PC_Memory", inputs);
                     part.transform.localRotation = Quaternion.AngleAxis(90, Vector3.up) * part.transform.localRotation;
-                    PlaceOption(part.gameObject, new Vector3(-1.125f + .06f * ResearchS1TaskACatalog.LayoutIndex(i, 5, layout), -.0085f, -.05f));
                     return part;
                 }).ToArray();
                 task.gpus = new[] { "G01", "G02" }.Select((id, i) =>
                 {
                     var part = Part(task, id, "PC_GPU", inputs);
-                    PlaceOption(part.gameObject, new Vector3(-1.1f + 2f * ResearchS1TaskACatalog.LayoutIndex(i, 2, layout), .0075f, -.35f));
                     return part;
                 }).ToArray();
                 task.ssds = new[] { "S01", "S02", "S03" }.Select((id, i) =>
@@ -78,7 +76,6 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     Align(ssd, "MATE_SSD_SATA_25_7MM_Bottom", Node(sled, "SEAT_CASE_SLED_25_Drive"));
                     var part = ConfigurePart(task, sled, "CASE_SLED_25", id, inputs);
                     ReplaceLabel(ssd, id);
-                    PlaceOption(sled, new Vector3(.85f + .13f * ResearchS1TaskACatalog.LayoutIndex(i, 3, layout), -.006f, .31f));
                     return part;
                 }).ToArray();
                 task.traySeats = new[] { 1, 2 }.Select(i => Node(shell, "SEAT_CASE_ATX_MID_Sled25_" + i)).ToArray();
@@ -88,7 +85,6 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     var model = Model("Tools_Fasteners", "SCREW_632_CASE", root.transform);
                     var screw = Fastener(task, model, "A.gpu_fastener" + i, Node(model, "MATE_SCREW_632_CASE_Thread"), 5.1f, inputs);
-                    PlaceOption(model, new Vector3(.94f + .06f * i, -.0025f, -.25f));
                     screw.AuthorOpen();
                     return screw;
                 }).ToArray();
@@ -102,10 +98,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 task.wiring = Wiring(task, inputs);
                 task.serviceYaw = ServiceYaw(task, inputs);
                 task.inputs = inputs.ToArray();
-                var left = Model("PC_Case", "CASE_PANEL_L", root.transform);
-                var right = Model("PC_Case", "CASE_PANEL_R", root.transform);
-                PlaceOption(left, new Vector3(-1.28f, -.0273f, .51f));
-                PlaceOption(right, new Vector3(.86f, -.0273f, .30f));
+                PlaceCableTrays(task);
+                PlaceOptionsWithinReach(task);
                 port.contentApproved = false;
                 root.SetActive(true);
                 if (!task.AuthoredBindingsValid()) throw new InvalidOperationException("Task A authoring self-check failed.");
@@ -113,6 +107,50 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 return task;
             }
             catch { UnityEngine.Object.DestroyImmediate(root); throw; }
+        }
+
+        // Owner 2 Nov: options sat 1.1 m to each side of the case and read as missing. Every option now lies within
+        // about 1 m of the case on the participant's side; P/Q mirroring is kept.
+        // Options stay 0.5 m or more from the service pivot: the case sweeps about 0.44 m when turned and must not hit them.
+        // Idempotent so authored scenes can migrate.
+        public static void PlaceOptionsWithinReach(ResearchS1TaskAMechanics task)
+        {
+            if (Application.isPlaying || !task) throw new ArgumentException("Place Task A options in Edit Mode.");
+            string layout = task.layout;
+            for (int i = 0; i < task.ram.Length; i++)
+                PlaceOption(task.ram[i].gameObject, new Vector3(-.72f + .06f * ResearchS1TaskACatalog.LayoutIndex(i, 5, layout), -.0085f, -.22f));
+            for (int i = 0; i < task.gpus.Length; i++)
+                PlaceOption(task.gpus[i].gameObject, new Vector3(-.88f + 1.56f * ResearchS1TaskACatalog.LayoutIndex(i, 2, layout), .0075f, -.11f));
+            for (int i = 0; i < task.sleds.Length; i++)
+                PlaceOption(task.sleds[i].gameObject, new Vector3(.575f + .13f * ResearchS1TaskACatalog.LayoutIndex(i, 3, layout), -.006f, -.22f));
+            for (int i = 0; i < task.gpuScrews.Length; i++)
+                PlaceOption(task.gpuScrews[i].gameObject, new Vector3(.39f + .05f * (i + 1), -.0025f, -.25f));
+            EditorUtility.SetDirty(task.gameObject);
+        }
+
+        // Owner 10 Nov: both case side panels are back in the scene (they had been deleted on 2 Nov), taken off and set aside
+        // as S1 5.2 describes: lying flat, one on the other, on the free back corner of the bench. Standing at their first
+        // authored places they read as two black boards behind the work. Nobody has to fit them.
+        // Idempotent so authored scenes can migrate.
+        public static void RestSidePanels(ResearchS1TaskAMechanics task)
+        {
+            if (Application.isPlaying || !task) throw new ArgumentException("Rest the Task A side panels in Edit Mode.");
+            string[] names = { "CASE_PANEL_L", "CASE_PANEL_R" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                var found = task.transform.Find(names[i]);
+                var panel = found ? found : Model("PC_Case", names[i], task.transform).transform;
+                Bounds Extent() => panel.GetComponentsInChildren<Renderer>().Where(r => r.enabled).Select(r => r.bounds).Aggregate((a, b) => { a.Encapsulate(b); return a; });
+                // The imported root carries its own rotation, so take whichever quarter turn leaves the sheet lowest.
+                var flattest = new[] { Quaternion.identity, Quaternion.Euler(90, 0, 0), Quaternion.Euler(0, 0, 90) }
+                    .OrderBy(rotation => { panel.localRotation = rotation; return Extent().size.y; }).First();
+                panel.localRotation = flattest;
+                // Pivot-local metres; the mat top is y -.009 and a panel with its folded edge is 17 mm thick.
+                var target = task.servicePivot.TransformPoint(new Vector3(.95f + .04f * i, -.008f + .018f * i, .30f - .04f * i));
+                var extent = Extent();
+                panel.position += new Vector3(target.x - extent.center.x, target.y - extent.min.y, target.z - extent.center.z);
+            }
+            EditorUtility.SetDirty(task.gameObject);
         }
 
         public static string CheckAuthored(ResearchS1TaskAMechanics task)

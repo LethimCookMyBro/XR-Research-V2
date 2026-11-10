@@ -31,6 +31,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         public static readonly string[] TrainerV4Sequence = { "inspect_fail", "insert", "lock", "rotate_access",
             "fasten", "cable_connect", "inspect", "cable_disconnect", "loosen", "unlock" };
         public static string[] SequenceFor(string trainingVersion) =>
+            ResearchUIPolicy.UsesIntentionalExamine(trainingVersion) ? TrainerV3Sequence :
             ResearchUIPolicy.UsesDirectPartFeedback(trainingVersion) ? TrainerV4Sequence :
             trainingVersion == ResearchUIPolicy.TrainingTrainerV3 ? TrainerV3Sequence :
             trainingVersion == ResearchUIPolicy.TrainingTrainerV2 ? FixedSequence : FixedSequence20261015;

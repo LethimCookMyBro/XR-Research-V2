@@ -41,8 +41,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static string Out => Directory.CreateDirectory(
             Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Logs", "QuestFinalQA", "build"))).FullName;
 
-        static void Write(string name, object value) =>
-            File.WriteAllText(Path.Combine(Out, name + ".json"), JsonConvert.SerializeObject(value, Formatting.Indented));
+        static string NewOutputDirectory(string parent)
+        {
+            string path = Path.Combine(parent, DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N"));
+            return Directory.CreateDirectory(path).FullName;
+        }
+
+        static void Write(string output, string name, object value)
+        {
+            using (var stream = new FileStream(Path.Combine(output, name + ".json"), FileMode.CreateNew, FileAccess.Write))
+            using (var writer = new StreamWriter(stream))
+                writer.Write(JsonConvert.SerializeObject(value, Formatting.Indented));
+        }
 
         static string Sha256(string path)
         {
@@ -58,7 +68,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         [MenuItem("VR Research/Research Flow/Build Quest APK")]
-        public static void BuildApk()
+        public static void BuildApk() => Build(false);
+
+        // Owner 4 Nov 2026: DEV APK for the Task B Reader prototype. Same technical identity (installs as an update), player compiled
+        // with ResearchBuildFlavor.DevReaderDefine: DEV/TEST sessions only, Task B Reader = prototype package.
+        [MenuItem("VR Research/Research Flow/Build Quest DEV APK (Reader prototype)")]
+        public static void BuildDevApk() => Build(true);
+
+        static void Build(bool dev)
         {
             if (EditorApplication.isPlaying) throw new Exception("Exit Play Mode before building");
             if (EditorApplication.isCompiling || EditorApplication.isUpdating) throw new Exception("Editor is busy compiling/updating");
@@ -73,7 +90,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     throw new Exception("Unsaved scene changes present; save or revert before building");
 
             if (SceneManager.GetActiveScene().path != ScenePath) EditorSceneManager.OpenScene(ScenePath);
-            SceneChecks();
+            string output = NewOutputDirectory(Out);
+            SceneChecksTo(output);
 
             var preservedFiles = new[] {
                 "ProjectSettings/ProjectSettings.asset",
@@ -110,17 +128,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var appIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIcon) ?? throw new Exception("Missing launcher icon " + AppIcon);
 
             var builtUtc = DateTime.UtcNow;
-            string apk = Path.Combine(Out, "ResearchFlowQuest3_" +
+            string apk = Path.Combine(output, (dev ? "ResearchFlowQuest3_DEV_" : "ResearchFlowQuest3_") +
                 builtUtc.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture) + ".apk");
             // Each candidate gets its own Android version: the code only increases, so "pm install -r" over an older build stays an update.
             string oldVersionName = PlayerSettings.bundleVersion;
             int oldVersionCode = PlayerSettings.Android.bundleVersionCode;
             int versionCode = (int)(builtUtc - new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMinutes;
-            string versionName = "3.4.1." + builtUtc.ToString("yyyyMMdd.HHmm", System.Globalization.CultureInfo.InvariantCulture);
+            string versionName = "3.4.1." + builtUtc.ToString("yyyyMMdd.HHmm", System.Globalization.CultureInfo.InvariantCulture) + (dev ? "-dev" : "");
 
             try
             {
-                PlayerSettings.productName = "VR Maintenance Lab";
+                PlayerSettings.productName = dev ? "VR Maintenance Lab DEV" : "VR Maintenance Lab";
                 PlayerSettings.bundleVersion = versionName;
                 PlayerSettings.Android.bundleVersionCode = versionCode;
                 PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { appIcon }, IconKind.Any);
@@ -136,8 +154,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"th.ac.tmu.vr.researchflow.transport\">" +
                     "<application android:label=\"@string/app_name\" android:icon=\"@drawable/research_launcher_icon\">" +
                     "<activity android:name=\"com.unity3d.player.UnityPlayerGameActivity\" android:label=\"@string/app_name\" android:icon=\"@drawable/research_launcher_icon\" />" +
-                    "<provider android:name=\"th.ac.tmu.vr.researchflow.transport.QuestProfileProvider\" android:authorities=\"" + TechnicalApplicationId +
-                    ".quest-profile\" android:exported=\"true\" android:grantUriPermissions=\"false\" /></application></manifest>\n");
+                    (dev ? "<provider android:name=\"th.ac.tmu.vr.researchflow.transport.QuestProfileProvider\" android:authorities=\"" + TechnicalApplicationId +
+                    ".quest-profile\" android:exported=\"true\" android:grantUriPermissions=\"false\" />" : "") + "</application></manifest>\n");
                 AssetDatabase.ImportAsset(ProfileManifest, ImportAssetOptions.ForceSynchronousImport);
 
                 // Same OpenXR feature set the HandsLab hardware pass validated on this device.
@@ -154,14 +172,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                                    || f is UnityEngine.XR.OpenXR.Features.Interactions.MicrosoftHandInteraction))
                     f.enabled = false;
 
-                Write("build_configuration", new
+                string defaultTraining = ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Default);
+                Write(output, "build_configuration", new
                 {
                     applicationIdentifier = TechnicalApplicationId,
                     productName = PlayerSettings.productName,
                     versionName,
                     versionCode,
                     scene = ScenePath,
-                    development = true,
+                    development = dev,
+                    flavor = dev ? "dev_reader_prototype" : "standard",
+                    scriptingDefines = dev ? new[] { ResearchBuildFlavor.DevReaderDefine } : new string[0],
+                    studySessions = dev ? "disabled: DEV and TEST groups only" : "enabled",
+                    newSessionPolicy = ResearchUIPolicy.Default,
+                    newSessionTraining = defaultTraining,
+                    taskAReader = ResearchUIPolicy.ReaderTaskFor(defaultTraining, "A", false, ResearchUIPolicy.LayoutVersion),
+                    taskBReader = dev && !ResearchUIPolicy.UsesIntentionalExamine(defaultTraining)
+                        ? ResearchReferenceViewer.DevPrototypeContent : ResearchUIPolicy.ReaderTaskFor(defaultTraining, "B", false),
+                    trainingReader = ResearchUIPolicy.ReaderTaskFor(defaultTraining, null, true),
+                    readerSelectionScope = "new-session defaults; resumed sessions retain recorded training_version; legacy DEV Task B prototype applies only when intentional Examine is inactive",
+                    deviceInstalled = false,
                     backend = "IL2CPP",
                     architecture = PlayerSettings.Android.targetArchitectures.ToString(),
                     targetSdk = 35,
@@ -170,7 +200,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     openXrFeatures = features.Where(f => f.enabled).Select(f => f.GetType().FullName).ToArray(),
                     output = apk,
                     hardwareVerified = false,
-                    realTaskMechanics = "demo/technical fixture only (contentApproved=false, demoMode=true)"
+                    realTaskMechanics = "not_verified_by_build_configuration"
                 });
 
                 ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
@@ -180,13 +210,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     scenes = new[] { ScenePath },
                     locationPathName = apk,
                     target = BuildTarget.Android,
-                    options = BuildOptions.Development
+                    options = dev ? BuildOptions.Development : BuildOptions.None,
+                    extraScriptingDefines = dev ? new[] { ResearchBuildFlavor.DevReaderDefine } : null
                 });
 
                 bool ok = report.summary.result == BuildResult.Succeeded;
-                Write("build_result", new
+                Write(output, "build_result", new
                 {
                     passed = ok,
+                    flavor = dev ? "dev_reader_prototype" : "standard",
                     result = report.summary.result.ToString(),
                     report.summary.totalErrors,
                     report.summary.totalWarnings,
@@ -202,7 +234,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         .Where(m => m.type == LogType.Warning).Select(m => m.content).ToArray()
                 });
 
-                if (!ok) throw new Exception("ResearchFlow Android build failed; see Logs/QuestFinalQA/build/build_result.json");
+                if (!ok) throw new Exception("ResearchFlow Android build failed; see " + Path.Combine(output, "build_result.json"));
                 ResearchBuildIntegrityChecks.RequireLocalServicesDisabled();
                 Debug.Log("RESEARCHFLOW_APK_BUILT " + apk);
             }
@@ -240,7 +272,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 TryRestore(() => sourceFilesRestored = preservedBytes.All(p => File.ReadAllBytes(p.Key).SequenceEqual(p.Value)), restoreErrors);
                 TryRestore(() =>
                 {
-                    Write("build_settings_restored", new
+                    Write(output, "build_settings_restored", new
                     {
                         sourceFilesRestored,
                         localServicesRestored,
@@ -266,7 +298,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     });
                 }, restoreErrors);
                 if (!sourceFilesRestored || !localServicesRestored || restoreErrors.Count > 0)
-                    throw new AggregateException("Build restoration failed; see build_settings_restored.json.", restoreErrors);
+                    throw new AggregateException("Build restoration failed; see " + Path.Combine(output, "build_settings_restored.json"), restoreErrors);
             }
         }
 
@@ -276,7 +308,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         /// Unity XRI XROrigin, so a zero XROrigin count is expected and is recorded, not enforced.
         /// Only duplicates are fatal.
         /// </summary>
-        static void SceneChecks()
+        static void SceneChecks() => SceneChecksTo(NewOutputDirectory(Out));
+
+        static void SceneChecksTo(string output)
         {
             var origins = UnityEngine.Object.FindObjectsByType<XROrigin>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var events = UnityEngine.Object.FindObjectsByType<EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -284,7 +318,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             var ports = UnityEngine.Object.FindObjectsByType<ResearchTaskPort>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
-            Write("scene_checks", new
+            Write(output, "scene_checks", new
             {
                 scene = ScenePath,
                 xrOrigins = origins.Length,
@@ -292,10 +326,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 flowControllers = flows.Length,
                 cameras = cameras.Select(c => c.name).ToArray(),
                 rig = "Meta Interaction SDK (HandsLab_Quest3), no Unity XRI XROrigin expected",
-                taskPorts = ports.Select(p => new { p.taskId, p.demoMode, p.contentApproved }).ToArray(),
-                realTaskMechanics = ports.All(p => p.contentApproved)
-                    ? "approved"
-                    : "DEMO/TECHNICAL FIXTURE ONLY - contentApproved=false"
+                taskPorts = ports.Select(p => new { p.taskId, p.demoMode, p.contentApproved, runtimeMechanicsBound = p.HasBoundMechanics }).ToArray(),
+                mechanicsComponents = new
+                {
+                    taskA = UnityEngine.Object.FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length,
+                    taskB = UnityEngine.Object.FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length
+                },
+                realTaskMechanics = "not_verified_by_scene_structure"
             });
 
             if (origins.Length > 1) throw new Exception("Duplicate XR rig: found " + origins.Length + " XROrigin");

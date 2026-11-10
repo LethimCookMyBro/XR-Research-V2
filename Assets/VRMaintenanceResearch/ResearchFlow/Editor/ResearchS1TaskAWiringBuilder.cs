@@ -20,14 +20,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             foreach(var cable in wiring.cables)
             {
                 cable.preferredBow=cable.assetId=="CABLE_AC_C13_JP"?Vector3.zero:new Vector3(1,-1,0);
+                cable.restBow=cable.assetId=="CABLE_SATA_DATA_S_500"?Vector3.up:Vector3.zero;
                 foreach(var span in cable.spans){span.routeGuides=null;span.cached=false;span.cachedSide=Vector3.zero;}
                 if(cable.assetId=="CABLE_MX_MB24")
                     for(int i=0;i<cable.spans.Length;i++)
                     {
                         var span=cable.spans[i];
-                        float depth=i==0?.015f:-.0125f;
-                        span.routeGuides=new[]{new Vector3(.35f,.10f,depth),new Vector3(.35f,.35f,depth),new Vector3(.29f,.35f,depth)};
-                        span.routeSlack=Vector3.up;
+                        // Owner 7 Nov: the 24-pin runs behind the tray in the channel beside the board edge (no tray past x .262),
+                        // then turns out just above its connector, instead of arching across the open side. Fixed cable, visual only.
+                        float depth=i==0?.095f:.089f;
+                        span.routeGuides=new[]{new Vector3(.32f,.11f,depth),new Vector3(.32f,.35f,depth),new Vector3(.255f,.355f,.02f)};
+                        span.routeSlack=Vector3.left;
                     }
                 if(cable.assetId=="CABLE_MX_EPS8")
                 {
@@ -39,8 +42,243 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     cable.spans[0].routeGuides=new[]{new Vector3(.04f,.37f,-.005f),new Vector3(.04f,.44f,.025f),new Vector3(.14f,.44f,.025f)};
                     cable.spans[0].routeSlack=Vector3.right;
                 }
+                // Owner 10 Nov: the four front-panel leads each bowed their own way across the drive cage. They now run as one
+                // bundle from the front I/O back to the board-edge channel, down it and across to the header. Fixed leads, visual only.
+                if(cable.assetId=="CABLE_CASE_FPANEL")
+                    foreach(var span in cable.spans){span.routeGuides=FrontPanelRoute;span.routeSlack=Vector3.right;}
                 cable.RefreshShape();
             }
+        }
+        static readonly Vector3[] FrontPanelRoute={new Vector3(.38f,.44f,.03f),new Vector3(.345f,.40f,.07f),new Vector3(.33f,.22f,.072f)};
+
+        // Pivot-local metres. The case spans x -.013..+.432 and z -.11 (open side)..+.11; the mat top is y -.009; the
+        // motherboard tray sheet is the plane z .0835 and ends at x .300, leaving the board-edge channel beside it.
+        const string StartTrayName="S1_CableTray_Start";
+        const float TrayTop=.002f,TrayPlane=.0835f,HeadColumn=-.155f,CornerColumn=-.075f;
+        static readonly Vector3[] SataDataPass={new Vector3(.32f,.29f,.07f),new Vector3(.34f,.27f,.118f)},
+            SataPowerPass={new Vector3(.27f,.15f,.02f),new Vector3(.31f,.165f,.09f)};
+        // Spare daisy-chain connectors S1 never uses. They trailed 0.3 m over the mat beside the one head that can be picked up.
+        static readonly string[] SpareHeads={"B_CABLE_MX_SATA3_C","B_CABLE_MX_SATA3_D","B_CABLE_MX_PCIE8X2_C1","B_CABLE_MX_PCIE8X2_C2"};
+
+        // S1_LAYOUT_CABLE_TRAY_20261110 (owner 10 Nov): the three task cables are whole, loose cables. They start folded on one
+        // tray beside the rear end of the case. That end is the turning axis, so the tray stays in reach however the case is
+        // turned, and it turns with the case. The participant plugs both ends of each cable.
+        // Idempotent so authored scenes can migrate.
+        public const string CableRoutesPath = "Assets/VRMaintenanceResearch/ResearchFlow/Editor/S1TaskACableRoutes.json";
+        sealed class CableRouteData { public string cable, state; public float[] from, to, slack, weights; public float[][] knots; }
+        // Authored leads of the three task cables for the plugged states (ResearchS1Cable.routes), read from CableRoutesPath:
+        // boxes as centre + size, knots as [anchor, x, y, z], all in cable space. Idempotent.
+        public static void RouteTaskCables(ResearchS1TaskAMechanics task, string path = CableRoutesPath)
+        {
+            var all = Newtonsoft.Json.JsonConvert.DeserializeObject<CableRouteData[]>(System.IO.File.ReadAllText(path));
+            Bounds Box(float[] v) => new Bounds(new Vector3(v[0], v[1], v[2]), new Vector3(v[3], v[4], v[5]));
+            foreach (var cable in task.wiring.ends.Select(e => e.cable))
+            {
+                cable.routes = all.Where(r => r.cable == cable.assetId).Select(r => new S1CableRoute { from = Box(r.from), to = Box(r.to),
+                    slack = new Vector3(r.slack[0], r.slack[1], r.slack[2]), weights = r.weights,
+                    knots = r.knots.Select(k => new S1CableKnot { anchor = (int)k[0], offset = new Vector3(k[1], k[2], k[3]) }).ToArray() }).ToArray();
+                foreach (var span in cable.spans) span.cached = false;
+                EditorUtility.SetDirty(cable);
+            }
+        }
+
+        // Owner 10 Nov: the base-kit cables (24-pin, EPS, fan lead, front panel, AC cord) were decoration that covered ports and cut
+        // through panels. They are no longer drawn or updated. Their fixed contacts stay as authored, so the recorded base state
+        // and the W2 evaluation are unchanged.
+        public static void RemoveBaseCables(ResearchS1TaskAMechanics task)
+        {
+            var kept = task.wiring.ends.Select(e => e.cable).ToArray();
+            foreach (var cable in task.wiring.cables.Where(c => !kept.Contains(c)))
+            {
+                foreach (var renderer in cable.spans.SelectMany(s => new[] { s.from, s.to }).Append(cable.transform).Distinct().SelectMany(t => t.GetComponentsInChildren<Renderer>(true)))
+                { renderer.enabled = false; EditorUtility.SetDirty(renderer); }
+                cable.enabled = false; EditorUtility.SetDirty(cable);
+            }
+        }
+
+        // Applies the cable layout migrations to the open scene and saves it. Edit Mode.
+        public static string ApplyCableLayout()
+        {
+            var task = UnityEngine.Object.FindFirstObjectByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include);
+            PlaceCableTrays(task);
+            var scene = task.gameObject.scene;
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            bool saved = UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            return "cable layout applied saved=" + saved + " routes=" + string.Join(",", task.wiring.ends.Select(e => e.cable.assetId + ":" + (e.cable.routes?.Length ?? 0)))
+                + " hidden=" + task.wiring.cables.Count(c => !c.enabled) + " valid=" + task.AuthoredBindingsValid();
+        }
+
+        public static void PlaceCableTrays(ResearchS1TaskAMechanics task)
+        {
+            if (Application.isPlaying || !task || !task.wiring || task.inputs == null) throw new ArgumentException("Place Task A cable trays in Edit Mode.");
+            DetachCableSources(task);
+            // The PSU ports are flush with the PSU body, so a housing that reaches its own mating face ends the last
+            // centimetre of seating in contact with the PSU (run09: CONNECT rejected, Contact). It stops 1 mm short of the face.
+            foreach (var end in task.wiring.ends.Where(e => e.sourceConnector != S1Connector.MotherboardSata))
+            {
+                var solid = end.sourcePlug.GetComponentsInChildren<BoxCollider>(true).Single(b => !b.isTrigger);
+                var mate = end.sourcePlug.mates.Single();
+                float face = mate.InverseTransformPoint(solid.transform.TransformPoint(solid.center)).z;
+                var along = solid.transform.InverseTransformDirection(mate.forward); int axis = Mathf.Abs(along.x) > .9f ? 0 : Mathf.Abs(along.y) > .9f ? 1 : 2;
+                if (Mathf.Abs(face) - solid.size[axis] / 2 > .0005f) continue;
+                var size = solid.size; size[axis] -= .001f; solid.size = size;
+                solid.center += along * (Mathf.Sign(face) * .0005f);
+            }
+            var pivot = task.servicePivot;
+            foreach (string firstCut in new[] { "S1_CableTray_Open", "S1_CableTray_Rear" })
+                if (pivot.Find(firstCut)) UnityEngine.Object.DestroyImmediate(pivot.Find(firstCut).gameObject);
+            Tray(pivot, StartTrayName, new Vector3(-.24f, 0, 0), .39f, .42f);
+            var toCase = Quaternion.LookRotation(Vector3.right, Vector3.up); var fromCase = Quaternion.LookRotation(Vector3.left, Vector3.up);
+            var forward = Quaternion.LookRotation(Vector3.forward, Vector3.up); var back = Quaternion.LookRotation(Vector3.back, Vector3.up);
+            for (int index = 0; index < task.wiring.ends.Length; index++)
+            {
+                var end = task.wiring.ends[index]; var cable = end.cable;
+                bool data = cable.assetId == "CABLE_SATA_DATA_S_500", power = cable.assetId == "CABLE_MX_SATA3";
+                // Folded, each cable lies as a hairpin: its two heads side by side at the case end of the tray, cable side away
+                // from the case, clear of the corner slots. The PCIe cable lies nearest the open side, where both its ports are.
+                // 25 mm between the two leads was too tight a turn for the solver.
+                float centre = data ? .125f : power ? 0 : -.13f, half = data || power ? .04f : .05f;
+                // With its other end in a port, a head waits in the tray corner on that side, lead toward the case.
+                float corner = .125f + .03f * index;
+                cable.parks = new[] {
+                    Park(task, end.sourcePlug, new[] { new Vector3(HeadColumn, 0, centre - half), new Vector3(CornerColumn, 0, -corner), new Vector3(CornerColumn, 0, corner) },
+                        new[] { toCase, fromCase, fromCase }),
+                    // The SATA power lead leaves its device plug sideways.
+                    Park(task, end.plug, new[] { new Vector3(HeadColumn, 0, centre + half), new Vector3(CornerColumn, 0, -corner), new Vector3(CornerColumn, 0, corner) },
+                        power ? new[] { forward, back, back } : new[] { toCase, fromCase, fromCase }) };
+                cable.passGuides = data ? SataDataPass : power ? SataPowerPass : null; cable.passPlane = TrayPlane; cable.passSlack = Vector3.up;
+                foreach (var park in cable.parks) park.plug = park.head.GetComponent<QAPlug>();
+                if (data) cable.parks[1].waitSlot = 2;
+                Fold(cable);
+                var from = cable.spans[0].from; var to = cable.spans[0].to;
+                cable.fold = new S1CableFold { toPosition = from.InverseTransformPoint(to.position), toRotation = Quaternion.Inverse(from.rotation) * to.rotation,
+                    bonePositions = cable.spans[0].bones.Select(b => from.InverseTransformPoint(b.position)).ToArray(),
+                    boneRotations = cable.spans[0].bones.Select(b => Quaternion.Inverse(from.rotation) * b.rotation).ToArray() };
+                EditorUtility.SetDirty(cable);
+            }
+            foreach (var cable in task.wiring.cables)
+            {
+                foreach (var span in cable.spans.Where(s => SpareHeads.Contains(s.to.name)))
+                    foreach (var bone in span.bones.Append(span.to))
+                    {
+                        // Folded into the head they hang from, so no sliver of mesh is left stretched to them.
+                        bone.SetParent(task.wiring.ends.Single(e => e.cable == cable).plug.transform, false);
+                        bone.localPosition = Vector3.zero; bone.localScale = Vector3.zero;
+                    }
+                cable.spans = cable.spans.Where(s => !SpareHeads.Contains(s.to.name)).ToArray();
+            }
+            // The unplugged AC cord lies behind the case (owner 2 Nov), now past its rear end and further back, clear of the
+            // cable tray and the service handle.
+            task.wiring.cables.Single(c => c.assetId == "CABLE_AC_C13_JP").transform.localPosition = new Vector3(-.62f, .01f, .40f);
+            ConfigureCaseCableRoutes(task.wiring);
+            RemoveBaseCables(task);
+            RouteTaskCables(task);
+            EditorUtility.SetDirty(task.gameObject); EditorUtility.SetDirty(task.wiring);
+        }
+
+        // The board/PSU end of each task cable stops being a fixed contact: it becomes a plug like the device end, and every
+        // free port of its family on the board or PSU takes it. The SATA data cable has two identical ends, so either fits either side.
+        private static void DetachCableSources(ResearchS1TaskAMechanics task)
+        {
+            var wiring = task.wiring; var inputs = task.inputs.ToList();
+            foreach (var end in wiring.ends.Where(e => !e.sourcePlug))
+            {
+                var contact = wiring.contacts[end.sourceContact]; var head = contact.mate.parent; string asset = end.cable.assetId;
+                head.SetParent(end.plug.transform.parent, true);
+                bool board = end.sourceConnector == S1Connector.MotherboardSata, sata = end.sourceConnector == S1Connector.PsuSata;
+                end.sourcePlug = Plug(task, end.cable, head.name.Substring(("B_" + asset + "_").Length), end.plug.stableId + (board ? "_board" : "_psu"), inputs);
+                var equipment = task.fixedAssembly[board ? 1 : 4].gameObject;
+                var seats = board ? new[] { "SEAT_MB_B760_DDR4_SATA6G_1", "SEAT_MB_B760_DDR4_SATA6G_2", "SEAT_MB_B760_DDR4_SATA6G_3", "SEAT_MB_B760_DDR4_SATA6G_4" }
+                    : sata ? new[] { "SEAT_PSU_ATX_MX650_PERIPH1", "SEAT_PSU_ATX_MX650_PERIPH2", "SEAT_PSU_ATX_MX650_PERIPH3" }
+                    : new[] { "SEAT_PSU_ATX_MX650_CPUPCIE2", "SEAT_PSU_ATX_MX650_CPUPCIE3" };
+                var mates = board ? new[] { "EndB", "EndA" } : new[] { "EndA" };
+                end.sourceSockets = seats.Select(name =>
+                {
+                    var seat = Node(equipment, name);
+                    var socket = seat.gameObject.AddComponent<QASocket>(); socket.fixtureId = end.sourcePartId; socket.seat = seat;
+                    socket.seatName = name.Substring(name.LastIndexOf(board ? "SATA6G" : sata ? "PERIPH" : "CPUPCIE", StringComparison.Ordinal));
+                    socket.spec = new SeatSpec { approachMm = board || sata ? 20 : 25, posTolMm = 3, angTolDeg = board || sata ? 10 : 6, hysteresisMm = 1, hysteresisDeg = 3, seatedDepthTolMm = .3f };
+                    foreach (string mate in mates)
+                    {
+                        socket.rules.Add(new PairRule { plug = asset, mate = mate, outcome = PairOutcome.Seat, turnDeg = 0, testId = "S1_source_" + asset + "_" + socket.seatName });
+                        if (board) socket.rules.Add(new PairRule { plug = asset, mate = mate, outcome = PairOutcome.Block, turnDeg = 180, reachMm = 4.79f, testId = "source_SATA_reversed" });
+                    }
+                    return socket;
+                }).ToArray();
+                if (board)
+                    foreach (var target in wiring.targets.Where(t => t.connector == S1Connector.SsdData))
+                        foreach (var rule in target.socket.rules.Where(r => r.plug == asset && r.mate == "EndA").ToArray())
+                            target.socket.rules.Add(new PairRule { plug = asset, mate = "EndB", outcome = rule.outcome, turnDeg = rule.turnDeg, reachMm = rule.reachMm, testId = rule.testId });
+            }
+            wiring.contacts = wiring.contacts.Where(c => !c.circuit.EndsWith("_source", StringComparison.Ordinal)).ToArray();
+            foreach (var end in wiring.ends) end.sourceContact = -1;
+            task.inputs = inputs.ToArray();
+        }
+
+        // The solid stops 5 mm above the mat: resting on it, the tray's collider would block every turn of the case.
+        private static void Tray(Transform pivot, string name, Vector3 centre, float width, float depth)
+        {
+            var existing = pivot.Find(name);
+            if (existing) UnityEngine.Object.DestroyImmediate(existing.gameObject);
+            var tray = new GameObject(name).transform;
+            tray.SetParent(pivot, false); tray.localPosition = new Vector3(centre.x, 0, centre.z);
+            var material = GameObject.Find("Computer_ComponentTray").GetComponentInChildren<Renderer>().sharedMaterial;
+            void Slab(string part, Vector3 position, Vector3 size, bool solid)
+            {
+                var slab = GameObject.CreatePrimitive(PrimitiveType.Cube); slab.name = part;
+                slab.transform.SetParent(tray, false); slab.transform.localPosition = position; slab.transform.localScale = size;
+                slab.GetComponent<Renderer>().sharedMaterial = material;
+                if (!solid) UnityEngine.Object.DestroyImmediate(slab.GetComponent<Collider>());
+            }
+            const float mat = -.009f, rim = .006f, lip = .012f;
+            Slab("Base", new Vector3(0, TrayTop - .002f, 0), new Vector3(width, .004f, depth), true);
+            Slab("Skirt", new Vector3(0, (mat + TrayTop - .004f) / 2, 0), new Vector3(width, TrayTop - .004f - mat, depth), false);
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Slab("RimX", new Vector3(side * (width + rim) / 2, (mat + TrayTop + lip) / 2, 0), new Vector3(rim, TrayTop + lip - mat, depth + 2 * rim), false);
+                Slab("RimZ", new Vector3(0, (mat + TrayTop + lip) / 2, side * (depth + rim) / 2), new Vector3(width, TrayTop + lip - mat, rim), false);
+            }
+        }
+
+        // Returns the head's slots in cable space and leaves it lying in the first; mate frames are given in pivot space.
+        private static S1CablePark Park(ResearchS1TaskAMechanics task, QAPlug plug, Vector3[] positions, Quaternion[] rotations)
+        {
+            var head = plug.transform; var mate = plug.mates.Single(); var pivot = task.servicePivot; var cable = head.GetComponent<ResearchS1TaskAPlugMotion>().cable;
+            var slots = new S1CableSlot[positions.Length];
+            for (int i = positions.Length - 1; i >= 0; i--)
+            {
+                var pose = SocketRules.RootPose(pivot.localToWorldMatrix * Matrix4x4.TRS(positions[i], rotations[i], Vector3.one), 0, 0, head.worldToLocalMatrix * mate.localToWorldMatrix);
+                head.SetPositionAndRotation(pose.GetColumn(3), pose.rotation);
+                Physics.SyncTransforms();
+                float lowest = head.GetComponentsInChildren<BoxCollider>(true).Where(b => !b.isTrigger).Min(b => b.bounds.min.y);
+                head.position += Vector3.up * (pivot.TransformPoint(new Vector3(0, TrayTop + .001f, 0)).y - lowest);
+                slots[i] = new S1CableSlot { position = cable.transform.InverseTransformPoint(head.position), rotation = Quaternion.Inverse(cable.transform.rotation) * head.rotation };
+            }
+            return new S1CablePark { head = head, slots = slots };
+        }
+
+        // Finds the hairpin the folded cable lies in on the start tray: two straight legs away from the case (cable -x) and a
+        // half-turn, as deep as its length needs.
+        private static void Fold(ResearchS1Cable cable)
+        {
+            var span = cable.spans[0]; var toCable = cable.transform.worldToLocalMatrix;
+            cable.fold = null;
+            Vector3 a = toCable.MultiplyPoint3x4(span.from.TransformPoint(span.fromExit)), b = toCable.MultiplyPoint3x4(span.to.TransformPoint(span.toExit));
+            float centre = (a.z + b.z) / 2, radius = Mathf.Abs(b.z - a.z) / 2, side = Mathf.Sign(b.z - a.z), start = Mathf.Min(a.x, b.x) - .02f;
+            for (float depth = .02f; depth < .3f; depth += .002f)
+                foreach (var slack in new[] { Vector3.forward, Vector3.back, Vector3.up })
+                {
+                    // Each leg lies at its own head's height: a 3 mm step in the last 2 cm bent the lead tighter than 8 mm.
+                    var guides = new List<Vector3> { new Vector3(start, a.y, a.z), new Vector3(start - depth / 2, a.y, a.z), new Vector3(start - depth, a.y, a.z) };
+                    foreach (float angle in new[] { 45f, 90f, 135f })
+                        guides.Add(new Vector3(start - depth - radius * Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Lerp(a.y, b.y, angle / 180), centre - side * radius * Mathf.Cos(angle * Mathf.Deg2Rad)));
+                    guides.AddRange(new[] { new Vector3(start - depth, b.y, b.z), new Vector3(start - depth / 2, b.y, b.z), new Vector3(start, b.y, b.z) });
+                    cable.parkGuides = guides.ToArray(); cable.parkSlack = slack;
+                    foreach (var s2 in cable.spans) { s2.cached = false; s2.cachedSide = Vector3.zero; }
+                    cable.RefreshShape();
+                    if (span.cachedGuided) return;
+                }
+            throw new InvalidOperationException("No hairpin holds " + cable.assetId + " at its length.");
         }
 
         private static ResearchS1TaskAWiring Wiring(ResearchS1TaskAMechanics task, List<ResearchS1TaskAInput> inputs)
@@ -98,8 +336,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             latchMotion.sockets = wiring.targets.Where(t => t.connector == S1Connector.GpuPcie8).Select(t => t.socket).ToArray();
             latch.socket = latchMotion.sockets[0];
             foreach (var socket in latchMotion.sockets) socket.latches.Add(latch);
+            // Its rest place behind the case is set with the cable trays (PlaceCableTrays).
             var ac = Cable(task, "PC_Power", "CABLE_AC_C13_JP");
-            ac.transform.localPosition = new Vector3(-.6f,.01f,-.4f);
             wiring.acSeat = Node(psu, "SEAT_PSU_ATX_MX650_AC"); wiring.acMate = Mate(ac,"A");
             wiring.acSocket = wiring.acSeat.gameObject.AddComponent<QASocket>(); wiring.acSocket.fixtureId = "A.psu"; wiring.acSocket.seatName = "AC"; wiring.acSocket.seat = wiring.acSeat;
             wiring.cables = new[] { atx, eps, fan, front, data, sata, pcie, ac };
@@ -132,6 +370,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         private static S1TaskACableEnd End(ResearchS1TaskAMechanics task, ResearchS1Cable cable, string headName, string id,
             S1FixedCableContact source, int sourceIndex, string sourcePart, S1Connector connector, List<ResearchS1TaskAInput> inputs)
         {
+            var plug = Plug(task, cable, headName, id, inputs);
+            Rest(plug.transform, plug.mates.Single(), source.seat, id);
+            return new S1TaskACableEnd { cable = cable, plug = plug, sourceContact = sourceIndex, sourcePartId = sourcePart, sourceConnector = connector };
+        }
+
+        private static QAPlug Plug(ResearchS1TaskAMechanics task, ResearchS1Cable cable, string headName, string id, List<ResearchS1TaskAInput> inputs)
+        {
             var head = Head(cable, headName); var mate = Mate(cable, headName);
             var body = head.gameObject.AddComponent<Rigidbody>(); body.useGravity = false; body.isKinematic = true; body.mass = .02f;
             var grab = head.gameObject.AddComponent<Grabbable>();
@@ -145,8 +390,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var input = head.gameObject.AddComponent<ResearchS1TaskAInput>(); input.owner = task; input.stableId = id; input.plug = plug; input.pointable = grab; input.interactable = hand; inputs.Add(input);
             var motion = head.gameObject.AddComponent<ResearchS1TaskAPlugMotion>(); motion.owner = task; motion.plug = plug; motion.input = input; motion.cable = cable; grab.InjectOptionalOneGrabTransformer(motion);
             var item = head.gameObject.AddComponent<HandsLabObject>(); item.stableId = id; item.body = body; item.grabbable = grab;
-            Rest(head, mate, source.seat, id);
-            return new S1TaskACableEnd { cable = cable, plug = plug, sourceContact = sourceIndex, sourcePartId = sourcePart, sourceConnector = connector };
+            return plug;
         }
 
         private static S1FixedCableContact Fixed(List<S1FixedCableContact> contacts, ResearchS1Cable cable, string headName, GameObject equipment,
@@ -208,10 +452,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         public static void CorrectCablePlugProxies(ResearchS1TaskAMechanics task)
         {
             if (Application.isPlaying || !task || !task.wiring) throw new ArgumentException("Correct Task A cable proxies in Edit Mode.");
-            foreach (var end in task.wiring.ends.Where(e => !e.plug.Socket))
-                Rest(end.plug.transform, end.plug.mates.Single(), task.wiring.contacts[end.sourceContact].seat, end.plug.stableId);
             foreach (var end in task.wiring.ends)
                 HeadSolid(end.cable, end.plug.transform, end.plug.GetComponentsInChildren<BoxCollider>(true).Single(c => c.name.StartsWith("SEL_", StringComparison.Ordinal)));
+            PlaceCableTrays(task);
         }
 
         private static Transform Head(ResearchS1Cable cable, string id) => cable.skin.bones.Single(b => b.name == "B_" + cable.assetId + "_" + id);

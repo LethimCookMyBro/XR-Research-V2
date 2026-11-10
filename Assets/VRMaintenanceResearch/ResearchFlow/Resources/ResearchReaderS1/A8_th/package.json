@@ -1,0 +1,1511 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.A8.th",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "A8_th.pdf",
+  "source_pdf_resource": "ResearchReaderS1/A8_th/source_pdf",
+  "source_sha256": "e68de08ad7e4832476b4d60c87efd2c465796a546a7da929a60eeeb687c5ddf4",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p01",
+      "sha256": "4b950196a67322f5c5c0aef9c51f3a5646f92579386d062fd6b4f85036b12633"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p02",
+      "sha256": "b814b5183d3b45d5caf1c079d2ab802290d18959a418a6319f0fb5a2527fab6e"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p03",
+      "sha256": "0ee3726cb91e88272de4f7730db4c71fea0997b6d009b2cccd60c86db0b96f12"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p04",
+      "sha256": "5b299917636b65675eb928a1bb03ba901fa984ec23855f26b1b7c7a9d8058d7d"
+    },
+    {
+      "page": 5,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p05",
+      "sha256": "2f7faa3d0acedfa5caa20e2d2c6c840cc8c8f7e90913db4b288c7224dfe7ab9d"
+    },
+    {
+      "page": 6,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/A8_th/pages/p06",
+      "sha256": "ba8acf3935edf3176070fe836c411b637ebc2800cda880481942a23cf4c0313b"
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "A.start",
+      "topic_id": "w2",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_01",
+        "sha256": "ff63117e80ed6aa7566e2359d17e6cd5a56b013a950f0f17a0c2d269d1e3ac43",
+        "caption_th": "หาจุดใส่ RAM, SSD และ GPU สำหรับ W2",
+        "caption_ja": "W2 用の RAM・SSD・GPU の取付位置を確認する",
+        "caption_en": "Locate the RAM, SSD and GPU mounting points for W2"
+      },
+      "units": [
+        "problem",
+        "base",
+        "order_free"
+      ],
+      "text_th": "หาจุดใส่ RAM, SSD และ GPU สำหรับ W2\nCPU ชุดระบายความร้อน และ PSU ติดตั้งไว้แล้ว สายที่ต้องต่อเองสามเส้นอยู่บนถาดข้างเคส ระหว่างประกอบไม่มีไฟเข้า ไม่ต้องลงโปรแกรมหรือปิดฝา\nทำลำดับใดก็ได้ ไม่ต้องใช้ทุกชิ้นบนโต๊ะ",
+      "text_ja": "W2 用の RAM・SSD・GPU の取付位置を確認する\nCPU・クーラー・PSU は取り付け済み。自分でつなぐケーブル3本はケース横のトレイにある。組み立て中は電源なし。OS とふたは不要\n順番は自由。机の部品をすべて使う必要はない",
+      "text_en": "Locate the RAM, SSD and GPU mounting points for W2\nCPU, cooler and PSU are fitted. The three cables you connect wait on the tray beside the case. No power while assembling. No OS or cover needed.\nAny order. Not every bench part is needed."
+    },
+    {
+      "step_id": "A.base",
+      "topic_id": "w2",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_02",
+        "sha256": "6cd43322c075e09482d35869d181ec74809b8bab675709d6667cd948792acb29",
+        "caption_th": "คงชิ้นส่วนเดิมไว้",
+        "caption_ja": "既存の部品はそのままにする",
+        "caption_en": "Leave fitted components in place"
+      },
+      "units": [
+        "base"
+      ],
+      "text_th": "คงชิ้นส่วนเดิมไว้\nเมนบอร์ด CPU ชุดระบายความร้อน และ PSU ติดตั้งแล้ว ไม่ต้องถอด สายบนถาดสามเส้นคือสายที่ต้องต่อเอง\nระหว่างประกอบไม่มีไฟเข้า ไม่ต้องลง OS หรือปิดฝา ตรวจผลงานจำลองเปิดเครื่อง 3 วินาที",
+      "text_ja": "既存の部品はそのままにする\n基板・CPU・クーラー・PSU は取り付け済み。外さない。トレイの3本は自分でつなぐケーブル\n組立中は電源なし。OS・ふたは不要。仕上がりを確認で3秒間の起動を模擬",
+      "text_en": "Leave fitted components in place\nBoard, CPU, cooler and PSU are fitted; do not remove them. The three cables on the tray are the ones you connect.\nNo power while assembling. No OS or cover. Check my work simulates power-on for 3 s."
+    },
+    {
+      "step_id": "A.examine",
+      "topic_id": "w2",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_03",
+        "sha256": "ff63117e80ed6aa7566e2359d17e6cd5a56b013a950f0f17a0c2d269d1e3ac43",
+        "caption_th": "ชี้เลือกชิ้นส่วนจริง",
+        "caption_ja": "実物の部品を指して選ぶ",
+        "caption_en": "Point at a physical part"
+      },
+      "units": [
+        "labels"
+      ],
+      "text_th": "ชี้เลือกชิ้นส่วนจริง\nชี้ไปที่ชิ้นส่วนจริง แล้วกด “ดูสภาพชิ้นส่วน” ที่ขึ้นข้างชิ้นนั้นด้วย Trigger\nค่าของชิ้นจะแสดงบนแผงงาน เทียบฉลากกับ W2 การใส่ได้ไม่ได้แปลว่าตรงข้อกำหนด ไม่ใช่การซ่อมหรือตรวจผลงาน",
+      "text_ja": "実物の部品を指して選ぶ\n実物の部品を指し、横に出る「状態を見る」を Trigger で選ぶと、値が作業パネルに表示されます。\nラベルを W2 と比べます。 入ることは要件に合うことではありません。修理や仕上がり確認ではありません。",
+      "text_en": "Point at a physical part\nPoint at the physical part and select the View condition chip beside it with Trigger.\nThe part's values appear on the task panel. Compare the label with W2; fitting does not mean meeting W2. Not repair or Check my work."
+    },
+    {
+      "step_id": "A.ram.label",
+      "topic_id": "ram",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_04",
+        "sha256": "e836f823b59fcc85bac89b6f534065f62beb1c17885790725f076ba860dc0714",
+        "caption_th": "อ่านป้ายแล้วเลือก RAM สองแผง",
+        "caption_ja": "ラベルを読んで RAM を2枚選ぶ",
+        "caption_en": "Read the labels and choose two RAM modules"
+      },
+      "units": [
+        "ram_req",
+        "labels"
+      ],
+      "text_th": "อ่านป้ายแล้วเลือก RAM สองแผง\nDDR4 แผงละ 8 GB เหมือนกัน รวม 16 GB\nตรงทุกค่า ใส่ได้ยังไม่พอ",
+      "text_ja": "ラベルを読んで RAM を2枚選ぶ\n同じ DDR4 8 GB を 2 枚、合計 16 GB\n全数値が一致。挿せるだけでは不十分",
+      "text_en": "Read the labels and choose two RAM modules\nIdentical DDR4, 8 GB each, 16 GB total.\nEvery value matches; fitting is not enough."
+    },
+    {
+      "step_id": "A.ram.latch",
+      "topic_id": "ram",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_05",
+        "sha256": "61f3b58c9332f733d08df524f9ceedf01e0e8181e417b0add97867237f3fa091",
+        "caption_th": "เปิดสลักช่อง A2 หรือ B2",
+        "caption_ja": "A2 または B2 のラッチを開く",
+        "caption_en": "Open the A2 or B2 latch"
+      },
+      "units": [
+        "ram_how",
+        "ram_req"
+      ],
+      "text_th": "เปิดสลักช่อง A2 หรือ B2\nแตะสลักแล้วกด Trigger หนึ่งครั้ง\nสลักด้านเดียวเปิด อีกด้านคงที่ บอร์ดรับ DDR4 เท่านั้น",
+      "text_ja": "A2 または B2 のラッチを開く\nラッチで Trigger を1回押す\n片側だけ開き、反対側は固定。この基板は DDR4 専用",
+      "text_en": "Open the A2 or B2 latch\nPress Trigger once at the latch.\nOne side opens; the other is fixed. This board accepts DDR4 only."
+    },
+    {
+      "step_id": "A.ram.align",
+      "topic_id": "ram",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_06",
+        "sha256": "20fbfbdc1732c37ce1ceec7a7d3287a47c1645f4a627ca84dc0460ae9325c873",
+        "caption_th": "จัดรอยบาก RAM ให้ตรงช่อง",
+        "caption_ja": "RAM の切り欠きをスロットに合わせる",
+        "caption_en": "Align the RAM notch"
+      },
+      "units": [
+        "ram_how",
+        "ram_req"
+      ],
+      "text_th": "จัดรอยบาก RAM ให้ตรงช่อง\nจับ RAM ด้วย Grip ค้าง และขยับมือเข้าหา A2 หรือ B2\nรอยบากตรง ไม่ต้องฝืนกลับด้าน",
+      "text_ja": "RAM の切り欠きをスロットに合わせる\nGrip を押したまま A2 または B2 に合わせる\n切り欠きが合う。逆向きに押し込まない",
+      "text_en": "Align the RAM notch\nHold Grip and position the module at A2 or B2.\nThe notch aligns; do not force the reversed orientation."
+    },
+    {
+      "step_id": "A.ram.seat",
+      "topic_id": "ram",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_07",
+        "sha256": "5100863cb69e9741f90d4b459070864bc8eb42c01e7daca4e3403486f1f4b76e",
+        "caption_th": "ดัน RAM ตรงจนสุด",
+        "caption_ja": "RAM をまっすぐ奥まで押す",
+        "caption_en": "Push RAM fully in"
+      },
+      "units": [
+        "ram_how",
+        "half_seat",
+        "ram_req"
+      ],
+      "text_th": "ดัน RAM ตรงจนสุด\nค้าง Grip แล้วขยับตามแนวช่อง ทำซ้ำอีกแผงที่ A2/B2\nสลักปิดเอง ใส่ครึ่งทางยังไม่เชื่อมต่อ ต้องมีสองแผงเหมือนกัน",
+      "text_ja": "RAM をまっすぐ奥まで押す\nGrip でスロット方向に押す。A2/B2 のもう1枚も同様\nラッチが閉じる。途中では未接続。同じもの2枚が必要",
+      "text_en": "Push RAM fully in\nHold Grip and move along the slot. Repeat for the other A2/B2 module.\nThe latch closes itself. Half-seated is unconnected. Two identical modules are required."
+    },
+    {
+      "step_id": "A.ram.values",
+      "topic_id": "ram",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_08",
+        "sha256": "e836f823b59fcc85bac89b6f534065f62beb1c17885790725f076ba860dc0714",
+        "caption_th": "อ่านค่าฉลากของตัวเลือก",
+        "caption_ja": "選択肢のラベル値を読む",
+        "caption_en": "Read option label values"
+      },
+      "units": [
+        "labels"
+      ],
+      "text_th": "อ่านค่าฉลากของตัวเลือก\nDDR4 16 GB / DDR4 8 GB / DDR5 8 GB\nไม่ระบุรหัสชิ้นส่วน ให้ตรวจชิ้นจริงและเทียบกับ W2 เอง",
+      "text_ja": "選択肢のラベル値を読む\nDDR4 16 GB / DDR4 8 GB / DDR5 8 GB\n部品番号なし。実物を調べて W2 と照合する",
+      "text_en": "Read option label values\nDDR4 16 GB / DDR4 8 GB / DDR5 8 GB\nNo part IDs. Examine the actual part and compare with W2."
+    },
+    {
+      "step_id": "A.ssd.label",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_09",
+        "sha256": "c6bbcc7020fb4400bdee5c209454f118a964bd450ef535fad564a1b4901ade77",
+        "caption_th": "อ่านป้ายแล้วเลือก SSD หนึ่งตัว",
+        "caption_ja": "ラベルを読んで SSD を1台選ぶ",
+        "caption_en": "Read the labels and choose one SSD"
+      },
+      "units": [
+        "ssd_req",
+        "labels"
+      ],
+      "text_th": "อ่านป้ายแล้วเลือก SSD หนึ่งตัว\nSATA 2.5 นิ้ว ≥500 GB และ ≥600 TBW\nผ่านทั้งสองค่า TBW ไม่ใช่ความจุ",
+      "text_ja": "ラベルを読んで SSD を1台選ぶ\nSATA 2.5 インチ、500 GB 以上・600 TBW 以上\n両条件を満たす。TBW は容量ではない",
+      "text_en": "Read the labels and choose one SSD\nSATA 2.5-inch, ≥500 GB and ≥600 TBW.\nBoth values pass. TBW is not capacity."
+    },
+    {
+      "step_id": "A.ssd.turn",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_10",
+        "sha256": "3a420afac7f80b6638f2d4ca06464a5faae81fabec9a5fd177b150e9213de7a3",
+        "caption_th": "จับที่หมุนเคสด้วย Grip แล้วเลื่อนมือรอบฐาน",
+        "caption_ja": "Grip でケースの取っ手を持ち、台の周りに手を動かす",
+        "caption_en": "Hold the case handle with Grip and move your hand around the base"
+      },
+      "units": [
+        "case_turn"
+      ],
+      "text_th": "จับที่หมุนเคสด้วย Grip แล้วเลื่อนมือรอบฐาน\nเคสจะหมุนตามมือ ไม่ต้องบิดข้อมือ\nเห็นช่องถาด SSD หลังเมนบอร์ด",
+      "text_ja": "Grip でケースの取っ手を持ち、台の周りに手を動かす\n手の移動に合わせてケースが回る。手首はひねらない\n基板の裏に SSD トレイの位置が見える",
+      "text_en": "Hold the case handle with Grip and move your hand around the base\nThe case follows your hand. Do not twist your wrist.\nThe SSD tray mount behind the board is visible."
+    },
+    {
+      "step_id": "A.ssd.tray",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_11",
+        "sha256": "259f851f0ad67c74642bdd64b60e886b934c85352f30677150168b93b69f6c4e",
+        "caption_th": "เลื่อนถาด SSD ตามรางจนสุด",
+        "caption_ja": "SSD トレイをレールの奥まで入れる",
+        "caption_en": "Seat the SSD tray"
+      },
+      "units": [
+        "ssd_how"
+      ],
+      "text_th": "เลื่อนถาด SSD ตามรางจนสุด\nจับถาดด้วย Grip SSD อยู่บนถาดแล้ว\nถาดเข้าที่หลังเมนบอร์ด ไม่ต้องขันสกรูใต้ SSD",
+      "text_ja": "SSD トレイをレールの奥まで入れる\nGrip でトレイを持つ。SSD は取付済み\n基板裏の位置に収まる。SSD 底面のねじは不要",
+      "text_en": "Seat the SSD tray\nHold the tray with Grip; SSD is already attached.\nTray seats behind the board. No underside SSD screws."
+    },
+    {
+      "step_id": "A.ssd.screw",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_12",
+        "sha256": "259f851f0ad67c74642bdd64b60e886b934c85352f30677150168b93b69f6c4e",
+        "caption_th": "ขันสกรูถาด SSD ให้แน่น",
+        "caption_ja": "SSD トレイのねじを締める",
+        "caption_en": "Tighten the SSD tray screw"
+      },
+      "units": [
+        "ssd_how",
+        "ssd_cables"
+      ],
+      "text_th": "ขันสกรูถาด SSD ให้แน่น\nจับสกรูด้วย Trigger ค้างแล้วหมุน\nถาดไม่ขยับ การวางถาดยังไม่ต่อสาย",
+      "text_ja": "SSD トレイのねじを締める\nTrigger を押したままねじを回す\nトレイが動かない。置くだけでは配線されない",
+      "text_en": "Tighten the SSD tray screw\nHold Trigger on the screw and turn.\nThe tray does not move. Seating does not connect cables."
+    },
+    {
+      "step_id": "A.ssd.data",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_13",
+        "sha256": "30dd36d37266d3ca7db4224681edb0fa4ad11cf0f9bd66b5e0d0fdfc0d83a54e",
+        "caption_th": "ต่อสาย SATA data ทั้งสองปลาย",
+        "caption_ja": "SATA データケーブルを両端とも差し込む",
+        "caption_en": "Connect both ends of the SATA data cable"
+      },
+      "units": [
+        "ssd_cables"
+      ],
+      "text_th": "ต่อสาย SATA data ทั้งสองปลาย\nหยิบหัวสายแดงจากถาดด้วย Trigger ค้าง เสียบปลายหนึ่งที่ช่อง SATA บนขอบเมนบอร์ด อีกปลายที่ SSD\nหัวปลั๊กเข้าที่ทั้งสองปลาย หัวที่ปล่อยกลางทางจะกลับไปที่ถาด SSD ต้องต่อทั้งสาย data และ power แยกกัน",
+      "text_ja": "SATA データケーブルを両端とも差し込む\nTrigger で赤いケーブルのプラグをトレイから取る。片方を基板の端の SATA ポートに、もう片方を SSD に奥まで差し込む\n両端のプラグが入る。途中で放したプラグはトレイに戻る。SSD にはデータと電源の2本が必要",
+      "text_en": "Connect both ends of the SATA data cable\nHold Trigger to take the red cable's plug from the tray. Push one end into a SATA port at the board edge and the other into the SSD.\nBoth plugs seated. A plug let go on the way returns to the tray. SSD needs separate data and power cables."
+    },
+    {
+      "step_id": "A.ssd.power",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_14",
+        "sha256": "4a68913ba631f61fb858826e8734d77450c2737f3e97d51e47f0f7ce56445c8e",
+        "caption_th": "ต่อสาย SATA power ทั้งสองปลาย",
+        "caption_ja": "SATA 電源ケーブルを両端とも差し込む",
+        "caption_en": "Connect both ends of the SATA power cable"
+      },
+      "units": [
+        "ssd_cables"
+      ],
+      "text_th": "ต่อสาย SATA power ทั้งสองปลาย\nหยิบหัวสายจากถาดด้วย Trigger ค้าง เสียบปลายหนึ่งที่ช่องว่างบน PSU อีกปลายที่ SSD หัวที่ไม่ตรงชนิดจะเสียบไม่เข้า\nหัวปลั๊กเข้าที่ทั้งสองปลาย SSD ต้องต่อทั้งสาย data และ power แยกกัน",
+      "text_ja": "SATA 電源ケーブルを両端とも差し込む\nTrigger でプラグをトレイから取る。片方を PSU の空いているポートに、もう片方を SSD に奥まで差し込む。種類の合わないプラグは入らない\n両端のプラグが入る。SSD にはデータと電源の2本が必要",
+      "text_en": "Connect both ends of the SATA power cable\nHold Trigger to take the plug from the tray. Push one end into a free PSU port and the other into the SSD. A plug of the wrong kind does not go in.\nBoth plugs seated. SSD needs separate data and power cables."
+    },
+    {
+      "step_id": "A.ssd.values",
+      "topic_id": "ssd",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_15",
+        "sha256": "c6bbcc7020fb4400bdee5c209454f118a964bd450ef535fad564a1b4901ade77",
+        "caption_th": "อ่านค่าฉลากของตัวเลือก",
+        "caption_ja": "選択肢のラベル値を読む",
+        "caption_en": "Read option label values"
+      },
+      "units": [
+        "labels"
+      ],
+      "text_th": "อ่านค่าฉลากของตัวเลือก\nSATA 2.5\" 1000 GB, 300 TBW / SATA 2.5\" 250 GB, 800 TBW / SATA 2.5\" 500 GB, 600 TBW\nไม่ระบุรหัสชิ้นส่วน ให้ตรวจชิ้นจริงและเทียบกับ W2 เอง",
+      "text_ja": "選択肢のラベル値を読む\nSATA 2.5\" 1000 GB, 300 TBW / SATA 2.5\" 250 GB, 800 TBW / SATA 2.5\" 500 GB, 600 TBW\n部品番号なし。実物を調べて W2 と照合する",
+      "text_en": "Read option label values\nSATA 2.5\" 1000 GB, 300 TBW / SATA 2.5\" 250 GB, 800 TBW / SATA 2.5\" 500 GB, 600 TBW\nNo part IDs. Examine the actual part and compare with W2."
+    },
+    {
+      "step_id": "A.gpu.label",
+      "topic_id": "gpu",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_16",
+        "sha256": "6e77f86a9b3e6d112d391e3c15d959ef559a157325ea38d7537be7f6aeff4363",
+        "caption_th": "อ่านป้ายแล้วเลือก GPU หนึ่งตัว",
+        "caption_ja": "ラベルを読んで GPU を1枚選ぶ",
+        "caption_en": "Read the labels and choose one GPU"
+      },
+      "units": [
+        "gpu_req",
+        "labels"
+      ],
+      "text_th": "อ่านป้ายแล้วเลือก GPU หนึ่งตัว\nVRAM ≥8 GB และกำลังการ์ด ≤150 W\nผ่านทั้งสองค่า ใช้กำลังการ์ด ไม่ใช่ PSU",
+      "text_ja": "ラベルを読んで GPU を1枚選ぶ\nVRAM 8 GB 以上、カード電力 150 W 以下\n両条件を満たす。PSU ではなくカードの電力",
+      "text_en": "Read the labels and choose one GPU\nVRAM ≥8 GB; card power ≤150 W.\nBoth values pass. Use card power, not PSU power."
+    },
+    {
+      "step_id": "A.gpu.seat",
+      "topic_id": "gpu",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_17",
+        "sha256": "68a9d65072042e91d9c273afca1c23e5a5ecbe029c6e0080cb82a78e4eb21460",
+        "caption_th": "เสียบ GPU ในช่องหลักจนสุด",
+        "caption_ja": "GPU をプライマリスロットの奥まで挿す",
+        "caption_en": "Seat GPU in the primary slot"
+      },
+      "units": [
+        "gpu_how",
+        "gpu_req"
+      ],
+      "text_th": "เสียบ GPU ในช่องหลักจนสุด\nจับการ์ดด้วย Grip ช่องยาวหลักต่อกับ CPU\nการ์ดจมสุด การเสียบอย่างเดียวไม่ยึดสกรู",
+      "text_ja": "GPU をプライマリスロットの奥まで挿す\nGrip でカードを持つ。CPU につながる長い主スロット\nカードが奥まで入る。挿すだけではねじは固定されない",
+      "text_en": "Seat GPU in the primary slot\nHold card with Grip. Primary slot is the long slot wired to CPU.\nCard fully seated; inserting does not fasten its screw."
+    },
+    {
+      "step_id": "A.gpu.screw",
+      "topic_id": "gpu",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_18",
+        "sha256": "68a9d65072042e91d9c273afca1c23e5a5ecbe029c6e0080cb82a78e4eb21460",
+        "caption_th": "ขันสกรูยึด GPU",
+        "caption_ja": "GPU 固定ねじを締める",
+        "caption_en": "Tighten the GPU bracket screw"
+      },
+      "units": [
+        "gpu_how"
+      ],
+      "text_th": "ขันสกรูยึด GPU\nจับสกรูด้วย Trigger ค้างแล้วหมุน\nการ์ดยึดแน่น เป็นขั้นแยกจากการเสียบ",
+      "text_ja": "GPU 固定ねじを締める\nTrigger を押したままねじを回す\nカードが固定される。挿入とは別の作業",
+      "text_en": "Tighten the GPU bracket screw\nHold Trigger and turn the screw.\nCard is secured; this is separate from insertion."
+    },
+    {
+      "step_id": "A.gpu.power",
+      "topic_id": "gpu",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_19",
+        "sha256": "1df24bfe8eae0daffc733328a4dcb0fcba1dd7132aa4cb1b24e33a8cf2971356",
+        "caption_th": "ต่อสายไฟ PCIe 8-pin ทั้งสองปลาย",
+        "caption_ja": "PCIe 8-pin 電源ケーブルを両端とも挿す",
+        "caption_en": "Connect both ends of the PCIe 8-pin power cable"
+      },
+      "units": [
+        "gpu_power"
+      ],
+      "text_th": "ต่อสายไฟ PCIe 8-pin ทั้งสองปลาย\nหยิบหัวสายจากถาดด้วย Trigger ค้าง เสียบปลายหนึ่งที่ช่องว่างบน PSU อีกปลายที่การ์ดจอจนสุด หัว 6+2 รวมไว้แล้ว\nปลั๊กต่อครบทั้งที่ PSU และการ์ด",
+      "text_ja": "PCIe 8-pin 電源ケーブルを両端とも挿す\nTrigger でプラグをトレイから取る。片方を PSU の空いているポートに、もう片方をカードの奥まで挿す。6+2 は接合済み\nプラグが PSU とカードの両方に接続される",
+      "text_en": "Connect both ends of the PCIe 8-pin power cable\nHold Trigger to take the plug from the tray. Push one end into a free PSU port and the other fully into the card. 6+2 is already joined.\nThe plug is connected at both the PSU and the card."
+    },
+    {
+      "step_id": "A.gpu.values",
+      "topic_id": "gpu",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_20",
+        "sha256": "6e77f86a9b3e6d112d391e3c15d959ef559a157325ea38d7537be7f6aeff4363",
+        "caption_th": "อ่านค่าฉลากของตัวเลือก",
+        "caption_ja": "選択肢のラベル値を読む",
+        "caption_en": "Read option label values"
+      },
+      "units": [
+        "labels"
+      ],
+      "text_th": "อ่านค่าฉลากของตัวเลือก\nVRAM 12 GB, 200 W, PCIe 8-pin / VRAM 8 GB, 120 W, PCIe 8-pin\nไม่ระบุรหัสชิ้นส่วน ให้ตรวจชิ้นจริงและเทียบกับ W2 เอง",
+      "text_ja": "選択肢のラベル値を読む\nVRAM 12 GB, 200 W, PCIe 8-pin / VRAM 8 GB, 120 W, PCIe 8-pin\n部品番号なし。実物を調べて W2 と照合する",
+      "text_en": "Read option label values\nVRAM 12 GB, 200 W, PCIe 8-pin / VRAM 8 GB, 120 W, PCIe 8-pin\nNo part IDs. Examine the actual part and compare with W2."
+    },
+    {
+      "step_id": "A.inspect",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_21",
+        "sha256": "eae1a0462fe20cae821a7b62daa42048c54bab4607ff0520493d57cf5ce0ab5c",
+        "caption_th": "กดตรวจผลงานบนแผงงาน",
+        "caption_ja": "作業パネルで「仕上がりを確認」を押す",
+        "caption_en": "Select Check my work on the task panel"
+      },
+      "units": [
+        "inspect",
+        "done"
+      ],
+      "text_th": "กดตรวจผลงานบนแผงงาน\nรอ 3 วินาที\nผลผ่าน W2 = เสร็จ",
+      "text_ja": "作業パネルで「仕上がりを確認」を押す\n3 秒待つ\nW2 合格で完了",
+      "text_en": "Select Check my work on the task panel\nWait 3 seconds.\nW2 passed means done."
+    },
+    {
+      "step_id": "A.inspect.result",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_22",
+        "sha256": "eae1a0462fe20cae821a7b62daa42048c54bab4607ff0520493d57cf5ce0ab5c",
+        "caption_th": "อ่านผลตรวจผลงาน",
+        "caption_ja": "仕上がりを確認の結果を読む",
+        "caption_en": "Read the check result"
+      },
+      "units": [
+        "inspect",
+        "done"
+      ],
+      "text_th": "อ่านผลตรวจผลงาน\nประกอบไม่ครบ: จุดเสียบ/ตัวยึด/สาย ไม่ตรง W2: ชิ้นส่วน/ช่อง\nผ่าน W2 คือเสร็จ แก้แล้วตรวจใหม่ได้ ระบบขัดข้องให้บอกผู้วิจัย",
+      "text_ja": "仕上がりを確認の結果を読む\n組立未完了：差し込み・固定・配線。W2 未達：部品・スロット\nW2 合格で完了。直して再確認できる。不具合は研究者へ",
+      "text_en": "Read the check result\nIncomplete: seating/fastener/cable. W2 failure: part/slot.\nW2 passed means done. Correct and retry; report system faults to researcher."
+    },
+    {
+      "step_id": "A.remove",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/A8_th/step_23",
+        "sha256": "ff63117e80ed6aa7566e2359d17e6cd5a56b013a950f0f17a0c2d269d1e3ac43",
+        "caption_th": "ปลดตัวยึดก่อนดึงชิ้นส่วนออก",
+        "caption_ja": "固定を解除してから部品を抜く",
+        "caption_en": "Release restraints before removal"
+      },
+      "units": [
+        "remove"
+      ],
+      "text_th": "ปลดตัวยึดก่อนดึงชิ้นส่วนออก\nเปิดสลัก ถอดสาย หรือคลายสกรูที่เกี่ยวข้องก่อน\nดึงชิ้นส่วนได้เมื่อไม่มีตัวยึดค้าง",
+      "text_ja": "固定を解除してから部品を抜く\n先にラッチ・配線・ねじを解除する\n固定が解除されたら部品を引き抜ける",
+      "text_en": "Release restraints before removal\nFirst release the relevant latch, cable or screw.\nPull only after its restraints are released."
+    }
+  ],
+  "images": [
+    {
+      "id": "A.overview",
+      "resource": "ResearchReaderS1/A8_th/overview",
+      "sha256": "3bc39106b928a1efc1a9094f5aff43a54adc0ab346f70cb3aa83211b689e46b7",
+      "regions": [
+        {
+          "id": "A.overview.ram",
+          "x": 0.0140625,
+          "y": 0.1576923076923077,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "ram_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.overview.ssd",
+          "x": 0.341143798828125,
+          "y": 0.1576923076923077,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "ssd_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.overview.gpu",
+          "x": 0.66822509765625,
+          "y": 0.1576923076923077,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "gpu_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.process_overview",
+          "x": 0.0140625,
+          "y": 0.7330769230769231,
+          "width": 0.971875,
+          "height": 0.07629807692307693,
+          "units": []
+        }
+      ],
+      "caption_th": "ภาพรวม · เลือกหัวข้อได้อิสระ",
+      "caption_ja": "全体図・項目の順番は自由",
+      "caption_en": "Overview · choose any topic"
+    },
+    {
+      "id": "A.detail_w2_1",
+      "resource": "ResearchReaderS1/A8_th/detail_w2_1",
+      "sha256": "98f871812578dc0c7f0851c519444975a5ad382d6ac89357f563db060e29f240",
+      "regions": [
+        {
+          "id": "A.start",
+          "x": 0.0140625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "problem",
+            "base",
+            "order_free"
+          ]
+        },
+        {
+          "id": "A.base",
+          "x": 0.341143798828125,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "base"
+          ]
+        },
+        {
+          "id": "A.examine",
+          "x": 0.66822509765625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "labels"
+          ]
+        }
+      ],
+      "caption_th": "W2 / ก่อนเริ่ม · 1",
+      "caption_ja": "W2 / はじめに · 1",
+      "caption_en": "w2 · 1"
+    },
+    {
+      "id": "A.detail_ram_1",
+      "resource": "ResearchReaderS1/A8_th/detail_ram_1",
+      "sha256": "816f173fab7126ebe6d4ebf3d24571c3d718ae450f3206f9eb943d9ff6ed6492",
+      "regions": [
+        {
+          "id": "A.ram.label",
+          "x": 0.0140625,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ram_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.ram.latch",
+          "x": 0.5046875,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ram_how",
+            "ram_req"
+          ]
+        },
+        {
+          "id": "A.ram.align",
+          "x": 0.0140625,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ram_how",
+            "ram_req"
+          ]
+        },
+        {
+          "id": "A.ram.seat",
+          "x": 0.5046875,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ram_how",
+            "half_seat",
+            "ram_req"
+          ]
+        }
+      ],
+      "caption_th": "RAM · 1",
+      "caption_ja": "RAM · 1",
+      "caption_en": "ram · 1"
+    },
+    {
+      "id": "A.detail_ram_2",
+      "resource": "ResearchReaderS1/A8_th/detail_ram_2",
+      "sha256": "46d59eba720d50bc456967700e23e2973b094a215722ebb8dad5a53f3d6242a6",
+      "regions": [
+        {
+          "id": "A.ram.values",
+          "x": 0.027607361963190184,
+          "y": 0.15553869499241274,
+          "width": 0.9447852760736196,
+          "height": 0.7738998482549317,
+          "units": [
+            "labels"
+          ]
+        }
+      ],
+      "caption_th": "RAM · 2",
+      "caption_ja": "RAM · 2",
+      "caption_en": "ram · 2"
+    },
+    {
+      "id": "A.detail_ssd_1",
+      "resource": "ResearchReaderS1/A8_th/detail_ssd_1",
+      "sha256": "a8519b54fa7dd4835ded1c181b6452326483554ba17045a4586ad3464e3fe06a",
+      "regions": [
+        {
+          "id": "A.ssd.label",
+          "x": 0.0140625,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ssd_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.ssd.turn",
+          "x": 0.5046875,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "case_turn"
+          ]
+        },
+        {
+          "id": "A.ssd.tray",
+          "x": 0.0140625,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ssd_how"
+          ]
+        },
+        {
+          "id": "A.ssd.screw",
+          "x": 0.5046875,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "ssd_how",
+            "ssd_cables"
+          ]
+        }
+      ],
+      "caption_th": "SSD · 1",
+      "caption_ja": "SSD · 1",
+      "caption_en": "ssd · 1"
+    },
+    {
+      "id": "A.detail_ssd_2",
+      "resource": "ResearchReaderS1/A8_th/detail_ssd_2",
+      "sha256": "90d6898c8c7875ddc83a79ab19e7c3c4958faf889cb32f801a6d66058add3ee9",
+      "regions": [
+        {
+          "id": "A.ssd.data",
+          "x": 0.0140625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "ssd_cables"
+          ]
+        },
+        {
+          "id": "A.ssd.power",
+          "x": 0.341143798828125,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "ssd_cables"
+          ]
+        },
+        {
+          "id": "A.ssd.values",
+          "x": 0.66822509765625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "labels"
+          ]
+        }
+      ],
+      "caption_th": "SSD · 2",
+      "caption_ja": "SSD · 2",
+      "caption_en": "ssd · 2"
+    },
+    {
+      "id": "A.detail_gpu_1",
+      "resource": "ResearchReaderS1/A8_th/detail_gpu_1",
+      "sha256": "18f6cc9f9f42cab1b05fb77fc78f6db8b84a26ea381acd88c12ea580736cfd18",
+      "regions": [
+        {
+          "id": "A.gpu.label",
+          "x": 0.0140625,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "gpu_req",
+            "labels"
+          ]
+        },
+        {
+          "id": "A.gpu.seat",
+          "x": 0.5046875,
+          "y": 0.08723404255319149,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "gpu_how",
+            "gpu_req"
+          ]
+        },
+        {
+          "id": "A.gpu.screw",
+          "x": 0.0140625,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "gpu_how"
+          ]
+        },
+        {
+          "id": "A.gpu.power",
+          "x": 0.5046875,
+          "y": 0.5314893617021277,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "gpu_power"
+          ]
+        }
+      ],
+      "caption_th": "GPU · 1",
+      "caption_ja": "GPU · 1",
+      "caption_en": "gpu · 1"
+    },
+    {
+      "id": "A.detail_gpu_2",
+      "resource": "ResearchReaderS1/A8_th/detail_gpu_2",
+      "sha256": "9e1407b012210373aa13cdcfe9db56e7b1f11a199da4e74944dcbd71e6e4a30e",
+      "regions": [
+        {
+          "id": "A.gpu.values",
+          "x": 0.027607361963190184,
+          "y": 0.15553869499241274,
+          "width": 0.9447852760736196,
+          "height": 0.7738998482549317,
+          "units": [
+            "labels"
+          ]
+        }
+      ],
+      "caption_th": "GPU · 2",
+      "caption_ja": "GPU · 2",
+      "caption_en": "gpu · 2"
+    },
+    {
+      "id": "A.detail_inspect_1",
+      "resource": "ResearchReaderS1/A8_th/detail_inspect_1",
+      "sha256": "b6572a6a451093de97b8ef15d866e3f9e2fd4afbae6fe5bd5e0ebe0a4203c738",
+      "regions": [
+        {
+          "id": "A.inspect",
+          "x": 0.0140625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "inspect",
+            "done"
+          ]
+        },
+        {
+          "id": "A.inspect.result",
+          "x": 0.341143798828125,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "inspect",
+            "done"
+          ]
+        },
+        {
+          "id": "A.remove",
+          "x": 0.66822509765625,
+          "y": 0.15553869499241274,
+          "width": 0.317706298828125,
+          "height": 0.7738998482549317,
+          "units": [
+            "remove"
+          ]
+        }
+      ],
+      "caption_th": "ตรวจผลงาน / เมื่อยังไม่ผ่าน · 1",
+      "caption_ja": "仕上がりを確認 / 未合格のとき · 1",
+      "caption_en": "inspect · 1"
+    }
+  ],
+  "reader_features": [
+    "steps_view_all",
+    "image_viewport"
+  ],
+  "contents": [
+    {
+      "id": "pdf_task",
+      "index": 1,
+      "format": "pdf",
+      "title_th": "ประกอบคอมพิวเตอร์ W2"
+    },
+    {
+      "id": "pdf_w2_requirements",
+      "index": 1,
+      "format": "pdf",
+      "title_th": "ข้อกำหนดสถานี W2"
+    },
+    {
+      "id": "pdf_ram",
+      "index": 2,
+      "format": "pdf",
+      "title_th": "RAM"
+    },
+    {
+      "id": "pdf_ssd",
+      "index": 3,
+      "format": "pdf",
+      "title_th": "SSD"
+    },
+    {
+      "id": "pdf_gpu",
+      "index": 4,
+      "format": "pdf",
+      "title_th": "การ์ดจอ (GPU)"
+    },
+    {
+      "id": "pdf_finish",
+      "index": 5,
+      "format": "pdf",
+      "title_th": "ตรวจผลงาน"
+    },
+    {
+      "id": "pdf_reference",
+      "index": 5,
+      "format": "pdf",
+      "title_th": "ชิ้นส่วนที่ต้องคงไว้"
+    },
+    {
+      "id": "pdf_troubleshooting",
+      "index": 6,
+      "format": "pdf",
+      "title_th": "การแก้ปัญหาและข้อควรระวัง"
+    },
+    {
+      "id": "steps_A_start",
+      "format": "steps",
+      "index": 1,
+      "title_th": "หาจุดใส่ RAM, SSD และ GPU สำหรับ W2",
+      "title_ja": "W2 用の RAM・SSD・GPU の取付位置を確認する",
+      "title_en": "Locate the RAM, SSD and GPU mounting points for W2"
+    },
+    {
+      "id": "steps_A_base",
+      "format": "steps",
+      "index": 2,
+      "title_th": "คงชิ้นส่วนเดิมไว้",
+      "title_ja": "既存の部品はそのままにする",
+      "title_en": "Leave fitted components in place"
+    },
+    {
+      "id": "steps_A_examine",
+      "format": "steps",
+      "index": 3,
+      "title_th": "ชี้เลือกชิ้นส่วนจริง",
+      "title_ja": "実物の部品を指して選ぶ",
+      "title_en": "Point at a physical part"
+    },
+    {
+      "id": "steps_A_ram_label",
+      "format": "steps",
+      "index": 4,
+      "title_th": "อ่านป้ายแล้วเลือก RAM สองแผง",
+      "title_ja": "ラベルを読んで RAM を2枚選ぶ",
+      "title_en": "Read the labels and choose two RAM modules"
+    },
+    {
+      "id": "steps_A_ram_latch",
+      "format": "steps",
+      "index": 5,
+      "title_th": "เปิดสลักช่อง A2 หรือ B2",
+      "title_ja": "A2 または B2 のラッチを開く",
+      "title_en": "Open the A2 or B2 latch"
+    },
+    {
+      "id": "steps_A_ram_align",
+      "format": "steps",
+      "index": 6,
+      "title_th": "จัดรอยบาก RAM ให้ตรงช่อง",
+      "title_ja": "RAM の切り欠きをスロットに合わせる",
+      "title_en": "Align the RAM notch"
+    },
+    {
+      "id": "steps_A_ram_seat",
+      "format": "steps",
+      "index": 7,
+      "title_th": "ดัน RAM ตรงจนสุด",
+      "title_ja": "RAM をまっすぐ奥まで押す",
+      "title_en": "Push RAM fully in"
+    },
+    {
+      "id": "steps_A_ram_values",
+      "format": "steps",
+      "index": 8,
+      "title_th": "อ่านค่าฉลากของตัวเลือก",
+      "title_ja": "選択肢のラベル値を読む",
+      "title_en": "Read option label values"
+    },
+    {
+      "id": "steps_A_ssd_label",
+      "format": "steps",
+      "index": 9,
+      "title_th": "อ่านป้ายแล้วเลือก SSD หนึ่งตัว",
+      "title_ja": "ラベルを読んで SSD を1台選ぶ",
+      "title_en": "Read the labels and choose one SSD"
+    },
+    {
+      "id": "steps_A_ssd_turn",
+      "format": "steps",
+      "index": 10,
+      "title_th": "จับที่หมุนเคสด้วย Grip แล้วเลื่อนมือรอบฐาน",
+      "title_ja": "Grip でケースの取っ手を持ち、台の周りに手を動かす",
+      "title_en": "Hold the case handle with Grip and move your hand around the base"
+    },
+    {
+      "id": "steps_A_ssd_tray",
+      "format": "steps",
+      "index": 11,
+      "title_th": "เลื่อนถาด SSD ตามรางจนสุด",
+      "title_ja": "SSD トレイをレールの奥まで入れる",
+      "title_en": "Seat the SSD tray"
+    },
+    {
+      "id": "steps_A_ssd_screw",
+      "format": "steps",
+      "index": 12,
+      "title_th": "ขันสกรูถาด SSD ให้แน่น",
+      "title_ja": "SSD トレイのねじを締める",
+      "title_en": "Tighten the SSD tray screw"
+    },
+    {
+      "id": "steps_A_ssd_data",
+      "format": "steps",
+      "index": 13,
+      "title_th": "ต่อสาย SATA data ทั้งสองปลาย",
+      "title_ja": "SATA データケーブルを両端とも差し込む",
+      "title_en": "Connect both ends of the SATA data cable"
+    },
+    {
+      "id": "steps_A_ssd_power",
+      "format": "steps",
+      "index": 14,
+      "title_th": "ต่อสาย SATA power ทั้งสองปลาย",
+      "title_ja": "SATA 電源ケーブルを両端とも差し込む",
+      "title_en": "Connect both ends of the SATA power cable"
+    },
+    {
+      "id": "steps_A_ssd_values",
+      "format": "steps",
+      "index": 15,
+      "title_th": "อ่านค่าฉลากของตัวเลือก",
+      "title_ja": "選択肢のラベル値を読む",
+      "title_en": "Read option label values"
+    },
+    {
+      "id": "steps_A_gpu_label",
+      "format": "steps",
+      "index": 16,
+      "title_th": "อ่านป้ายแล้วเลือก GPU หนึ่งตัว",
+      "title_ja": "ラベルを読んで GPU を1枚選ぶ",
+      "title_en": "Read the labels and choose one GPU"
+    },
+    {
+      "id": "steps_A_gpu_seat",
+      "format": "steps",
+      "index": 17,
+      "title_th": "เสียบ GPU ในช่องหลักจนสุด",
+      "title_ja": "GPU をプライマリスロットの奥まで挿す",
+      "title_en": "Seat GPU in the primary slot"
+    },
+    {
+      "id": "steps_A_gpu_screw",
+      "format": "steps",
+      "index": 18,
+      "title_th": "ขันสกรูยึด GPU",
+      "title_ja": "GPU 固定ねじを締める",
+      "title_en": "Tighten the GPU bracket screw"
+    },
+    {
+      "id": "steps_A_gpu_power",
+      "format": "steps",
+      "index": 19,
+      "title_th": "ต่อสายไฟ PCIe 8-pin ทั้งสองปลาย",
+      "title_ja": "PCIe 8-pin 電源ケーブルを両端とも挿す",
+      "title_en": "Connect both ends of the PCIe 8-pin power cable"
+    },
+    {
+      "id": "steps_A_gpu_values",
+      "format": "steps",
+      "index": 20,
+      "title_th": "อ่านค่าฉลากของตัวเลือก",
+      "title_ja": "選択肢のラベル値を読む",
+      "title_en": "Read option label values"
+    },
+    {
+      "id": "steps_A_inspect",
+      "format": "steps",
+      "index": 21,
+      "title_th": "กดตรวจผลงานบนแผงงาน",
+      "title_ja": "作業パネルで「仕上がりを確認」を押す",
+      "title_en": "Select Check my work on the task panel"
+    },
+    {
+      "id": "steps_A_inspect_result",
+      "format": "steps",
+      "index": 22,
+      "title_th": "อ่านผลตรวจผลงาน",
+      "title_ja": "仕上がりを確認の結果を読む",
+      "title_en": "Read the check result"
+    },
+    {
+      "id": "steps_A_remove",
+      "format": "steps",
+      "index": 23,
+      "title_th": "ปลดตัวยึดก่อนดึงชิ้นส่วนออก",
+      "title_ja": "固定を解除してから部品を抜く",
+      "title_en": "Release restraints before removal"
+    },
+    {
+      "id": "images_A_overview",
+      "format": "images",
+      "index": 1,
+      "title_th": "ภาพรวม · เลือกหัวข้อได้อิสระ",
+      "title_ja": "全体図・項目の順番は自由",
+      "title_en": "Overview · choose any topic"
+    },
+    {
+      "id": "images_A_detail_w2_1",
+      "format": "images",
+      "index": 2,
+      "title_th": "W2 / ก่อนเริ่ม · 1",
+      "title_ja": "W2 / はじめに · 1",
+      "title_en": "w2 · 1"
+    },
+    {
+      "id": "images_A_detail_ram_1",
+      "format": "images",
+      "index": 3,
+      "title_th": "RAM · 1",
+      "title_ja": "RAM · 1",
+      "title_en": "ram · 1"
+    },
+    {
+      "id": "images_A_detail_ram_2",
+      "format": "images",
+      "index": 4,
+      "title_th": "RAM · 2",
+      "title_ja": "RAM · 2",
+      "title_en": "ram · 2"
+    },
+    {
+      "id": "images_A_detail_ssd_1",
+      "format": "images",
+      "index": 5,
+      "title_th": "SSD · 1",
+      "title_ja": "SSD · 1",
+      "title_en": "ssd · 1"
+    },
+    {
+      "id": "images_A_detail_ssd_2",
+      "format": "images",
+      "index": 6,
+      "title_th": "SSD · 2",
+      "title_ja": "SSD · 2",
+      "title_en": "ssd · 2"
+    },
+    {
+      "id": "images_A_detail_gpu_1",
+      "format": "images",
+      "index": 7,
+      "title_th": "GPU · 1",
+      "title_ja": "GPU · 1",
+      "title_en": "gpu · 1"
+    },
+    {
+      "id": "images_A_detail_gpu_2",
+      "format": "images",
+      "index": 8,
+      "title_th": "GPU · 2",
+      "title_ja": "GPU · 2",
+      "title_en": "gpu · 2"
+    },
+    {
+      "id": "images_A_detail_inspect_1",
+      "format": "images",
+      "index": 9,
+      "title_th": "ตรวจผลงาน / เมื่อยังไม่ผ่าน · 1",
+      "title_ja": "仕上がりを確認 / 未合格のとき · 1",
+      "title_en": "inspect · 1"
+    },
+    {
+      "id": "video_A_start",
+      "format": "video",
+      "start_seconds": 0.0,
+      "title_th": "หาจุดใส่ RAM, SSD และ GPU สำหรับ W2"
+    },
+    {
+      "id": "video_A_base",
+      "format": "video",
+      "start_seconds": 17.833,
+      "title_th": "คงชิ้นส่วนเดิมไว้"
+    },
+    {
+      "id": "video_A_examine",
+      "format": "video",
+      "start_seconds": 34.292,
+      "title_th": "ชี้เลือกชิ้นส่วนจริง"
+    },
+    {
+      "id": "video_A_ram_label",
+      "format": "video",
+      "start_seconds": 49.25,
+      "title_th": "อ่านป้ายแล้วเลือก RAM สองแผง"
+    },
+    {
+      "id": "video_A_ram_latch",
+      "format": "video",
+      "start_seconds": 57.458,
+      "title_th": "เปิดสลักช่อง A2 หรือ B2"
+    },
+    {
+      "id": "video_A_ram_align",
+      "format": "video",
+      "start_seconds": 66.667,
+      "title_th": "จัดรอยบาก RAM ให้ตรงช่อง"
+    },
+    {
+      "id": "video_A_ram_seat",
+      "format": "video",
+      "start_seconds": 75.5,
+      "title_th": "ดัน RAM ตรงจนสุด"
+    },
+    {
+      "id": "video_A_ram_values",
+      "format": "video",
+      "start_seconds": 86.667,
+      "title_th": "อ่านค่าฉลากของตัวเลือก"
+    },
+    {
+      "id": "video_A_ssd_label",
+      "format": "video",
+      "start_seconds": 99.458,
+      "title_th": "อ่านป้ายแล้วเลือก SSD หนึ่งตัว"
+    },
+    {
+      "id": "video_A_ssd_turn",
+      "format": "video",
+      "start_seconds": 110.083,
+      "title_th": "จับที่หมุนเคสด้วย Grip แล้วเลื่อนมือรอบฐาน"
+    },
+    {
+      "id": "video_A_ssd_tray",
+      "format": "video",
+      "start_seconds": 118.417,
+      "title_th": "เลื่อนถาด SSD ตามรางจนสุด"
+    },
+    {
+      "id": "video_A_ssd_screw",
+      "format": "video",
+      "start_seconds": 128.25,
+      "title_th": "ขันสกรูถาด SSD ให้แน่น"
+    },
+    {
+      "id": "video_A_ssd_data",
+      "format": "video",
+      "start_seconds": 135.958,
+      "title_th": "ต่อสาย SATA data ทั้งสองปลาย"
+    },
+    {
+      "id": "video_A_ssd_power",
+      "format": "video",
+      "start_seconds": 152.208,
+      "title_th": "ต่อสาย SATA power ทั้งสองปลาย"
+    },
+    {
+      "id": "video_A_ssd_values",
+      "format": "video",
+      "start_seconds": 168.458,
+      "title_th": "อ่านค่าฉลากของตัวเลือก"
+    },
+    {
+      "id": "video_A_gpu_label",
+      "format": "video",
+      "start_seconds": 188.167,
+      "title_th": "อ่านป้ายแล้วเลือก GPU หนึ่งตัว"
+    },
+    {
+      "id": "video_A_gpu_seat",
+      "format": "video",
+      "start_seconds": 197.917,
+      "title_th": "เสียบ GPU ในช่องหลักจนสุด"
+    },
+    {
+      "id": "video_A_gpu_screw",
+      "format": "video",
+      "start_seconds": 206.417,
+      "title_th": "ขันสกรูยึด GPU"
+    },
+    {
+      "id": "video_A_gpu_power",
+      "format": "video",
+      "start_seconds": 213.25,
+      "title_th": "ต่อสายไฟ PCIe 8-pin ทั้งสองปลาย"
+    },
+    {
+      "id": "video_A_gpu_values",
+      "format": "video",
+      "start_seconds": 227.042,
+      "title_th": "อ่านค่าฉลากของตัวเลือก"
+    },
+    {
+      "id": "video_A_inspect",
+      "format": "video",
+      "start_seconds": 243.667,
+      "title_th": "กดตรวจผลงานบนแผงงาน"
+    },
+    {
+      "id": "video_A_inspect_result",
+      "format": "video",
+      "start_seconds": 250.5,
+      "title_th": "อ่านผลตรวจผลงาน"
+    },
+    {
+      "id": "video_A_remove",
+      "format": "video",
+      "start_seconds": 263.042,
+      "title_th": "ปลดตัวยึดก่อนดึงชิ้นส่วนออก"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/A8_th_v8.mp4",
+    "sha256": "1f9eb0599d7128f25869badbb87a2c6df5c978d388be818f344d116d7958ee76",
+    "media_version": "S1_VIDEO_V8_MOTION_NARRATION_ONLY_20261108",
+    "burned_in_text": false,
+    "chapters": [
+      {
+        "id": "A.start",
+        "stage": "หาจุดใส่ RAM, SSD และ GPU สำหรับ W2",
+        "start_seconds": 0.0,
+        "end_seconds": 17.833,
+        "units": [
+          "problem",
+          "base",
+          "order_free"
+        ]
+      },
+      {
+        "id": "A.base",
+        "stage": "คงชิ้นส่วนเดิมไว้",
+        "start_seconds": 17.833,
+        "end_seconds": 34.292,
+        "units": [
+          "base"
+        ]
+      },
+      {
+        "id": "A.examine",
+        "stage": "ชี้เลือกชิ้นส่วนจริง",
+        "start_seconds": 34.292,
+        "end_seconds": 49.25,
+        "units": [
+          "labels"
+        ]
+      },
+      {
+        "id": "A.ram.label",
+        "stage": "อ่านป้ายแล้วเลือก RAM สองแผง",
+        "start_seconds": 49.25,
+        "end_seconds": 57.458,
+        "units": [
+          "ram_req",
+          "labels"
+        ]
+      },
+      {
+        "id": "A.ram.latch",
+        "stage": "เปิดสลักช่อง A2 หรือ B2",
+        "start_seconds": 57.458,
+        "end_seconds": 66.667,
+        "units": [
+          "ram_how",
+          "ram_req"
+        ]
+      },
+      {
+        "id": "A.ram.align",
+        "stage": "จัดรอยบาก RAM ให้ตรงช่อง",
+        "start_seconds": 66.667,
+        "end_seconds": 75.5,
+        "units": [
+          "ram_how",
+          "ram_req"
+        ]
+      },
+      {
+        "id": "A.ram.seat",
+        "stage": "ดัน RAM ตรงจนสุด",
+        "start_seconds": 75.5,
+        "end_seconds": 86.667,
+        "units": [
+          "ram_how",
+          "half_seat",
+          "ram_req"
+        ]
+      },
+      {
+        "id": "A.ram.values",
+        "stage": "อ่านค่าฉลากของตัวเลือก",
+        "start_seconds": 86.667,
+        "end_seconds": 99.458,
+        "units": [
+          "labels"
+        ]
+      },
+      {
+        "id": "A.ssd.label",
+        "stage": "อ่านป้ายแล้วเลือก SSD หนึ่งตัว",
+        "start_seconds": 99.458,
+        "end_seconds": 110.083,
+        "units": [
+          "ssd_req",
+          "labels"
+        ]
+      },
+      {
+        "id": "A.ssd.turn",
+        "stage": "จับที่หมุนเคสด้วย Grip แล้วเลื่อนมือรอบฐาน",
+        "start_seconds": 110.083,
+        "end_seconds": 118.417,
+        "units": [
+          "case_turn"
+        ]
+      },
+      {
+        "id": "A.ssd.tray",
+        "stage": "เลื่อนถาด SSD ตามรางจนสุด",
+        "start_seconds": 118.417,
+        "end_seconds": 128.25,
+        "units": [
+          "ssd_how"
+        ]
+      },
+      {
+        "id": "A.ssd.screw",
+        "stage": "ขันสกรูถาด SSD ให้แน่น",
+        "start_seconds": 128.25,
+        "end_seconds": 135.958,
+        "units": [
+          "ssd_how",
+          "ssd_cables"
+        ]
+      },
+      {
+        "id": "A.ssd.data",
+        "stage": "ต่อสาย SATA data ทั้งสองปลาย",
+        "start_seconds": 135.958,
+        "end_seconds": 152.208,
+        "units": [
+          "ssd_cables"
+        ]
+      },
+      {
+        "id": "A.ssd.power",
+        "stage": "ต่อสาย SATA power ทั้งสองปลาย",
+        "start_seconds": 152.208,
+        "end_seconds": 168.458,
+        "units": [
+          "ssd_cables"
+        ]
+      },
+      {
+        "id": "A.ssd.values",
+        "stage": "อ่านค่าฉลากของตัวเลือก",
+        "start_seconds": 168.458,
+        "end_seconds": 188.167,
+        "units": [
+          "labels"
+        ]
+      },
+      {
+        "id": "A.gpu.label",
+        "stage": "อ่านป้ายแล้วเลือก GPU หนึ่งตัว",
+        "start_seconds": 188.167,
+        "end_seconds": 197.917,
+        "units": [
+          "gpu_req",
+          "labels"
+        ]
+      },
+      {
+        "id": "A.gpu.seat",
+        "stage": "เสียบ GPU ในช่องหลักจนสุด",
+        "start_seconds": 197.917,
+        "end_seconds": 206.417,
+        "units": [
+          "gpu_how",
+          "gpu_req"
+        ]
+      },
+      {
+        "id": "A.gpu.screw",
+        "stage": "ขันสกรูยึด GPU",
+        "start_seconds": 206.417,
+        "end_seconds": 213.25,
+        "units": [
+          "gpu_how"
+        ]
+      },
+      {
+        "id": "A.gpu.power",
+        "stage": "ต่อสายไฟ PCIe 8-pin ทั้งสองปลาย",
+        "start_seconds": 213.25,
+        "end_seconds": 227.042,
+        "units": [
+          "gpu_power"
+        ]
+      },
+      {
+        "id": "A.gpu.values",
+        "stage": "อ่านค่าฉลากของตัวเลือก",
+        "start_seconds": 227.042,
+        "end_seconds": 243.667,
+        "units": [
+          "labels"
+        ]
+      },
+      {
+        "id": "A.inspect",
+        "stage": "กดตรวจผลงานบนแผงงาน",
+        "start_seconds": 243.667,
+        "end_seconds": 250.5,
+        "units": [
+          "inspect",
+          "done"
+        ]
+      },
+      {
+        "id": "A.inspect.result",
+        "stage": "อ่านผลตรวจผลงาน",
+        "start_seconds": 250.5,
+        "end_seconds": 263.042,
+        "units": [
+          "inspect",
+          "done"
+        ]
+      },
+      {
+        "id": "A.remove",
+        "stage": "ปลดตัวยึดก่อนดึงชิ้นส่วนออก",
+        "start_seconds": 263.042,
+        "end_seconds": 272.167,
+        "units": [
+          "remove"
+        ]
+      }
+    ]
+  },
+  "version": "v8-2f8085ac0a79c37e+video_v8"
+}

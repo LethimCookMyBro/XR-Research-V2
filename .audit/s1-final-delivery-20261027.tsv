@@ -1,0 +1,20 @@
+time	step	change	evidence	predicate_moved
+19:15	orient	Read AGENTS/design_rule/RC4 report+verdict; codex app idle (no writes since 18:38); Unity 250292 owns project; bridge OK, MCP down	RC4 VERIFICATION.txt lines 37-52	no
+19:40	P0-A	ResearchPanelMotion idle check ignores rigidbody task parts for accepted task_information slate	RC4 spatial_jp: occluded_collider:COL_FAN_PED_BLADE_Disc concealed Main	pending runtime
+19:40	P0-B	PanelPlacementBusy no longer waits on thumbstick deflection (teleport pending still busy)	RC4 events: Deferred interaction_busy after snap, anchored 0.279 s later	pending runtime
+19:45	compile	AssetDatabase.Refresh; scriptCompilationFailed=false; ignoreMovableParts in Assembly-CSharp.dll	bridge + Library/ScriptAssemblies	yes
+19:55	P0-D	UnityPy tpk PlayerSettings layouts stop at 6000.3.11f1; APK is 6000.3.20f1 -> 960/956 mismatch is parser staleness	Tpk version dump	partial
+20:05	P0-C	Sampler is per-frame Update on stopwatch schedule; gap >= limit implies one frame >= gap-0.05 s	HandsLabSession.Update, HandsLabLogger.Sample	partial
+19:55	runtime-r1	JP BA Q 1.65 + TH AB P 1.0 Editor SDK on r1 fix	JP Main concealed 0 s (RC4 29.3); TH snap->anchor 0.023 s (RC4 0.279)	yes
+19:58	review-r1	independent reviewer REQUEST_CHANGES (Reader stick scroll, aim check, cables, EnsureClear flicker)	agent report	no
+20:00	r2	stick busy if forward/Reader-owned; cables exempt; EnsureClear exempt	Recovery 29/29 Terminal 72 Pause 245 Modal 264 Clearance 16	yes
+20:05	review-r2	REQUEST_CHANGES: Reader peer check ignores exemption -> IgnoreMovableParts property	agent report	no
+20:06	r3	computed property; regressions rerun all PASS; JP+TH workflows completed	regression-editor-r3, rc5r3* cells	yes
+20:20	cleanup	deslop none; comment-sicko: 2 comments removed, stickBusy split; recompiled; recovery+clearance rerun PASS	regression-editor-final	yes
+20:21	commit	7b6c252 on local main (not pushed)	git log	yes
+20:10	P0-C	quiet run still fails; probe attributes 7/7 gaps to single long frames (5 GC.Collect, 2 script bursts)	quiet_gap_attribution.json	bounded
+20:28	P0-D	own type-tree walker validated vs binary2text (204/204 leaves); UnityPy+binary2text both drift 4 B at trailing field; UnityConnectSettings absent from APK; negative control PASS	privacy/	yes
+20:35	build-1	5 errors 'Multiple managers UnityConnectSettings' from own probe; discarded, reports kept	attempt1-probe-contaminated	no
+20:38	editor	Exit wrote TMP-cleared fonts to disk; backed up; restored 4 files from HEAD; unload/reload fonts	font-disk-after-attempt1	recovered
+20:39	build-2	0 errors 658 warnings sha 1e4532f2; identity SCOPED_SOURCE_BUILD_MATCH; signing v2; marker; privacy VERIFIED	apk-verification	yes
+20:50	demo	portable tools/demo full TH AB P 1.0 on committed source; host QC exit 0; data_complete=true	final_demo	yes

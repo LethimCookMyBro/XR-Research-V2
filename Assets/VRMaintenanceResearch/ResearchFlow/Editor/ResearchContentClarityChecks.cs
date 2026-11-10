@@ -122,8 +122,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         Flush();
                         string locale = language == ParticipantLanguage.Thai ? "th" : language == ParticipantLanguage.Japanese ? "ja" : "en";
                         string resource = controller.ReaderResource;
-                        Check(resource == "ResearchReaderS1/" + task + "5_" + locale + "/package",
-                            prefix + "/new session selects versioned V5 content", resource);
+                        Check(resource == "ResearchReaderS1/" + task + "6_" + locale + "/package",
+                            prefix + "/new session selects versioned V6 content", resource);
                         var asset = Resources.Load<TextAsset>(resource);
                         if (!asset) throw new FileNotFoundException(resource);
                         var package = JObject.Parse(asset.text);
@@ -185,6 +185,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                         && label.textInfo.characterCount > 0 && !label.isTextOverflowing && !label.isTextTruncated;
                                     textLayout = new { label.text, label.isTextOverflowing, label.isTextTruncated, label.fontSize,
                                         label.preferredHeight, height = label.rectTransform.rect.height, width = label.rectTransform.rect.width };
+                                    // Owner 31 Oct: Steps is the text-only format; pictures belong to Illustrated and the PDF.
+                                    if (format == "step_by_step")
+                                        correct &= !scroll.content.GetComponentsInChildren<RawImage>(true).Any(item => item.gameObject.activeInHierarchy);
                                     if (format == "illustrated")
                                     {
                                         var image = scroll.content.GetComponentsInChildren<RawImage>(true).SingleOrDefault(item => item.name == "SourceImage_" + page);

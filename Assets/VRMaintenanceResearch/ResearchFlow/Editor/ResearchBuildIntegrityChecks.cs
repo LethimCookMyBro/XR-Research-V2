@@ -14,7 +14,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
     public static class ResearchBuildIntegrityChecks
     {
         public const string LocalServicesSettingsPath = "ProjectSettings/UnityConnectSettings.asset";
-        public static string BuildWithOriginalServicesDisabled()
+        public static string BuildWithOriginalServicesDisabled() => BuildServicesDisabled(false);
+        public static string BuildDevWithOriginalServicesDisabled() => BuildServicesDisabled(true);
+
+        static string BuildServicesDisabled(bool dev)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating)
                 throw new InvalidOperationException("Preserve active Unity work before the bounded build");
@@ -34,7 +37,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Write(beforePath);
             RequireLocalServicesDisabled();
 
-            try { ResearchFlowAndroidBuild.BuildApk(); }
+            try { if (dev) ResearchFlowAndroidBuild.BuildDevApk(); else ResearchFlowAndroidBuild.BuildApk(); }
             finally
             {
                 try { RestoreLocalServicesDisabled(originalLocalServices); }

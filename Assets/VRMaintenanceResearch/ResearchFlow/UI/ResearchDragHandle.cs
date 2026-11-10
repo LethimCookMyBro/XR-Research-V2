@@ -51,6 +51,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         double placementMsBefore;
         public bool IsDragging => dragging;
         public Vector3 DesiredPosition => lastRaw; // unfiltered panel target (motion trace compares it with the rendered pose)
+        readonly System.Collections.Generic.Dictionary<string, int> rejections = new System.Collections.Generic.Dictionary<string, int>();
         public int MoveSamples { get; private set; }
         public int RejectedSamples { get; private set; }
         public bool ReleaseRecovered { get; private set; }
@@ -86,7 +87,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             dragGuard = owner?.GuardForPointer(pointer);
             trackingAtStart = dragGuard ? dragGuard.TrackingValid : ResearchFloorPolicy.EditorFixtureAllowed;
             instructionEpoch = panel.panelId == "reference" ? owner?.TutorialActionAttempted("reposition", actionId, input, trackingAtStart) ?? 0 : 0;
-            MoveSamples = RejectedSamples = 0; moveTicks = maxMoveTicks = 0; ReleaseRecovered = false;
+            MoveSamples = RejectedSamples = 0; rejections.Clear(); moveTicks = maxMoveTicks = 0; ReleaseRecovered = false;
             placementCallsBefore = panel.PlacementCalls; placementRejectedBefore = panel.PlacementRejections;
             placementMsBefore = panel.PlacementMilliseconds;
             hasClearPose = false;
@@ -114,8 +115,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         void RememberClearPose()
         {
             nextClearanceCheck = Time.unscaledTime + .1f;
-            if (!panel || !panel.ReadableFromHeadForDrag(panel.transform.position, panel.transform.rotation)
-                || !panel.PlacementClear(panel.transform.position, panel.transform.rotation)) return;
+            if (!panel || !panel.DragPoseClear(panel.transform.position, panel.transform.rotation)) return;
             lastClearPosition = panel.transform.position; lastClearRotation = panel.transform.rotation; hasClearPose = true;
         }
 
@@ -153,7 +153,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             try
             {
                 var head = panel.view.Head; var delta = point + offset - head.position;
-                if (delta.sqrMagnitude < .01f || float.IsNaN(delta.sqrMagnitude) || float.IsInfinity(delta.sqrMagnitude)) { RejectedSamples++; return; }
+                if (delta.sqrMagnitude < .01f || float.IsNaN(delta.sqrMagnitude) || float.IsInfinity(delta.sqrMagnitude)) { RejectedSamples++; CountRejection("degenerate_target"); return; }
                 var raw = head.position + delta.normalized * Mathf.Clamp(delta.magnitude, .35f, 2.1f); // Includes the 2m recenter fallback plus its vertical offset.
                 raw.y = Mathf.Clamp(raw.y, head.position.y - .65f, head.position.y + .45f);
                 float rawStep = hasRaw ? Vector3.Distance(lastRaw, raw) : 0;
@@ -164,8 +164,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var look = Vector3.ProjectOnPlane(position - head.position, Vector3.up);
                     if (look.sqrMagnitude > .01f) rotation = Quaternion.LookRotation(look.normalized, Vector3.up);
                 }
-                if (!panel.ReadableFromHeadForDrag(position, rotation) || !panel.PlacementClear(position, rotation))
-                { RejectedSamples++; Sample(rawStep, panel.transform.position, panel.transform.rotation, head.position, dt); return; }
+                if (!panel.DragPoseClear(position, rotation))
+                { RejectedSamples++; CountRejection(panel.LastRejection); Sample(rawStep, panel.transform.position, panel.transform.rotation, head.position, dt); return; }
                 Sample(rawStep, position, rotation, head.position, dt);
                 moved |= Vector3.Distance(panel.transform.position, position) > .001f || Quaternion.Angle(panel.transform.rotation, rotation) > .1f;
                 panel.transform.SetPositionAndRotation(position, rotation);
@@ -176,6 +176,14 @@ namespace VRMaintenanceResearch.ResearchFlow
                 long elapsed = System.Diagnostics.Stopwatch.GetTimestamp() - started;
                 moveTicks += elapsed; if (elapsed > maxMoveTicks) maxMoveTicks = elapsed;
             }
+        }
+        // Reason kind without coordinates, e.g. "collider:COL_FAN_PED_GUARD_FRONT_Shell" or "other_panel".
+        void CountRejection(string reason)
+        {
+            reason = string.IsNullOrEmpty(reason) ? "unknown" : reason;
+            int colon = reason.IndexOf(':'), second = colon < 0 ? -1 : reason.IndexOf(':', colon + 1);
+            if (second > 0) reason = reason.Substring(0, second);
+            rejections[reason] = rejections.TryGetValue(reason, out int count) ? count + 1 : 1;
         }
         Vector3 Stabilize(Vector3 raw, float dt)
         {
@@ -208,8 +216,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             releaseCause = cause; rayStateAtRelease = rayInteractor ? rayInteractor.State.ToString() : "none";
             dragging = false; rayInteractor = null;
             if (!panel || !panel.view) return;
-            if (!panel.ReadableFromHeadForDrag(panel.transform.position, panel.transform.rotation)
-                || !panel.PlacementClear(panel.transform.position, panel.transform.rotation))
+            panel.ParticipantPlaced = released && (moved || panel.ParticipantPlaced);
+            if (!panel.DragPoseClear(panel.transform.position, panel.transform.rotation))
             {
                 ReleaseRecovered = true;
                 if (hasClearPose) panel.RestorePose(lastClearPosition, lastClearRotation);
@@ -228,6 +236,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 ray_not_selecting_frames = rayNotSelectingFrames, frames, max_frame_ms = maxFrameMs, hitch_frames = hitchFrames,
                 max_step_mm = maxStepMm, max_raw_step_mm = maxRawStepMm, max_yaw_step_deg = maxYawStepDeg, max_head_step_mm = maxHeadStepMm,
                 still_frames = stillFrames, still_jitter_rms_mm = stillFrames > 0 ? System.Math.Sqrt(stillStepSquares / stillFrames) : 0,
+                rejection_reasons = new System.Collections.Generic.Dictionary<string, int>(rejections),
                 gc_collections = System.GC.CollectionCount(0) - gcBefore, hardware_verified = false
             }, source: source, inputSource: input, reason: cause, actionId: actionId);
             panel.view.controller?.Log("PANEL_REPOSITION", panel.panelId, !released ? "Cancelled" : moved ? "Moved" : "Unchanged", before, panel.Pose(), source: source, inputSource: input, reason: cause, actionId: actionId);

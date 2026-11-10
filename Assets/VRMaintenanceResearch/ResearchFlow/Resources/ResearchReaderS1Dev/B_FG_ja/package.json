@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.dev.B_front_guard.ja",
+  "version": "proto-fg-out_v3.4f33e421d67fe208",
+  "approval": "S1_DEV_PROTOTYPE_NOT_STUDY",
+  "source_pdf": "S1_TaskB_FrontGuard_Prototype_v3_JA.pdf",
+  "source_pdf_resource": "ResearchReaderS1Dev/B_FG_ja/source_pdf",
+  "source_sha256": "0664e5a8b1259fc21b7e7ce566abda53018d03c0fe84250c1130df7d2bbfb805",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1Dev/B_FG_ja/pages/p01",
+      "sha256": "2ad2ea8de054e91799e722a1e4945219238dae340a66ca48f4d9cb9d1fddb739"
+    }
+  ],
+  "steps": [
+    {
+      "text_ja": "<size=24><color=#5B6B7F>前ガード：点検</color></size>\n<size=36><b>1  上の縁を見る：前ガードの三角が後ガードのタブを指しているか\n2  下の縁のクリップが閉じているか見る\n3  縁が一周、後ガードに付いているか見る</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> 正常：三角がタブを指し、クリップが閉じ、縁が一周付いている</color></size>\n<size=32><color=#B3261E><b>×</b> 付いていても固定されているとは限らない：三角がずれているかクリップが開いていれば、まだ固定されていない</color></size>\n\n<size=26><color=#4A5A6E>→ 羽根を見たいとき、または異常があったときは「前ガード：外す」へ</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>前ガード：外す</color></size>\n<size=36><b>1  クリップで Trigger か Grip を1回押して開く\n2  縁で Grip を押し続け、正面から見て反時計回りに止まるまで回す\n3  手前へまっすぐ引き、机に置く</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> 回すと三角がタブから離れ、引くと前ガードが外れて羽根と羽根キャップが見える</color></size>\n\n<size=26><color=#4A5A6E>→ 部品を外すのは内側を点検するためです。ゆるんでいる部品や正しく付いていない部品があれば、組み立て直す前に直します。</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>前ガード：付けて固定</color></size>\n<size=36><b>1  縁で Grip を押し続け、後ガードに縁が付くまで押す\n2  正面から見て時計回りに止まるまで回し、三角をタブに合わせる\n3  手を離し、クリップで Trigger か Grip を1回押して閉じる</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> 三角がタブを指し、クリップが閉じ、縁が一周付いている</color></size>\n\n<size=26><color=#4A5A6E>→ ガードがそろってから「仕上がりを確認」を押す</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_ja/images/i01",
+      "sha256": "6a6f071dc7b90db92aabbfd928b746eb0acac7aea1c4db4e311a6e7872684d7d",
+      "caption_ja": "前ガード：持つ所・クリップ・合いマーク"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_ja/images/i02",
+      "sha256": "5da4e6e9d646c0a95e95ced71f13b54d1c4802958123881e89c595ce3fb53c88",
+      "caption_ja": "解除：クリップを開き、反時計回りに止まるまで回して手前へ引く"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_ja/images/i03",
+      "sha256": "7310fed9f782f7b37f3da2561122b27e1c910b8c7bb77dd7f5e43fd73d676560",
+      "caption_ja": "正常と異常"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_ja/images/i04",
+      "sha256": "836b08a42423313d3b7eccabf716264cc9124d52513da5607cdd39991a724bd8",
+      "caption_ja": "付ける：押し付け、三角がタブを指すまで時計回り、クリップを閉じる"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1Dev/B_FG_ja.mp4",
+    "sha256": "409a5560e4a5ba0c86dbb646110504926da6c80b8483bae882e0de9961e12d22",
+    "duration_seconds": 40.6,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "check",
+        "start_seconds": 0.0,
+        "end_seconds": 16.8
+      },
+      {
+        "stage": "remove",
+        "start_seconds": 16.8,
+        "end_seconds": 30.65
+      },
+      {
+        "stage": "refit",
+        "start_seconds": 30.65,
+        "end_seconds": 40.6
+      }
+    ]
+  },
+  "contents": [
+    {
+      "id": "m1",
+      "format": "pdf",
+      "title_ja": "前ガードとクリップ",
+      "index": 1,
+      "offset": 0.0411
+    },
+    {
+      "id": "m2",
+      "format": "pdf",
+      "title_ja": "各部の名前",
+      "index": 1,
+      "offset": 0.1421
+    },
+    {
+      "id": "m3",
+      "format": "pdf",
+      "title_ja": "正常な状態 / 見られる異常",
+      "index": 1,
+      "offset": 0.4297
+    },
+    {
+      "id": "m4",
+      "format": "pdf",
+      "title_ja": "使うボタン",
+      "index": 1,
+      "offset": 0.5447
+    },
+    {
+      "id": "m5",
+      "format": "pdf",
+      "title_ja": "固定のしくみ（扇風機の正面から見て）",
+      "index": 1,
+      "offset": 0.638
+    },
+    {
+      "id": "m6",
+      "format": "pdf",
+      "title_ja": "注意",
+      "index": 1,
+      "offset": 0.796
+    },
+    {
+      "id": "check",
+      "format": "steps",
+      "title_ja": "前ガード：点検",
+      "index": 1
+    },
+    {
+      "id": "remove",
+      "format": "steps",
+      "title_ja": "前ガード：外す",
+      "index": 2
+    },
+    {
+      "id": "refit",
+      "format": "steps",
+      "title_ja": "前ガード：付けて固定",
+      "index": 3
+    },
+    {
+      "id": "where",
+      "format": "images",
+      "title_ja": "前ガード：各部の名前",
+      "index": 1
+    },
+    {
+      "id": "unlock",
+      "format": "images",
+      "title_ja": "前ガード：外す（解除）",
+      "index": 2
+    },
+    {
+      "id": "compare",
+      "format": "images",
+      "title_ja": "前ガード：正常と異常",
+      "index": 3
+    },
+    {
+      "id": "lock",
+      "format": "images",
+      "title_ja": "前ガード：付けて固定",
+      "index": 4
+    },
+    {
+      "id": "v_check",
+      "format": "video",
+      "title_ja": "前ガード：点検",
+      "start_seconds": 0.0
+    },
+    {
+      "id": "v_remove",
+      "format": "video",
+      "title_ja": "前ガード：外す",
+      "start_seconds": 16.8
+    },
+    {
+      "id": "v_refit",
+      "format": "video",
+      "title_ja": "前ガード：付けて固定",
+      "start_seconds": 30.65
+    }
+  ],
+  "provenance": {
+    "source": "D:\\VR_TMU\\S1_Delivery_Work_20261028\\proto_front_guard\\out_v3\\ja",
+    "take": "take_20261103_191822_ja",
+    "japanese": "AI draft, not human-reviewed"
+  }
+}

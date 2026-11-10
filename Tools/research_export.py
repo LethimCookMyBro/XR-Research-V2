@@ -22,7 +22,7 @@ import uuid
 from quest_profile import Client, ProfileError
 
 VERSION = 'researchflow.task-metrics.3'
-S1_VERSION = 'researchflow.s1-metrics.1'
+S1_VERSION = 'researchflow.s1-metrics.2'
 RAW_FILES = ('events.jsonl','movement.csv','session_metadata.json','research-session.json')
 MOVEMENT_HEADER = 'timestamp,run_id,phase,seq,frame_id,task_state,handedness,input_source,runtime,execution_environment,source,target,pose_kind,provider,tracking_valid,reason,sample_timestamp,sample_age_seconds,px,py,pz,qx,qy,qz,qw'.split(',')
 SOURCES = ('handslab.head','handslab.left.provider','handslab.right.provider')
@@ -201,9 +201,17 @@ def s1_meaningful(event):
     if name in {'ACTION','REPAIR'} and after.get('phase') in {'ended','cancelled'}:return None
     if name in {'GRAB','WORKPIECE_ROTATE','ACTION'}:return 'ACTION'
     if name=='REPAIR':return 'REPAIR'
-    if name=='EXAMINE':return 'EXAMINE'
+    if name=='EXAMINE':
+        detail=after.get('examine')
+        return 'EXAMINE' if detail is None or isinstance(detail,dict) and detail.get('access_state')=='accessible' else None
     if name=='INSPECT':return 'INSPECT_AGAIN'
-    if name.startswith(('INFORMATION_','MEDIA_','VIDEO_','REFERENCE_VIDEO_')) or name in {'FORMAT_SELECTED','REFERENCE_SECTION_SELECTED'}:
+    if name in {'REFERENCE_VIDEO_PREPARED','REFERENCE_VIDEO_FIRST_FRAME_DECODED','REFERENCE_VIDEO_PLAYING',
+                'REFERENCE_VIDEO_ENDED','REFERENCE_VIDEO_PAUSED','REFERENCE_VIDEO_SEEK_COMPLETED','REFERENCE_VIDEO_LOAD_PHASE','REFERENCE_VIDEO_LOAD_STALLED'}:return None
+    if name.endswith(('_REJECTED','_PAGE_BOUNDARY')) or event.get('result') in {'Rejected','NoChange','Unavailable'}:return None
+    if name.startswith(('INFORMATION_','MEDIA_','VIDEO_','REFERENCE_VIDEO_')) or name in {
+            'FORMAT_SELECTED','REFERENCE_SECTION_SELECTED','REFERENCE_VIEWER_NAVIGATE',
+            'REFERENCE_VIEWER_SECTION_SELECTED','REFERENCE_VIEWER_CONTENTS_OPENED','REFERENCE_PDF_VIEW_CHANGED','REFERENCE_IMAGE_VIEW_CHANGED',
+            'REFERENCE_STEPS_VIEW_CHANGED','REFERENCE_STEP_SELECTED','REFERENCE_CONTENTS_SCROLLED'}:
         if after.get('selection_kind')!='automatic_default':return 'INFORMATION'
     return None
 
@@ -228,8 +236,47 @@ def interval_seconds(intervals,lo,hi,pauses):
         else:merged.append([a,b])
     return sum(b-a-sum(max(0,min(b,y)-max(a,x)) for x,y in pauses) for a,b in merged)
 
-def s1_metrics(task,events,d):
+
+def session_protocol_versions(events,record=None):
+    record=record or {}
+    recorded=[dict(seq=e.get('seq'),after=payload(e)) for e in events if e.get('event')=='SESSION_PROTOCOL_VERSIONS' and e.get('source')=='System']
+    fields={'protocol_version','training_version','layout_version','task_a_layout','examine_version','examine_tasks','build_flavor',
+            'task_mechanics_version','task_a_thread_version','task_b_thread_version','task_b_alignment_marks_version','release_physics_version'}
+    fields.update(key for item in recorded for key in item['after'])
+    values={};conflicts={}
+    for key in sorted(fields):
+        observations=[dict(seq=item['seq'],value=item['after'][key]) for item in recorded if key in item['after']]
+        if record.get(key) is not None:observations.insert(0,dict(seq=None,source='session_record',value=record[key]))
+        unique={json.dumps(item['value'],sort_keys=True,ensure_ascii=False) for item in observations}
+        values[key]=observations[0]['value'] if len(unique)==1 else None
+        if len(unique)>1:conflicts[key]=observations
+    values.update(protocol_attribution(record,events),ui_policy_recorded=record.get('ui_policy') is not None,
+                  conflicts=conflicts,recorded_events=recorded)
+    if 'ui_policy' in conflicts:values['ui_policy']=None
+    return values
+
+
+def examine_instrument(protocol,task):
+    if any(key in protocol['conflicts'] for key in ('training_version','examine_version','examine_tasks')):
+        return None,'conflicting_protocol'
+    tasks=protocol.get('examine_tasks')
+    if tasks is not None:
+        if not isinstance(tasks,list) or any(value not in ('A','B') for value in tasks):return None,'invalid_examine_tasks'
+        return task in tasks,'recorded_capability'
+    version=protocol.get('examine_version')
+    if version=='S1_DEV_INTENTIONAL_EXAMINE_20261105':return task=='B','recorded_protocol'
+    if version in ('S1_INTENTIONAL_EXAMINE_20261106','S1_POINTED_EXAMINE_20261107'):return True,'recorded_protocol'
+    if not version and protocol.get('training_version') in {
+            'S1_TRAINING_TRAINER_V4_20261030','S1_TRAINING_TRAINER_V5_20261030','S1_TRAINING_TRAINER_V6_20261031'}:
+        return False,'recorded_protocol'
+    return None,'unknown_protocol'
+
+
+def s1_metrics(task,events,d,protocol=None):
     all_rows=task_events(events,task);start=d['start'];end=d['end'];warnings=list(d.get('pause_warnings',[]))
+    if protocol is None:protocol=session_protocol_versions(events)
+    available,availability_basis=examine_instrument(protocol,task)
+    warnings.extend('protocol_field_conflict:'+key for key in protocol['conflicts'])
     rows=[e for e in all_rows if start and int(e['seq'])>=int(start['seq']) and (not end or int(e['seq'])<=int(end['seq']))]
     inspections=[e for e in rows if e['event']=='INSPECT' and e.get('source')=='User']
     actions=[e for e in rows if e['event'] in {'ACTION','REPAIR'} and s1_meaningful(e)]
@@ -249,7 +296,10 @@ def s1_metrics(task,events,d):
     def exploration(values):
         targets=[e.get('target') for e in values]
         return dict(ordered_targets=targets,distinct_targets=len(set(targets)),switches=sum(a!=b for a,b in zip(targets,targets[1:])),seq=[e['seq'] for e in values])
-    before_boundary=exploration([e for e in examined if boundary and int(e['seq'])<int(boundary['seq'])]) if boundary else dict(ordered_targets=None,distinct_targets=None,switches=None,seq=None)
+    unmeasurable=available is False or availability_basis in {'conflicting_protocol','invalid_examine_tasks'} or available is None and not examined
+    before_boundary=exploration([e for e in examined if boundary and int(e['seq'])<int(boundary['seq'])]) if boundary and not unmeasurable else dict(ordered_targets=None,distinct_targets=None,switches=None,seq=None)
+    if start and unmeasurable:warnings.append('examine_instrument_'+('unavailable' if available is False else availability_basis))
+    if examined and available is False:warnings.append('examine_events_conflict_with_unavailable_instrument')
     meaningful=[(e,s1_meaningful(e)) for e in rows if s1_meaningful(e)]
     adjacency=[dict(from_seq=a['seq'],to_seq=b['seq'],from_kind=x,to_kind=y) for (a,x),(b,y) in zip(meaningful,meaningful[1:])]
     initial_state=s1_state(payload(start).get('initial_state',start.get('task_state'))) if start else None
@@ -333,8 +383,24 @@ def s1_metrics(task,events,d):
                 if context.get(key) is None:context[key]=snapshot.get(key)
         context['status']='recorded' if any(value is not None for value in context.values()) else 'not_recorded'
         recovered,recovery_at=next(((e,t) for e,t in valid_passes if int(e['seq'])>int(visible_event['seq']) and visible_at is not None and t>=visible_at),(None,None))
+        extension=None
+        if protocol.get('examine_version') in {'S1_DEV_INTENTIONAL_EXAMINE_20261105','S1_INTENTIONAL_EXAMINE_20261106','S1_POINTED_EXAMINE_20261107'} and available is True:
+            extended=next((e for e in rows if int(e['seq'])>int(visible_event['seq']) and
+                           (s1_meaningful(e) or e['event']=='EXAMINE_REJECTED' and e.get('source')=='User')),None)
+            extended_time=number(extended['timestamp']) if extended else None
+            if visible_at is not None and extended_time is not None and extended_time<visible_at:raise ValueError('Response precedes visible feedback clock')
+            extension=dict(status='draft_not_primary_analysis',category_set='DEV_EXAMINE_EXTENSION',examine_version=protocol['examine_version'],
+                           next_event=s1_event(extended) if extended else None,
+                           response=('EXAMINE_REJECTED' if extended['event']=='EXAMINE_REJECTED' else s1_meaningful(extended)) if extended else 'NONE_BEFORE_END' if end else None,
+                           rejected_reason=payload(extended).get('rejected_reason') if extended and extended['event']=='EXAMINE_REJECTED' else None,
+                           latency_wall_s=extended_time-visible_at if extended_time is not None and visible_at is not None else None,
+                           latency_active_s=interval_seconds([(visible_at,extended_time)],visible_at,extended_time,d['pause_intervals']) if extended_time is not None and visible_at is not None else None,
+                           s1_s11_first_meaningful_event=s1_meaningful(next_event) if next_event else 'NONE_BEFORE_END' if end else None,
+                           s1_s11_latency_s=next_time-visible_at if next_time is not None and visible_at is not None else None)
+
         episodes.append(dict(inspection_id=identity,inspect_seq=request['seq'] if request else None,feedback_seq=visible_event['seq'],
                              feedback_visible_at=visible_at,feedback=brief(visible_event),inspection_state=snapshot,context=context,
+                             dev_examine_extension=extension,protocol_versions=protocol,
                              next_event=s1_event(next_event) if next_event else None,response=s1_meaningful(next_event) if next_event else 'NONE_BEFORE_END' if end else None,
                              na_reason=None if next_event or end else 'observation_incomplete',previous_task_change=previous,repeat=repeat,repeat_reason=repeat_reason,
                              latency_wall_s=next_time-visible_at if next_time is not None and visible_at is not None else None,
@@ -355,7 +421,7 @@ def s1_metrics(task,events,d):
     if passed and not (payload(end).get('completed') is True and payload(end).get('feedback_visible') is True and end_id and
                        any(inspection_id(e)==end_id and payload(e).get('active_elapsed_s') is not None and number(payload(e)['active_elapsed_s'])<420 for e,t in valid_passes)):
         warnings.append('completed_without_visible_pass_before_420')
-    return dict(analysis_version=S1_VERSION,task_id=task,task_status=d['termination_status'],wall_elapsed_s=d['elapsed_seconds'],active_elapsed_s=d['active_seconds'],
+    return dict(analysis_version=S1_VERSION,protocol_versions=protocol,task_id=task,task_status=d['termination_status'],wall_elapsed_s=d['elapsed_seconds'],active_elapsed_s=d['active_seconds'],
                 completion_active_s=d['active_seconds'] if passed and 'completed_without_visible_pass_before_420' not in warnings else None,
                 completion_censored=not passed if end and 'completed_without_visible_pass_before_420' not in warnings else None,initial_state=initial_state,final_state=s1_state(end.get('before') or end.get('task_state')) if end else None,
                 h1=dict(first_physical_seq=physical['seq'] if physical else None,first_reference_seq=reference['seq'] if reference else None,
@@ -363,7 +429,10 @@ def s1_metrics(task,events,d):
                         ordering='reference_first' if reference and physical and int(reference['seq'])<int(physical['seq']) else 'action_first' if physical else None,
                         visible_seconds_before_first_physical=exposure,na_reason=exposure_reason,interpretation='visible exposure, not gaze or comprehension'),
                 h2=dict(before_boundary,boundary='first_assembly_attempt' if task=='A' else 'first_corrective_operation',boundary_seq=boundary['seq'] if boundary else None,
-                        na_reason=None if boundary else 'task_not_started' if not start else 'no_assembly_attempt_observed' if task=='A' else 'no_repair_observed',observed_until_end=exploration(examined) if start else None),
+                        na_reason='task_not_started' if not start else 'not_measurable_examine_unavailable_in_this_protocol' if available is False else availability_basis if unmeasurable else None if boundary else 'no_assembly_attempt_observed' if task=='A' else 'no_repair_observed',
+                        observed_until_end=exploration(examined) if start and not unmeasurable else None,
+                        instrument_available=available,instrument_basis=availability_basis,examine_version=protocol.get('examine_version'),
+                        rejected_attempts_not_counted=[s1_event(e) for e in rows if e['event']=='EXAMINE_REJECTED' and e.get('source')=='User']),
                 h3=dict(n_inspect=len(inspections) if start else None,first_inspect_state=first_state,first_inspect_state_status=s1_state_status(task,first_state),
                         first_inspect_latency_s=number(first['timestamp'])-number(start['timestamp']) if first and start else None,
                         physical_attempt_count=len({s1_event(e)['attempt_id'] or e.get('action_id') or e['seq'] for e in rows if e in actions or (e['event']=='GRAB' and e.get('source')=='User')}) if start else None,
@@ -489,7 +558,7 @@ def movement_metrics(task,events,movement,metadata,task_duration):
         results[source]=dict(rows=count,valid_rows=valid_count,invalid_rows=count-valid_count,missing_fraction=(count-valid_count)/count if count else None,distance_metres=distance if valid_count else None,direction_changes=direction_changes if valid_count else None,stationary_seconds=stationary_seconds if valid_count else None,speed_mean_metres_per_second=distance/speed_seconds if speed_count else None,speed_max_metres_per_second=max_speed,speed_interval_count=speed_count,speed_interval_seconds=speed_seconds if speed_count else None,effective_scheduled_hz=rate,max_gap_seconds=max_gap,last_sample_timestamp=last_time,first_sample_latency_seconds=first_gap,tail_gap_seconds=tail_gap,sampling_coverage_complete=bool(scheduled_frames) and not sampling_gaps,sampling_gaps=sampling_gaps,scheduled_frames=scheduled_frames,repeated_near_target_visits={k:max(0,v-1) for k,v in near_visits.items()},near_target_status='measured' if target_updates else 'unavailable_no_authored_target_locations')
     return dict(sources=results,required_movement_complete=not missing,missing_sources=missing,attribution=sorted(attribution),definition=dict(speed=dict(units='metres_per_second',interval='accepted adjacent distance / elapsed saved timestamp seconds',mean='accepted distance sum / accepted interval seconds sum',maximum='maximum accepted interval speed',clock='saved observation timestamp, not native sensor sample time',missing='null without an eligible adjacent pair; valid stationary pairs are measured zero',status='exploratory_descriptive_summary_not_research_approval'),distance='adjacent valid ProviderReported world positions only, same context segment, no gaps > max(0.25s,3/configuredHz)',direction_change_degrees=45,stationary_speed_metres_per_second=.01,near_target='authored TARGET_POSE.position and near_radius_metres, entry counts minus first visit',scope='provider observations, not raw sensor timestamps; no wearer inference'))
 
-def metrics(task,events,movement,metadata):
+def metrics(task,events,movement,metadata,protocol=None):
     rows=task_events(events,task);d=duration(rows,events)
     inspections=[e for e in rows if e['event']=='INSPECT' and e.get('source')=='User']
     failed=[e for e in rows if e.get('source')=='User' and (e['event']=='INSPECT_FAIL' or (e['event']=='INSPECT' and str(e.get('result')).lower() in {'fail','failed','notpassed'}))]
@@ -521,7 +590,7 @@ def metrics(task,events,movement,metadata):
             # No terminal or task policy is inferred. Re-evaluate gaps only if the measured partial bound extends a pause.
             if measured['pause_intervals']!=d['pause_intervals']:motion=movement_metrics(task,events,movement,metadata,measured)
             d=measured
-    return dict(definition_version=VERSION,legacy_metrics_scope="not_the_S1_H1_H4_contract",s1=s1_metrics(task,events,d),task_id=task,event_selection=dict(phase='Experiment',task_id=task,seq=[e['seq'] for e in rows]),duration=d,errors=dict(wrong_actions=len(wrong),wrong_action_records=[brief(e) for e in wrong],inspect_attempts=len(inspections),additional_inspects_after_first_fail=sum(int(e['seq'])>int(first_fail['seq']) for e in inspections) if first_fail else 0,return_interactions=sum(e['event']=='RETRY' and e.get('source')=='User' for e in rows),ui_misclicks=sum(e['event']=='UI_CLICK_REJECTED' and e.get('source')=='User' for e in rows)),information=information(rows),exploration=dict(ordered_targets=[e['target'] for e in examined],distinct_targets=len({e['target'] for e in examined}),before_first_repair_seq=repair['seq'] if repair else None,repair_absence_is_not_zero_exploration=True),progress=dict(first_inspect_state=(first.get('before') or first.get('task_state') or first.get('after')) if first else None,first_inspect=brief(first) if first else None,actions_between_inspections=between),post_failure=response,movement=motion)
+    return dict(definition_version=VERSION,legacy_metrics_scope="not_the_S1_H1_H4_contract",s1=s1_metrics(task,events,d,protocol),task_id=task,event_selection=dict(phase='Experiment',task_id=task,seq=[e['seq'] for e in rows]),duration=d,errors=dict(wrong_actions=len(wrong),wrong_action_records=[brief(e) for e in wrong],inspect_attempts=len(inspections),additional_inspects_after_first_fail=sum(int(e['seq'])>int(first_fail['seq']) for e in inspections) if first_fail else 0,return_interactions=sum(e['event']=='RETRY' and e.get('source')=='User' for e in rows),ui_misclicks=sum(e['event']=='UI_CLICK_REJECTED' and e.get('source')=='User' for e in rows)),information=information(rows),exploration=dict(ordered_targets=[e['target'] for e in examined],distinct_targets=len({e['target'] for e in examined}),before_first_repair_seq=repair['seq'] if repair else None,repair_absence_is_not_zero_exploration=True),progress=dict(first_inspect_state=(first.get('before') or first.get('task_state') or first.get('after')) if first else None,first_inspect=brief(first) if first else None,actions_between_inspections=between),post_failure=response,movement=motion)
 
 def questionnaires(path,record):
     result=load(path) if path else dict(schema_version='research.questionnaire-links.1',participant_code=record['participant_id'],session_id=record['session_id'],source_form_version='1.0 2026-06-18',nasa_tlx={},symptoms={},interviews=[])
@@ -637,7 +706,8 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
             linked=link.get('schema')=='research.operator-session-link.1' and link.get('authorization_sha256')==original_hash and link.get('operator_id')==a.get('operator_id') and link.get('participant_id')==participant and link.get('session_id')==session and link.get('run_id')==record['run_id']
         if not linked:raise ValueError('Study operator approval is not bound to exact session/run')
     linked=questionnaires(questionnaire_path,record);video=videos(video_path,record)
-    task={t:metrics(t,events,movement,metadata) for t in 'AB'}
+    protocol_versions=session_protocol_versions(events,record)
+    task={t:metrics(t,events,movement,metadata,protocol_versions) for t in 'AB'}
     if any(file_digest(path)!=hashes[name] for name,path in raw.items()):raise ValueError('Raw source changed during ingest')
     order=[e['task_id'] for e in events if e['event']=='TASK_STARTED' and e.get('phase')=='Experiment' and e.get('task_id') in ('A','B')]
     failures=[];warnings=[]
@@ -653,12 +723,11 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     qc=dict(schema_version='researchflow.qc.1',movement_complete=not any(f.startswith(('missing_required_movement','insufficient_movement_coverage')) for f in failures),data_complete=not failures,data_completeness_scope='raw event chronology and required scheduled movement coverage; lifecycle, assessment and video are reported separately',delivery_status='verified_local_bundle',lifecycle='finalized' if any(e['event']=='RUN_COMPLETED' for e in events) else 'partial_or_task_finalized',failures=failures,warnings=warnings,global_sequence_gaps=gaps,raw_event_rows=len(events),raw_movement_rows=len(movement),actual_task_order=order,scheduled_sample_rate_is_not_measured_rate=True,legacy_missingness_preserved=True)
     qc['s1_analysis_version']=S1_VERSION
     qc['s1_warnings']={t:task[t]['s1']['qc_warnings'] for t in 'AB'}
-    qc['s1_analysis_complete']=not gaps and all(not task[t]['s1']['qc_warnings'] for t in order)
+    qc['s1_analysis_complete']=bool(order) and not gaps and all(not task[t]['s1']['qc_warnings'] for t in order)
     identity=dict(run_id=record['run_id'],session_id=session,participant_code=participant,group=group,test_data=technical)
     # ADVISOR_UI_AMENDMENT_20261014: never pool fixed-panel and movable-panel sessions silently, and never guess.
-    protocol_versions=dict(protocol_attribution(record,events),ui_policy_recorded=record.get('ui_policy') is not None,
-        protocol_version=record.get('protocol_version'),training_version=record.get('training_version'),
-        layout_version=record.get('layout_version'),task_a_layout=record.get('task_a_layout'))
+    qc['warnings'].extend('protocol_field_conflict:'+key for key in protocol_versions['conflicts'])
+    if protocol_versions['conflicts']:qc['s1_analysis_complete']=False
     qc['protocol_versions']=protocol_versions
     source_manifest=load(source/'manifest.json') if (source/'manifest.json').exists() else {}
     processor_sha=digest(Path(__file__).read_bytes())
@@ -707,8 +776,8 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     for t in 'AB':
         s1=task[t]['s1']
         summaries.append(dict(identity,ui_policy=protocol_versions['ui_policy'],layout_version=protocol_versions['layout_version'],
-            **{key:value for key,value in s1.items() if key not in {'timeline','failure_episodes'}}))
-        episodes.extend(dict(identity,task_id=t,analysis_version=S1_VERSION,**episode) for episode in s1['failure_episodes'])
+            protocol_versions=protocol_versions,**{key:value for key,value in s1.items() if key not in {'timeline','failure_episodes','protocol_versions'}}))
+        episodes.extend(dict(identity,task_id=t,analysis_version=S1_VERSION,**dict(episode,protocol_versions=protocol_versions)) for episode in s1['failure_episodes'])
     (stage/'task_summary.json').write_bytes(canonical(summaries))
     (stage/'failure_episodes.json').write_bytes(canonical(episodes))
     with (stage/'event_timeline.csv').open('w',encoding='utf-8',newline='') as f:
@@ -723,7 +792,7 @@ def ingest(source,destination,participant,session,questionnaire_path=None,video_
     if source_manifest:(stage/'raw/device-export-manifest.json').write_bytes((source/'manifest.json').read_bytes());(stage/'raw/device-export-COMPLETE.json').write_bytes((source/'COMPLETE.json').read_bytes())
     if transport_binding:(stage/'raw/quest-profile-transport.json').write_bytes(canonical(transport_binding))
     files={p.relative_to(stage).as_posix():dict(bytes=p.stat().st_size,sha256=file_digest(p)) for p in stage.rglob('*') if p.is_file()}
-    manifest=dict(schema_version='researchflow.pc-bundle.1',bundle_id=bundle_id,definition_version=VERSION,processor_sha256=processor_sha,identity=identity,input_hashes=hashes,external_input_hashes=external_inputs,actual_task_order=order,configured_task_order=record.get('task_order'),protocol_versions=protocol_versions,software=dict(content_version=metadata.get('content_version'),event_schema=metadata.get('schema_version'),movement_schema='handslab.movement.legacy25',apk_sha256=source_manifest.get('provenance',{}).get('apk_sha256'),source_code_version=source_manifest.get('provenance',{}).get('source_code_version')),device_render_provenance=source_manifest.get('provenance',dict(device='unknown',render='unknown',simulated_presence='unknown')),transport_provenance=transport_binding,hardware_verified=metadata.get('hardware_verified',False),lifecycle=qc['lifecycle'],data_complete=qc['data_complete'],delivery_status='verified_local_bundle',files=files,unknown_policy='unknown values stay null/unknown; no imputation',source_authority='24 September 2026 slide7/8; forms v1.0 June18 2026; definition thresholds are exploratory processing choices, not newly approved hypotheses')
+    manifest=dict(schema_version='researchflow.pc-bundle.1',bundle_id=bundle_id,definition_version=VERSION,s1_analysis_version=S1_VERSION,processor_sha256=processor_sha,identity=identity,input_hashes=hashes,external_input_hashes=external_inputs,actual_task_order=order,configured_task_order=record.get('task_order'),protocol_versions=protocol_versions,software=dict(content_version=metadata.get('content_version'),event_schema=metadata.get('schema_version'),movement_schema='handslab.movement.legacy25',apk_sha256=source_manifest.get('provenance',{}).get('apk_sha256'),source_code_version=source_manifest.get('provenance',{}).get('source_code_version')),device_render_provenance=source_manifest.get('provenance',dict(device='unknown',render='unknown',simulated_presence='unknown')),transport_provenance=transport_binding,hardware_verified=metadata.get('hardware_verified',False),lifecycle=qc['lifecycle'],data_complete=qc['data_complete'],delivery_status='verified_local_bundle',files=files,unknown_policy='unknown values stay null/unknown; no imputation',source_authority='24 September 2026 slide7/8; forms v1.0 June18 2026; definition thresholds are exploratory processing choices, not newly approved hypotheses')
     (stage/'manifest.json').write_bytes(canonical(manifest))
     (stage/'COMPLETE.json').write_bytes(canonical(dict(schema_version='researchflow.bundle-complete.1',bundle_id=bundle_id,manifest_sha256=digest((stage/'manifest.json').read_bytes()))))
     verify(stage)
@@ -863,12 +932,15 @@ def lease_deadline(value,now=None):
     if deadline.tzinfo is None or not 0<(deadline-now).total_seconds()<=18*3600:raise ValueError('Lease must be future UTC/offset timestamp within 18 hours')
     return deadline
 
+# Another PC sets RESEARCH_DATA_ROOT (or passes --destination); the fallback is the original lab PC folder.
+DEFAULT_DATA_ROOT=os.environ.get('RESEARCH_DATA_ROOT',r'D:\VR_TMU\ResearchData')
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
-    i=sub.add_parser('ingest');i.add_argument('--source',required=True);i.add_argument('--destination',default=r'D:\VR_TMU\ResearchData');i.add_argument('--participant',required=True);i.add_argument('--session',required=True);i.add_argument('--questionnaires');i.add_argument('--video-links');i.add_argument('--authorization');i.add_argument('--authorization-link')
+    i=sub.add_parser('ingest');i.add_argument('--source',required=True);i.add_argument('--destination',default=DEFAULT_DATA_ROOT);i.add_argument('--participant',required=True);i.add_argument('--session',required=True);i.add_argument('--questionnaires');i.add_argument('--video-links');i.add_argument('--authorization');i.add_argument('--authorization-link')
     v=sub.add_parser('verify');v.add_argument('--bundle',required=True)
     a=sub.add_parser('audit');a.add_argument('--source',required=True);a.add_argument('--output',required=True)
-    p=sub.add_parser('pull-queue');p.add_argument('--adb',required=True);p.add_argument('--serial',required=True);p.add_argument('--destination',default=r'D:\VR_TMU\ResearchData');p.add_argument('--registry-root',default=REMOTE_ROOT);p.add_argument('--include-isolated',action='store_true');p.add_argument('--watch',action='store_true');p.add_argument('--lease-expires-utc')
+    p=sub.add_parser('pull-queue');p.add_argument('--adb',required=True);p.add_argument('--serial',required=True);p.add_argument('--destination',default=DEFAULT_DATA_ROOT);p.add_argument('--registry-root',default=REMOTE_ROOT);p.add_argument('--include-isolated',action='store_true');p.add_argument('--watch',action='store_true');p.add_argument('--lease-expires-utc')
     args=parser.parse_args()
     try:
         if args.command=='pull-queue' and args.watch:
@@ -886,7 +958,9 @@ def main():
             check_log_tails({name:source/name for name in ('events.jsonl','movement.csv')})
             events=read_events(source/'events.jsonl');movement=MovementRows(source/'movement.csv');metadata=load(source/'session_metadata.json')
             chronology_gaps(events,movement,token(metadata['run_id']))
-            result=dict(source=str(source.resolve()),input_hashes=hashes,tasks={t:metrics(t,events,movement,metadata) for t in 'AB'},historical_raw_modified=False)
+            record=load(source/'research-session.json') if (source/'research-session.json').exists() else None
+            protocol=session_protocol_versions(events,record)
+            result=dict(source=str(source.resolve()),input_hashes=hashes,tasks={t:metrics(t,events,movement,metadata,protocol) for t in 'AB'},historical_raw_modified=False)
             if any(file_digest(source/n)!=sha for n,sha in hashes.items()):raise ValueError('Raw source changed during audit')
             Path(args.output).write_bytes(canonical(result))
         else:result=pull_all_queues(args.adb,args.serial,args.destination,args.registry_root,args.include_isolated)

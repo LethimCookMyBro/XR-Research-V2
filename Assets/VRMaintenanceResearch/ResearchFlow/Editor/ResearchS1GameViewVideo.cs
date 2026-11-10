@@ -21,6 +21,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             internal AsyncGPUReadbackRequest Request;
             internal bool Pending;
             internal int Index;
+            internal long ReadbackStartedTicks;
             internal string Receipt;
         }
 
@@ -33,14 +34,40 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             internal string Output, Session, Run, Participant, StopReason, Error, GraphicsBackend;
             internal int Width, Height, Fps, DueSamples, Submitted, Dropped, ReadbackErrors, LastFrame = -1;
             internal double Started, Next, Deadline, LastRendered;
+            internal int DroppedNoGpuSlot, DroppedWriterFull, DroppedWriterRejected;
+            internal long ReadbackTicks, ReadbackSamples;
             internal bool Stopping, CleanupObserved, GraphicsUVStartsAtTop;
         }
 
         static Capture current;
         public static bool Running => current != null && !current.Stopping;
 
+        const long GiB = 1024L * 1024 * 1024;
+        public static long PngBudget(int width, int height, int framesPerSecond, double maxSeconds, long availableBytes)
+        {
+            if (width <= 0 || height <= 0 || (long)width * height > 1920L * 1080 || framesPerSecond < 1 || framesPerSecond > 30
+                || double.IsNaN(maxSeconds) || double.IsInfinity(maxSeconds) || maxSeconds < 1 || maxSeconds > 1200)
+                throw new ArgumentOutOfRangeException("Capture budget requires valid bounded dimensions, rate and duration.");
+            long bytes;
+            checked
+            {
+                long frames = (long)Math.Ceiling(framesPerSecond * maxSeconds) + 2; // Include owned in-flight slots.
+                long perFrame = (long)width * height * 4 + 65536; // RGBA bytes plus PNG/container overhead allowance.
+                bytes = Math.Max(2 * GiB, ((frames * perFrame + GiB - 1) / GiB) * GiB);
+            }
+            if (bytes > 128 * GiB) throw new ArgumentOutOfRangeException("Per-recording PNG budget exceeds 128 GiB.");
+            if (availableBytes < bytes + 8 * GiB) throw new IOException("Insufficient free space for PNG budget plus 8 GiB reserve; no recording started.");
+            return bytes;
+        }
+
         public static string Begin(string evidenceDirectory, string expectedSessionId, string expectedRunId,
-            int framesPerSecond = 15, double maxSeconds = 120)
+            int framesPerSecond = 15, double maxSeconds = 120) => BeginCore(evidenceDirectory, expectedSessionId, expectedRunId, framesPerSecond, maxSeconds, false);
+
+        public static string BeginBudgeted(string evidenceDirectory, string expectedSessionId, string expectedRunId,
+            int framesPerSecond, double maxSeconds) => BeginCore(evidenceDirectory, expectedSessionId, expectedRunId, framesPerSecond, maxSeconds, true);
+
+        static string BeginCore(string evidenceDirectory, string expectedSessionId, string expectedRunId,
+            int framesPerSecond, double maxSeconds, bool explicitBudget)
         {
             if (current != null && (!current.Stopping || !current.CleanupObserved))
                 throw new InvalidOperationException("Previous recording still owns resources.");
@@ -59,6 +86,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (capture.Width <= 0 || capture.Height <= 0 || (long)capture.Width * capture.Height > 1920L * 1080)
                 throw new InvalidOperationException("Keep the existing Game View at at most 2073600 pixels. Recording does not resize it.");
             capture.Output = FreshExternalDirectory(evidenceDirectory);
+            long? freeBytes = explicitBudget ? new DriveInfo(Path.GetPathRoot(capture.Output)).AvailableFreeSpace : (long?)null;
+            long byteLimit = explicitBudget ? PngBudget(capture.Width, capture.Height, capture.Fps, maxSeconds, freeBytes.Value) : 2 * GiB;
+            Directory.CreateDirectory(capture.Output);
             capture.Participant = controller.Record.participant_id;
             capture.Started = capture.Next = capture.LastRendered = EditorApplication.timeSinceStartup;
             capture.Deadline = capture.Started + maxSeconds;
@@ -74,7 +104,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     graphics_backend = capture.GraphicsBackend, graphics_uv_starts_at_top = capture.GraphicsUVStartsAtTop,
                     png_rows_reversed = capture.GraphicsUVStartsAtTop,
                     width = capture.Width, height = capture.Height, requested_fps = capture.Fps, max_seconds = maxSeconds,
-                    max_png_bytes = 2L * 1024 * 1024 * 1024, owned_gpu_slots = 2, queued_frame_limit = ResearchS1GameViewVideoWriter.QueueCapacity,
+                    max_png_bytes = byteLimit, free_bytes_preflight = freeBytes, disk_reserve_bytes = explicitBudget ? 8 * GiB : 0,
+                    disk_budget_mode = explicitBudget ? "explicit_bounded_rgba_png_allowance" : "legacy_2GiB_default", disk_space_reserved = false, owned_gpu_slots = 2, queued_frame_limit = ResearchS1GameViewVideoWriter.QueueCapacity,
                     started_editor_realtime = capture.Started, utc = DateTime.UtcNow.ToString("O"),
                     audio = "not_recorded", color_profile = "Unity PNG encoder without gamma or profile metadata",
                     pixels = "Actual Game View RGBA32 readback. Platform UV-origin row normalization only; RGBA channel bytes preserved. No rerender, copied stills, interpolation or task mutation."
@@ -83,7 +114,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 {
                     ResearchS1GameViewVideoWriter.ReverseRgbaRows(data, width, height, capture.GraphicsUVStartsAtTop);
                     return ImageConversion.EncodeArrayToPNG(data, GraphicsFormat.R8G8B8A8_UNorm, (uint)width, (uint)height);
-                });
+                }, byteLimit);
                 foreach (var slot in capture.Slots)
                 {
                     slot.Texture = new RenderTexture(capture.Width, capture.Height, 0, RenderTextureFormat.ARGB32)
@@ -132,7 +163,6 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!parent.Exists) throw new DirectoryNotFoundException("Use an existing external parent directory.");
             for (var item = parent; item != null; item = item.Parent)
                 if ((item.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Capture output cannot traverse a reparse point.");
-            Directory.CreateDirectory(full);
             return full;
         }
 
@@ -156,12 +186,13 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             capture.LastRendered = now;
             if (Time.frameCount == capture.LastFrame || now < capture.Next) return;
             capture.LastFrame = Time.frameCount;
-            capture.Next = now + 1d / capture.Fps;
+            capture.Next += (Math.Floor((now - capture.Next) * capture.Fps) + 1d) / capture.Fps;
             capture.DueSamples++;
             if (Screen.width != capture.Width || Screen.height != capture.Height)
                 throw new InvalidOperationException("Game View dimensions changed during recording.");
             var slot = capture.Slots.FirstOrDefault(s => !s.Pending);
-            if (slot == null || capture.Writer.Pending >= ResearchS1GameViewVideoWriter.QueueCapacity) { capture.Dropped++; return; }
+            if (slot == null) { capture.Dropped++; capture.DroppedNoGpuSlot++; return; }
+            if (capture.Writer.Pending >= ResearchS1GameViewVideoWriter.QueueCapacity) { capture.Dropped++; capture.DroppedWriterFull++; return; }
             var controller = capture.Controller;
             slot.Index = ++capture.Submitted;
             slot.Receipt = JsonConvert.SerializeObject(new {
@@ -184,6 +215,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             try { ScreenCapture.CaptureScreenshotIntoRenderTexture(slot.Texture); }
             finally { RenderTexture.active = previous; }
             slot.Pending = true;
+            slot.ReadbackStartedTicks = System.Diagnostics.Stopwatch.GetTimestamp();
             try { slot.Request = AsyncGPUReadback.Request(slot.Texture, 0, TextureFormat.RGBA32, request => Readback(capture, slot, request)); }
             catch { slot.Pending = false; throw; }
         }
@@ -191,6 +223,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static void Readback(Capture capture, Slot slot, AsyncGPUReadbackRequest request)
         {
             if (!slot.Pending) return;
+            System.Threading.Interlocked.Add(ref capture.ReadbackTicks, System.Diagnostics.Stopwatch.GetTimestamp() - slot.ReadbackStartedTicks);
+            System.Threading.Interlocked.Increment(ref capture.ReadbackSamples);
             try
             {
                 if (request.hasError) throw new InvalidOperationException("Owned Game View GPU readback failed.");
@@ -198,7 +232,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     throw new InvalidDataException("GPU frame dimensions do not match the rendered receipt.");
                 var pixels = request.GetData<byte>().ToArray();
                 if (!capture.Writer.TryAdd(new ResearchS1GameViewVideoWriter.Frame(slot.Index, capture.Width, capture.Height, pixels, slot.Receipt)))
-                    capture.Dropped++;
+                { capture.Dropped++; capture.DroppedWriterRejected++; }
             }
             catch (Exception failure) { capture.ReadbackErrors++; capture.Error = failure.ToString(); }
             finally { slot.Pending = false; }
@@ -262,6 +296,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             png_rows_reversed = capture.GraphicsUVStartsAtTop,
             due_samples = capture.DueSamples, gpu_capture_attempts = capture.Submitted,
             written = capture.Writer?.Written ?? 0, dropped_due_samples = capture.Dropped,
+            dropped_no_gpu_slot = capture.DroppedNoGpuSlot, dropped_writer_queue_full = capture.DroppedWriterFull,
+            dropped_writer_enqueue_rejected = capture.DroppedWriterRejected,
+            readback_callback_samples = System.Threading.Interlocked.Read(ref capture.ReadbackSamples),
+            readback_callback_wall_ms_total = System.Threading.Interlocked.Read(ref capture.ReadbackTicks) * 1000d / System.Diagnostics.Stopwatch.Frequency,
+            writer_timing = capture.Writer?.Timing,
             readback_errors = capture.ReadbackErrors, writer_error_count = capture.Writer?.Error == null ? 0 : 1,
             png_bytes = capture.Writer?.Bytes ?? 0,
             cleanup_observed = capture.CleanupObserved, writer_drained = capture.Writer == null || capture.Writer.Drained,

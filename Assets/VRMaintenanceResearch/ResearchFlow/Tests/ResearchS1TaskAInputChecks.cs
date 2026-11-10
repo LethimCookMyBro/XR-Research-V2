@@ -11,7 +11,7 @@ namespace UnityEngine
 }
 namespace Oculus.Interaction
 {
-    public enum PointerEventType { Select, Unselect, Cancel, Move }
+    public enum PointerEventType { Select, Unselect, Cancel, Move, Hover, Unhover }
     public readonly struct PointerEvent { public readonly int Identifier; public readonly PointerEventType Type; public PointerEvent(int id, PointerEventType type) { Identifier = id; Type = type; } }
     public class PointableElement : UnityEngine.MonoBehaviour
     {
@@ -40,7 +40,7 @@ namespace VRMaintenanceResearch.AssetLibraryQA
 namespace VRMaintenanceResearch.ResearchFlow
 {
     public sealed class ResearchS1FreeBody { public void Refresh() { } }
-    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect }
+    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect, Tighten, Loosen }
     public enum PartBlockReason { None, Unspecified, ClipClosed, GuardNotSeated, Retained, Alignment, EndStop, Contact, CableLimit, OtherHeld, FrontGuardPresent, BladeCapPresent, BladePresent, RearRingPresent, LatchClosed, MountNotReady }
     public sealed class S1TaskAState { public int Sequence; }
     public sealed class ResearchSessionFlowController { }
@@ -67,6 +67,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!IsAttemptActive(value)) return false;
             LastOperation = operation; LastReason = reason; ObservationSource = value.InputSource; Observations++; return true;
         }
+        public string HoverTarget, HoverSource; public int HoverPointer = -1;
+        public void Hover(string target, string source, int pointer) { HoverTarget = target; HoverSource = source; HoverPointer = pointer; }
+        public void Unhover(string target, int pointer) { HoverTarget = null; HoverPointer = pointer; }
         public Attempt BeginAttempt(string id, string source) { Current = new Attempt { InputSource = source }; events.Add("GRAB:" + source); return Current; }
         public bool IsAttemptActive(Attempt value) => value != null && value.Active && Allowed;
         public bool UpdateAttempt(Attempt value, string action, object before, object after, bool blocked,
@@ -92,6 +95,10 @@ internal static class ResearchS1TaskAInputChecks
     static void TypedObservations()
     {
         var input = Fixture(); var port = input.owner.port;
+        input.pointable.Emit(1, PointerEventType.Hover);
+        Check(port.HoverTarget == "S01" && port.HoverSource == "ControllerRight" && port.HoverPointer == 1, "Hover forwards target, source and pointer.");
+        input.pointable.Emit(1, PointerEventType.Unhover);
+        Check(port.HoverTarget == null && port.HoverPointer == 1 && port.events.Count == 0, "Unhover forwards pointer without fabricating a grab.");
         input.Observe(PartOperation.Turn, PartBlockReason.EndStop);
         Check(port.Observations == 0, "Observation before selection cannot create interaction.");
         input.pointable.Emit(1, PointerEventType.Select);
@@ -103,7 +110,7 @@ internal static class ResearchS1TaskAInputChecks
         Check(port.LastOperation == PartOperation.Insert && port.LastReason == PartBlockReason.CableLimit, "Blocked install carries typed insert and cable reason.");
         input.Motion("INSTALL", input.owner.Capture(), false, PartBlockReason.CableLimit);
         Check(port.LastReason == PartBlockReason.None, "Accepted motion clears the old blocked reason.");
-        foreach (var pair in new[] { ("REMOVE", PartOperation.Remove), ("CONNECT", PartOperation.Connect), ("DISCONNECT", PartOperation.Disconnect), ("FASTEN", PartOperation.Turn), ("ROTATE_WORKPIECE", PartOperation.Turn), ("MOVE", PartOperation.Move) })
+        foreach (var pair in new[] { ("REMOVE", PartOperation.Remove), ("CONNECT", PartOperation.Connect), ("DISCONNECT", PartOperation.Disconnect), ("FASTEN", PartOperation.Tighten), ("UNFASTEN", PartOperation.Loosen), ("ROTATE_WORKPIECE", PartOperation.Turn), ("MOVE", PartOperation.Move) })
         {
             input.Motion(pair.Item1, input.owner.Capture(), false);
             Check(port.LastOperation == pair.Item2, "Motion category maps to typed operation " + pair.Item1);

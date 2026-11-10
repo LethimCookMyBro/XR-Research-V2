@@ -12,11 +12,13 @@ namespace VRMaintenanceResearch.ResearchFlow
     public sealed class ResearchFlowView : MonoBehaviour
     {
         public ResearchSessionFlowController controller;
-        bool examineOpen;
+        bool examineOpen, examineAreaList;
         string examineSession, examinedTarget, examinedInformation;
+        string conditionShownKey;
         string ExamineSession => controller?.Record?.run_id + "/" + controller?.Flow?.State + "/" + controller?.Flow?.CurrentTask + "/" + controller?.TutorialFact + "/" + controller?.Language;
         public string ExamineContext => ExamineSession + "/" + examineOpen + "/" + examinedTarget;
-        bool CanExamine => controller && !controller.UsesDirectPartFeedback && controller.LocalUICommandsAllowed &&
+        bool AreaExamine => controller && controller.ExamineAreas.Length > 0;
+        bool CanExamine => controller && (!controller.UsesDirectPartFeedback || AreaExamine || controller.PointedExamineActive) && controller.LocalUICommandsAllowed &&
             (controller.Flow?.IsTaskActive == true || (controller.Flow?.IsTutorial == true && controller.TutorialArmedFact == "examine"));
 
         public Transform Head;
@@ -137,6 +139,12 @@ namespace VRMaintenanceResearch.ResearchFlow
             && referencePanel.HasAcceptedPose && !referencePanel.RecenterPending && !referencePanel.PlacementBlocked
             && referenceExpanded.activeInHierarchy && referenceGroup.alpha > .01f;
         bool ReferenceSurfaceVisible => ReferenceSurfaceShown && ReaderReadable;
+        // Hidden only by placement while the participant keeps it open: the one case a playing video may resume by itself.
+        string ReaderSystemHideCause => controller && controller.ReferenceOpen && !controller.ReferenceMinimized && controller.Flow?.Paused == false
+            && controller.FloorReady && string.IsNullOrEmpty(controller.Error) && referencePanel
+            ? referencePanel.PlacementBlocked ? (referencePanel.WorldPlacementBlocked ? "placement_blocked" : "edge_on")
+              : referencePanel.RecenterPending ? "recenter" : null
+            : null;
         public bool ReferenceOwnsNavigation
         {
             get
@@ -152,7 +160,9 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void SyncReaderVisibility()
         {
-            if (ReferenceViewer) { bool shown = ReferenceSurfaceShown; ReferenceViewer.SetPresentation(shown, shown && ReaderReadable); }
+            if (!ReferenceViewer) return;
+            bool shown = ReferenceSurfaceShown;
+            ReferenceViewer.SetPresentation(shown, shown && ReaderReadable, shown ? null : ReaderSystemHideCause);
         }
 
         // A DEV Reader pulled close is wider than the view; its central 75% must still face the head inside both eyes.
@@ -180,7 +190,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public event Action<bool, string> ReferenceVisibilityChanged;
         bool observedReferenceVisible;
-        public const string ReaderFeedbackVersion = "S1_CONCISE_UI_READER_20261029_R4";
+        public const string ReaderFeedbackVersion = "S1_DISTINCT_FORMATS_READER_20261031_R5";
         enum ReaderFeedback { None, Blocked, Direction }
         ReaderFeedback readerFeedback;
         TMP_Text readerFeedbackLabel, readerMainFeedbackLabel;
@@ -284,6 +294,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool referenceLayoutNeedsRevalidation;
         string previousReferenceKey;
         string ReferenceKey => (controller?.Record?.session_id ?? "fixture") + ":" + controller?.Record?.run_id + ":" + controller?.Language + ":" + (controller?.Flow?.IsTutorial == true ? "Tutorial" : controller?.Flow?.CurrentTask) + ":" + controller?.ReferenceSection;
+        bool V7TutorialReader => TutorialReader && controller.Record?.training_version == ResearchUIPolicy.TrainingTrainerV7;
         bool TutorialReader => controller && controller.Flow?.IsTutorial == true && controller.ReferenceOpen;
         bool SessionEnded => controller && (controller.Record?.session_state == RegistryState.Aborted || controller.Record?.session_state == RegistryState.Invalid);
         bool SessionWriterUnavailable => controller && controller.Record?.session_state == RegistryState.InProgress
@@ -625,10 +636,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         public bool TutorialPromptPresented(string fact) => TutorialActionReady(fact)
-            && ((TutorialReader || fact == "close") && fact != "reference" ? referencePanel.IsReadableFromHead : mainPanel.IsReadableFromHead);
+            && ((TutorialReader || fact == "close") && fact != "reference" && fact != "pause" ? referencePanel.IsReadableFromHead : mainPanel.IsReadableFromHead);
 
         public bool TutorialActionReady(string fact) => shownFact == fact &&
-            ((TutorialReader || fact == "close") && fact != "reference" ? referencePanel && referencePanel.gameObject.activeSelf && !referencePanel.PlacementBlocked && referencePanel.GetComponent<Canvas>().enabled
+            ((TutorialReader || fact == "close") && fact != "reference" && fact != "pause" ? referencePanel && referencePanel.gameObject.activeSelf && !referencePanel.PlacementBlocked && referencePanel.GetComponent<Canvas>().enabled
                 && referenceGroup.alpha > .01f
                 && (controller.ReferenceMinimized ? fact == "restore" && referencePill.activeSelf : referenceTutorialCue && referenceTutorialCue.gameObject.activeSelf)
             : body && body.gameObject.activeSelf && mainContent.activeSelf && mainPanel.gameObject.activeSelf && !mainPanel.PlacementBlocked && mainPanel.GetComponent<Canvas>().enabled
@@ -650,12 +661,28 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void ShowTutorialConfirmation()
         {
+            if (V7TutorialReader)
+            {
+                RefreshTutorialReaderFeedback();
+                RecordTutorialFeedbackApplied();
+                return;
+            }
             // Completed-action feedback stays in its reserved secondary line; the next instruction remains visible.
             successLabel.font = Font; successLabel.fontSize = 25; successLabel.color = FeedbackColor;
             successLabel.text = CompletionText();
             FitTutorialFeedback();
             tutorialSuccess.gameObject.SetActive(TutorialFeedbackVisible); tutorialSuccess.Find("Checkmark").gameObject.SetActive(FeedbackCheckmark);
             RecordTutorialFeedbackApplied();
+        }
+
+        void RefreshTutorialReaderFeedback()
+        {
+            if (!referenceTutorialProgress) return;
+            tutorialSuccess.gameObject.SetActive(false);
+            referenceTutorialProgress.font = Font;
+            referenceTutorialProgress.color = TutorialFeedbackVisible ? FeedbackColor : Muted;
+            referenceTutorialProgress.text = !TutorialFeedbackVisible ? TutorialProgress()
+                : NoticeActive || TrainerResult != null ? CompletionText() : Text("tutorial.done");
         }
 
         void FitTutorialFeedback()
@@ -674,9 +701,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             string action = controller?.TutorialLastCreditActionId;
             if (NoticeActive || string.IsNullOrEmpty(CompletedTutorialFact) || string.IsNullOrEmpty(action) || feedbackApplied == action) return;
+            var label = V7TutorialReader ? referenceTutorialProgress : successLabel;
+            if (!TutorialFeedbackVisible || !label || !label.gameObject.activeInHierarchy) return;
             if (controller.Log("TUTORIAL_FEEDBACK_APPLIED", "tutorial." + CompletedTutorialFact, "RendererTextApplied",
                 after: new { fact = CompletedTutorialFact, instruction_epoch = controller.TutorialLastCreditEpoch,
-                    count = controller.TutorialCompletedFactCount, text = successLabel.text, frame = Time.frameCount,
+                    count = controller.TutorialCompletedFactCount, text = label.text, frame = Time.frameCount,
                     unscaled_seconds = Time.unscaledTime, human_seen = (bool?)null }, source: "System", actionId: action)) feedbackApplied = action;
         }
 
@@ -689,6 +718,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             RevalidateReferenceLayoutIfReady();
             if (noticeKey != null && !NoticeActive) { noticeKey = null; if (tutorialSuccess && tutorialSuccess.gameObject.activeSelf) ShowTutorialConfirmation(); }
             if (tutorialSuccess && tutorialSuccess.gameObject.activeSelf && !TutorialFeedbackVisible) tutorialSuccess.gameObject.SetActive(false);
+            if (V7TutorialReader) RefreshTutorialReaderFeedback();
             RevalidateMainLayoutIfReady();
             NotifyReferenceVisibility("render_visibility");
             RefreshRecoveryUtility();
@@ -1425,7 +1455,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             language = controller ? controller.Language : language;
             if (examineSession != ExamineSession || !CanExamine)
-            { examineOpen = false; examinedTarget = examinedInformation = null; examineSession = ExamineSession; }
+            {
+                if (examineOpen && examineAreaList) controller?.Log("EXAMINE_PANEL_CLOSE", "examine.panel", "Closed", source: "System", reason: "context_changed");
+                examineOpen = examineAreaList = false; examinedTarget = examinedInformation = null; examineSession = ExamineSession;
+            }
 
             if (questSetup)
             {
@@ -1533,9 +1566,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 case "TutorialWelcome": title.text = Text("welcome.title"); body.text = Text("welcome.body") + "\n\n" + Text(controller.TutorialUsesHands ? "welcome.hand" : "welcome.controller"); SetActions(("tutorial_start", "tutorial.start")); break;
                 case "TutorialInteractions": case "TutorialReferenceInspect":
                     title.text = Text("tutorial.title");
-                    if (controller.TutorialArmedFact == "examine") SetActions(("examine_open", "action.examine"));
+                    if (controller.TutorialArmedFact == "examine" && !controller.IntentionalExamineActive) SetActions(("examine_open", "action.examine"));
                     else if (flow.TutorialCompleted == 1) SetActions(("tutorial_select", "action.practice"));
-                    else if (flow.TutorialCompleted == 3) SetActions(("reference", "action.reference"));
+                    else if (flow.TutorialCompleted == 3 && controller.TutorialFact != "pause")
+                        SetActions(controller.TutorialNoticeActive ? ("tutorial_notice", "tutorial.notice.next") : ("reference", "action.reference"));
                     // With the practice station, Inspect is offered only when the current instruction is an Inspect sample.
                     else if (flow.TutorialCompleted == 4 && (!controller.trainingStation || controller.TutorialFact == "inspect" || controller.TutorialFact == "inspect_fail"))
                         SetActions(("inspect", "action.inspect"));
@@ -1552,7 +1586,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     title.text = TaskName(flow); body.text = "";
                     string briefKey = controller.Record?.run_id + "/" + flow.CurrentTask;
                     if (briefKey != taskBriefKey) { taskBriefKey = briefKey; taskDetailsOpen = false; taskBrief.anchoredPosition = Vector2.zero; }
-                    if (controller.UsesDirectPartFeedback) SetActions(("reference", "action.reference"), ("inspect", "action.inspect"));
+                    if (controller.UsesDirectPartFeedback && !AreaExamine || controller.PointedExamineActive) SetActions(("reference", "action.reference"), ("inspect", "action.inspect"));
                     else SetActions(("reference", "action.reference"), ("examine_open", "action.examine"), ("inspect", "action.inspect")); break;
                 case "checking": title.text = Text("inspect.checking.title"); body.text = Text("inspect.checking.body"); break;
                 case "timeout": title.text = Text("task.timeout.title"); body.text = Text("task.timeout.body");
@@ -1804,21 +1838,25 @@ namespace VRMaintenanceResearch.ResearchFlow
         void LayoutExamine()
         {
             if (!examineOpen) return;
-            var size = new Vector2(1000, 620);
+            var size = examineAreaList ? new Vector2(940, 560) : new Vector2(1000, 620);
             expandedMainSize = size;
             mainContent.GetComponent<RectTransform>().sizeDelta = size;
             mainContent.transform.Find("Surface").GetComponent<RectTransform>().sizeDelta = size;
             mainContent.transform.Find("ContentSurface").GetComponent<RectTransform>().sizeDelta = size - Vector2.one * 8;
             mainPanel.GetComponent<RectTransform>().sizeDelta = mainMinimized ? MainPillSize : size + new Vector2(0, mainToolbar.activeSelf ? ToolbarBand : 0);
             mainToolbar.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -size.y / 2 - ToolbarBand / 2);
-            title.text = Text("examine.main.title");
-            title.rectTransform.anchoredPosition = new Vector2(-111, 236);
+            title.text = controller.PointedExamineActive && examinedTarget != null && examinedTarget.StartsWith("B.", StringComparison.Ordinal)
+                ? Text(AreaNameKey(examinedTarget)) : Text("examine.main.title");
+            float headerY = size.y / 2 - 74;
+            float utilityX = size.x / 2 - 76;
+            title.rectTransform.anchoredPosition = new Vector2(-111, headerY);
             title.rectTransform.sizeDelta = new Vector2(650, 80);
-            title.fontSize = 38;
+            title.fontSize = examineAreaList ? 44 : 38;
+            title.color = Ink;
             var minimize = mainToolbar.transform.Find("Minimize") as RectTransform;
             bool hasMinimize = minimize && minimize.gameObject.activeSelf;
-            if (hasMinimize) minimize.position = mainContent.transform.TransformPoint(new Vector3(424, 236, 0));
-            helpUtility.GetComponent<RectTransform>().anchoredPosition = new Vector2(hasMinimize ? 328 : 424, 236);
+            if (hasMinimize) minimize.position = mainContent.transform.TransformPoint(new Vector3(utilityX, headerY, 0));
+            helpUtility.GetComponent<RectTransform>().anchoredPosition = new Vector2(hasMinimize ? utilityX - 96 : utilityX, headerY);
             tutorialProgress.gameObject.SetActive(false);
             body.gameObject.SetActive(true);
             body.text = examinedInformation;
@@ -1828,11 +1866,59 @@ namespace VRMaintenanceResearch.ResearchFlow
             body.alignment = TextAlignmentOptions.TopLeft;
             taskBriefScroll.gameObject.SetActive(false);
             checklist.gameObject.SetActive(false);
-            mainContent.transform.Find("HeaderRule").GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 188);
+            var rule = mainContent.transform.Find("HeaderRule").GetComponent<RectTransform>();
+            rule.anchoredPosition = new Vector2(0, size.y / 2 - 122);
+            rule.sizeDelta = new Vector2(size.x - 88, rule.sizeDelta.y);
             foreach (var action in actions) action.gameObject.SetActive(false);
-            SetActions(("examine_close", "action.back"));
             actionsRoot.anchoredPosition = Vector2.zero;
+            if (examineAreaList)
+            {
+                LayoutExamineAreas();
+                return;
+            }
+            SetActions(("examine_close", "action.back"));
             actions[0].GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -240);
+        }
+
+        public static string AreaNameKey(string area) => "interaction.target." + (area == "B.blade_mount" ? "B.blade" : area == "B.rear_guard_mount" ? "B.rear_guard" : area);
+
+        void LayoutExamineAreas()
+        {
+            var areas = controller.ExamineAreas;
+            title.text = Text(examinedTarget == null ? "action.examine" : AreaNameKey(examinedTarget));
+            body.text = examinedTarget == null ? Text("examine.choose") : examinedInformation;
+            body.rectTransform.sizeDelta = new Vector2(852, 196);
+            body.rectTransform.anchoredPosition = new Vector2(0, -64);
+            body.fontSize = 40;
+            body.color = Ink;
+            body.enableAutoSizing = false;
+            if (actions.Length < areas.Length + 1)
+            {
+                var grown = new List<Button>(actions); var labels = new List<TMP_Text>(actionLabels);
+                while (grown.Count < areas.Length + 1)
+                {
+                    var copy = Instantiate(actions[0].gameObject, actions[0].transform.parent); copy.name = "Action_" + grown.Count;
+                    grown.Add(copy.GetComponent<Button>()); labels.Add(copy.GetComponentInChildren<TMP_Text>(true));
+                }
+                actions = grown.ToArray(); actionLabels = labels.ToArray();
+            }
+            var buttons = new (string command, string key)[areas.Length + 1];
+            for (int i = 0; i < areas.Length; i++) buttons[i] = ("examine_area." + areas[i], AreaNameKey(areas[i]));
+            buttons[areas.Length] = ("examine_close", "action.back");
+            SetActions(buttons);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                ResearchUITheme.Button(actions[i], ResearchButtonVariant.Secondary);
+                var rt = actions[i].GetComponent<RectTransform>();
+                actionLabels[i].fontSize = 34;
+                if (i == areas.Length) { rt.sizeDelta = new Vector2(295, 80); rt.anchoredPosition = new Vector2(0, -222); }
+                else
+                {
+                    float width = (852 - (areas.Length - 1) * ResearchUITheme.TargetGap) / areas.Length;
+                    rt.sizeDelta = new Vector2(width, 88);
+                    rt.anchoredPosition = new Vector2(-426 + width / 2 + i * (width + ResearchUITheme.TargetGap), 102);
+                }
+            }
         }
 
         void SetActions(params (string command, string key)[] buttons)
@@ -1873,7 +1959,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             compactTutorialReference = referenceCompact;
             float width = compactTask ? 1000 : referenceCompact ? 520 : tutorialChecklist ? 860 : technicalSetup ? 880 : resultState || checkpoint || pause ? 720 : 780;
             title.fontSize = compactTask ? 32 : 38;
-            bool coachDemo = tutorialChecklist && !referenceCompact && !tutorialDone && controller.TutorialFact != "inspect";
+            bool coachDemo = tutorialChecklist && !referenceCompact && !tutorialDone && controller.TutorialFact != "inspect" && controller.TutorialFact != "notice";
             float instructionWidth = width - 2 * Pad - (coachDemo ? TutorialDemoBand : 0);
             if (tutorialChecklist) body.text = referenceCompact ? string.Format(Text("tutorial.compact.now"), Text("tutorial.compact." + (controller.TutorialFact == "reposition" ? "drag" + (controller.TutorialUsesHands ? ".hand" : "") : controller.TutorialFact == "reference" ? "switch" : controller.TutorialFact))) : Text(controller.TutorialNeedsRelease ? "tutorial.try.release" + (controller.TutorialUsesHands ? ".hand" : ".controller") : controller.TutorialInstructionKey)
                 + (controller.TutorialFact == "inspect" ? "\n\n" + Text("tutorial.examine_difference") : "");
@@ -2296,14 +2382,24 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             PrepareTutorialReaderCue();
             if (!TutorialReader) return;
-            referenceTutorialProgress.rectTransform.anchoredPosition = new Vector2(128, 277);
+            referenceTutorialProgress.rectTransform.anchoredPosition = new Vector2(128, V7TutorialReader ? 266 : 277);
             referenceTutorialProgress.rectTransform.sizeDelta = new Vector2(820, 52); referenceTutorialProgress.fontSize = 24;
-            // Bottom edge stays just above the viewer; a two-line cue grows upward beside the right-aligned progress label.
             referenceTutorialCue.fontSize = 25;
             float cueHeight = Mathf.Max(52, referenceTutorialCue.GetPreferredValues(referenceTutorialCue.text, 820, 1500).y + 8);
             referenceTutorialCue.rectTransform.sizeDelta = new Vector2(820, cueHeight);
-            referenceTutorialCue.rectTransform.anchoredPosition = new Vector2(128, 198 + cueHeight / 2);
+            referenceTutorialCue.rectTransform.anchoredPosition = new Vector2(128, V7TutorialReader ? 228 - cueHeight / 2 : 198 + cueHeight / 2);
+            if (V7TutorialReader)
+            {
+                float inset = Mathf.Max(0, cueHeight - 32);
+                scroll.viewport.sizeDelta -= new Vector2(0, inset);
+                scroll.viewport.anchoredPosition -= new Vector2(0, inset / 2);
+                var bar = scroll.verticalScrollbar.GetComponent<RectTransform>();
+                bar.sizeDelta = new Vector2(24, scroll.viewport.sizeDelta.y);
+                bar.anchoredPosition = new Vector2(416, scroll.viewport.anchoredPosition.y);
+                bar.Find("Track").GetComponent<RectTransform>().sizeDelta = new Vector2(4, scroll.viewport.sizeDelta.y);
+            }
             tutorialDemo.gameObject.SetActive(false);
+            if (V7TutorialReader) { ShowTutorialConfirmation(); return; }
             tutorialSuccess.SetParent(referenceExpanded.transform, false); tutorialSuccess.Find("Chip").gameObject.SetActive(false);
             // Capture C03: the former (-284,-354) 512x52 slot overlapped the video Play control and time label (viewer spans x>=-281,
             // transport at its bottom edge). The sidebar column below the last format tab (bottom y=-275) is free in every format.
@@ -2462,34 +2558,45 @@ namespace VRMaintenanceResearch.ResearchFlow
         string PartInteractionText()
         {
             var observed = controller ? controller.CurrentInteraction : null;
-            if (!observed.HasValue) return null;
-            var value = observed.Value;
-            string targetKey = "interaction.target." + value.Target;
-            string target = Text(targetKey);
-            if (target == targetKey)
+            if (!observed.HasValue)
             {
-                target = Text(value.Target.Contains(".tray_fastener") ? "interaction.target.tray_fastener"
-                    : value.Target.StartsWith("A.gpu_fastener", StringComparison.Ordinal) ? "interaction.target.gpu_fastener"
-                    : value.Target.EndsWith(".latch", StringComparison.Ordinal) ? "interaction.target.latch" : "interaction.target.part");
-                foreach (string id in ResearchS1TaskACatalog.Ids)
-                    if (value.Target == id) { target = ResearchS1TaskACatalog.Label(id); break; }
+                var hover = controller ? controller.CurrentHover : null;
+                if (!hover.HasValue) return null;
+                return PartName(hover.Value.Target) + (hover.Value.InputSource == "HandTracking" ? "" : "\n" + Text(ControlKey(hover.Value.Target)));
             }
+            var value = observed.Value;
+            string target = PartName(value.Target);
             var activeOperation = Time.unscaledTime - value.ObservedAt <= .6f ? value.Operation : PartOperation.Held;
             string operation = Text("interaction.operation." + activeOperation);
-            string control = null;
-            if (activeOperation == PartOperation.Held && value.InputSource != "HandTracking")
-            {
-                bool turn = value.Target == "B.spinner" || value.Target == "B.rear_guard_lock"
-                    || value.Target.Contains("fastener");
-                bool toggle = value.Target == "B.front_guard_clip" || value.Target.EndsWith(".latch", StringComparison.Ordinal);
-                bool plug = value.Target == "A.sata_data" || value.Target == "A.sata_power" || value.Target == "A.pcie_power";
-                control = Text(turn ? "interaction.control.turn" : toggle ? "interaction.control.toggle" : plug ? "interaction.control.plug"
-                    : value.Target == "A.service_handle" ? "interaction.control.base" : "interaction.control.grip");
-            }
+            string control = activeOperation == PartOperation.Held && value.InputSource != "HandTracking" ? Text(ControlKey(value.Target)) : null;
             string result = value.Reason == PartBlockReason.None ? controller.CurrentPartObservation
                 : Text("interaction.reason." + value.Reason);
             return target + " · " + operation + (control == null ? "" : "\n" + control)
                 + (string.IsNullOrEmpty(result) || result == target ? "" : "\n" + result);
+        }
+
+        string PartName(string id)
+        {
+            string key = "interaction.target." + id, name = Text(key);
+            if (name != key) return name;
+            foreach (string option in ResearchS1TaskACatalog.Ids)
+                if (id == option)
+                    return controller && controller.IntentionalExamineActive
+                        ? option[0] == 'M' ? "RAM" : option[0] == 'S' ? "SSD" : "GPU"
+                        : ResearchS1TaskACatalog.Label(option);
+            return Text(id.Contains(".tray_fastener") ? "interaction.target.tray_fastener"
+                : id.StartsWith("A.gpu_fastener", StringComparison.Ordinal) ? "interaction.target.gpu_fastener"
+                : id.EndsWith(".latch", StringComparison.Ordinal) ? "interaction.target.latch" : "interaction.target.part");
+        }
+
+        // The button follows the part's grab type in the builders: palm parts Grip, pinch parts Trigger, latches and clips either.
+        static string ControlKey(string id)
+        {
+            bool turn = id == "B.spinner" || id == "B.rear_guard_lock" || id.Contains("fastener");
+            bool toggle = id == "B.front_guard_clip" || id.EndsWith(".latch", StringComparison.Ordinal);
+            bool plug = id == "A.sata_data" || id == "A.sata_power" || id == "A.pcie_power";
+            return turn ? "interaction.control.turn" : toggle ? "interaction.control.toggle" : plug ? "interaction.control.plug"
+                : id == "A.service_handle" ? "interaction.control.base" : "interaction.control.grip";
         }
 
         void RefreshReaderFeedback()
@@ -2534,6 +2641,39 @@ namespace VRMaintenanceResearch.ResearchFlow
             else if (taskBriefHiddenForReaderFeedback) { taskBrief.gameObject.SetActive(compactTask); taskBriefHiddenForReaderFeedback = false; }
             readerFeedbackLabel.gameObject.SetActive(readerFeedback != ReaderFeedback.None && !onMain);
             if (key != null) { readerFeedbackLabel.font = Font; readerFeedbackLabel.text = Text(key); }
+            LogPartCondition(onMain && readerFeedback == ReaderFeedback.None ? interactionText : null);
+        }
+
+        // DEV only (ResearchUIPolicy.DevExamineVersion): the condition line shown while a part is held is its own event,
+        // never EXAMINE. Holding a part also closes the Examine list, so the task panel can show that line.
+        void LogPartCondition(string shownText)
+        {
+            if (!controller || !controller.DevExamineActive) { conditionShownKey = null; return; }
+            var observed = controller.CurrentInteraction;
+            if (observed.HasValue && examineOpen && examineAreaList)
+            {
+                controller.Log("EXAMINE_PANEL_CLOSE", "examine.panel", "Closed", source: "System", reason: "part_held");
+                examineOpen = examineAreaList = false; examinedTarget = examinedInformation = null; Refresh();
+                return;
+            }
+            string condition = observed.HasValue && observed.Value.Reason == PartBlockReason.None ? controller.CurrentPartObservation : null;
+            bool shown = condition != null && shownText != null && shownText.Contains(condition);
+            string area = shown ? ResearchS1FanObservations.TargetForPart(observed.Value.Target) : null;
+            string shownKey = shown ? observed.Value.AttemptId + "|" + area + "|" + condition : null;
+            if (shownKey == conditionShownKey) return;
+            if (conditionShownKey != null)
+            {
+                var previous = conditionShownKey.Split('|');
+                controller.Log("PART_CONDITION_HIDDEN", previous[1], "Hidden", source: "System", actionId: previous[0],
+                    after: new { examine_version = ResearchUIPolicy.DevExamineVersion, attempt_id = previous[0], area = previous[1] });
+            }
+            conditionShownKey = shownKey;
+            if (!shown) return;
+            var detail = controller.ExamineDetail(area) ?? new Dictionary<string, object>();
+            detail["selection_source"] = "grab_status_line"; detail["shown_text"] = condition;
+            detail["held_target"] = observed.Value.Target; detail["attempt_id"] = observed.Value.AttemptId;
+            controller.Log("PART_CONDITION_SHOWN", area, "Shown", after: detail, source: "System",
+                inputSource: observed.Value.InputSource, actionId: observed.Value.AttemptId);
         }
 
         public void RefreshRecoveryUtility()
@@ -2667,16 +2807,38 @@ namespace VRMaintenanceResearch.ResearchFlow
             SyncReaderVisibility(); NotifyReferenceVisibility("reference_refresh");
         }
 
+        // Pointed Examine: the participant pressed a part's chip; the task port already logged EXAMINE/EXAMINE_REJECTED.
+        public void ShowExamineResult(string target, string information)
+        {
+            examineOpen = true; examineAreaList = false; examinedTarget = target; examinedInformation = information; examineSession = ExamineSession;
+            Refresh();
+        }
+
         public bool LocalCommand(string command, string input)
         {
             bool allowed = controller && controller.LocalUICommandsAllowed, accepted = false;
             if (command != null && command.StartsWith("reference_media.", StringComparison.Ordinal))
-                return allowed && ReferenceViewer && ReferenceViewer.Command(command, input);
+                return allowed && ReferenceViewer && controller.TutorialReferenceCommand(command, input, () => ReferenceViewer.Command(command, input));
+            if (command != null && command.StartsWith("examine_area.", StringComparison.Ordinal))
+            {
+                if (!allowed || !examineOpen || !examineAreaList || !CanExamine) return false;
+                string area = command.Substring("examine_area.".Length);
+                if (!controller.TryExamineArea(area, input, out var observed)) return false;
+                examinedTarget = area; examinedInformation = observed; Refresh(); return true;
+            }
             switch (command)
             {
                 case "examine_open":
                 {
                     if (!CanExamine || examineOpen) return false;
+                    if (AreaExamine)
+                    {
+                        // Opening the list examines nothing; EXAMINE is logged only when an area is chosen.
+                        examineOpen = examineAreaList = true; examinedTarget = examinedInformation = null; examineSession = ExamineSession;
+                        controller.Log("EXAMINE_PANEL_OPEN", "examine.panel", "Opened", inputSource: input,
+                            after: new { examine_version = controller.ExamineVersion, areas = controller.ExamineAreas });
+                        Refresh(); return true;
+                    }
                     string target = controller.Flow.IsTutorial ? "training.module" : controller.Flow.CurrentTask + ".module";
                     if (!ResearchExamineTarget.TryExamineFromMain(controller, target, input, out var information)) return false;
                     if (controller.Flow.IsTutorial) return true;
@@ -2685,12 +2847,16 @@ namespace VRMaintenanceResearch.ResearchFlow
                 }
                 case "examine_close":
                     if (!allowed || !examineOpen) return false;
-                    examineOpen = false; examinedTarget = examinedInformation = null; Refresh(); return true;
+                    if (examineAreaList) controller.Log("EXAMINE_PANEL_CLOSE", "examine.panel", "Closed", inputSource: input, reason: "participant_back");
+                    examineOpen = examineAreaList = false; examinedTarget = examinedInformation = null; Refresh(); return true;
 
                 case "technical_details":
                     // Details are most useful while something is not ready, so the toggle never waits on readiness.
                     if (!controller || !controller.TechnicalSelfSetup || controller.Record != null || controller.Flow != null
                         || controller.Transitioning || !string.IsNullOrEmpty(controller.Error)) return false;
+                    // The legacy setup card is retired (ResearcherSetupView replaced it); without its Details button on screen
+                    // the toggle would change nothing visible, so it must not report success.
+                    if (!technicalDetails || !technicalDetails.gameObject.activeInHierarchy) return false;
                     setupDetailsRequested = !setupDetailsRequested; Refresh(); accepted = true; break;
                 case "task_details":
                     return false; // Task detail belongs to Reference, not a second information route.
@@ -2709,7 +2875,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (!allowed || !controller.ReferenceOpen || controller.ReferenceMinimized) return false;
                     if (ReferenceViewer)
                     {
-                        accepted = ReferenceViewer.Navigate(command == "reference_previous" ? -1 : 1, input);
+                        accepted = controller.TutorialReferenceCommand(command, input, () => ReferenceViewer.Navigate(command == "reference_previous" ? -1 : 1, input));
                         RefreshPageControls();
                     }
                     else if (scroll && referenceBody)

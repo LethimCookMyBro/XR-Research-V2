@@ -28,9 +28,8 @@ namespace VRMaintenanceResearch.ResearchFlow
     ///  - No server or networking. A restricted app-owned ContentProvider receives a
     ///    profile/lifetime-bound request into the existing command JSON mailbox.
     ///  - This type IS compiled into every player. It is not excluded at compile time.
-    ///    The runtime gate is Install(), which refuses to instantiate the channel unless
-    ///    Application.identifier equals the exact technical identity, so in a study build no instance
-    ///    exists and no command file is ever polled.
+    ///    Install requires a development player or Editor and the exact technical identity.
+    ///    Standard players retain that identity for updates but never poll command files.
     ///
     /// Transport uses `content call --user N` on the exact technical package provider.
     /// Its manifest declaration exists only during the technical build transaction.
@@ -60,6 +59,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         bool appPaused, appFocused;
         void PublishProfile()
         {
+            if (!ResearchBuildFlavor.DiagnosticsEnabled) return;
             using (var provider = new AndroidJavaClass(ProfileProvider))
                 provider.CallStatic("updateState", controller?.Record?.session_id ?? string.Empty, controller?.Record?.run_id ?? string.Empty,
                     appFocused && !appPaused && Application.isFocused);
@@ -71,7 +71,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
-            // Hard gate: the channel only exists in the technical build identity.
+            if (!ResearchBuildFlavor.DiagnosticsEnabled) return;
             if (!string.Equals(Application.identifier, TechnicalIdentity, StringComparison.Ordinal)) return;
             if (FindFirstObjectByType<ResearchSessionFlowController>() == null) return;
             var host = new GameObject("ResearchAdbControlChannel") { hideFlags = HideFlags.HideAndDontSave };
@@ -81,6 +81,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void Awake()
         {
+            if (!ResearchBuildFlavor.DiagnosticsEnabled) { enabled = false; return; }
             controller = FindFirstObjectByType<ResearchSessionFlowController>();
             commandPath = Path.Combine(Application.persistentDataPath, CommandFile);
             responsePath = Path.Combine(Application.persistentDataPath, ResponseFile);

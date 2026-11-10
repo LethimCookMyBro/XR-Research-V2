@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,13 +30,36 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         public static bool Running { get; private set; }
         public static string Status { get; private set; } = "NotStarted";
         static bool captureFrames = true;
+        static bool rearAlignmentDemo;
         public static void SetCaptureFrames(bool value)
         {
             if (Running) throw new InvalidOperationException("Do not change capture mode during a run.");
             captureFrames = value;
         }
 
-        public static object Begin(string evidenceDirectory, int controllerSide = 1)
+        // DEV Examine evidence (owner 5 Nov 2026): hold once at a released capture so the flow driver can examine the blade with the front
+        // guard off. Context and focus checks keep running every frame while held; the hold time is not charged to the deadline.
+        static string pauseAfter;
+        static double pausedAt;
+        public static void PauseAfter(string label)
+        {
+            if (Running) throw new InvalidOperationException("Set the hold before Begin.");
+            pauseAfter = label;
+        }
+
+        public static object Resume()
+        {
+            if (!Running || !Status.StartsWith("PausedAt:", StringComparison.Ordinal)) throw new InvalidOperationException("Runner is not held.");
+            deadline += EditorApplication.timeSinceStartup - pausedAt;
+            Status = "Running"; Record("resumed-after-hold");
+            return JsonConvert.SerializeObject(Audit());
+        }
+
+        public static object Begin(string evidenceDirectory, int controllerSide = 1) => BeginCore(evidenceDirectory, controllerSide, false);
+
+        public static object BeginRearAlignment(string evidenceDirectory, int controllerSide = 1) => BeginCore(evidenceDirectory, controllerSide, true);
+
+        static object BeginCore(string evidenceDirectory, int controllerSide, bool demonstrateRearAlignment)
         {
             if (Running) throw new InvalidOperationException("An SDK runner already owns its input.");
             if (controllerSide < 0 || controllerSide > 1) throw new ArgumentOutOfRangeException(nameof(controllerSide));
@@ -56,15 +79,19 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (Directory.Exists(output) || File.Exists(output)) throw new IOException("Use a fresh evidence directory.");
             Directory.CreateDirectory(output);
             error = null; selected = null; step = "initial"; lastFrame = -1; cleanupObserved = false; obstructionVerified = false;
-            deadline = EditorApplication.timeSinceStartup + 120;
-            gameView = EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
-            gameView.Focus(); gameView.Repaint();
+            rearAlignmentDemo = demonstrateRearAlignment;
+            deadline = EditorApplication.timeSinceStartup + 240; // Bench parking and pickup of free-body parts (V5) added ~60 s of SDK motion.
+            gameView = ResearchS1FlowDriver.BatchStrictFocus ? EditorWindow.focusedWindow : EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+            if (ResearchS1FlowDriver.BatchStrictFocus)
+                Require(ResearchS1FlowDriver.BatchFocused, "Batch needs the already focused Game View; no autofocus.");
+            else gameView.Focus();
+            gameView.Repaint();
             routines.Clear(); routines.Push(Run()); Running = true; Status = "Running";
             EditorApplication.update += Tick;
             EditorApplication.playModeStateChanged += PlayState;
             AssemblyReloadEvents.beforeAssemblyReload += BeforeReload;
             Record("begin");
-            return Audit();
+            return JsonConvert.SerializeObject(Audit());
         }
 
         static void CheckContext(bool identity)
@@ -83,8 +110,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             try
             {
-                if (EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("SDK runner exceeded 120 seconds.");
+                bool held = Status.StartsWith("PausedAt:", StringComparison.Ordinal);
+                if (held && EditorApplication.timeSinceStartup - pausedAt > 180) throw new TimeoutException("DEV Examine hold exceeded 180 seconds.");
+                if (!held && EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("SDK runner exceeded 240 seconds.");
                 CheckContext(true);
+                if (ResearchS1FlowDriver.BatchStrictFocus && !ResearchS1FlowDriver.BatchFocused) throw new InvalidOperationException("Batch focus lost.");
                 if (!Application.isFocused) throw new InvalidOperationException("Game View focus lost. No guard override or automatic resume.");
                 if (lastFrame == Time.frameCount) return;
                 lastFrame = Time.frameCount;
@@ -113,15 +143,15 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Rotate(task.frontGuard, task.frontGuard.insertTurnDegrees);
             Require(Mathf.Abs(Mathf.DeltaAngle(task.frontGuard.Pose.turnDeg, task.frontGuard.insertTurnDegrees)) < 1,
                 "Front guard did not reach the authored bayonet entry turn.");
-            yield return WithdrawAndPark(task.frontGuard, .28f, .50f);
+            yield return WithdrawAndPark(task.frontGuard, .28f, .50f, true);
             yield return Capture("02-front-guard-removed");
             yield return Acquire(task.spinner, true);
             yield return Rotate(task.spinner, -task.spinner.fullTurnDegrees - EndOvershoot);
             Require(task.spinner.ThreadProgressDegrees < .1f && task.spinner.ThreadState == S1ThreadState.Absent,
                 "LH spinner did not loosen from clockwise input viewed from its head.");
-            yield return WithdrawAndPark(task.spinner, .16f, -.35f);
+            yield return WithdrawAndPark(task.spinner, .16f, -.35f, true);
             yield return Acquire(task.blade, false);
-            yield return WithdrawAndPark(task.blade, .36f, -.52f);
+            yield return WithdrawAndPark(task.blade, .36f, -.75f);
             yield return Capture("03-blade-removed");
             yield return Acquire(task.rearLock, true);
             yield return RearLockObstruction();
@@ -137,8 +167,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Record("rear-lock-gradual-withdrawal");
             }
             Require(task.rearLock.Placement == S1Placement.NotInstalled, "Rear lock stalled during 6 mm of gradual SDK withdrawal.");
-            yield return WithdrawAndPark(task.rearLock, .16f, .35f);
+            yield return WithdrawAndPark(task.rearLock, .16f, .85f, true);
+            if (rearAlignmentDemo) yield return DemonstrateRearGuardAlignment();
             yield return Acquire(task.rearLock, true);
+            yield return LiftClear(task.rearLock);
             yield return ReturnToSeat(task.rearLock, 50);
             int entrySteps = Mathf.CeilToInt((50 - task.rearLock.threadTravelMm) / .25f);
             for (int i = 0; i < entrySteps; i++)
@@ -160,12 +192,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(task.rearLock.ThreadState == S1ThreadState.Tight && !task.rearLock.IsHeld, "Rear lock did not retain tight state after release.");
             yield return Capture("04-rear-lock-tight");
             yield return Acquire(task.blade, false);
+            yield return LiftClear(task.blade);
             yield return ReturnToSeat(task.blade, 0);
             yield return Release();
             Require(task.blade.Placement == S1Placement.Seated && task.blade.Aligned && !task.blade.IsHeld,
                 "Blade did not retain its released keyed seat.");
             yield return Capture("05-blade-seated");
             yield return Acquire(task.spinner, true);
+            yield return LiftClear(task.spinner);
             yield return ReturnToSeat(task.spinner, task.spinner.threadTravelMm);
             Require(task.spinner.Aligned && task.spinner.ThreadProgressDegrees < .1f,
                 "Spinner did not reach its aligned thread entry.");
@@ -176,7 +210,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 "LH spinner did not retain tight state after positive rotation and release.");
             yield return Capture("06-spinner-tight");
             yield return Acquire(task.frontGuard, false);
-            Require(Mathf.Abs(Mathf.DeltaAngle(task.frontGuard.Pose.turnDeg, task.frontGuard.insertTurnDegrees)) < 1,
+            yield return StandUp(task.frontGuard, .28f);
+            // The bayonet guide snaps an entry turn within 20 deg (ResearchS1FanPart.KeySnapDegrees); the bench rest may yaw the guard slightly.
+            Require(Mathf.Abs(Mathf.DeltaAngle(task.frontGuard.Pose.turnDeg, task.frontGuard.insertTurnDegrees)) < 20,
                 "Parked front guard lost its bayonet entry orientation.");
             yield return ReturnToSeat(task.frontGuard, 0);
             yield return Rotate(task.frontGuard, -task.frontGuard.insertTurnDegrees);
@@ -194,6 +230,28 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 state.rearGuardPlacement == S1Placement.Seated && state.rearGuardAligned && state.rearLock == S1ThreadState.Tight,
                 "Released physical snapshot does not match the repaired assembly.");
             Record("repair-and-reassembly-observed-inspection-not-invoked");
+        }
+
+        static IEnumerator DemonstrateRearGuardAlignment()
+        {
+            var guard = task.rearGuard;
+            Require(task.CanManipulate(guard) && task.rearLock.ThreadState == S1ThreadState.Absent &&
+                task.rearLock.Placement == S1Placement.NotInstalled && guard.Placement == S1Placement.Seated && guard.Aligned,
+                "Rear guard demonstration requires actual access, the ring removed and the authored aligned seat.");
+            float keyedTurn = Mathf.Round(guard.Pose.turnDeg / 120f) * 120f;
+            yield return Acquire(guard, false);
+            yield return Translate(guard, -guard.seat.forward * .10f);
+            Require(guard.Placement == S1Placement.NotInstalled && guard.IsHeld, "Rear guard did not withdraw through held SDK input.");
+            yield return Capture("03a-rear-guard-withdrawn");
+            yield return Rotate(guard, 60);
+            Require(!guard.Aligned && guard.Placement == S1Placement.NotInstalled, "Rear guard did not show a genuine off-key orientation.");
+            yield return Capture("03b-rear-guard-off-key");
+            yield return Rotate(guard, Mathf.DeltaAngle(guard.Pose.turnDeg, keyedTurn));
+            yield return ReturnToSeat(guard, 0);
+            yield return Release();
+            Require(guard.Placement == S1Placement.Seated && guard.Aligned && !guard.IsHeld &&
+                task.rearLock.ThreadState == S1ThreadState.Absent, "Rear guard did not retain its released keyed seat before ring installation.");
+            yield return Capture("03c-rear-guard-aligned-released");
         }
 
         struct ThreadSample
@@ -417,16 +475,68 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Record("release-twist-held-at-stop");
         }
 
-        static IEnumerator WithdrawAndPark(ResearchS1FanPart part, float outwardMetres, float lateralMetres)
+        static IEnumerator WithdrawAndPark(ResearchS1FanPart part, float outwardMetres, float lateralMetres, bool layFlat = false)
         {
             step = "withdraw:" + part.stableId; Record("before");
             yield return Translate(part, -part.seat.forward * outwardMetres);
             Require(part.Placement == S1Placement.NotInstalled, "Actual part did not withdraw. Collision or kinematic stop remains.");
             step = "park:" + part.stableId;
             yield return Translate(part, part.seat.right * lateralMetres);
+            // Released parts are free bodies (V5): set them down on the bench top instead of dropping them in front of it. A guard on its
+            // rim toppled off the 0.44 m bench and a ring rolled off it, so round parts are laid flat. Lower to just above bench height first, then slide over the bench top.
+            if (layFlat) yield return Tip(part, 90);
+            var over = part.transform.position + part.seat.forward * (outwardMetres - (layFlat ? 0 : .08f));
+            float benchTop = Physics.RaycastAll(over + Vector3.up, Vector3.down, 3, ~0, QueryTriggerInteraction.Ignore)
+                .Where(h => !h.collider.attachedRigidbody).Max(h => h.point.y);
+            yield return Translate(part, Vector3.down * (PartBounds(part).min.y - benchTop - .03f));
+            yield return Translate(part, over - part.transform.position - Vector3.up * (over.y - part.transform.position.y));
             yield return Release();
             Require(part.Placement == S1Placement.NotInstalled && !part.IsHeld, "Removed part did not retain a released uninstalled pose.");
             Record("after");
+        }
+
+        static Bounds PartBounds(ResearchS1FanPart part) => part.GetComponentsInChildren<Collider>().Where(c => c.enabled && !c.isTrigger)
+            .Select(c => c.bounds).Aggregate((a, b) => { a.Encapsulate(b); return a; });
+
+        static IEnumerator Tip(ResearchS1FanPart part, float degrees)
+        {
+            step = "tip:" + part.stableId; Record("before");
+            var pivot = PartBounds(part).center;
+            for (float done = 0; Mathf.Abs(done) < Mathf.Abs(degrees) - .001f;)
+            {
+                float delta = Mathf.Clamp(degrees - done, -12, 12);
+                Send(Orbit(ResearchFlowVisualInput.ControllerWorldPose(side), pivot, part.seat.right, delta)); done += delta;
+                yield return AwaitObservation(SdkSettled, "SDK tip movement", part);
+            }
+            Record("after");
+        }
+
+        // A part picked up from the bench is lifted and brought 0.25 m out in front of the fan before it is lined up with its seat.
+        static IEnumerator LiftClear(ResearchS1FanPart part)
+        {
+            yield return Translate(part, Vector3.up * .25f);
+            float outward = .25f - part.Pose.depthMm / 1000f;
+            if (outward > .01f) yield return Translate(part, -part.seat.forward * outward);
+            // A round part released on the bench can roll onto its side; turn it back onto the seat axis in the hand.
+            for (int i = 0; i < 20 && part.Pose.tiltDeg > 1; i++)
+            {
+                var axis = Vector3.Cross(part.mate.forward, part.seat.forward);
+                if (axis.sqrMagnitude < 1e-8f) break;
+                float delta = Mathf.Min(12, Vector3.Angle(part.mate.forward, part.seat.forward));
+                Send(Orbit(ResearchFlowVisualInput.ControllerWorldPose(side), PartBounds(part).center, axis.normalized, delta));
+                yield return AwaitObservation(SdkSettled, "SDK upright turn", part);
+            }
+        }
+
+        // Lift a guard that was laid flat on the bench, stand it on its rim facing the fan and bring it in front of the bench edge.
+        static IEnumerator StandUp(ResearchS1FanPart part, float outwardMetres)
+        {
+            yield return Translate(part, Vector3.up * .3f);
+            yield return Tip(part, -90);
+            // Come out to a depth, not by a fixed step: let go flat, the guard slid up to 0.34 m along the bench (8 Nov, both
+            // early-Inspect runs) and a fixed step then stood it behind its seat plane, so the move to the seat ran into the fan.
+            float outward = outwardMetres - part.Pose.depthMm / 1000f;
+            if (Mathf.Abs(outward) > .01f) yield return Translate(part, -part.seat.forward * outward);
         }
 
         static IEnumerator ReturnToSeat(ResearchS1FanPart part, float depthMm)
@@ -525,6 +635,12 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             step = label;
             yield return AwaitObservation(() => !selected && hand.State != InteractorState.Select, "stable released capture state");
+            if (label == pauseAfter)
+            {
+                pauseAfter = null; pausedAt = EditorApplication.timeSinceStartup;
+                Status = "PausedAt:" + label; Record("held-for-dev-examine");
+                while (Status != "Running") yield return null;
+            }
             if (!captureFrames) { Record("capture-omitted-data-run"); yield break; }
             Record("capture-request");
             string path = Path.Combine(output, label + ".png");
@@ -614,9 +730,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             return new
             {
-                observation, step, frame = Time.frameCount, realtime = Time.realtimeSinceStartupAsDouble, session, run,
+                observation, step, frame = Time.frameCount, realtime = Time.realtimeSinceStartupAsDouble, session, run, rear_alignment_demonstration = rearAlignmentDemo,
                 input_source = "SimulatedController", test_data = true, task_state = task.Capture(), grab_intent = GrabIntentEvidence(), thread_input = ThreadInputEvidence(task.rearLock),
-                parts = new[] { task.frontClip, task.frontGuard, task.spinner, task.blade, task.rearLock }.Select(Part).ToArray(),
+                parts = new[] { task.frontClip, task.frontGuard, task.spinner, task.blade, task.rearLock, task.rearGuard }.Select(Part).ToArray(),
                 controller = new { position = V(ResearchFlowVisualInput.ControllerWorldPose(side).position), rotation = Q(ResearchFlowVisualInput.ControllerWorldPose(side).rotation) },
                 hand_state = hand.State.ToString(), selected_id = hand.Interactable ? hand.Interactable.GetInstanceID() : 0,
                 sdk_movement = hand.Movement == null ? null : new { type = hand.Movement.GetType().Name, stopped = hand.Movement.Stopped,
@@ -631,8 +747,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         public static void Stop() { if (Running) Finish(new OperationCanceledException("Stopped before bounded proof completed.")); }
         static void Finish(Exception failure)
         {
-            if (!Running) return;
+            if (!Running || Status == "ReleasingInput") return;
             EditorApplication.update -= Tick;
+            pauseAfter = null;
             ClearObstructionWitness();
             error = failure == null ? null : failure.ToString();
             Status = "ReleasingInput";

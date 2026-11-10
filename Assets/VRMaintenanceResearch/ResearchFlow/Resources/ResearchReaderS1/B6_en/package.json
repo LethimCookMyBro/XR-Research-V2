@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B6.en",
+  "version": "v6-4573e1fd698feb10.7aa3bc66dff54e59",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v6_EN.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B6_en/source_pdf",
+  "source_sha256": "4ec335638c42ea0938c91a754fecae23c9b8f525fab99399c4620d93831d535d",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p01",
+      "sha256": "f70b6c552c70f0b0e34df5ff3daaa07b0746b9fdb867401f22c87241a44de009"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p02",
+      "sha256": "dfa41de81f2903d5bcecfd801c11c43822f8e53a566a85dc78d8f24d325954d1"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p03",
+      "sha256": "41ff88eff0425a12a120be7763b5b6d8de93a046fb4ba3e5d6e79c8de3342d22"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p04",
+      "sha256": "36addb3b2a71e8a02d35e7d163cfcede8808e91c886763d25269b3318719fa4e"
+    },
+    {
+      "page": 5,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p05",
+      "sha256": "8c3d0eb363c4e5ddb5357a160b9ffabb721b8501e5f2e4d609891ec5dcb5b862"
+    },
+    {
+      "page": 6,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_en/pages/p06",
+      "sha256": "371a192519b74c209822d0742f88c852e0aa860957d9e3b3582db0bf4d670ad1"
+    }
+  ],
+  "steps": [
+    {
+      "text_en": "<size=24><color=#5B6B7F>Choose a topic</color></size>\n<size=46><b>Check F2 for vibration or knocking</b></size>\n\n<size=34><color=#4A5A6E>Choose the front, blade or rear. You need not check every part.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> No power while you repair. Work only on guards, blade and fasteners.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Front guard</color></size>\n<size=46><b>Check the front guard rim</b></size>\n\n<size=34><color=#4A5A6E>Look at the rim marks and clip.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Marks align, rim flush, clip closed. Fitted with the marks offset or the clip open is not locked.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Front guard</color></size>\n<size=46><b>Remove the front guard: open the clip, turn to the mark, pull off</b></size>\n\n<size=34><color=#4A5A6E>Press Trigger once at the clip, then hold the guard rim with Grip.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The blade and cap are visible.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Blade and cap</color></size>\n<size=46><b>Check the blade and its cap</b></size>\n\n<size=34><color=#4A5A6E>The cap is the round part at the blade centre.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Blade fully on pin, cap tight. A threaded cap may still be loose.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Blade and cap</color></size>\n<size=46><b>Remove the blade: unthread its cap, then pull the blade off</b></size>\n\n<size=34><color=#4A5A6E>Cap: hold Trigger, turn clockwise from the front. Blade: hold Grip, pull along the shaft.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The ring around the shaft is visible.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Rear guard</color></size>\n<size=46><b>Try moving the rear guard rim</b></size>\n\n<size=34><color=#4A5A6E>Hold the visible outer rim with Grip.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The rim stays still. A threaded ring may still be loose.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Rear guard</color></size>\n<size=46><b>To realign the rear guard, unthread the ring and pull it off</b></size>\n\n<size=34><color=#4A5A6E>Hold Trigger. Turn counterclockwise from the front until it is free.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The guard can be realigned.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Rear guard</color></size>\n<size=46><b>Align the rear guard, refit the ring and tighten it</b></size>\n\n<size=34><color=#4A5A6E>Guard: hold Grip. Ring: hold Trigger, turn clockwise from the front.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> The guard rim stays still.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Refit the blade with its groove on the pin, then tighten the cap</b></size>\n\n<size=34><color=#4A5A6E>Blade: hold Grip, push fully in. Cap: hold Trigger, turn counterclockwise from the front.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Blade fully seated, cap tight.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Reassemble</color></size>\n<size=46><b>Refit the front guard, turn it to lock, then close the clip</b></size>\n\n<size=34><color=#4A5A6E>Hold the rim with Grip, push flush and turn. Press Trigger once at the clip.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Both guards fitted, clip closed.</color></size>"
+    },
+    {
+      "text_en": "<size=24><color=#5B6B7F>Check my work</color></size>\n<size=46><b>Select Check my work on the task panel and listen</b></size>\n\n<size=34><color=#4A5A6E>It runs for 3 seconds, before or after repair. Missing guards prevent the test. Report system faults to the researcher.</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> Passed and ready means done. Abnormal noise means looseness or misalignment remains; correct it and test again.</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_01",
+      "sha256": "083a6d30d70f4f31a2b913e2e0e594d2e51912a15a425904b633f22a8deb6e3d",
+      "caption_en": "Choose an area to check\nRepair F2's vibration or knocking. You need not check every part."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_02",
+      "sha256": "bd8323eed6956f25b7f7ba2de0813a62cc91558d38d706cb412f2ec01364201b",
+      "caption_en": "Front guard\nCompare the marks, rim and clip with the picture."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_03",
+      "sha256": "df0d9e63bc2c901a114729bad1cb0583186bbc5ecd03e7bdeb7029b840d36547",
+      "caption_en": "Blade and cap\nThe cap is the round part at the blade centre."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_04",
+      "sha256": "d05d4bae9e70ade9856868c5669e1e337050b491a737e06539bead92c25ce3f1",
+      "caption_en": "Rear guard and ring\nThe rim is visible outside. Remove the blade to see the ring face."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_05",
+      "sha256": "534681e5dac33c0ddbfb697f094980281a9c2d178cebb17fca8cee30d080676f",
+      "caption_en": "Open the inside when needed\nRemove the cap before the blade. The ring is behind the blade."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_06",
+      "sha256": "e73241ba1fd2317189e3239b15c6a29c61871d1a88407552a6c92620517c9359",
+      "caption_en": "Find the part you are turning\nDirections are viewed from the front. Unthread fully before pulling."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_07",
+      "sha256": "98e42aa3a35f118587a8f68a592f25cbbfd77e8843e0acfed92cb2707cd21524",
+      "caption_en": "Realign the rear guard when needed\nFrom the front, tighten the ring clockwise."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_08",
+      "sha256": "b9a3fc3b11cc642fc410891261578e16f52b84d6aecc15e9e36ade63e861cf9a",
+      "caption_en": "Refit the parts you removed\nRear guard and ring, blade, cap, front guard, then close the clip."
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_09",
+      "sha256": "cf6dd32bff59c316ee6b236d3b384a9c4b439c2f0789bbc34c8a8249aa20ea8e",
+      "caption_en": "Repair the outer parts\nLeave the base, pole and head in place"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_en_10",
+      "sha256": "bca7731a95a36f2da56d44983941a004f7681c4b7c481ff1887286f0c3d3dfdb",
+      "caption_en": "Fit both guards before testing\nThe 3-second test can be used before or after repair."
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B6_en.mp4",
+    "sha256": "9907eb8515b986db7c0fdc9a7db0c87bc4ee1e0e1e85ba78bb533ef4dcb45d0f",
+    "duration_seconds": 164.06,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 23.27
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 23.27,
+        "end_seconds": 35.0
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 35.0,
+        "end_seconds": 45.75
+      },
+      {
+        "stage": "do",
+        "start_seconds": 45.75,
+        "end_seconds": 64.46
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 64.46,
+        "end_seconds": 76.74
+      },
+      {
+        "stage": "do",
+        "start_seconds": 76.74,
+        "end_seconds": 86.51
+      },
+      {
+        "stage": "do",
+        "start_seconds": 86.51,
+        "end_seconds": 96.11
+      },
+      {
+        "stage": "do",
+        "start_seconds": 96.11,
+        "end_seconds": 105.87
+      },
+      {
+        "stage": "do",
+        "start_seconds": 105.87,
+        "end_seconds": 115.4
+      },
+      {
+        "stage": "do",
+        "start_seconds": 115.4,
+        "end_seconds": 121.81
+      },
+      {
+        "stage": "do",
+        "start_seconds": 121.81,
+        "end_seconds": 129.48
+      },
+      {
+        "stage": "do",
+        "start_seconds": 129.48,
+        "end_seconds": 143.19
+      },
+      {
+        "stage": "done",
+        "start_seconds": 143.19,
+        "end_seconds": 164.06
+      }
+    ]
+  }
+}

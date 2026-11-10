@@ -26,16 +26,21 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var translations=new[] {
                 new KeyValuePair<string,string>("扇風機が止まっていないため、まだ見られません。", "Wait until the fan stops before examining it."),
                 new KeyValuePair<string,string>("前ガード：外れている", "Front guard: removed"),
-                new KeyValuePair<string,string>("前ガード：マーク一致・クリップ閉", "Front guard: marks aligned; clip closed"),
-                new KeyValuePair<string,string>("前ガード：ずれ／クリップ開", "Front guard: misaligned or clip open"),
+                new KeyValuePair<string,string>("前ガード：", "Front guard: "),
+                new KeyValuePair<string,string>("マーク一致", "marks aligned"),
+                new KeyValuePair<string,string>("マークずれ", "marks not aligned"),
+                new KeyValuePair<string,string>("・クリップ閉", "; clip closed"),
+                new KeyValuePair<string,string>("・クリップ開", "; clip open"),
                 new KeyValuePair<string,string>("羽根：奥まで入り動かない", "Blade: fully seated; does not move"),
                 new KeyValuePair<string,string>("羽根：浮き／動く", "Blade: not fully seated or moves"),
                 new KeyValuePair<string,string>("後ガード：外れている", "Rear guard: removed"),
                 new KeyValuePair<string,string>("後ガード：縁が動かない", "Rear guard: rim does not move"),
                 new KeyValuePair<string,string>("後ガード：縁が動く", "Rear guard: rim moves"),
                 new KeyValuePair<string,string>("前ガードは外れています。", "The front guard is removed."),
-                new KeyValuePair<string,string>("マークが合い、クリップが閉じています。", "The marks align and the clip is closed."),
-                new KeyValuePair<string,string>("マークがずれているか、クリップが閉じていません。", "The marks do not align or the clip is open."),
+                new KeyValuePair<string,string>("縁のマークが合っています。", "The rim marks align. "),
+                new KeyValuePair<string,string>("縁のマークがずれています。", "The rim marks do not align. "),
+                new KeyValuePair<string,string>("クリップは閉じています。", "The clip is closed."),
+                new KeyValuePair<string,string>("クリップは開いています。", "The clip is open."),
                 new KeyValuePair<string,string>("前ガードで羽根が見えません。", "The front guard hides the blade."),
                 new KeyValuePair<string,string>("羽根は奥まで入り、動きません。", "The blade is fully seated and does not move."),
                 new KeyValuePair<string,string>("羽根が奥まで入っていないか、動きます。", "The blade is not fully seated or moves."),
@@ -56,6 +61,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 foreach(var pair in translations) japanese=japanese.Replace(pair.Key,pair.Value);
                 return japanese;
             }
+            // 3 Nov 2026: the front guard gained rim alignment marks; marks and clip are now reported as separate facts.
+            string Front(string text,S1TaskBState s,bool jp)
+            {
+                string line=(jp?"前ガード：":"ตะแกรงหน้า: ")+(s.frontGuardAligned?(jp?"マーク一致":"เครื่องหมายตรง"):(jp?"マークずれ":"เครื่องหมายไม่ตรง"))
+                    +(jp?"・":" ")+(s.frontGuardClipped?(jp?"クリップ閉":"คลิปปิด"):(jp?"クリップ開":"คลิปเปิด"));
+                string sentence=(s.frontGuardAligned?(jp?"縁のマークが合っています。":"เครื่องหมายที่ขอบตรงกัน"):(jp?"縁のマークがずれています。":"เครื่องหมายที่ขอบไม่ตรงกัน"))
+                    +(jp?"":" · ")+(s.frontGuardClipped?(jp?"クリップは閉じています。":"คลิปปิดอยู่"):(jp?"クリップは開いています。":"คลิปเปิดอยู่"));
+                foreach(var old in new[]{"前ガード：マーク一致・クリップ閉","前ガード：ずれ／クリップ開","ตะแกรงหน้า: ตรง คลิปปิด","ตะแกรงหน้า: ไม่ตรง หรือคลิปเปิด"}) text=text.Replace(old,line);
+                foreach(var old in new[]{"マークが合い、クリップが閉じています。","マークがずれているか、クリップが閉じていません。","เครื่องหมายตรงกัน และคลิปปิด","เครื่องหมายไม่ตรง หรือคลิปไม่ปิด"}) text=text.Replace(old,sentence);
+                return text;
+            }
             var placements=new[]{S1Placement.NotInstalled,S1Placement.Partial,S1Placement.Seated};
             var threads=new[]{S1ThreadState.Absent,S1ThreadState.EngagedLoose,S1ThreadState.Tight};
             var bits=new[]{false,true};
@@ -71,10 +87,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 foreach(var target in targets)
                 {
                     foreach(var language in new[]{"Thai","Japanese"})
-                        Equal(ResearchFanObservationBaseline20261030.Get(state,target,language)
+                        Equal(Front(ResearchFanObservationBaseline20261030.Get(state,target,language),state,language=="Japanese")
                             .Replace("นั่งไม่เต็ม","ใส่ไม่สุด").Replace("นั่งเต็ม","ใส่สุด").Replace("ใบพัด: ไม่เต็ม","ใบพัด: ใส่ไม่สุด"),
                             ResearchS1FanObservations.Get(state,target,language),target+"/"+language);
-                    string jp=ResearchFanObservationBaseline20261030.Get(state,target,"Japanese");
+                    string jp=Front(ResearchFanObservationBaseline20261030.Get(state,target,"Japanese"),state,true);
                     Equal(English(jp),ResearchS1FanObservations.Get(state,target,"English"),target+"/English");
                 }
             }
@@ -112,7 +128,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             bool jp = language == nameof(ParticipantLanguage.Japanese);
             if (value == null || !value.systemIntegrityValid || !jp && language != nameof(ParticipantLanguage.Thai))
                 return ResearchStrings.Get("examine.info.unavailable", language);
-            if (!value.powerIsolated || value.motorRunning) return jp ? "扇風機が止まっていないため、まだ見られません。" : "ยังส่องดูไม่ได้: พัดลมยังไม่หยุดนิ่ง";
+            if (!value.powerIsolated || value.motorRunning) return jp ? "扇風機が止まっていないため、まだ見られません。" : "ยังดูสภาพไม่ได้: พัดลมยังไม่หยุดนิ่ง";
             // The station has one "Examine" chip on the whole fan; it reports every area visible right now, one line each (owner 29 Oct:
             // the Reader told participants to examine each area but the chip only returned the unavailable placeholder).
             if (target == "B.module")

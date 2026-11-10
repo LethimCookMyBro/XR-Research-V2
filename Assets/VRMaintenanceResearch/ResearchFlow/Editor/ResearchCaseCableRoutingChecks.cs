@@ -56,7 +56,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 checks.Add(new{name,pass,observed});
                 if(!pass)failures.Add(name);
             }
-            var protectedEnds=task.wiring.contacts.Select(c=>c.mate).Concat(task.wiring.ends.Select(e=>e.plug.transform)).Distinct().ToArray();
+            var protectedEnds=task.wiring.contacts.Select(c=>c.mate).Concat(task.wiring.ends.SelectMany(e=>new[]{e.plug.transform,e.sourcePlug.transform})).Distinct().ToArray();
             var poses=protectedEnds.ToDictionary(t=>t,t=>t.localToWorldMatrix);
             var spans=new List<object>();
             int guided=0,hits=0;
@@ -88,16 +88,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         Check(radius>=.0079,id+"/8 mm bend radius",radius);
                         Check(Vector3.Distance(span.cachedPath[0],span.from.TransformPoint(span.fromExit))<.0001f &&
                             Vector3.Distance(span.cachedPath[span.cachedPath.Length-1],span.to.TransformPoint(span.toExit))<.0001f,id+"/exact endpoints",true);
-                        Check(points.All(p=>p.x>=-.013f&&p.x<=.432f&&p.y>=-.002f&&p.y<=.47f&&p.z>=-.105f&&p.z<=.105f),id+"/within case envelope",points.Length);
+                        // S1_LAYOUT_CABLE_TRAY_20261110: the three loose leads end on trays beside the case (ResearchS1CableTrayChecks).
+                        if(!task.wiring.ends.Any(e=>e.cable==cable))
+                            Check(points.All(p=>p.x>=-.013f&&p.x<=.432f&&p.y>=-.002f&&p.y<=.47f&&p.z>=-.105f&&p.z<=.105f),id+"/within case envelope",points.Length);
                     }
                     spans.Add(new{cable=cable.assetId,from=span.from.name,span.cachedGuided,length,expected=span.length,radius,slotHits});
                 }
             }
-            Check(guided==4,"four fixed supply/fan spans use guides",guided);
+            Check(guided==8,"eight fixed supply, fan and front-panel spans use guides",guided);
             Check(hits==0,"cable centerlines clear RAM and GPU work rectangles at rest",hits);
             Check(task.wiring.AuthoredBindingsValid(),"authored wiring bindings remain valid",true);
-            Check(task.wiring.contacts.Count(c=>c.Connected)==16,"sixteen fixed contacts remain connected",task.wiring.contacts.Count(c=>c.Connected));
-            Check(task.wiring.ends.Length==3&&task.wiring.cables.Length==8,"three interactive ends and eight cables remain",task.wiring.ends.Select(e=>e.plug.stableId).ToArray());
+            Check(task.wiring.contacts.Count(c=>c.Connected)==13,"thirteen fixed base contacts remain connected",task.wiring.contacts.Count(c=>c.Connected));
+            Check(task.wiring.ends.Length==3&&task.wiring.cables.Length==8,"three task cables and eight cables remain",task.wiring.ends.Select(e=>e.plug.stableId).ToArray());
             Check(poses.All(p=>Vector3.Distance(p.Key.position,p.Value.GetColumn(3))<.000001f&&Quaternion.Angle(p.Key.rotation,p.Value.rotation)<.001f),"routing does not move plugs or fixed contacts",protectedEnds.Length);
             var all=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<Transform>(true)).ToList();
             var helper=typeof(ResearchS1ReaderMediaBuilder);

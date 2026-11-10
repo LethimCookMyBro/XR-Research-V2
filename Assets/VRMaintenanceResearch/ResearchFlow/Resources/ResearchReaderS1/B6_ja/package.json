@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B6.ja",
+  "version": "v6-4573e1fd698feb10.7aa3bc66dff54e59",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "S1_TaskB_Reference_v6_JA.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B6_ja/source_pdf",
+  "source_sha256": "8636c85b958fce267b3140ca665a739d8ee66d5c2a018179bd786606334dc9cd",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p01",
+      "sha256": "a6e66fec20bdd3a715e212aa1e0c2a107f205c1846e7ee22421c2c874fe0bbb6"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p02",
+      "sha256": "aed7ad1815039d623eae4ba9725aa22054146d4645a3212d87241dcdd6b06382"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p03",
+      "sha256": "a4f4df87c387a34664d9c90c6b48bc04c98b04bb11d580eadb2c5ecb3ac9dd36"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p04",
+      "sha256": "f9a0ece1b660ff22aa818902077948866830626573a8b059d6518a404801982b"
+    },
+    {
+      "page": 5,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p05",
+      "sha256": "b4daa19c3c41aa6977c9ebfcb46199fc9c4bc13ebb01ef318620721e7cf4a69d"
+    },
+    {
+      "page": 6,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B6_ja/pages/p06",
+      "sha256": "92a10f3fba4c0238594def04650241abd962718beb7c7c6de3b4ddc2fc2eb9b9"
+    }
+  ],
+  "steps": [
+    {
+      "text_ja": "<size=24><color=#5B6B7F>項目を選ぶ</color></size>\n<size=46><b>振動や打音がする F2 を調べる</b></size>\n\n<size=34><color=#4A5A6E>前、羽根、後ろから選ぶ。全部を調べる必要はない</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 修理中は電源なし。直すのはガード・羽根・固定部品だけ</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>前ガード</color></size>\n<size=46><b>前ガードの縁を確認する</b></size>\n\n<size=34><color=#4A5A6E>縁のマークとクリップを見る</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> マークが合い、縁が密着し、クリップが閉じる。付いていても、マークがずれているかクリップが開いていれば固定されていない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>前ガード</color></size>\n<size=46><b>前ガードを外す：クリップを開き、マークまで回してまっすぐ抜く</b></size>\n\n<size=34><color=#4A5A6E>クリップで Trigger を1回押し、Grip でガードの縁を持つ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 羽根とキャップが見える</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>羽根とキャップ</color></size>\n<size=46><b>羽根とキャップを確認する</b></size>\n\n<size=34><color=#4A5A6E>キャップは羽根の中央にある丸い部品</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 羽根はピンの奥、キャップは締まる。キャップがねじに入っていても、締まっていないことがある</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>羽根とキャップ</color></size>\n<size=46><b>羽根を外す：キャップをねじが外れるまでゆるめ、羽根をまっすぐ抜く</b></size>\n\n<size=34><color=#4A5A6E>キャップは Trigger で正面から時計回り。羽根は Grip で軸に沿って抜く</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 軸のまわりのリングが見える</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>後ガード</color></size>\n<size=46><b>後ガードの縁を動かしてみる</b></size>\n\n<size=34><color=#4A5A6E>外から見える縁を Grip で持つ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 縁はぐらつかない。リングがねじに入っていても、締まっていないことがある</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>後ガード</color></size>\n<size=46><b>後ガードを合わせ直すときは、リングをゆるめて抜く</b></size>\n\n<size=34><color=#4A5A6E>Trigger で持ち、正面から反時計回りにねじが外れるまで回す</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ガードの位置を直せる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>後ガード</color></size>\n<size=46><b>後ガードを合わせ、リングを戻して締める</b></size>\n\n<size=34><color=#4A5A6E>ガードは Grip、リングは Trigger で正面から時計回り</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> ガードの縁がぐらつかない</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=46><b>羽根の溝をピンに合わせて戻し、キャップを締める</b></size>\n\n<size=34><color=#4A5A6E>羽根は Grip で奥まで押す。キャップは Trigger で正面から反時計回り</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 羽根が奥まで入り、キャップが締まる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>組み立て</color></size>\n<size=46><b>前ガードを戻し、マークまで回して固定し、クリップを閉じる</b></size>\n\n<size=34><color=#4A5A6E>Grip で縁を持ち、押し当てて回す。クリップで Trigger を1回押す</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 全ガードが付き、クリップが閉じる</color></size>"
+    },
+    {
+      "text_ja": "<size=24><color=#5B6B7F>仕上がりを確認</color></size>\n<size=46><b>作業パネルで「仕上がりを確認」を押し、音を聞く</b></size>\n\n<size=34><color=#4A5A6E>3秒回転し、修理前後どちらでも使える。ガード不足では回らない。不具合は研究者へ</color></size>\n\n<size=34><color=#2E7D32><b>✓</b> 合格・使用可能で完了。異音が残ればゆるみやずれがある。直してもう一度確認できる</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_01",
+      "sha256": "e1d776e277319c24e395f8809a47bddb82913abb92ce150f56cc14b2c9d64737",
+      "caption_ja": "調べる場所を選ぶ\n振動や打音がする F2 を修理する。全部を調べる必要はない"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_02",
+      "sha256": "bd9111d0565380c89a1916b8fccd549ca24ffe937e4f115e530c05f6ddaf5d8c",
+      "caption_ja": "前ガード\nマーク、ガードの縁、クリップを画像と比べる"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_03",
+      "sha256": "22ea0b5d8ca12afe714e6f37ddfe0a2345f800aee36a6b530e231b8ebca49578",
+      "caption_ja": "羽根とキャップ\nキャップは羽根の中央にある丸い部品"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_04",
+      "sha256": "e33112694738956d3765744ea42bb97fe20e9a3ce291fc295de62b7cdd66934e",
+      "caption_ja": "後ガードとリング\n縁は外から見える。羽根を外すとリングの正面が見える"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_05",
+      "sha256": "e04295b5fc0c90e3c96cc18c82a430d852fc8f3ea10320278d18d342014c84d9",
+      "caption_ja": "内側を見る必要があるとき\nキャップ、羽根の順に外すと、軸のまわりのリングが見える"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_06",
+      "sha256": "fce7c9ab66da7177baf0b8e451cb1c0465bd91105b72330ee622b7053e93bfe3",
+      "caption_ja": "回している部品を選んで見る\n正面から見た向き。ねじが外れてから抜く"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_07",
+      "sha256": "7fe42c3cd70547be6a503c771f5154c78e959c156562f41b6b452a7dcdd7c3b3",
+      "caption_ja": "必要なときに後ガードを合わせ直す\n正面から時計回りにリングを締める"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_08",
+      "sha256": "73a632c092b7b7129f9bd1b47d3fe6fa63eeb583b5d60eb04de4eb5167178558",
+      "caption_ja": "外した部品を戻す\n後ガードとリング、羽根、キャップ、前ガード、クリップの順"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_09",
+      "sha256": "75a971b3601b4615c46e93f684779ab55856d4bc1e75bbf25c0a0098df177cfa",
+      "caption_ja": "外側の部品を直す\n台・支柱・本体は外さない"
+    },
+    {
+      "resource": "ResearchReaderS1/images_v2/B6_ja_10",
+      "sha256": "3cdc8f445b9cdf997bf0bd9f0cc139e348553754aa5405ea814ffb245037fc37",
+      "caption_ja": "全ガードを付けてから「仕上がりを確認」を押す\n3秒回転。修理前の音の確認にも修理後の確認にも使える"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B6_ja.mp4",
+    "sha256": "adeb4d0fc954db729183675870924db86146216fae013335e1b45ef45d68388c",
+    "duration_seconds": 194.42,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "problem",
+        "start_seconds": 0.0,
+        "end_seconds": 27.42
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 27.42,
+        "end_seconds": 42.56
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 42.56,
+        "end_seconds": 55.61
+      },
+      {
+        "stage": "do",
+        "start_seconds": 55.61,
+        "end_seconds": 79.15
+      },
+      {
+        "stage": "watch",
+        "start_seconds": 79.15,
+        "end_seconds": 95.34
+      },
+      {
+        "stage": "do",
+        "start_seconds": 95.34,
+        "end_seconds": 106.96
+      },
+      {
+        "stage": "do",
+        "start_seconds": 106.96,
+        "end_seconds": 117.32
+      },
+      {
+        "stage": "do",
+        "start_seconds": 117.32,
+        "end_seconds": 129.35
+      },
+      {
+        "stage": "do",
+        "start_seconds": 129.35,
+        "end_seconds": 140.41
+      },
+      {
+        "stage": "do",
+        "start_seconds": 140.41,
+        "end_seconds": 147.13
+      },
+      {
+        "stage": "do",
+        "start_seconds": 147.13,
+        "end_seconds": 155.38
+      },
+      {
+        "stage": "do",
+        "start_seconds": 155.38,
+        "end_seconds": 170.31
+      },
+      {
+        "stage": "done",
+        "start_seconds": 170.31,
+        "end_seconds": 194.42
+      }
+    ]
+  }
+}

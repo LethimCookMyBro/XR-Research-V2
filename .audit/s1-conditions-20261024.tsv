@@ -1,0 +1,3 @@
+ts	phase	decision	why	evidence	result
+2026-10-24T11:00:00Z	start	Resume seven missing cells from existing handoff	Reuse unchanged source and passed Thai_BA_P instead of restarting baseline	D:/VR_TMU/transaction-verification-external/s1-movement-20261024/HANDOFF.md	Source23d2cfe tracked clean; no build planned
+2026-10-24T11:00:01Z	foreground	Test real owned-window activation before trials	Attack the premise: foreground API success did not mean stable Game View focus in previous trials	MCP GameView focused=false; xrsim runtime list=[]	open

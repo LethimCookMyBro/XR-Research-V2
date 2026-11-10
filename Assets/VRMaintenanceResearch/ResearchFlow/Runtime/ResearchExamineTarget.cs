@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Oculus.Interaction;
 using TMPro;
 using UnityEngine;
@@ -34,24 +35,41 @@ namespace VRMaintenanceResearch.ResearchFlow
         readonly Dictionary<int, (string context, string source)> presses = new Dictionary<int, (string, string)>();
         string releasedContext, observedInformation;
         float observationUntil;
+        string selectedPart;
+        (string id, Transform anchor, Collider[] colliders)[] physicalParts;
+        bool PhysicalPartSelection => controller && controller.IntentionalExamineActive && !training && task
+            && (task.taskId == "A" && stableTarget == "A.module" || controller.PointedExamineActive && task.taskId == "B" && stableTarget == "B.module");
+        string TargetId => PhysicalPartSelection ? selectedPart : stableTarget;
         RectTransform connector;
         readonly Vector3[] screenCorners = new Vector3[4];
         readonly Plane[] targetFrustum = new Plane[6];
+        readonly Vector3[] clippedPanelCorners = new Vector3[8];
+        readonly float[] panelCornerDepths = new float[4];
 
-        public bool Available => controller && controller.UsesDirectPartFeedback ? false : training ? isActiveAndEnabled && training.Active : isActiveAndEnabled && controller && task && controller.Flow != null && controller.Flow.IsTaskActive
+        public bool Available => controller && controller.IntentionalExamineActive && !controller.LocalUICommandsAllowed ? false
+            : controller && controller.UsesDirectPartFeedback && !controller.IntentionalExamineActive ? false
+            : controller && controller.IntentionalExamineActive && !training && !PhysicalPartSelection ? false
+            : training ? isActiveAndEnabled && training.Active && controller.LocalUICommandsAllowed && controller.TutorialArmedFact == "examine" : isActiveAndEnabled && controller && task && controller.Flow != null && controller.Flow.IsTaskActive
             && controller.Flow.CanInteract && controller.Flow.CurrentTask == task.taskId && task.InteractionAllowed
             && !controller.Transitioning && string.IsNullOrEmpty(controller.Error);
-        public bool ChipVisible => false;
+        public bool ChipVisible => controller && controller.IntentionalExamineActive && focused == this && Available
+            && !string.IsNullOrEmpty(TargetId) && stationCanvas && stationCanvas.enabled && button && button.interactable;
+
+        public static void CancelPresses(ResearchSessionFlowController owner)
+        {
+            foreach (var target in Targets)
+                if (target && target.controller == owner) target.ClearPress();
+        }
 
         public static ResearchExamineTarget[] AvailableOnMain(ResearchSessionFlowController owner)
         {
-            return Targets.FindAll(t => t && t.controller == owner && t.Available).ToArray();
+            return owner && owner.IntentionalExamineActive ? Array.Empty<ResearchExamineTarget>() : Targets.FindAll(t => t && t.controller == owner && t.Available).ToArray();
         }
 
         public static bool TryExamineFromMain(ResearchSessionFlowController owner, string targetId, string input, out string information)
         {
             information = null;
-            if (!owner || !owner.LocalUICommandsAllowed || string.IsNullOrEmpty(input) ||
+            if (!owner || owner.IntentionalExamineActive || !owner.LocalUICommandsAllowed || string.IsNullOrEmpty(input) ||
                 (!owner.IsTechnical && (input == "None" || input.StartsWith("Simulated", StringComparison.Ordinal)))) return false;
             var target = Targets.Find(t => t && t.controller == owner && t.stableTarget == targetId && t.Available);
             if (!target || (target.training && owner.TutorialArmedFact != "examine")) return false;
@@ -95,13 +113,31 @@ namespace VRMaintenanceResearch.ResearchFlow
             SetVisible(false);
         }
 
-        void Update() { SetVisible(false); }
+        void Update()
+        {
+            if (!controller || !controller.IntentionalExamineActive || !Available)
+            {
+                if (focused == this) SetFocus(null);
+                SetVisible(false);
+                return;
+            }
+            UpdateFocus();
+            if (focused != this) return;
+            if (shownLanguage != controller.Language)
+            {
+                shownLanguage = controller.Language;
+                if (label && controller.view) label.font = controller.view.Font;
+                RefreshLabel();
+            }
+            SetVisible(TryFocusBounds(out var bounds) && controller.origin && controller.origin.Camera && PlaceBesidePanels(controller.origin.Camera, bounds));
+        }
 
         void RefreshLabel()
         {
             if (!label || !controller) return;
-            string identity = ResearchStrings.Get("examine.target." + stableTarget, controller.Language);
-            if (identity.StartsWith("examine.target.", StringComparison.Ordinal)) identity = stableTarget;
+            string identity = ResearchStrings.Get("examine.target." + TargetId, controller.Language);
+            if (identity.StartsWith("examine.target.", StringComparison.Ordinal))
+                identity = TargetId.StartsWith("B.", StringComparison.Ordinal) ? ResearchStrings.Get(ResearchFlowView.AreaNameKey(TargetId), controller.Language) : TargetId;
             label.text = "<size=85%>" + identity + "</size>\n" + (string.IsNullOrEmpty(observedInformation)
                 ? "<b>" + ResearchStrings.Get("action.examine", controller.Language) + "</b>" : "<size=90%>" + observedInformation + "</size>");
             label.fontSize = 28;
@@ -247,7 +283,47 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (!panel || !panel.gameObject.activeInHierarchy || panel.PlacementBlocked || !panel.GetComponent<Canvas>().enabled) return false;
             var group = panel.GetComponent<CanvasGroup>();
-            return (!group || group.alpha > .01f) && chip.Overlaps(ScreenBounds(camera, (RectTransform)panel.transform, eye));
+            return (!group || group.alpha > .01f) && TryPanelScreenBounds(camera, (RectTransform)panel.transform, eye, out var bounds) && chip.Overlaps(bounds);
+        }
+
+        bool TryPanelScreenBounds(Camera camera, RectTransform rect, Camera.MonoOrStereoscopicEye eye, out Rect bounds)
+        {
+            bounds = default;
+            rect.GetWorldCorners(screenCorners);
+            for (int i = 0; i < 4; i++)
+            {
+                panelCornerDepths[i] = camera.WorldToViewportPoint(screenCorners[i], eye).z;
+                if (float.IsNaN(panelCornerDepths[i]) || float.IsInfinity(panelCornerDepths[i])) return false;
+            }
+            int count = ClipPanelToNear(screenCorners, panelCornerDepths, camera.nearClipPlane, clippedPanelCorners);
+            if (count < 3) return false;
+            var first = camera.WorldToViewportPoint(clippedPanelCorners[0], eye);
+            float xMin = first.x, xMax = first.x, yMin = first.y, yMax = first.y;
+            for (int i = 0; i < count; i++)
+            {
+                var point = camera.WorldToViewportPoint(clippedPanelCorners[i], eye);
+                if (float.IsNaN(point.x) || float.IsNaN(point.y) || float.IsInfinity(point.x) || float.IsInfinity(point.y)) return false;
+                xMin = Mathf.Min(xMin, point.x); xMax = Mathf.Max(xMax, point.x);
+                yMin = Mathf.Min(yMin, point.y); yMax = Mathf.Max(yMax, point.y);
+            }
+            bounds = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return true;
+        }
+
+        static int ClipPanelToNear(Vector3[] corners, float[] depths, float near, Vector3[] output)
+        {
+            // Projecting a behind-camera corner mirrors it across the viewport and can conceal every part chip.
+            int count = 0;
+            var previous = corners[3]; float previousDepth = depths[3]; bool previousInside = previousDepth >= near;
+            for (int i = 0; i < 4; i++)
+            {
+                var current = corners[i]; float currentDepth = depths[i]; bool currentInside = currentDepth >= near;
+                if (currentInside != previousInside)
+                    output[count++] = Vector3.LerpUnclamped(previous, current, (near - previousDepth) / (currentDepth - previousDepth));
+                if (currentInside) output[count++] = current;
+                previous = current; previousDepth = currentDepth; previousInside = currentInside;
+            }
+            return count;
         }
 
         Rect ScreenBounds(Camera camera, RectTransform rect, Camera.MonoOrStereoscopicEye eye)
@@ -293,28 +369,48 @@ namespace VRMaintenanceResearch.ResearchFlow
                 float nearest = pointer.MaxRayLength;
                 ResearchSessionFlowController sourceController = null;
                 string source = "None";
+                string candidatePart = null; Transform candidateAnchor = null; Collider[] candidateColliders = null;
                 foreach (var target in Targets)
                 {
                     if (!target.Available) continue;
                     if (sourceController != target.controller)
                     { sourceController = target.controller; source = sourceController.InputSourceForPointer(pointer.Identifier); }
                     if (source == "None") continue;
-                    if (target.TryFocusHit(pointer.Ray, nearest, out float distance)) { candidate = target; nearest = distance; }
+                    if (target.PhysicalPartSelection)
+                    {
+                        if (target.physicalParts == null) target.physicalParts = target.task.taskId == "A"
+                            ? FindObjectsByType<ResearchS1TaskAInput>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID)
+                                .Where(i => i.owner && i.owner.controller == target.controller && i.owner.port == target.task && ResearchS1TaskACatalog.Ids.Contains(i.stableId))
+                                .Select(i => (i.stableId, i.transform, i.GetComponentsInChildren<Collider>(true).Where(c => !c.isTrigger).ToArray())).ToArray()
+                            // Fan parts map to the three S1 areas, so the rear guard edge is examined from outside without a menu.
+                            : FindObjectsByType<ResearchS1FanPart>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID)
+                                .Where(p => p.owner && p.owner.port == target.task && Array.IndexOf(ResearchS1FanObservations.Areas, FanArea(p.stableId)) >= 0)
+                                .Select(p => (FanArea(p.stableId), p.transform, p.GetComponentsInChildren<Collider>(true).Where(c => !c.isTrigger).ToArray())).ToArray();
+                        var part = FindPhysicalPart(target.physicalParts, pointer.Ray, ref nearest, out var colliders, out var anchor);
+                        if (part != null) { candidate = target; candidatePart = part; candidateAnchor = anchor; candidateColliders = colliders; }
+                    }
+                    else if (target.TryFocusHit(pointer.Ray, nearest, out float distance))
+                    { candidate = target; candidatePart = null; candidateAnchor = null; candidateColliders = null; nearest = distance; }
                 }
                 if (!candidate) continue;
                 // Respect the SDK's nearer UI surface, including an expanded Reference.
                 if (pointer.CollisionInfo.HasValue && pointer.CollisionInfo.Value.Distance < nearest - .005f
                     && !(focused && focused.hoveringPointer == pointer.Identifier)) continue;
-                if (Physics.Raycast(pointer.Ray, out var obstruction, nearest - .005f, ~0, QueryTriggerInteraction.Ignore)
-                    && Array.IndexOf(candidate.focusColliders, obstruction.collider) < 0
-                    && obstruction.collider.name != "Trainer_Body"
-                    && !(candidate.training && obstruction.collider.transform.IsChildOf(candidate.training.transform))) continue;
+                if (PhysicalSelectionObstructed(pointer.Ray, nearest, candidatePart != null ? candidateColliders : candidate.focusColliders)) continue;
+                if (candidatePart != null && (candidate.selectedPart != candidatePart || candidate.focusAnchor != candidateAnchor))
+                {
+                    candidate.ClearPress(); candidate.observedInformation = null; candidate.observationUntil = 0;
+                    candidate.selectedPart = candidatePart;
+                    candidate.ConfigureFocus(candidateColliders, candidateAnchor);
+                    candidate.RefreshLabel();
+                }
                 SetFocus(candidate);
                 candidate.lastFocusTime = Time.unscaledTime;
                 return;
             }
             foreach (var target in Targets)
             {
+                if (target && target.controller && target.controller.IntentionalExamineActive) continue;
                 if (!target || !target.training || !target.Available || !target.controller || target.controller.TutorialArmedFact != "examine") continue;
                 SetFocus(target);
                 target.lastFocusTime = Time.unscaledTime;
@@ -323,6 +419,23 @@ namespace VRMaintenanceResearch.ResearchFlow
             // A short bridge lets the pointer travel from the part onto its adjacent chip.
             if (focused && Time.unscaledTime - focused.lastFocusTime > .35f && Time.unscaledTime >= focused.observationUntil) SetFocus(null);
         }
+
+        static string FindPhysicalPart((string id, Transform anchor, Collider[] colliders)[] parts, Ray ray, ref float nearest, out Collider[] hitColliders, out Transform anchor)
+        {
+            string selected = null; hitColliders = null; anchor = null;
+            foreach (var part in parts)
+                foreach (var collider in part.colliders)
+                    if (part.anchor && collider && collider.enabled && collider.gameObject.activeInHierarchy && collider.Raycast(ray, out var hit, nearest))
+                    { selected = part.id; anchor = part.anchor; hitColliders = part.colliders; nearest = hit.distance; }
+            return selected;
+        }
+
+        // The clip sits on the front guard, so pointing at it examines the front guard area.
+        static string FanArea(string part) => part == "B.front_guard_clip" ? "B.front_guard" : ResearchS1FanObservations.TargetForPart(part);
+
+        static bool PhysicalSelectionObstructed(Ray ray, float distance, Collider[] selectedColliders) =>
+            Physics.Raycast(ray, out var hit, distance - .005f, ~0, QueryTriggerInteraction.Ignore)
+                && Array.IndexOf(selectedColliders, hit.collider) < 0;
 
         public bool TryFocusHit(Ray ray, float maxDistance, out float distance)
         {
@@ -345,7 +458,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void SetVisible(bool visible)
         {
-            visible = false;
+            visible = visible && controller && controller.IntentionalExamineActive && Available && focused == this && !string.IsNullOrEmpty(TargetId);
             if (button) button.interactable = visible;
             if (stationCanvas) stationCanvas.enabled = visible;
             if (stationGroup) { stationGroup.alpha = visible ? 1 : 0; stationGroup.interactable = visible; stationGroup.blocksRaycasts = visible; }
@@ -376,7 +489,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             pointerSource = ""; pressedPointer = int.MinValue;
             if (!ChipVisible || eventData == null) return;
             string source = controller.InputSourceForPointer(eventData.pointerId);
-            if (source == "None" && !controller.IsTechnical) return;
+            if (source == "None") return;
             presses[eventData.pointerId] = (Context(), source);
         }
 
@@ -394,16 +507,18 @@ namespace VRMaintenanceResearch.ResearchFlow
             string input = pointerSource; int pointer = pressedPointer; string acquiredContext = releasedContext; ClearPress();
             if (!ChipVisible || !controller.LocalUICommandsAllowed || string.IsNullOrEmpty(input) || pointer == int.MinValue || acquiredContext != Context()) return;
             bool nativeController = ResearchUIFeedback.TryGetHapticDevice(controller, pointer, out var device);
-            if (training) training.Examine(stableTarget, input); else task.Examine(stableTarget, input);
-            if (string.IsNullOrEmpty(controller.Error))
+            if (training) training.Examine(TargetId, input); else task.Examine(TargetId, input);
+            if (string.IsNullOrEmpty(controller.Error) && controller.PointedExamineActive && !training)
+                controller.view?.ShowExamineResult(TargetId, task.ExamineInfo(TargetId, controller.Language)); // compact main-panel result, no card
+            else if (string.IsNullOrEmpty(controller.Error))
             {
-                observedInformation = training ? training.ExamineInfo(stableTarget, controller.Language) : task.ExamineInfo(stableTarget, controller.Language);
+                observedInformation = training ? training.ExamineInfo(TargetId, controller.Language) : task.ExamineInfo(TargetId, controller.Language);
                 observationUntil = Time.unscaledTime + 6f; RefreshLabel();
             }
             if (nativeController && string.IsNullOrEmpty(controller.Error)) ResearchUIFeedback.TryPulse(device);
         }
 
-        string Context() => stableTarget + "/" + controller?.Record?.run_id + "/" + controller?.Flow?.State
+        string Context() => TargetId + "/" + controller?.Record?.run_id + "/" + controller?.Flow?.State
             + "/" + controller?.Flow?.Paused + "/" + controller?.ReferenceOpen + "/" + controller?.ReferenceMinimized;
         void ClearPress() { pointerSource = ""; pressedPointer = int.MinValue; releasedContext = null; presses.Clear(); }
     }

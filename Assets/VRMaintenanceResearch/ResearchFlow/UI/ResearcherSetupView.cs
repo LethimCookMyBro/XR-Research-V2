@@ -317,7 +317,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     : controller.Record?.training_status == null || controller.Record.training_status == "Pending" ? R("pending")
                     : controller.Record.training_status, controller.Record?.training_status == "Passed");
                 status.text = (questOwner && attachedRecord == null ? "" : trainingStatus + "     ")
-                    + R("device") + "  " + Badge(controller.DeviceReady ? R("ready") : R("not_ready"), controller.DeviceReady)
+                    + R("device") + "  " + Badge(controller.DeviceReady ? R("ready") : R("not_ready") + DeviceWaiting(), controller.DeviceReady)
                     + "     " + R("logger") + "  " + Badge(controller.LoggerReady ? R("ready") : R("not_ready"), controller.LoggerReady);
                 // Assignment goes above readiness; it must not replace the Device/Logger reasons Start depends on.
                 if (attachedRecord == null && record != null)
@@ -501,6 +501,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             var beforeState = controller.Flow?.State;
             bool beforePaused = controller.Flow?.Paused == true;
             ExecuteGuarded(request.command, record, () => {
+                if (request.schema == "research.operator-command.2")
+                {
+                    var current = controller.Registry.List(record.group).Single(p => p.participant_id == request.participant_id);
+                    // Unity executes this check and the action on one main-thread turn, without a yield.
+                    ResearchOperatorGuard.DemandRequest(request, current, controller.Flow?.State ?? current.flow_state,
+                        controller.Flow?.Paused ?? current.paused);
+                }
                 switch (request.command)
                 {
                     case "start": controller.StartSession(record.participant_id, request.language ?? record.language,
@@ -751,7 +758,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (heading == setupScope)
                 {
                     heading.gameObject.SetActive(!hasSession);
-                    heading.text = questOwner ? R("scope_quest") : R("scope_pc");
+                    heading.text = ResearchBuildFlavor.DevReaderPrototype ? R("dev_reader") : questOwner ? R("scope_quest") : R("scope_pc");
                     heading.rectTransform.anchoredPosition = new Vector2(0, 215);
                     heading.fontSize = 15;
                     heading.color = ResearchUITheme.Muted;
@@ -920,7 +927,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (setupScope)
             {
-                setupScope.text = ResearchParticipantRegistry.IsTechnical(groups[group.value]) ? R("scope_quest") : R("study");
+                setupScope.text = ResearchBuildFlavor.DevReaderPrototype ? R("dev_reader") : ResearchParticipantRegistry.IsTechnical(groups[group.value]) ? R("scope_quest") : R("study");
                 setupScope.fontSize = 15;
                 setupScope.alignment = TextAlignmentOptions.MidlineLeft;
                 setupScope.rectTransform.sizeDelta = new Vector2(820, 31);
@@ -1114,6 +1121,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 case ResearchSessionFlowController.StudyAuthorizationPrefix + "OperatorControl/research-operator-authorization.json is not on this device.": return R("study_authorization_missing");
                 case "Select or create a participant ID.": return R("select_block");
+                case ResearchBuildFlavor.DevStudyBlocker: return R("dev_build_block");
                 case "Device not ready: floor/boundary is not confirmed.": return R("floor_block");
                 case "Device not ready: both controllers must be tracked.": return R("tracking_block");
                 case "Data logger not ready.": return R("logger_block");
@@ -1169,6 +1177,17 @@ namespace VRMaintenanceResearch.ResearchFlow
             rect.SetParent(parent, false); rect.sizeDelta = size; rect.anchoredPosition = position;
             rect.GetComponent<Image>().color = color;
             return rect;
+        }
+
+        // Names which DeviceReady input is missing (floor, left or right controller) so the researcher need not guess; the gate itself is unchanged.
+        private string DeviceWaiting()
+        {
+            string lang = controller.Language;
+            var missing = new List<string>();
+            if (!controller.FloorReady) missing.Add(ResearchStrings.Get("technical.floor", lang));
+            if (!controller.GuardTracked(Oculus.Interaction.Input.Handedness.Left)) missing.Add(ResearchStrings.Get("technical.left", lang));
+            if (!controller.GuardTracked(Oculus.Interaction.Input.Handedness.Right)) missing.Add(ResearchStrings.Get("technical.right", lang));
+            return missing.Count == 0 ? "" : " (" + string.Join(ResearchStrings.Get("technical.list_separator", lang), missing) + ")";
         }
 
         private TMP_Text Text(Transform parent, string text, Vector2 size, Vector2 position, float fontSize)

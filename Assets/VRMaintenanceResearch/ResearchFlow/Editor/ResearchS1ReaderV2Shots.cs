@@ -67,11 +67,20 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     }
                     var anchors = station ? TrainingAnchors(station, camera) : Anchors(a, b, camera);
                     blanked = BlankLabels(a.transform) + BlankLabels(b.transform);
-                    if (shot.segments.Any(s => s.section == "A.ssd")) cables.Single(c => c.assetId == "CABLE_SATA_DATA_S_500").transform.localRotation *= Quaternion.Euler(0, 0, 180);
                     string dir = Path.Combine(outputRoot, shot.id);
                     if (Directory.Exists(dir)) foreach (var old in Directory.GetFiles(dir, "*.png")) File.Delete(old);
                     Directory.CreateDirectory(dir);
-                    var bounds = station ? TrainingFrame(station, shot.frame) : ResearchS1ReaderMediaBuilder.Frame(targets, shot.frame);
+                    bool partFrame = !station && shot.frame.All(f => f.StartsWith("@", StringComparison.Ordinal));
+                    if (partFrame && shot.segments[0].section != null)
+                    {
+                        // Close-ups frame the part where the action happens (e.g. the sled in the case), not where it rests on the table.
+                        var s0 = shot.segments[0];
+                        if (shot.task == "A") ResearchS1ReaderMotionBuilder.MotionA(a, s0.section, s0.fact, s0.from);
+                        else ResearchS1ReaderMotionBuilder.MotionB(b, s0.section, s0.fact, s0.from);
+                        Physics.SyncTransforms(); foreach (var cable in cables) cable.RefreshShape();
+                    }
+                    var bounds = station ? TrainingFrame(station, shot.frame) : partFrame
+                        ? PartFrame(a, b, shot.frame) : ResearchS1ReaderMediaBuilder.Frame(targets, shot.frame);
                     float radius = Mathf.Max(bounds.extents.magnitude, .04f);
                     if (shot.id == "A_turn")
                     {
@@ -96,7 +105,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                                 : station ? ResearchS1ReaderMotionBuilder.MotionT(station, segment.section, segment.fact, time)
                                 : ResearchS1ReaderMotionBuilder.MotionB(b, segment.section, segment.fact, time);
                             if (segment.section == null && shot.task == "B") ResearchS1ReaderMotionBuilder.ClosedFan(b);
-                            foreach (var cable in cables) cable.RefreshShape();
+                            Physics.SyncTransforms(); foreach (var cable in cables) cable.RefreshShape();
                             float orbit = shot.orbit * Mathf.Sin((float)(n / 48.0) * Mathf.PI);
                             camera.transform.position = bounds.center + Quaternion.AngleAxis(orbit, Vector3.up) * direction * distance;
                             camera.transform.LookAt(bounds.center);
@@ -124,6 +133,34 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 scene = EditorSceneManager.OpenScene(Scene, OpenSceneMode.Single);
             }
             return "shots=" + manifest.Count + " frames=" + total + " labels_blanked=" + blanked + " reloaded_dirty=" + scene.isDirty;
+        }
+
+        // Video v8 close-ups: frame the exact moving part through the mechanics' own references (scene names repeat across options).
+        static Bounds PartFrame(ResearchS1TaskAMechanics a, ResearchS1TaskBMechanics b, string[] names)
+        {
+            Transform Resolve(string n) => n switch
+            {
+                "@ram_latch" => a.ramSlots[1].latches.Single().animationRoot.transform, "@sled_thumb" => a.sleds[0].thumb.transform,
+                "@gpu_screw" => a.gpuScrews[0].transform, "@front_clip" => b.frontClip.transform, "@front_guard" => b.frontGuard.transform,
+                "@spinner" => b.spinner.transform, "@blade" => b.blade.transform, "@rear_lock" => b.rearLock.transform,
+                _ => throw new InvalidOperationException("Unknown part frame " + n),
+            };
+            Bounds? box = null;
+            void Add(Bounds b) { if (box == null) box = b; else { var x = box.Value; x.Encapsulate(b); box = x; } }
+            // Cable chapters: @src0-2 = the board/PSU port, @dev0-2 = the SSD or card port (0 SATA data, 1 SATA power, 2 PCIe), @tray = the cable tray.
+            foreach (string n in names)
+            {
+                if (n.StartsWith("@src", StringComparison.Ordinal)) Add(new Bounds(a.wiring.ends[n[4] - '0'].sourceSockets[0].seat.position, Vector3.one * .12f));
+                else if (n.StartsWith("@dev", StringComparison.Ordinal))
+                {
+                    int i = n[4] - '0';
+                    var port = i == 2 ? a.wiring.targets.Single(t => t.part == a.gpus[1] && t.connector == S1Connector.GpuPcie8)
+                        : a.wiring.targets.Single(t => t.part == a.ssds[0] && t.connector == (i == 0 ? S1Connector.SsdData : S1Connector.SsdPower));
+                    Add(new Bounds(port.socket.seat.position, Vector3.one * .12f));
+                }
+                else foreach (var r in (n == "@tray" ? a.servicePivot.Find("S1_CableTray_Start") : Resolve(n)).GetComponentsInChildren<Renderer>(true)) Add(r.bounds);
+            }
+            return box ?? throw new InvalidOperationException("No renderer under " + string.Join(",", names));
         }
 
         // Option labels (S1_M01_label ... S1_S03_label, TMP text) name the part and its values; hide them. Base-unit silkscreens stay.

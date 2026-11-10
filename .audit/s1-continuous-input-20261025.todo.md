@@ -1,0 +1,11 @@
+- [x] Inspect existing handoff and preserve old evidence.
+- [x] Separate CUA key-hold failure from real Simulator support.
+- [x] Prove Windows/native sustained scalar input, both hands.
+- [x] Prove actual SDK teleport/snap/grab/lift/release.
+- [x] Prove VRS head roomscale without Guard changes.
+- [x] Verify safe restart and persisted training3credits.
+- [x] Negative valid-pose readback after Resume; pointclickOff trial restoredOn.
+- [x] Actual partial DEV Host ingest/verify/audit; notH1-H4 acceptance.
+- [x] Restore scoped feature, scene and all source/preset hashes.
+- [ ] Full FX1/Tasks/8workflows blocked at reproducible pose-transport prerequisite.
+- [x] Final independent delivery review and ZIP CRC/hash reopening;323entries, finalSHAefa6bde96cd4d7d980591d223d6181cf279f332a11a9a1c3b666f66909ad5674.

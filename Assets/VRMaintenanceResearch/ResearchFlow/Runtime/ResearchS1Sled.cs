@@ -75,8 +75,9 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             if (selected < 0)
             {
-                var freeReason = owner.MotionBlockReason(transform, free);
-                if (freeReason == PartBlockReason.None) { Place(free); input.Observe(PartOperation.Move); }
+                var reached = owner.FreeMove(transform, free, out var freeReason);
+                if (ResearchS1HeldCollision.Moved(transform.localToWorldMatrix, reached)) Place(reached);
+                if (freeReason == PartBlockReason.None) input.Observe(PartOperation.Move);
                 else input.Motion("MOVE", before, true, freeReason);
                 return;
             }

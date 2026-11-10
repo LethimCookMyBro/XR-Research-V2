@@ -38,6 +38,9 @@ namespace VRMaintenanceResearch.ResearchFlow
     {
         public ResearchS1Cable cable;
         public QAPlug plug;
+        // S1_LAYOUT_CABLE_TRAY_20261110: the board/PSU end is a loose plug too; sourceSockets are the ports of its family.
+        public QAPlug sourcePlug;
+        public QASocket[] sourceSockets;
         public int sourceContact;
         public string sourcePartId;
         public S1Connector sourceConnector;
@@ -56,14 +59,16 @@ namespace VRMaintenanceResearch.ResearchFlow
         public bool AuthoredBindingsValid()
         {
             if (!owner || cables == null || cables.Length != 8 || cables.Distinct().Count() != 8 || !cables.All(c => c && c.AuthoredValid()) ||
-                contacts == null || contacts.Length != 16 || !contacts.All(c => c != null && c.Valid) ||
+                contacts == null || contacts.Length != 13 || !contacts.All(c => c != null && c.Valid) ||
                 ends == null || ends.Length != 3 || targets == null || targets.Length != 8 ||
                 !acSeat || acSeat.name != "SEAT_PSU_ATX_MX650_AC" || !acSeat.IsChildOf(owner.fixedAssembly[4]) ||
                 !acMate || acMate.name != "MATE_CABLE_AC_C13_JP_EndA" || !acSocket || acSocket.seat != acSeat) return false;
             if (targets.Any(t => t == null || !t.socket || !t.part || t.socket.fixtureId != t.part.stableId || !t.socket.seat ||
                 !t.socket.seat.IsChildOf(t.part.transform) || t.connector == S1Connector.None) || targets.Select(t => t.socket).Distinct().Count() != 8) return false;
             return ends.All(e => e != null && e.cable && cables.Contains(e.cable) && e.plug && e.plug.assetId == e.cable.assetId &&
-                e.sourceContact >= 0 && e.sourceContact < contacts.Length && contacts[e.sourceContact].cable == e.cable &&
+                e.sourcePlug && e.sourcePlug != e.plug && e.sourcePlug.assetId == e.cable.assetId && e.sourcePlug.mates.Count == 1 &&
+                e.sourceSockets != null && e.sourceSockets.Length > 0 && e.sourceSockets.All(s => s && s.seat && s.fixtureId == e.sourcePartId) &&
+                owner.inputs.Count(i => i && i.plug == e.sourcePlug && i.pointable == e.sourcePlug.grabbable) == 1 &&
                 e.sourcePartId == (e.sourceConnector == S1Connector.MotherboardSata ? "A.motherboard" : "A.psu") &&
                 (e.sourceConnector == S1Connector.MotherboardSata || e.sourceConnector == S1Connector.PsuSata || e.sourceConnector == S1Connector.PsuPcie8) &&
                 e.plug.mates.Count == 1 && owner.inputs.Count(i => i && i.plug == e.plug && i.pointable == e.plug.grabbable) == 1);
@@ -79,15 +84,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             state.baseState.frontPanelConnected = Circuit("front_panel", 5);
             state.baseState.powerIsolated = acSocket && !acSocket.Occupant && acMate && acSeat &&
                 Vector3.Distance(acMate.position, acSeat.position) > .05f;
+            // Either head of a cable may sit at its source port (the SATA data cable has two identical ends); the other is the device end.
             state.cables = ends.Select(e =>
             {
-                var target = targets.FirstOrDefault(t => t.socket == e.plug.Socket);
+                var plugs = new[] { e.sourcePlug, e.plug };
+                var atSource = plugs.FirstOrDefault(p => System.Array.IndexOf(e.sourceSockets, p.Socket) >= 0 && Seated(p));
+                var atTarget = plugs.Where(p => p != atSource).Select(p => new { plug = p, target = targets.FirstOrDefault(t => t.socket == p.Socket) }).FirstOrDefault(x => x.target != null);
+                bool whole = e.cable.Allows(null, Matrix4x4.identity);
                 return new S1CableState { id = e.plug.stableId, sourcePartId = e.sourcePartId, sourceConnector = e.sourceConnector,
-                    sourceConnected = contacts[e.sourceContact].Connected, targetPartId = target == null ? null : target.part.stableId,
-                    targetConnector = target == null ? S1Connector.None : target.connector,
-                    targetConnected = target != null && Seated(e.plug) && e.cable.Allows(null, Matrix4x4.identity) };
+                    sourceConnected = atSource && whole, targetPartId = atTarget?.target.part.stableId,
+                    targetConnector = atTarget == null ? S1Connector.None : atTarget.target.connector,
+                    targetConnected = atTarget != null && Seated(atTarget.plug) && whole };
             }).ToArray();
-            state.assemblyObstructed |= Application.isPlaying && ends.Any(e => e.plug.IsHeld);
+            state.assemblyObstructed |= Application.isPlaying && ends.Any(e => e.plug.IsHeld || e.sourcePlug.IsHeld);
         }
         private bool Circuit(string id, int expected)
         {

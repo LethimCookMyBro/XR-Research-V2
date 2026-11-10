@@ -53,16 +53,29 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     check(controller.Record==null&&controller.TechnicalReady,lang+" owned technical readiness, no study record");
                     check(!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" ready collapsed");
                     check(!Get<Component>(view,"setupMetaChip").gameObject.activeSelf,lang+" redundant setup metadata chip stays hidden");stage("setup_ready");
-                    check(view.LocalCommand("technical_details","SimulatedController"),lang+" details direct route accepted");
-                    check(Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" details expanded");stage("setup_details");
-                    check(view.LocalCommand("technical_details","SimulatedController"),lang+" details collapse route accepted");
-                    check(!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" details collapsed");
-                    Set(right,"TrackingValid",false);view.Refresh();
-                    // 17 Oct: one status line names the missing item; the rows stay on the details page, which still opens on failure.
-                    check(!controller.TechnicalReady&&!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf&&Get<TMPro.TMP_Text>(view,"setupStatus").text.Contains(ResearchStrings.Get("technical.right",lang.ToString())),lang+" tracking failure named in the status line");
-                    check(view.LocalCommand("technical_details","SimulatedController")&&Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" details open during failure");stage("setup_tracking_failure");
-                    check(view.LocalCommand("technical_details","SimulatedController"),lang+" details close during failure");
-                    Set(right,"TrackingValid",true);view.Refresh();
+                    // 3 Nov: the legacy card's Details page is retired; DEV builds open ResearcherSetupView instead (ShowInitialQuestResearcherSetup).
+                    // The readiness gate is unchanged; these checks now read the surface that actually shows it.
+                    var setup=ResearcherSetupView.Build(controller.transform,lang==ParticipantLanguage.Thai?donor.thaiFont:donor.japaneseFont);setup.controller=controller;
+                    setup.OperatorDirectoryOverride=Path.Combine(dir,lang+"_operator");
+                    string L(string key)=>ResearchStrings.Get(key,lang.ToString());
+                    TMPro.TMP_Text Line(){setup.Refresh();return Get<TMPro.TMP_Text>(setup,"status");}
+                    bool Fits(TMPro.TMP_Text t)=>t.GetPreferredValues(t.text,t.rectTransform.rect.width,9999).y<=t.rectTransform.rect.height+.5f;
+                    var startButton=Get<UnityEngine.UI.Button>(setup,"start");
+                    check(!view.LocalCommand("technical_details","SimulatedController")&&!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" retired details command rejected; nothing toggles off-screen");
+                    var line=Line();
+                    check(controller.DeviceReady&&!line.text.Contains(L("researcher.not_ready"))&&!line.text.Contains(L("technical.left"))&&!line.text.Contains(L("technical.right"))&&!line.text.Contains(L("technical.floor")),lang+" researcher setup shows device ready with no missing item");
+                    Set(right,"TrackingValid",false);view.Refresh();line=Line();
+                    check(!controller.TechnicalReady&&!controller.DeviceReady&&line.text.Contains(L("researcher.not_ready"))&&line.text.Contains(L("technical.right"))&&!line.text.Contains(L("technical.left"))&&!line.text.Contains(L("technical.floor")),lang+" tracking failure names the right controller on the researcher setup");
+                    check(!startButton.interactable&&!controller.StartTechnicalSelfTest(),lang+" start refused during tracking failure");
+                    check(Fits(line),lang+" researcher status line fits (one missing item)");
+                    check(!view.LocalCommand("technical_details","SimulatedController"),lang+" retired details command rejected during failure");stage("setup_tracking_failure");
+                    Set(left,"TrackingValid",false);line=Line();
+                    check(line.text.Contains(L("technical.left"))&&line.text.Contains(L("technical.right")),lang+" both missing controllers listed");
+                    check(Fits(line),lang+" researcher status line fits (two missing items)");
+                    checks.Add(new{name=lang+" researcher status text (failure, both controllers)",pass=true,text=line.text});
+                    Set(left,"TrackingValid",true);Set(right,"TrackingValid",true);view.Refresh();line=Line();
+                    check(controller.TechnicalReady&&!line.text.Contains(L("researcher.not_ready"))&&!line.text.Contains(L("technical.right")),lang+" recovery clears the missing item");
+                    UnityEngine.Object.DestroyImmediate(setup.gameObject);
                     check(controller.TechnicalReady&&!Get<RectTransform>(view,"technicalRows").gameObject.activeSelf,lang+" recovery compact");stage("setup_recovered");
                     Set(controller,"TechnicalSelfSetup",false);
                     foreach(var state in new[]{ResearchFlowState.Task1Active,ResearchFlowState.Task2Active})
@@ -242,7 +255,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             check(!scroll.enabled && brief.anchoredPosition.y == 0 && brief.GetChild(0).gameObject.activeSelf && brief.GetChild(1).gameObject.activeSelf
                 && !brief.GetChild(2).gameObject.activeSelf && !brief.GetChild(3).gameObject.activeSelf, id + " repeated refresh keeps only two short rows");
             string text = ResearchStrings.Get("task." + controller.Flow.CurrentTask + ".summary", controller.Language);
-            string pointer = controller.Language == "Thai" ? "เอกสาร" : controller.Language == "Japanese" ? "参照" : "Reference";
+            string pointer = controller.Language == "Thai" ? "ข้อมูลอ้างอิง" : controller.Language == "Japanese" ? "参照" : "Reference";
             check(text.Contains(pointer), id + " brief points to the authoritative Reference");
             check(!string.IsNullOrEmpty(controller.ReaderResource) && ResearchReferenceScheme.Active.All(controller.ReferenceAvailable),
                 id + " authoritative Reader content remains available in all four formats");

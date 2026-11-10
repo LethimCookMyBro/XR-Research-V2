@@ -19,6 +19,7 @@ authored script is sent. --install writes Resources and StreamingAssets; Unity c
 import argparse, asyncio, base64, concurrent.futures, hashlib, html, io, json, math, re, shutil, subprocess, sys, time, wave
 from pathlib import Path
 import manual_part_cards
+import step_picture
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -34,6 +35,7 @@ TRAINER_V2 = "S1_TRAINING_TRAINER_V2_20261028"
 TRAINER_V3 = "S1_TRAINING_TRAINER_V3_20261029"
 TRAINER_V4 = "S1_TRAINING_TRAINER_V4_20261030"
 TRAINER_V5 = "S1_TRAINING_TRAINER_V5_20261030"
+TRAINER_V6 = "S1_TRAINING_TRAINER_V6_20261031"
 VOICE = {"th": ("th-TH-PremwadeeNeural", "-8%"), "ja": ("ja-JP-NanamiNeural", "-5%"), "en": ("en-US-AriaNeural", "-5%")}
 W, H, FPS = 1280, 720, 24
 FONT = {"th": "'Leelawadee UI','Noto Sans Thai',sans-serif", "ja": "'Yu Gothic UI','Yu Gothic','Meiryo',sans-serif",
@@ -77,15 +79,15 @@ def missing_glyphs(text, lang, _cache={}):
 
 
 def content_files(training_version="v3"):
-    if training_version not in ("v2", "v3", "v4", "v5"):
+    if training_version not in ("v2", "v3", "v4", "v5", "v6"):
         raise ValueError(f"Unsupported training version: {training_version}")
-    if training_version in ("v4", "v5"):
+    if training_version in ("v4", "v5", "v6"):
         return {task: HERE / f"content_{task}{training_version[1:]}.json" for task in "ABT"}
     return {task: HERE / ("content_T3.json" if task == "T" and training_version == "v3" else f"content_{task}.json") for task in "ABT"}
 
 
 def package_ids(training_version="v3"):
-    if training_version in ("v4", "v5"):
+    if training_version in ("v4", "v5", "v6"):
         return {task: task + training_version[1:] for task in "ABT"}
     if training_version in ("v2", "v3"):
         return {"A": "A", "B": "B", "T": "T3" if training_version == "v3" else "T2"}
@@ -213,7 +215,7 @@ DRAWN_SYMBOLS = set("↻↺✓✗→↓↑·≠")  # drawn by the browser in pic
 
 def app_sequence(training_version):
     """The actual station sequence for the recorded training version."""
-    name = {TRAINER_V3: "TrainerV3Sequence", TRAINER_V4: "TrainerV4Sequence", TRAINER_V5: "TrainerV4Sequence"}.get(training_version, "FixedSequence")
+    name = {TRAINER_V3: "TrainerV3Sequence", TRAINER_V4: "TrainerV4Sequence", TRAINER_V5: "TrainerV4Sequence", TRAINER_V6: "TrainerV4Sequence"}.get(training_version, "FixedSequence")
     match = re.search(r"string\[\] " + name + r" = \{([^}]*)\}", STATION_CS.read_text(encoding="utf-8"))
     if match is None:
         raise ValueError(f"Training station sequence not found: {name}")
@@ -236,7 +238,7 @@ def in_app(quote, values):
 def check_training(c):
     errors, langs = [], TASK_LANGS["T"]
     sequence = app_sequence(c["training_version"])
-    if c["training_version"] not in (TRAINER_V2, TRAINER_V3, TRAINER_V4, TRAINER_V5) or c["training_version"] not in POLICY_CS.read_text(encoding="utf-8"):
+    if c["training_version"] not in (TRAINER_V2, TRAINER_V3, TRAINER_V4, TRAINER_V5, TRAINER_V6) or c["training_version"] not in POLICY_CS.read_text(encoding="utf-8"):
         errors.append(f"T: unknown training version {c['training_version']}")
     if not set(sequence) <= set(c["units"]):
         errors.append(f"T: app steps without an essential unit: {sorted(set(sequence) - set(c['units']))}")
@@ -634,6 +636,7 @@ PAGINATE_JS = """(args) => { const [blocks, title, label, pageWord] = args; cons
     root.appendChild(page); body = page.querySelector('.body'); pages.push(page); };
   fresh();
   for (const b of blocks) { const holder = document.createElement('div'); holder.innerHTML = b; const node = holder.firstChild;
+    if (node.dataset.pageBreak === "true" && body.children.length) fresh();
     body.appendChild(node);
     if (body.getBoundingClientRect().bottom > page.getBoundingClientRect().top + 1800 - 130) {
       body.removeChild(node); fresh(); body.appendChild(node);
@@ -663,7 +666,8 @@ def build_manual(browser, lang, task, c, out_dir, concise=False, frames=None):
 # ---------------------------------------------------------------- steps
 def steps_text(lang, c, concise=False):
     out = []
-    if concise and c["task"] in ("A", "B"):
+    # Pictured and text-only (owner 31 Oct) step sets open with their own first step; older V4/V5 sets get a summary card.
+    if concise and c["task"] in ("A", "B") and c.get("step_layout") not in ("target_picture", "text"):
         core = c["core"]
         out.append(tmp_safe(f"<size=24><color=#5B6B7F>{c['title'][lang]}</color></size>\n"
                             f"<size=46><b>{core['problem'][lang]}</b></size>\n\n"
@@ -883,12 +887,25 @@ def install(task, lang, c, built, version, keep_manual=False):
     for i, (png, caption) in enumerate(built["images"], 1):
         dst = img_dir / f"{img_prefix}{i:02d}.bytes"; put(png, dst, meta)
         images.append({"resource": f"{img_resource}{img_prefix}{i:02d}", "sha256": sha(dst), f"caption_{lang}": caption})
+    step_pictures = built.get("step_pictures", [])
+    if step_pictures and len(step_pictures) != len(built["steps"]):
+        raise ValueError("One picture is required for each pictured step")
+    for old in (pkg_dir / "steps").glob("s*.bytes"):
+        if int(old.stem[1:]) > len(step_pictures): remove(old)
+    steps = []
+    for i, text in enumerate(built["steps"], 1):
+        step = {f"text_{lang}": text}
+        if step_pictures:
+            dst = pkg_dir / "steps" / f"s{i:02d}.bytes"
+            put(step_pictures[i-1], dst, meta)
+            step["picture"] = {"resource": f"ResearchReaderS1/{pid}_{lang}/steps/s{i:02d}", "sha256": sha(dst)}
+        steps.append(step)
     movie = STREAM / f"{pid}_{lang}.mp4"
     shutil.copyfile(built["video"], movie)
     package = {"schema_version": 1, "content_id": f"s1.reader.{pid}.{lang}", "version": version, "approval": APPROVAL,
                "source_pdf": f"{PDF_NAME[task]}_{lang.upper()}.pdf", "source_pdf_resource": f"ResearchReaderS1/{pid}_{lang}/source_pdf",
                "source_sha256": sha(pkg_dir / "source_pdf.bytes"), "pages": pages,
-               "steps": [{f"text_{lang}": text} for text in built["steps"]], "images": images,
+               "steps": steps, "images": images,
                "video": {"streaming_path": f"ResearchReaderS1/{pid}_{lang}.mp4", "sha256": sha(movie),
                          "duration_seconds": round(built["duration"], 2), "audio": "narration", "chapters": built["chapters"]}}
     if keep_manual:
@@ -929,19 +946,19 @@ def main():
     parser.add_argument("--shots"); parser.add_argument("--work"); parser.add_argument("--install", action="store_true")
     parser.add_argument("--only", help="e.g. A_th or T_en")
     parser.add_argument("--task", choices=["A", "B", "T"], help="build one task; without it, build makes A and B")
-    parser.add_argument("--training-version", choices=["v2", "v3", "v4", "v5"], default="v3")
+    parser.add_argument("--training-version", choices=["v2", "v3", "v4", "v5", "v6"], default="v3")
     parser.add_argument("--keep-manual", action="store_true", help="Rebuild A/B media without touching accepted PDF/pages")
     args = parser.parse_args()
     if args.keep_manual and args.task == "T": parser.error("--keep-manual applies only to A/B")
     content = load(args.training_version)
     PACKAGE.update(package_ids(args.training_version))
-    if args.training_version in ("v4", "v5"):
+    if args.training_version in ("v4", "v5", "v6"):
         # Keep one narrator across V4 Thai chapters. Premwadee returns NoAudioReceived
         # for an authored SSD sentence; the same exact text succeeds with Niwat.
         VOICE["th"] = ("th-TH-NiwatNeural", "-8%")
         PDF_NAME.update({task: f"S1_Task{task}_Reference_{args.training_version}" for task in "AB"})
     PDF_NAME["T"] = "S1_Training_" + PACKAGE["T"] + "_Reference"
-    errors, report = check(content, concise=args.training_version in ("v4", "v5"))
+    errors, report = check(content, concise=args.training_version in ("v4", "v5", "v6"))
     print("\n".join(report))
     if errors:
         print("\n".join("ERROR " + e for e in errors)); return 1
@@ -953,9 +970,9 @@ def main():
         return narration(content, tasks, work)
     frames = Frames(args.shots)
     sources = content_files(args.training_version)
-    version = (args.training_version + "-" if args.training_version in ("v4", "v5") else "v2-") + version_digest([sources["A"], sources["B"], HERE / "shots.json", HERE / "build.py"])
+    version = (args.training_version + "-" if args.training_version in ("v4", "v5", "v6") else "v2-") + version_digest([sources["A"], sources["B"], HERE / "shots.json", HERE / "build.py", HERE / "manual_part_cards.py", HERE / "step_picture.py"])
     versions = {"A": version, "B": version,
-                "T": f"{content['T']['training_version']}.reader-{PACKAGE['T'].lower()}-" + version_digest([sources["T"], HERE / "shots.json", HERE / "build.py"])}
+                "T": f"{content['T']['training_version']}.reader-{PACKAGE['T'].lower()}-" + version_digest([sources["T"], HERE / "shots.json", HERE / "build.py", HERE / "manual_part_cards.py", HERE / "step_picture.py"])}
     for task in tasks:
         versions[task] += "." + capture_digest(args.shots, task)[:16]
     browser = Browser()
@@ -967,16 +984,17 @@ def main():
                 if args.only and args.only != name: continue
                 out = work / "out" / name; out.mkdir(parents=True, exist_ok=True)
                 c = content[task]
-                pages, pdf = ([], None) if args.keep_manual else build_manual(browser, lang, task, c, out, concise=args.training_version in ("v4", "v5"), frames=frames)
+                pages, pdf = ([], None) if args.keep_manual else build_manual(browser, lang, task, c, out, concise=args.training_version in ("v4", "v5", "v6"), frames=frames)
                 images = []
                 for i, panel in enumerate(c["illustrated"], 1):
                     png = out / f"img{i:02d}.png"
                     size = illustration_size(panel)
                     browser.shot(page_html(lang, panel_body(lang, panel, frames, c), size=size), png, size=size)
                     images.append((png, tmp_safe(panel["caption"][lang])))
+                step_pictures = step_picture.build(browser, c, frames, out)
                 mp4 = out / f"{name}.mp4"
                 chapters, duration = build_video(browser, lang, task, c, frames, work, mp4)
-                built = {"pages": pages, "pdf": pdf, "images": images, "steps": steps_text(lang, c, concise=args.training_version in ("v4", "v5")), "video": mp4, "chapters": chapters, "duration": duration}
+                built = {"pages": pages, "pdf": pdf, "images": images, "step_pictures": step_pictures, "steps": steps_text(lang, c, concise=args.training_version in ("v4", "v5", "v6")), "video": mp4, "chapters": chapters, "duration": duration}
                 summary[name] = {"version": versions[task], "pages": len(pages), "steps": len(built["steps"]), "images": len(images), "video_seconds": round(duration, 1), "scenes": len(chapters)}
                 if args.install:
                     package = install(task, lang, c, built, versions[task], keep_manual=args.keep_manual)

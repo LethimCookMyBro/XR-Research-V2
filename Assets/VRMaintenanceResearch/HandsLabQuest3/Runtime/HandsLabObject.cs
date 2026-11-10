@@ -95,11 +95,40 @@ namespace VRMaintenanceResearch.HandsLabQuest3.Runtime
                         if(!(linear.magnitude<=maxReleaseSampleSpeed)||!(angular.magnitude<=maxReleaseSampleAngularSpeed))
                             linear=angular=Vector3.zero;
                     }
+                    LiftOutOfStatic();
                     body.linearVelocity=linear;body.angularVelocity=angular;
                 }
                 pointers.Remove(evt.Identifier);
             }
             if(session)session.ObjectPointer(this,evt,before,CaptureSnapshot());
+        }
+        // Owner 2 Nov: nothing stops a held prop at the table or floor, so a release inside either let it sink out of sight.
+        // A release that overlaps static geometry puts the prop back on the surface below its centre.
+        static readonly Collider[] staticHits=new Collider[16];
+        void LiftOutOfStatic()
+        {
+            var own=GetComponentsInChildren<Collider>();
+            Bounds? bounds=null;
+            foreach(var c in own)if(c.enabled&&!c.isTrigger){if(bounds==null)bounds=c.bounds;else{var b=bounds.Value;b.Encapsulate(c.bounds);bounds=b;}}
+            if(bounds==null)return;
+            var box=bounds.Value;
+            bool embedded=false;
+            int count=Physics.OverlapBoxNonAlloc(box.center,box.extents,staticHits,Quaternion.identity,~0,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<count&&!embedded;i++)
+            {
+                var other=staticHits[i];
+                if(other.attachedRigidbody)continue;
+                foreach(var c in own)
+                    if(c.enabled&&!c.isTrigger&&Physics.ComputePenetration(c,c.transform.position,c.transform.rotation,other,other.transform.position,other.transform.rotation,out _,out float depth)&&depth>.002f)
+                    { embedded=true; break; }
+            }
+            if(!embedded)return;
+            var hits=Physics.RaycastAll(new Vector3(box.center.x,box.max.y+1.5f,box.center.z),Vector3.down,4f,~0,QueryTriggerInteraction.Ignore);
+            float top=float.NegativeInfinity;
+            foreach(var h in hits)if(!h.collider.attachedRigidbody&&h.point.y<=box.max.y+.02f&&h.point.y>top)top=h.point.y;
+            if(float.IsNegativeInfinity(top))return;
+            var lift=new Vector3(0,top+.002f-box.min.y,0);
+            transform.position+=lift;body.position=transform.position;
         }
         void ResetReleaseMotion(double now)
         {

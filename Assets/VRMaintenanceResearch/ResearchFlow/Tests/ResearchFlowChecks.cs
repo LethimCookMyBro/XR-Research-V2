@@ -290,8 +290,8 @@ static class ResearchFlowChecks
             Check(overrideLanguage.test_data && overrideLanguage.language_overridden, "technical language override clearly marks test data");
             // ADVISOR_UI_AMENDMENT_20261014: versioned participant UI policy recorded once at session start.
             Check(th.ui_policy == ResearchUIPolicy.OwnerMovable && th.protocol_version == ResearchUIPolicy.ProtocolOwnerMovable
-                && th.training_version == ResearchUIPolicy.TrainingTrainerV5 && th.layout_version == ResearchUIPolicy.LayoutVersion,
-                "new study session records movable UI policy, protocol, V4 training and layout versions");
+                && th.training_version == ResearchUIPolicy.TrainingReaderPauseV9 && th.layout_version == ResearchUIPolicy.LayoutVersion,
+                "new study session records movable UI policy, protocol, V9 training and layout versions");
             Check(resumed.ui_policy == th.ui_policy && resumed.layout_version == th.layout_version, "resume keeps the recorded UI policy");
             Check(!ResearchUIPolicy.UsesDirectPartFeedback(ResearchUIPolicy.TrainingTrainerV3)
                 && ResearchUIPolicy.UsesDirectPartFeedback(ResearchUIPolicy.TrainingTrainerV4), "historical T3 and new V4 keep distinct feedback policies");

@@ -1,0 +1,1786 @@
+{
+  "task": "B",
+  "title": {
+    "th": "ตรวจและซ่อมพัดลม F2",
+    "ja": "扇風機 F2 を点検・修理する",
+    "en": "Inspect and repair fan F2"
+  },
+  "units": {
+    "problem": "F2 / B-04 vibrates or knocks after reassembly; find what is loose or not seated and fix it",
+    "scope": "power isolated; only guards, blade and fasteners; do not open motor; base/pole/head stay",
+    "choose": "check any area in any order; not required to check all",
+    "areas": "three areas: front guard, blade, rear guard",
+    "front_check": "front guard normal: marks aligned, fully seated, clip closed",
+    "blade_check": "blade normal: groove on pin, fully seated, spinner tight (visible after front guard off)",
+    "rear_check": "rear guard normal: ring tight, guard edge does not move against head; edge visible from outside, ring face after blade off",
+    "present_not_tight": "present or threaded is not tight; removing obstacles fixes nothing; Examine shows, does not repair",
+    "open_front": "open clip, twist guard along marks, pull straight off",
+    "spinner_dir": "spinner is left-hand thread: from the front, loosen clockwise, tighten counterclockwise",
+    "blade_off": "pull blade along the shaft",
+    "rear_dir": "rear ring is right-hand thread: from the front, loosen counterclockwise, tighten clockwise; holds while engaged",
+    "fix_front": "front guard fix: realign marks, seat fully, twist lock, close clip",
+    "fix_blade": "blade fix: groove on pin, push fully, tighten spinner",
+    "fix_rear": "rear fix: align guard, tighten ring clockwise until tight",
+    "reassemble": "reassemble rear -> blade -> spinner -> front guard -> clip",
+    "guards_first": "all guards fitted before Inspect or the spin test will not run",
+    "inspect": "Inspect 3 s; result meanings; retry; system error -> researcher",
+    "done": "Pass message"
+  },
+  "core": {
+    "problem": {
+      "th": "ซ่อมพัดลม F2 ที่สั่นหรือมีเสียงกระทบ แล้วประกอบกลับ",
+      "ja": "振動や打音がする F2 を修理し、組み立て直す",
+      "en": "Repair F2's vibration or knocking, then reassemble it.",
+      "units": [
+        "problem"
+      ]
+    },
+    "do": {
+      "th": "ลองขยับชิ้นส่วน หาจุดหลวมหรือไม่เข้าที่ แล้วแก้จุดนั้น",
+      "ja": "部品を動かしてゆるみやずれを調べ、見つけた所を直す",
+      "en": "Move the parts to check for looseness or misalignment. Correct what you find.",
+      "units": [
+        "areas"
+      ]
+    },
+    "watch": {
+      "th": "เลือกหัวข้อที่ต้องการได้ ไม่ต้องถอดทุกชิ้น",
+      "ja": "必要な項目を選ぶ。全部を外す必要はない",
+      "en": "Choose the topic you need. You do not have to remove every part.",
+      "units": [
+        "present_not_tight",
+        "spinner_dir"
+      ]
+    },
+    "done": {
+      "th": "ใส่ตะแกรงครบแล้วกดตรวจผลงาน ผลผ่านพร้อมใช้งานจึงเสร็จ",
+      "ja": "全ガードを付けて「仕上がりを確認」を押し、合格・使用可能の表示を確認する",
+      "en": "Fit both guards and select Check my work. Finish when the result says ready.",
+      "units": [
+        "done"
+      ]
+    }
+  },
+  "manual": [
+    {
+      "id": "task",
+      "title": {
+        "th": "ตรวจและซ่อมพัดลม F2",
+        "ja": "扇風機 F2 を点検・修理する",
+        "en": "Inspect and repair fan F2"
+      },
+      "items": [
+        {
+          "th": "ซ่อมพัดลม F2 ที่สั่นหรือมีเสียงกระทบ แล้วประกอบกลับ",
+          "ja": "振動や打音がする F2 を修理し、組み立て直す",
+          "en": "Repair F2's vibration or knocking, then reassemble it.",
+          "units": [
+            "problem"
+          ]
+        },
+        {
+          "th": "เลือกหัวข้อที่ต้องการได้ ไม่ต้องถอดทุกชิ้น",
+          "ja": "必要な項目を選ぶ。全部を外す必要はない",
+          "en": "Choose the topic you need. You do not have to remove every part.",
+          "units": [
+            "choose"
+          ]
+        },
+        {
+          "th": "ระหว่างซ่อม พัดลมไม่มีไฟเข้าและไม่หมุน งานนี้ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด ส่วนฐาน เสา และหัวพัดลมที่มีมอเตอร์ยึดไว้แล้ว ไม่ต้องถอดหรือเปิด",
+          "ja": "修理中は電源が入っておらず、羽根は回りません。直すのはガード・羽根・固定部品だけです。台・支柱・モーターの入った本体は固定されているので、外したり開けたりしません。",
+          "en": "While you repair it, the fan has no power and does not spin. Work only on the guards, blade and fasteners. The base, pole and motor head are fixed; do not remove or open them.",
+          "units": [
+            "scope"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "front_guard",
+      "title": {
+        "th": "ตะแกรงหน้าและคลิป",
+        "ja": "前ガードとクリップ",
+        "en": "Front guard and clip"
+      },
+      "items": [
+        {
+          "th": "ตะแกรงหน้าครอบใบพัด คลิปยึดขอบตะแกรง",
+          "ja": "前ガードは羽根を覆い、クリップで縁を固定する",
+          "en": "The front guard covers the blade. Its clip holds the rim.",
+          "units": [
+            "areas"
+          ]
+        },
+        {
+          "th": "ตรวจเครื่องหมายให้ตรง ขอบแนบ และคลิปปิด",
+          "ja": "マークが合い、縁が密着し、クリップが閉じているか見る",
+          "en": "Check the marks align, the rim sits flush and the clip is closed.",
+          "units": [
+            "front_check"
+          ]
+        },
+        {
+          "th": "เปิดด้านในเมื่อจำเป็น กด Trigger ที่คลิปหนึ่งครั้ง",
+          "ja": "内側を見る必要があれば、クリップで Trigger を1回押す",
+          "en": "To reach inside, press Trigger once at the clip.",
+          "units": [
+            "open_front"
+          ]
+        },
+        {
+          "th": "กด Grip ค้างที่ขอบตะแกรง หมุนตามเครื่องหมาย แล้วดึงตรงออก",
+          "ja": "ガードの縁で Grip を押したまま、マークに沿って回してまっすぐ抜く",
+          "en": "Hold Grip at the guard rim. Turn along the marks, then pull straight off.",
+          "units": []
+        }
+      ],
+      "after": [
+        {
+          "th": "ใส่กลับให้เครื่องหมายตรง ดันขอบให้แนบ แล้วหมุนล็อก\nกด Trigger ที่คลิปให้ปิด",
+          "ja": "戻すときはマークを合わせ、縁を押し当てて回す\nクリップで Trigger を押して閉じる",
+          "en": "To refit, align the marks, push the rim flush and turn to lock.\nPress Trigger at the clip to close it.",
+          "units": [
+            "fix_front"
+          ]
+        }
+      ],
+      "figure": {
+        "shot": "B_access",
+        "pick": [
+          0,
+          0.2
+        ],
+        "anchor": "front_clip"
+      }
+    },
+    {
+      "id": "blade",
+      "title": {
+        "th": "ใบพัดและฝาล็อกกลางใบพัด",
+        "ja": "羽根と中央のキャップ",
+        "en": "Blade and centre cap"
+      },
+      "items": [
+        {
+          "th": "ฝาล็อกคือชิ้นกลมกลางใบพัด ใช้ยึดใบพัดกับแกน",
+          "ja": "中央の丸いキャップが羽根を軸に固定する",
+          "en": "The round centre cap secures the blade to the shaft.",
+          "units": []
+        },
+        {
+          "th": "เปิดตะแกรงหน้าจึงเห็นใบพัด ร่องต้องสวมพินสุดและฝาล็อกแน่น",
+          "ja": "前ガードを外して見る。羽根がピンの奥まで入り、キャップが締まる",
+          "en": "With the front guard off, check the blade is fully on the pin and the cap is tight.",
+          "units": [
+            "blade_check"
+          ]
+        },
+        {
+          "th": "ถอดฝาโดยกด Trigger ค้าง แล้วหมุนตามเข็มเมื่อมองจากด้านหน้า",
+          "ja": "Trigger を押したまま、正面から時計回りに回してキャップをゆるめる",
+          "en": "Hold Trigger on the cap and turn clockwise, viewed from the front.",
+          "units": [
+            "spinner_dir"
+          ]
+        },
+        {
+          "th": "คลายจนหลุดเกลียวแล้วดึงฝาออก",
+          "ja": "ねじが外れたらキャップを抜く",
+          "en": "Unthread the cap fully, then pull it off.",
+          "units": []
+        },
+        {
+          "th": "กด Grip ค้างที่ใบพัด แล้วดึงตรงออกตามแกน",
+          "ja": "羽根で Grip を押したまま、軸に沿ってまっすぐ抜く",
+          "en": "Hold Grip on the blade and pull straight along the shaft.",
+          "units": [
+            "blade_off"
+          ]
+        }
+      ],
+      "after": [
+        {
+          "th": "ใส่กลับให้ร่องตรงพิน แล้วดันใบพัดจนสุด\nกด Trigger ค้างที่ฝาล็อก ขันทวนเข็มจากด้านหน้าจนแน่น",
+          "ja": "戻すときは溝をピンに合わせて奥まで押す\nキャップで Trigger を押したまま、正面から反時計回りに締める",
+          "en": "To refit, align the groove with the pin and push fully in.\nHold Trigger on the cap and tighten counterclockwise from the front.",
+          "units": [
+            "fix_blade",
+            "spinner_dir"
+          ]
+        }
+      ],
+      "figure": {
+        "shot": "B_spin_close",
+        "pick": [
+          0,
+          0.5
+        ],
+        "anchor": "spinner"
+      }
+    },
+    {
+      "id": "rear_guard",
+      "title": {
+        "th": "ตะแกรงหลังและวงแหวนรอบแกน",
+        "ja": "後ガードと軸のまわりのリング",
+        "en": "Rear guard and ring around the shaft"
+      },
+      "items": [
+        {
+          "th": "วงแหวนรอบแกนยึดตะแกรงหลังกับหัวพัดลม",
+          "ja": "軸のまわりのリングが後ガードをヘッドに固定する",
+          "en": "The ring holds the rear guard against the head.",
+          "units": []
+        },
+        {
+          "th": "จับขอบด้านนอกด้วย Grip แล้วลองขยับ ขอบต้องไม่โยก",
+          "ja": "外側の縁を Grip で持って動かす。縁はぐらつかない",
+          "en": "Hold the outer rim with Grip. Check it stays still.",
+          "units": [
+            "rear_check"
+          ]
+        },
+        {
+          "th": "ถ้าต้องจัดตะแกรงใหม่ ให้ถอดใบพัดเพื่อจับวงแหวน",
+          "ja": "合わせ直すときは羽根を外してリングに手を届かせる",
+          "en": "To realign the guard, remove the blade to reach the ring.",
+          "units": []
+        },
+        {
+          "th": "กด Trigger ค้างที่วงแหวน คลายทวนเข็มจากด้านหน้าให้หลุดเกลียวก่อนดึง",
+          "ja": "リングで Trigger を押したまま、正面から反時計回りに回す。ねじが外れてから抜く",
+          "en": "Hold Trigger on the ring. Unthread counterclockwise from the front before pulling it off.",
+          "units": [
+            "rear_dir"
+          ]
+        }
+      ],
+      "after": [
+        {
+          "th": "ใส่กลับให้ตะแกรงตรง แล้วขันวงแหวนตามเข็มจากด้านหน้า\nกด Trigger ค้างขณะหมุน ขันจนขอบตะแกรงไม่โยก",
+          "ja": "戻すときはガードを合わせ、リングを正面から時計回りに締める\nTrigger を押したまま回し、縁がぐらつかない状態にする",
+          "en": "To refit, align the guard and tighten the ring clockwise from the front.\nHold Trigger while turning. The rim should stay still.",
+          "units": [
+            "fix_rear",
+            "rear_dir"
+          ]
+        }
+      ],
+      "figure": {
+        "shot": "B_lock_close",
+        "pick": [
+          0,
+          0.5
+        ],
+        "anchor": "rear_lock_grip"
+      }
+    },
+    {
+      "id": "finish",
+      "title": {
+        "th": "ประกอบกลับแล้วตรวจผลงาน",
+        "ja": "組み立て直して確認する",
+        "en": "Reassemble and check my work"
+      },
+      "items": [
+        {
+          "th": "ใส่ชิ้นที่ถอดกลับตามลำดับ ตะแกรงหลังและวงแหวน ใบพัด ฝาล็อก ตะแกรงหน้า คลิป",
+          "ja": "外した部品を後ガードとリング、羽根、キャップ、前ガード、クリップの順に戻す",
+          "en": "Refit removed parts in order: rear guard and ring, blade, cap, front guard, clip.",
+          "units": [
+            "reassemble"
+          ]
+        },
+        {
+          "th": "ใส่ตะแกรงครบแล้วกดตรวจผลงานบนแผงงาน พัดลมจะหมุน 3 วินาที",
+          "ja": "全ガードを付けて作業パネルの「仕上がりを確認」を押す。扇風機が3秒回転する",
+          "en": "Fit both guards and select Check my work on the task panel. The fan runs for 3 seconds.",
+          "units": [
+            "guards_first",
+            "inspect"
+          ]
+        },
+        {
+          "th": "ทดสอบได้ก่อนและหลังซ่อม เสียงไม่บอกตำแหน่งที่ผิด",
+          "ja": "修理の前でも後でも確認できる。音だけでは故障箇所は分からない",
+          "en": "Test before or after repair. Sound alone does not locate the fault.",
+          "units": []
+        },
+        {
+          "th": "ผ่านพร้อมใช้งานคือเสร็จ ถ้ายังมีเสียงผิดปกติ ให้แก้แล้วตรวจใหม่",
+          "ja": "合格・使用可能で完了。異音が残れば直してもう一度確認する",
+          "en": "Passed and ready means done. If abnormal noise remains, correct it and test again.",
+          "units": [
+            "done"
+          ]
+        },
+        {
+          "th": "ตะแกรงไม่ครบจะยังไม่หมุนทดสอบ ระบบขัดข้องให้แจ้งผู้วิจัย",
+          "ja": "ガードが足りないと回転しない。システムの不具合は研究者に伝える",
+          "en": "Missing guards prevent the spin test. Report system faults to the researcher.",
+          "units": []
+        }
+      ],
+      "after": []
+    },
+    {
+      "id": "scope",
+      "title": {
+        "th": "ข้อควรรู้",
+        "ja": "注意",
+        "en": "Notes"
+      },
+      "items": [
+        {
+          "th": "ชิ้นที่ใส่อยู่หรือเข้าเกลียวแล้วอาจยังหลวมหรือไม่เข้าที่ “ดูสภาพชิ้นส่วน” บอกสภาพเท่านั้น ไม่ได้ซ่อม การถอดชิ้นส่วนเป็นการเปิดทางให้ตรวจด้านใน ถ้าพบชิ้นที่หลวมหรือไม่เข้าที่ ให้แก้ก่อนประกอบกลับ",
+          "ja": "付いていても、ねじに入っていても、ゆるみやずれはあり得る。「状態を見る」は状態を示すだけで、直さない。部品を外すのは内側を点検するため。ゆるんでいる部品や正しく付いていない部品があれば、組み立て直す前に直す。",
+          "en": "A fitted or threaded part may still be loose or not seated. View condition only shows the state; it does not repair. Removing parts gives access for checking inside. If a part is loose or not seated, fix it before reassembling.",
+          "units": [
+            "present_not_tight"
+          ]
+        }
+      ],
+      "after": []
+    }
+  ],
+  "steps": [
+    {
+      "group": {
+        "th": "เลือกหัวข้อ",
+        "ja": "項目を選ぶ",
+        "en": "Choose a topic"
+      },
+      "do": {
+        "th": "ตรวจพัดลม F2 ที่สั่นหรือมีเสียงกระทบ",
+        "ja": "振動や打音がする F2 を調べる",
+        "en": "Check F2 for vibration or knocking"
+      },
+      "look": {
+        "th": "เลือกดูหน้า ใบพัด หรือหลังได้ ไม่ต้องตรวจทุกจุด",
+        "ja": "前、羽根、後ろから選ぶ。全部を調べる必要はない",
+        "en": "Choose the front, blade or rear. You need not check every part."
+      },
+      "ok": {
+        "th": "ระหว่างซ่อมพัดลมไม่มีไฟเข้า ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด",
+        "ja": "修理中は電源なし。直すのはガード・羽根・固定部品だけ",
+        "en": "No power while you repair. Work only on guards, blade and fasteners."
+      },
+      "units": [
+        "problem",
+        "choose",
+        "areas",
+        "scope"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตะแกรงหน้า",
+        "ja": "前ガード",
+        "en": "Front guard"
+      },
+      "do": {
+        "th": "ตรวจขอบตะแกรงหน้า",
+        "ja": "前ガードの縁を確認する",
+        "en": "Check the front guard rim"
+      },
+      "look": {
+        "th": "ดูเครื่องหมายและคลิปที่ขอบ",
+        "ja": "縁のマークとクリップを見る",
+        "en": "Look at the rim marks and clip."
+      },
+      "ok": {
+        "th": "เครื่องหมายตรง ขอบแนบ คลิปปิด ใส่อยู่แต่เครื่องหมายเยื้องหรือคลิปเปิด ยังไม่ล็อก",
+        "ja": "マークが合い、縁が密着し、クリップが閉じる。付いていても、マークがずれているかクリップが開いていれば固定されていない",
+        "en": "Marks align, rim flush, clip closed. Fitted with the marks offset or the clip open is not locked."
+      },
+      "units": [
+        "front_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตะแกรงหน้า",
+        "ja": "前ガード",
+        "en": "Front guard"
+      },
+      "do": {
+        "th": "ถอดตะแกรงหน้า: เปิดคลิป หมุนตามเครื่องหมาย แล้วดึงตรงออก",
+        "ja": "前ガードを外す：クリップを開き、マークまで回してまっすぐ抜く",
+        "en": "Remove the front guard: open the clip, turn to the mark, pull off"
+      },
+      "look": {
+        "th": "กด Trigger ที่คลิปหนึ่งครั้ง แล้วจับขอบตะแกรงด้วย Grip",
+        "ja": "クリップで Trigger を1回押し、Grip でガードの縁を持つ",
+        "en": "Press Trigger once at the clip, then hold the guard rim with Grip."
+      },
+      "ok": {
+        "th": "เห็นใบพัดและฝาล็อก",
+        "ja": "羽根とキャップが見える",
+        "en": "The blade and cap are visible."
+      },
+      "units": [
+        "open_front"
+      ]
+    },
+    {
+      "group": {
+        "th": "ใบพัดและฝาล็อก",
+        "ja": "羽根とキャップ",
+        "en": "Blade and cap"
+      },
+      "do": {
+        "th": "ตรวจใบพัดและฝาล็อก",
+        "ja": "羽根とキャップを確認する",
+        "en": "Check the blade and its cap"
+      },
+      "look": {
+        "th": "ฝาล็อกคือชิ้นกลมกลางใบพัด",
+        "ja": "キャップは羽根の中央にある丸い部品",
+        "en": "The cap is the round part at the blade centre."
+      },
+      "ok": {
+        "th": "ใบพัดสวมพินสุด ฝาล็อกแน่น ฝาล็อกที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+        "ja": "羽根はピンの奥、キャップは締まる。キャップがねじに入っていても、締まっていないことがある",
+        "en": "Blade fully on pin, cap tight. A threaded cap may still be loose."
+      },
+      "units": [
+        "blade_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "group": {
+        "th": "ใบพัดและฝาล็อก",
+        "ja": "羽根とキャップ",
+        "en": "Blade and cap"
+      },
+      "do": {
+        "th": "ถอดใบพัด: คลายฝาล็อกจนหลุดเกลียว แล้วดึงใบพัดตรงออก",
+        "ja": "羽根を外す：キャップをねじが外れるまでゆるめ、羽根をまっすぐ抜く",
+        "en": "Remove the blade: unthread its cap, then pull the blade off"
+      },
+      "look": {
+        "th": "ฝาล็อกใช้ Trigger หมุนตามเข็มจากด้านหน้า ใบพัดใช้ Grip ดึงตามแกน",
+        "ja": "キャップは Trigger で正面から時計回り。羽根は Grip で軸に沿って抜く",
+        "en": "Cap: hold Trigger, turn clockwise from the front. Blade: hold Grip, pull along the shaft."
+      },
+      "ok": {
+        "th": "เห็นวงแหวนรอบแกน",
+        "ja": "軸のまわりのリングが見える",
+        "en": "The ring around the shaft is visible."
+      },
+      "units": [
+        "spinner_dir",
+        "blade_off",
+        "rear_check"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตะแกรงหลัง",
+        "ja": "後ガード",
+        "en": "Rear guard"
+      },
+      "do": {
+        "th": "ลองขยับขอบตะแกรงหลัง",
+        "ja": "後ガードの縁を動かしてみる",
+        "en": "Try moving the rear guard rim"
+      },
+      "look": {
+        "th": "จับขอบที่เห็นจากด้านนอกด้วย Grip",
+        "ja": "外から見える縁を Grip で持つ",
+        "en": "Hold the visible outer rim with Grip."
+      },
+      "ok": {
+        "th": "ขอบต้องไม่โยก วงแหวนที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+        "ja": "縁はぐらつかない。リングがねじに入っていても、締まっていないことがある",
+        "en": "The rim stays still. A threaded ring may still be loose."
+      },
+      "units": [
+        "rear_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตะแกรงหลัง",
+        "ja": "後ガード",
+        "en": "Rear guard"
+      },
+      "do": {
+        "th": "ถ้าต้องจัดตะแกรงหลังใหม่ ให้คลายวงแหวนแล้วดึงออก",
+        "ja": "後ガードを合わせ直すときは、リングをゆるめて抜く",
+        "en": "To realign the rear guard, unthread the ring and pull it off"
+      },
+      "look": {
+        "th": "ใช้ Trigger หมุนทวนเข็มจากด้านหน้าจนหลุดเกลียว",
+        "ja": "Trigger で持ち、正面から反時計回りにねじが外れるまで回す",
+        "en": "Hold Trigger. Turn counterclockwise from the front until it is free."
+      },
+      "ok": {
+        "th": "ตะแกรงพร้อมจัดตำแหน่งใหม่",
+        "ja": "ガードの位置を直せる",
+        "en": "The guard can be realigned."
+      },
+      "units": [
+        "rear_dir",
+        "fix_rear"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตะแกรงหลัง",
+        "ja": "後ガード",
+        "en": "Rear guard"
+      },
+      "do": {
+        "th": "จัดตะแกรงหลังให้ตรง ใส่วงแหวนแล้วขันให้แน่น",
+        "ja": "後ガードを合わせ、リングを戻して締める",
+        "en": "Align the rear guard, refit the ring and tighten it"
+      },
+      "look": {
+        "th": "ตะแกรงใช้ Grip วงแหวนใช้ Trigger หมุนตามเข็มจากด้านหน้า",
+        "ja": "ガードは Grip、リングは Trigger で正面から時計回り",
+        "en": "Guard: hold Grip. Ring: hold Trigger, turn clockwise from the front."
+      },
+      "ok": {
+        "th": "ขอบตะแกรงไม่โยก",
+        "ja": "ガードの縁がぐらつかない",
+        "en": "The guard rim stays still."
+      },
+      "units": [
+        "rear_dir",
+        "fix_rear"
+      ]
+    },
+    {
+      "group": {
+        "th": "ประกอบกลับ",
+        "ja": "組み立て",
+        "en": "Reassemble"
+      },
+      "do": {
+        "th": "ใส่ใบพัดให้ร่องตรงพิน แล้วขันฝาล็อกให้แน่น",
+        "ja": "羽根の溝をピンに合わせて戻し、キャップを締める",
+        "en": "Refit the blade with its groove on the pin, then tighten the cap"
+      },
+      "look": {
+        "th": "ใบพัดใช้ Grip ดันจนสุด ฝาล็อกใช้ Trigger หมุนทวนเข็มจากด้านหน้า",
+        "ja": "羽根は Grip で奥まで押す。キャップは Trigger で正面から反時計回り",
+        "en": "Blade: hold Grip, push fully in. Cap: hold Trigger, turn counterclockwise from the front."
+      },
+      "ok": {
+        "th": "ใบพัดสวมสุด ฝาล็อกแน่น",
+        "ja": "羽根が奥まで入り、キャップが締まる",
+        "en": "Blade fully seated, cap tight."
+      },
+      "units": [
+        "spinner_dir",
+        "fix_blade",
+        "reassemble"
+      ]
+    },
+    {
+      "group": {
+        "th": "ประกอบกลับ",
+        "ja": "組み立て",
+        "en": "Reassemble"
+      },
+      "do": {
+        "th": "ใส่ตะแกรงหน้า หมุนล็อกตามเครื่องหมาย แล้วปิดคลิป",
+        "ja": "前ガードを戻し、マークまで回して固定し、クリップを閉じる",
+        "en": "Refit the front guard, turn it to lock, then close the clip"
+      },
+      "look": {
+        "th": "จับขอบด้วย Grip ดันให้แนบแล้วหมุน กด Trigger ที่คลิปหนึ่งครั้ง",
+        "ja": "Grip で縁を持ち、押し当てて回す。クリップで Trigger を1回押す",
+        "en": "Hold the rim with Grip, push flush and turn. Press Trigger once at the clip."
+      },
+      "ok": {
+        "th": "ตะแกรงครบ คลิปปิด",
+        "ja": "全ガードが付き、クリップが閉じる",
+        "en": "Both guards fitted, clip closed."
+      },
+      "units": [
+        "fix_front",
+        "guards_first",
+        "reassemble"
+      ]
+    },
+    {
+      "group": {
+        "th": "ตรวจผลงาน",
+        "ja": "仕上がりを確認",
+        "en": "Check my work"
+      },
+      "do": {
+        "th": "กดตรวจผลงานบนแผงงาน แล้วฟังเสียง",
+        "ja": "作業パネルで「仕上がりを確認」を押し、音を聞く",
+        "en": "Select Check my work on the task panel and listen"
+      },
+      "look": {
+        "th": "หมุน 3 วินาที ใช้ได้ทั้งก่อนและหลังซ่อม ตะแกรงไม่ครบจะไม่หมุน ระบบขัดข้องให้แจ้งผู้วิจัย",
+        "ja": "3秒回転し、修理前後どちらでも使える。ガード不足では回らない。不具合は研究者へ",
+        "en": "It runs for 3 seconds, before or after repair. Missing guards prevent the test. Report system faults to the researcher."
+      },
+      "ok": {
+        "th": "ผลผ่านพร้อมใช้งานคือเสร็จ เสียงผิดปกติคือยังหลวมหรือไม่เข้าที่ แก้แล้วตรวจใหม่ได้",
+        "ja": "合格・使用可能で完了。異音が残ればゆるみやずれがある。直してもう一度確認できる",
+        "en": "Passed and ready means done. Abnormal noise means looseness or misalignment remains; correct it and test again."
+      },
+      "units": [
+        "inspect",
+        "done",
+        "guards_first"
+      ]
+    }
+  ],
+  "illustrated": [
+    {
+      "shot": "B_front",
+      "pick": [
+        0,
+        0
+      ],
+      "card_at": [
+        880,
+        390
+      ],
+      "callouts": [
+        {
+          "anchor": "front_guard_side",
+          "kind": "info",
+          "label": {
+            "th": "1 ตะแกรงหน้า",
+            "ja": "1 前ガード",
+            "en": "1 Front guard"
+          },
+          "dx": 230,
+          "dy": -90
+        },
+        {
+          "anchor": "spinner",
+          "kind": "info",
+          "label": {
+            "th": "2 ใบพัด + ฝาล็อก",
+            "ja": "2 羽根＋キャップ",
+            "en": "2 Blade + cap"
+          },
+          "dx": -380,
+          "dy": 120
+        },
+        {
+          "anchor": "rear_guard_side",
+          "kind": "info",
+          "label": {
+            "th": "3 ตะแกรงหลัง",
+            "ja": "3 後ガード",
+            "en": "3 Rear guard"
+          },
+          "dx": -260,
+          "dy": -60
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "ปุ่มที่ใช้จับ",
+          "ja": "持つときのボタン",
+          "en": "Buttons for holding parts"
+        },
+        "lines": [
+          {
+            "th": "Grip ค้าง จับตะแกรงหรือใบพัด",
+            "ja": "Grip を押したままガード・羽根を持つ",
+            "en": "Hold Grip for guards and the blade."
+          },
+          {
+            "th": "Trigger หนึ่งครั้ง เปิดหรือปิดคลิป",
+            "ja": "Trigger を1回押してクリップを開閉する",
+            "en": "Press Trigger once to open or close the clip."
+          },
+          {
+            "th": "Trigger ค้าง จับฝาล็อกหรือวงแหวนแล้วหมุน",
+            "ja": "Trigger を押したままキャップ・リングを回す",
+            "en": "Hold Trigger to turn the cap or ring."
+          }
+        ]
+      },
+      "caption": {
+        "th": "เลือกจุดที่จะตรวจ\nซ่อม F2 ที่สั่นหรือมีเสียงกระทบ ไม่ต้องตรวจทุกจุด",
+        "ja": "調べる場所を選ぶ\n振動や打音がする F2 を修理する。全部を調べる必要はない",
+        "en": "Choose an area to check\nRepair F2's vibration or knocking. You need not check every part."
+      },
+      "units": [
+        "problem",
+        "areas",
+        "choose"
+      ]
+    },
+    {
+      "shot": "B_front",
+      "pick": [
+        0,
+        0.5
+      ],
+      "card_at": [
+        880,
+        350
+      ],
+      "callouts": [
+        {
+          "anchor": "front_clip",
+          "kind": "info",
+          "label": {
+            "th": "คลิปที่ขอบ",
+            "ja": "縁のクリップ",
+            "en": "Rim clip"
+          },
+          "dx": -300,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "1 ตรวจตะแกรงหน้า",
+          "ja": "1 前ガードを確認",
+          "en": "1 Check the front guard"
+        },
+        "lines": [
+          {
+            "th": "เครื่องหมายตรง ขอบแนบ",
+            "ja": "マークが合い、縁が密着",
+            "en": "Marks aligned, rim flush."
+          },
+          {
+            "th": "คลิปปิด",
+            "ja": "クリップが閉じる",
+            "en": "Clip closed."
+          },
+          {
+            "th": "ใส่อยู่แต่เครื่องหมายเยื้องหรือคลิปเปิด ยังไม่ล็อก",
+            "ja": "付いていても、マークがずれているかクリップが開いていれば固定されていない",
+            "en": "Fitted with the marks offset or the clip open is not locked."
+          }
+        ]
+      },
+      "caption": {
+        "th": "ตะแกรงหน้า\nเทียบเครื่องหมาย ขอบตะแกรง และคลิปกับภาพ",
+        "ja": "前ガード\nマーク、ガードの縁、クリップを画像と比べる",
+        "en": "Front guard\nCompare the marks, rim and clip with the picture."
+      },
+      "units": [
+        "front_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "shot": "B_spin_close",
+      "pick": [
+        0,
+        0.5
+      ],
+      "card_at": [
+        880,
+        350
+      ],
+      "callouts": [
+        {
+          "anchor": "spinner",
+          "kind": "info",
+          "label": {
+            "th": "ฝาล็อกกลางใบพัด",
+            "ja": "羽根の中央のキャップ",
+            "en": "Centre blade cap"
+          },
+          "dx": -300,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "2 ตรวจใบพัด",
+          "ja": "2 羽根を確認",
+          "en": "2 Check the blade"
+        },
+        "lines": [
+          {
+            "th": "เปิดตะแกรงหน้าก่อนดู",
+            "ja": "前ガードを外して見る",
+            "en": "Remove the front guard to look."
+          },
+          {
+            "th": "ร่องสวมพินจนสุด ฝาล็อกแน่น",
+            "ja": "溝がピンに入り、キャップが締まる",
+            "en": "Groove fully on pin, cap tight."
+          },
+          {
+            "th": "ฝาล็อกที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+            "ja": "キャップがねじに入っていても、締まっていないことがある",
+            "en": "A threaded cap may still be loose."
+          }
+        ]
+      },
+      "caption": {
+        "th": "ใบพัดและฝาล็อก\nฝาล็อกคือชิ้นกลมกลางใบพัด",
+        "ja": "羽根とキャップ\nキャップは羽根の中央にある丸い部品",
+        "en": "Blade and cap\nThe cap is the round part at the blade centre."
+      },
+      "units": [
+        "blade_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "shot": "B_lock_close",
+      "pick": [
+        0,
+        0.5
+      ],
+      "card_at": [
+        880,
+        350
+      ],
+      "callouts": [
+        {
+          "anchor": "rear_lock_grip",
+          "kind": "info",
+          "label": {
+            "th": "วงแหวนรอบแกน",
+            "ja": "軸のまわりのリング",
+            "en": "Ring around the shaft"
+          },
+          "dx": -300,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "3 ตรวจตะแกรงหลัง",
+          "ja": "3 後ガードを確認",
+          "en": "3 Check the rear guard"
+        },
+        "lines": [
+          {
+            "th": "จับขอบด้านนอกด้วย Grip แล้วลองขยับ",
+            "ja": "外側の縁を Grip で持って動かす",
+            "en": "Hold the outer rim with Grip and try moving it."
+          },
+          {
+            "th": "ขอบไม่โยก วงแหวนแน่น",
+            "ja": "縁がぐらつかず、リングが締まる",
+            "en": "Rim stays still, ring tight."
+          },
+          {
+            "th": "วงแหวนที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+            "ja": "リングがねじに入っていても、締まっていないことがある",
+            "en": "A threaded ring may still be loose."
+          }
+        ]
+      },
+      "caption": {
+        "th": "ตะแกรงหลังและวงแหวน\nขอบเห็นจากด้านนอก ถอดใบพัดจึงเห็นหน้าวงแหวน",
+        "ja": "後ガードとリング\n縁は外から見える。羽根を外すとリングの正面が見える",
+        "en": "Rear guard and ring\nThe rim is visible outside. Remove the blade to see the ring face."
+      },
+      "units": [
+        "rear_check",
+        "present_not_tight"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "B_access",
+          "pick": [
+            0,
+            0.35
+          ],
+          "kind": "info",
+          "tag": {
+            "th": "1 เปิดคลิป แล้วหมุนและดึงตะแกรง",
+            "ja": "1 クリップを開き、ガードを回して抜く",
+            "en": "1 Open clip, turn and pull off guard"
+          }
+        },
+        {
+          "shot": "B_access",
+          "pick": [
+            2,
+            1
+          ],
+          "kind": "info",
+          "tag": {
+            "th": "2 ถอดฝาล็อก แล้วดึงใบพัดตรงออก",
+            "ja": "2 キャップを外し、羽根をまっすぐ抜く",
+            "en": "2 Remove cap, then pull blade straight off"
+          }
+        }
+      ],
+      "callouts": [
+        {
+          "frame": 0,
+          "anchor": "front_guard",
+          "kind": "info",
+          "label": {
+            "th": "ตะแกรงหน้า",
+            "ja": "前ガード",
+            "en": "Front guard"
+          },
+          "dx": -200,
+          "dy": 60
+        },
+        {
+          "frame": 1,
+          "anchor": "rear_lock",
+          "kind": "info",
+          "label": {
+            "th": "เห็นวงแหวนล็อก",
+            "ja": "リングが見える",
+            "en": "Locking ring visible"
+          },
+          "dx": -260,
+          "dy": 120
+        }
+      ],
+      "caption": {
+        "th": "เปิดด้านในเมื่อจำเป็น\nถอดฝาล็อกก่อนดึงใบพัด จึงจะเห็นวงแหวนรอบแกน",
+        "ja": "内側を見る必要があるとき\nキャップ、羽根の順に外すと、軸のまわりのリングが見える",
+        "en": "Open the inside when needed\nRemove the cap before the blade. The ring is behind the blade."
+      },
+      "units": [
+        "open_front",
+        "blade_off",
+        "rear_check"
+      ]
+    },
+    {
+      "layout": "pair",
+      "frames": [
+        {
+          "shot": "B_spin_close",
+          "pick": [
+            0,
+            0.5
+          ],
+          "kind": "warn",
+          "tag": {
+            "th": "ฝาล็อกใบพัด (เกลียวซ้าย)",
+            "ja": "羽根キャップ（左ねじ）",
+            "en": "Blade cap (left-hand thread)"
+          }
+        },
+        {
+          "shot": "B_lock_close",
+          "pick": [
+            0,
+            0.5
+          ],
+          "kind": "info",
+          "tag": {
+            "th": "วงแหวนล็อกตะแกรงหลัง (เกลียวขวา)",
+            "ja": "後ガード固定リング（右ねじ）",
+            "en": "Rear guard locking ring (right-hand thread)"
+          }
+        }
+      ],
+      "rotate": [
+        {
+          "frame": 0,
+          "anchor": "spinner",
+          "dir": "cw",
+          "label": {
+            "th": "ตามเข็ม",
+            "ja": "時計回り",
+            "en": "Clockwise"
+          }
+        },
+        {
+          "frame": 1,
+          "anchor": "rear_lock",
+          "dir": "ccw",
+          "label": {
+            "th": "ทวนเข็ม",
+            "ja": "反時計回り",
+            "en": "Counterclockwise"
+          }
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "มองจากด้านหน้า",
+          "ja": "正面から見て",
+          "en": "Seen from the front"
+        },
+        "lines": [
+          {
+            "th": "ฝาล็อกใบพัด: คลายตามเข็ม ขันทวนเข็ม",
+            "ja": "羽根キャップ：時計回りで外す。反時計回りで締める",
+            "en": "Blade cap: clockwise to loosen, counterclockwise to tighten."
+          },
+          {
+            "th": "วงแหวนหลัง: คลายทวนเข็ม ขันตามเข็ม",
+            "ja": "後リング：反時計回りで外す。時計回りで締める",
+            "en": "Rear ring: counterclockwise to loosen, clockwise to tighten."
+          },
+          {
+            "th": "ใช้ Trigger จับและหมุน คลายจนหลุดเกลียวก่อนดึงออก",
+            "ja": "Trigger で持って回す。ねじが外れてから抜く",
+            "en": "Hold Trigger and turn. Unthread the part before pulling it off."
+          }
+        ]
+      },
+      "caption": {
+        "th": "เลือกดูชิ้นที่กำลังหมุน\nมองจากด้านหน้า คลายจนหลุดเกลียวก่อนดึงออก",
+        "ja": "回している部品を選んで見る\n正面から見た向き。ねじが外れてから抜く",
+        "en": "Find the part you are turning\nDirections are viewed from the front. Unthread fully before pulling."
+      },
+      "units": [
+        "spinner_dir",
+        "rear_dir"
+      ]
+    },
+    {
+      "shot": "B_fix",
+      "pick": [
+        2,
+        1
+      ],
+      "card_at": [
+        880,
+        350
+      ],
+      "callouts": [
+        {
+          "anchor": "rear_lock",
+          "kind": "info",
+          "label": {
+            "th": "วงแหวนยึดตะแกรง",
+            "ja": "ガード固定リング",
+            "en": "Guard retaining ring"
+          },
+          "dx": -300,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "จัดตะแกรงหลังใหม่",
+          "ja": "後ガードを合わせ直す",
+          "en": "Refit the rear guard"
+        },
+        "lines": [
+          {
+            "th": "1 คลายวงแหวนแล้วจัดตะแกรงให้ตรง",
+            "ja": "1 リングを外してガードを合わせる",
+            "en": "1 Remove the ring and align the guard."
+          },
+          {
+            "th": "2 ใช้ Trigger ขันวงแหวนตามเข็ม",
+            "ja": "2 Trigger でリングを時計回りに締める",
+            "en": "2 Hold Trigger and tighten the ring clockwise."
+          },
+          {
+            "th": "3 ลองขยับ ขอบต้องไม่โยก",
+            "ja": "3 縁がぐらつかないか確認する",
+            "en": "3 Check that the rim stays still."
+          }
+        ]
+      },
+      "caption": {
+        "th": "จัดตะแกรงหลังใหม่เมื่อจำเป็น\nมองจากด้านหน้า ขันวงแหวนตามเข็มจนแน่น",
+        "ja": "必要なときに後ガードを合わせ直す\n正面から時計回りにリングを締める",
+        "en": "Realign the rear guard when needed\nFrom the front, tighten the ring clockwise."
+      },
+      "units": [
+        "fix_rear",
+        "rear_dir"
+      ]
+    },
+    {
+      "shot": "B_reassemble",
+      "pick": [
+        0,
+        1
+      ],
+      "callouts": [
+        {
+          "anchor": "blade",
+          "kind": "ok",
+          "label": {
+            "th": "1 ใบพัดสวมพินจนสุด",
+            "ja": "1 羽根をピンに奥まで",
+            "en": "1 Blade fully on pin"
+          },
+          "dx": -380,
+          "dy": -120
+        },
+        {
+          "anchor": "spinner",
+          "kind": "ok",
+          "label": {
+            "th": "2 ฝาล็อก ↺ จนแน่น",
+            "ja": "2 キャップ ↺ で締める",
+            "en": "2 Cap ↺ until tight"
+          },
+          "dx": -380,
+          "dy": 60
+        },
+        {
+          "anchor": "front_guard",
+          "kind": "ok",
+          "label": {
+            "th": "3 ตะแกรงหน้า ตรงเครื่องหมาย หมุนล็อก",
+            "ja": "3 前ガード マークを合わせて回す",
+            "en": "3 Front guard: align marks, turn to lock"
+          },
+          "dx": 260,
+          "dy": 40
+        },
+        {
+          "anchor": "front_clip",
+          "kind": "ok",
+          "label": {
+            "th": "4 ปิดคลิป",
+            "ja": "4 クリップを閉じる",
+            "en": "4 Close clip"
+          },
+          "dx": 280,
+          "dy": -120
+        }
+      ],
+      "caption": {
+        "th": "ประกอบชิ้นที่ถอดกลับ\nตะแกรงหลังและวงแหวน ใบพัด ฝาล็อก ตะแกรงหน้า แล้วปิดคลิป",
+        "ja": "外した部品を戻す\n後ガードとリング、羽根、キャップ、前ガード、クリップの順",
+        "en": "Refit the parts you removed\nRear guard and ring, blade, cap, front guard, then close the clip."
+      },
+      "units": [
+        "fix_blade",
+        "fix_front",
+        "guards_first",
+        "reassemble"
+      ]
+    },
+    {
+      "shot": "B_front",
+      "pick": [
+        0,
+        0.5
+      ],
+      "card_at": [
+        880,
+        350
+      ],
+      "callouts": [
+        {
+          "anchor": "front_guard",
+          "kind": "info",
+          "label": {
+            "th": "ชิ้นส่วนที่ถอดได้",
+            "ja": "取り外せる部品",
+            "en": "Removable parts"
+          },
+          "dx": -300,
+          "dy": -80
+        }
+      ],
+      "card": {
+        "title": {
+          "th": "ขอบเขตงาน",
+          "ja": "作業の範囲",
+          "en": "What you work on"
+        },
+        "lines": [
+          {
+            "th": "ระหว่างซ่อม พัดลมไม่มีไฟเข้าและไม่หมุน",
+            "ja": "修理中は電源が入らず、回りません",
+            "en": "No power while you repair; it does not spin."
+          },
+          {
+            "th": "ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด",
+            "ja": "直すのはガード・羽根・固定部品だけ",
+            "en": "Work only on guards, blade and fasteners."
+          },
+          {
+            "th": "ฐาน เสา และหัวพัดลมยึดไว้แล้ว ไม่ต้องถอด",
+            "ja": "台・支柱・本体は固定済み。外さない",
+            "en": "Base, pole and head are fixed. Leave them."
+          }
+        ]
+      },
+      "caption": {
+        "th": "ซ่อมชิ้นส่วนด้านนอก\nฐาน เสา และหัวพัดลมไม่ต้องถอด",
+        "ja": "外側の部品を直す\n台・支柱・本体は外さない",
+        "en": "Repair the outer parts\nLeave the base, pole and head in place"
+      },
+      "units": [
+        "scope"
+      ]
+    },
+    {
+      "layout": "result",
+      "shot": "B_front",
+      "pick": [
+        0,
+        0
+      ],
+      "results": [
+        {
+          "kind": "ok",
+          "th": "ผลตรวจ: ผ่าน · พร้อมใช้งาน",
+          "ja": "確認結果：合格・使用できる状態です。",
+          "en": "Check result: passed · Ready for use.",
+          "note": {
+            "th": "เสร็จแล้ว",
+            "ja": "完了",
+            "en": "Done"
+          }
+        },
+        {
+          "kind": "bad",
+          "th": "ผลตรวจ: ยังไม่ผ่าน · ยังทดสอบไม่ได้: ใส่ตะแกรงหน้าและหลังให้ครบก่อน",
+          "ja": "確認結果：まだ合格していません・まだ確認できません：先に前後のガードを取り付けてください。",
+          "en": "Check result: not passed yet · Cannot test yet: fit both the front and rear guards first.",
+          "note": {
+            "th": "ใส่ตะแกรงและชิ้นส่วนให้ครบ จึงหมุนทดสอบได้",
+            "ja": "ガードと部品をそろえると回転させて確認できる",
+            "en": "Fit all guards and parts before the spin test"
+          }
+        },
+        {
+          "kind": "bad",
+          "th": "ผลตรวจ: ยังไม่ผ่าน · ยังพบเสียงผิดปกติ",
+          "ja": "確認結果：まだ合格していません・異音がまだ検出されています。",
+          "en": "Check result: not passed yet · Abnormal noise is still detected.",
+          "note": {
+            "th": "ยังหลวมหรือไม่เข้าที่ แก้แล้วตรวจใหม่ ระบบขัดข้องให้บอกผู้วิจัย",
+            "ja": "ゆるみ・ずれを直してもう一度確認。不具合は研究者へ",
+            "en": "Still loose/misaligned: correct and retry. Report system faults to researcher."
+          }
+        }
+      ],
+      "caption": {
+        "th": "ใส่ตะแกรงครบก่อนตรวจผลงาน\nหมุน 3 วินาที ใช้ฟังอาการก่อนซ่อมหรือตรวจหลังซ่อม",
+        "ja": "全ガードを付けてから「仕上がりを確認」を押す\n3秒回転。修理前の音の確認にも修理後の確認にも使える",
+        "en": "Fit both guards before testing\nThe 3-second test can be used before or after repair."
+      },
+      "units": [
+        "inspect",
+        "done",
+        "guards_first"
+      ]
+    }
+  ],
+  "video": [
+    {
+      "stage": "problem",
+      "shot": "B_front",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "front_guard_side",
+          "kind": "info",
+          "label": {
+            "th": "1 ตะแกรงหน้า",
+            "ja": "1 前ガード",
+            "en": "1 Front guard"
+          },
+          "dx": 230,
+          "dy": -90
+        },
+        {
+          "anchor": "spinner",
+          "kind": "info",
+          "label": {
+            "th": "2 ใบพัด",
+            "ja": "2 羽根",
+            "en": "2 Blade"
+          },
+          "dx": -380,
+          "dy": 120
+        },
+        {
+          "anchor": "rear_guard_side",
+          "kind": "info",
+          "label": {
+            "th": "3 ตะแกรงหลัง",
+            "ja": "3 後ガード",
+            "en": "3 Rear guard"
+          },
+          "dx": -260,
+          "dy": -60
+        }
+      ],
+      "say": {
+        "th": [
+          "ซ่อม F2 ที่สั่นหรือมีเสียงกระทบ เลือกตรวจตะแกรงหน้า ใบพัด หรือตะแกรงหลัง ไม่ต้องตรวจทุกจุด ระหว่างซ่อม พัดลมไม่มีไฟเข้า ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด ส่วนฐาน เสา และหัวพัดลมไม่ต้องถอด"
+        ],
+        "ja": [
+          "振動や打音がする F2 を修理します。前ガード、羽根、後ガードから調べる場所を選べます。全部を調べる必要はありません。修理中は電源が入りません。直すのはガード・羽根・固定部品だけで、台・支柱・本体は外しません。"
+        ],
+        "en": [
+          "Repair F2's vibration or knocking. Choose the front guard, blade or rear guard. You need not check every part. The fan has no power while you repair it. Work only on the guards, blade and fasteners; leave the base, pole and head in place."
+        ]
+      },
+      "units": [
+        "problem",
+        "areas",
+        "choose",
+        "scope"
+      ],
+      "sound": "fan_knock"
+    },
+    {
+      "stage": "watch",
+      "shot": "B_areas",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "front_clip",
+          "kind": "info",
+          "label": {
+            "th": "คลิป",
+            "ja": "クリップ",
+            "en": "Clip"
+          },
+          "dx": -250,
+          "dy": -60
+        }
+      ],
+      "say": {
+        "th": [
+          "ตรวจตะแกรงหน้า เครื่องหมายต้องตรง ขอบแนบ และคลิปปิด ตะแกรงที่ใส่อยู่แต่เครื่องหมายเยื้องหรือคลิปเปิด ยังไม่ล็อก"
+        ],
+        "ja": [
+          "前ガードはマークが合い、縁が密着し、クリップが閉じているか確認します。付いていても、マークがずれているかクリップが開いていれば、固定されていません。"
+        ],
+        "en": [
+          "Check that the front guard marks align, its rim sits flush and its clip is closed. A fitted guard with the marks offset or the clip open is not locked."
+        ]
+      },
+      "units": [
+        "front_check",
+        "present_not_tight"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "watch",
+      "shot": "B_areas",
+      "segment": 2,
+      "callouts": [
+        {
+          "anchor": "rear_guard",
+          "kind": "info",
+          "label": {
+            "th": "ขอบตะแกรงหลัง",
+            "ja": "後ガードの縁",
+            "en": "Rear guard rim"
+          },
+          "dx": 260,
+          "dy": -40
+        }
+      ],
+      "say": {
+        "th": [
+          "กด Grip ค้างที่ขอบตะแกรงหลังแล้วลองขยับ ขอบที่ยึดแน่นจะไม่โยก วงแหวนที่เข้าเกลียวแล้วอาจยังหลวม"
+        ],
+        "ja": [
+          "後ガードの縁で Grip を押したまま動かします。固定された縁はぐらつきません。リングがねじに入っていても、ゆるみはあり得ます。"
+        ],
+        "en": [
+          "Hold Grip on the rear guard rim and try moving it. A secured rim stays still. A threaded ring may still be loose."
+        ]
+      },
+      "units": [
+        "rear_check",
+        "present_not_tight"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_access",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "front_clip",
+          "kind": "ok",
+          "label": {
+            "th": "คลิป",
+            "ja": "クリップ",
+            "en": "Clip"
+          },
+          "dx": -250,
+          "dy": -60
+        }
+      ],
+      "say": {
+        "th": [
+          "ถ้าจะเปิดด้านใน กด Trigger ที่คลิปหนึ่งครั้ง กด Grip ค้างที่ขอบตะแกรง หมุนตามเครื่องหมายแล้วดึงตรงออก",
+          "การถอดชิ้นส่วนเป็นการเปิดทางให้ตรวจด้านใน ถ้าพบชิ้นที่หลวมหรือไม่เข้าที่ ให้แก้ก่อนประกอบกลับ"
+        ],
+        "ja": [
+          "内側を見るときはクリップで Trigger を1回押します。縁で Grip を押したまま、マークに沿って回してまっすぐ抜きます。",
+          "部品を外すのは内側を点検するためです。ゆるんでいる部品や正しく付いていない部品があれば、組み立て直す前に直します。"
+        ],
+        "en": [
+          "To reach inside, press Trigger once at the clip. Hold Grip at the rim, turn along the marks and pull straight off.",
+          "Removing parts gives access for checking inside. If a part is loose or not seated, fix it before reassembling."
+        ]
+      },
+      "units": [
+        "open_front",
+        "present_not_tight"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "watch",
+      "shot": "B_areas",
+      "segment": 1,
+      "callouts": [
+        {
+          "anchor": "blade",
+          "kind": "info",
+          "label": {
+            "th": "ใบพัด",
+            "ja": "羽根",
+            "en": "Blade"
+          },
+          "dx": -280,
+          "dy": 80
+        }
+      ],
+      "say": {
+        "th": [
+          "เปิดตะแกรงหน้าแล้วตรวจใบพัด ร่องต้องสวมพินจนสุด และฝาล็อกกลางใบพัดต้องแน่น ฝาล็อกที่เข้าเกลียวแล้วอาจยังไม่แน่น"
+        ],
+        "ja": [
+          "前ガードを外して羽根を確認します。溝がピンの奥まで入り、中央のキャップが締まっている状態です。キャップがねじに入っていても、締まっていないことがあります。"
+        ],
+        "en": [
+          "With the front guard off, check the blade. Its groove should sit fully on the pin and its centre cap should be tight. A threaded cap may still be loose."
+        ]
+      },
+      "units": [
+        "blade_check",
+        "present_not_tight"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_spin_close",
+      "segment": 0,
+      "rotate": [
+        {
+          "anchor": "spinner",
+          "dir": "cw",
+          "label": {
+            "th": "ตามเข็ม",
+            "ja": "時計回り",
+            "en": "Clockwise"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "ถ้าจะถอดใบพัด กด Trigger ค้างที่ฝาล็อก หมุนตามเข็มจากด้านหน้า คลายจนหลุดเกลียวแล้วดึงฝาออก"
+        ],
+        "ja": [
+          "羽根を外すときはキャップで Trigger を押したまま、正面から時計回りに回します。ねじが外れたらキャップを抜きます。"
+        ],
+        "en": [
+          "To remove the blade, hold Trigger on its cap and turn clockwise from the front. Unthread it fully, then pull it off."
+        ]
+      },
+      "units": [
+        "spinner_dir"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_access",
+      "segment": 2,
+      "callouts": [
+        {
+          "anchor": "rear_lock",
+          "kind": "info",
+          "label": {
+            "th": "วงแหวนล็อก",
+            "ja": "固定リング",
+            "en": "Locking ring"
+          },
+          "dx": -260,
+          "dy": 120
+        }
+      ],
+      "say": {
+        "th": [
+          "กด Grip ค้างที่ใบพัด ดึงตรงออกตามแกนแล้ววางบนโต๊ะ ตอนนี้เห็นวงแหวนรอบแกน"
+        ],
+        "ja": [
+          "羽根で Grip を押したまま、軸に沿ってまっすぐ抜いて机に置きます。軸のまわりのリングが見えます。"
+        ],
+        "en": [
+          "Hold Grip on the blade, pull straight along the shaft and put it on the table. The ring around the shaft is now visible."
+        ]
+      },
+      "units": [
+        "blade_off"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_lock_close",
+      "segment": 0,
+      "rotate": [
+        {
+          "anchor": "rear_lock",
+          "dir": "ccw",
+          "label": {
+            "th": "ทวนเข็ม",
+            "ja": "反時計回り",
+            "en": "Counterclockwise"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "ถ้าต้องจัดตะแกรงหลังใหม่ กด Trigger ค้างที่วงแหวน คลายทวนเข็มจากด้านหน้าให้หลุดเกลียวก่อนดึงออก"
+        ],
+        "ja": [
+          "後ガードを合わせ直すときはリングで Trigger を押したまま、正面から反時計回りに回します。ねじが外れてから抜きます。"
+        ],
+        "en": [
+          "To realign the rear guard, hold Trigger on its ring. Unthread counterclockwise from the front before pulling it off."
+        ]
+      },
+      "units": [
+        "rear_dir"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_fix",
+      "segment": 2,
+      "rotate": [
+        {
+          "anchor": "rear_lock",
+          "dir": "cw",
+          "label": {
+            "th": "ตามเข็ม",
+            "ja": "時計回り",
+            "en": "Clockwise"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "จัดตะแกรงหลังให้ตรง ใส่วงแหวนแล้วกด Trigger ค้าง ขันตามเข็มจากด้านหน้าจนขอบตะแกรงไม่โยก"
+        ],
+        "ja": [
+          "後ガードを合わせてリングを戻します。Trigger を押したまま、正面から時計回りに締め、縁を固定します。"
+        ],
+        "en": [
+          "Align the rear guard and refit its ring. Hold Trigger and tighten clockwise from the front until the rim stays still."
+        ]
+      },
+      "units": [
+        "fix_rear"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_fix",
+      "segment": 1,
+      "callouts": [
+        {
+          "anchor": "blade",
+          "kind": "ok",
+          "label": {
+            "th": "ร่องตรงพิน",
+            "ja": "溝をピンに",
+            "en": "Slot on pin"
+          },
+          "dx": -280,
+          "dy": 80
+        }
+      ],
+      "say": {
+        "th": [
+          "กด Grip ค้างที่ใบพัด จัดร่องให้ตรงพิน แล้วดันใบพัดจนสุด"
+        ],
+        "ja": [
+          "羽根で Grip を押したまま、溝をピンに合わせて奥まで押します。"
+        ],
+        "en": [
+          "Hold Grip on the blade, align its groove with the pin and push it fully in."
+        ]
+      },
+      "units": [
+        "fix_blade"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_spin_close",
+      "segment": 1,
+      "rotate": [
+        {
+          "anchor": "spinner",
+          "dir": "ccw",
+          "label": {
+            "th": "ทวนเข็ม",
+            "ja": "反時計回り",
+            "en": "Counterclockwise"
+          }
+        }
+      ],
+      "say": {
+        "th": [
+          "ใส่ฝาล็อกใบพัดกลับ กด Trigger ค้างแล้วขันทวนเข็มจากด้านหน้าจนแน่น"
+        ],
+        "ja": [
+          "羽根キャップを戻し、Trigger を押したまま、正面から反時計回りに締めます。"
+        ],
+        "en": [
+          "Refit the blade cap. Hold Trigger and tighten counterclockwise from the front."
+        ]
+      },
+      "units": [
+        "spinner_dir",
+        "fix_blade",
+        "reassemble"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "do",
+      "shot": "B_reassemble",
+      "segment": 0,
+      "callouts": [
+        {
+          "anchor": "front_clip",
+          "kind": "ok",
+          "label": {
+            "th": "ปิดคลิป",
+            "ja": "クリップを閉じる",
+            "en": "Close clip"
+          },
+          "dx": 280,
+          "dy": -120
+        }
+      ],
+      "say": {
+        "th": [
+          "กด Grip ค้างที่ขอบตะแกรงหน้า จัดเครื่องหมาย ดันให้แนบแล้วหมุนล็อก กด Trigger ที่คลิปให้ปิด ใส่ตะแกรงครบก่อนทดสอบ"
+        ],
+        "ja": [
+          "前ガードの縁で Grip を押したまま、マークを合わせて押し回します。クリップで Trigger を押して閉じます。全ガードを付けてから「仕上がりを確認」を押します。"
+        ],
+        "en": [
+          "Hold Grip at the front guard rim. Align the marks, push flush and turn to lock. Press Trigger at the clip to close it. Fit both guards before testing."
+        ]
+      },
+      "units": [
+        "fix_front",
+        "reassemble",
+        "guards_first"
+      ],
+      "motion_windows": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stage": "done",
+      "layout": "result",
+      "shot": "B_front",
+      "segment": 0,
+      "say": {
+        "th": [
+          "กดตรวจผลงานบนแผงงาน พัดลมหมุน 3 วินาที ใช้ตรวจได้ก่อนหรือหลังซ่อม ผลผ่านพร้อมใช้งานคือเสร็จ ถ้ายังมีเสียงผิดปกติ ให้แก้แล้วตรวจใหม่ ระบบขัดข้องให้แจ้งผู้วิจัย ตะแกรงไม่ครบจะไม่หมุนทดสอบ"
+        ],
+        "ja": [
+          "作業パネルで「仕上がりを確認」を押すと3秒回転します。修理前にも修理後にも使えます。合格・使用可能で完了です。異音が残れば直してもう一度確認し、不具合は研究者に伝えます。 ガードが足りないと回転しません。"
+        ],
+        "en": [
+          "Select Check my work on the task panel for a 3-second test, before or after repair. Passed and ready means done. If abnormal noise remains, correct it and test again. Report system faults to the researcher. Missing guards prevent the spin test."
+        ]
+      },
+      "units": [
+        "inspect",
+        "done",
+        "guards_first"
+      ]
+    }
+  ],
+  "manual_layout": "part_cards",
+  "step_layout": "text",
+  "manual_pagination": "part_pages"
+}

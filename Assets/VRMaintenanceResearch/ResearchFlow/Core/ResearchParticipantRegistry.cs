@@ -50,6 +50,9 @@ namespace VRMaintenanceResearch.ResearchFlow
     /// <summary>One local registry, serialized under an OS file lock. Never silently resets corrupt data.</summary>
     public sealed class ResearchParticipantRegistry
     {
+#if UNITY_EDITOR
+        public static string EditorCaptureTrainingVersion;
+#endif
         sealed class Document
         {
             [JsonProperty(Required = Required.Always)] public int schema = 1;
@@ -172,6 +175,10 @@ namespace VRMaintenanceResearch.ResearchFlow
                 record.session_state = RegistryState.InProgress; record.flow_state = ResearchFlowState.TutorialWelcome;
                 record.ui_policy = resolvedPolicy; record.protocol_version = ResearchUIPolicy.ProtocolFor(resolvedPolicy);
                 record.training_version = ResearchUIPolicy.TrainingFor(resolvedPolicy); record.layout_version = ResearchUIPolicy.LayoutVersion;
+#if UNITY_EDITOR
+                if (record.group == ParticipantGroup.Dev && record.test_data && (EditorCaptureTrainingVersion == ResearchUIPolicy.TrainingTrainerV7 || EditorCaptureTrainingVersion == ResearchUIPolicy.TrainingNoticeV8))
+                    record.training_version = EditorCaptureTrainingVersion;
+#endif
                 record.revision++; Save(doc); return record;
             }
         }

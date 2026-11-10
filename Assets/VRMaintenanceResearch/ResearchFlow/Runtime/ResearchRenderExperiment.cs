@@ -101,7 +101,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     : "The previous baseline restore was not verified by native readback; restart the technical application.";
                 return false;
             }
-            if (Application.isEditor || !Application.identifier.EndsWith(".technical", StringComparison.Ordinal))
+            if (!ResearchBuildFlavor.DiagnosticsEnabled || Application.isEditor || !Application.identifier.EndsWith(".technical", StringComparison.Ordinal))
             { error = "Render experiments require the standalone technical build."; return false; }
             var scenario = owner.GetComponent<ResearchTechnicalScenario>();
             if (isolatedDesk && (!scenario || !scenario.Owns(owner) || !scenario.SimulatedPresence))

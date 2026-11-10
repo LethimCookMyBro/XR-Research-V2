@@ -101,7 +101,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             controller = UnityEngine.Object.FindFirstObjectByType<ResearchSessionFlowController>() ?? throw new InvalidOperationException("No flow controller.");
             FocusGame(); // the tester returns to the Game View before driving the participant
             routines.Clear(); routines.Push(routine);
-            deadline = seconds; activeTime = focusWait = 0;
+            deadline = BatchStrictFocus && seconds == 420 ? 900 : seconds; activeTime = focusWait = 0;
             clockTick = EditorApplication.timeSinceStartup; clockBlocked = focusInterrupted = false;
             blockedSession = blockedRun = null;
             Status = "Running"; Detail = "";
@@ -113,6 +113,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             try
             {
+                if (BatchStrictFocus && !BatchFocused) throw new InvalidOperationException("Batch focus lost; no automatic resume.");
                 if (!EditorApplication.isPlaying) throw new TimeoutException("Play Mode ended at: " + Steps.LastOrDefault());
                 double now = EditorApplication.timeSinceStartup, elapsed = Math.Max(0, now - clockTick);
                 clockTick = now;
@@ -278,6 +279,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             Require(controller.Flow.State == ResearchFlowState.TutorialWelcome, "Tutorial welcome entered.");
             yield return RayClick("tutorial_start");
             yield return Training();
+            if (BatchTrainingOnly) yield break;
             yield return RayClick("tutorial_continue");
             yield return Settle();
             yield return StartTask(duplicateStart);
@@ -288,6 +290,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             while (controller.Flow.IsTutorial && controller.Flow.State != ResearchFlowState.TutorialComplete)
             {
                 string fact = controller.TutorialFact;
+                yield return BatchTrainingAuxiliary(fact);
                 double until = activeTime + 8;
                 while (!controller.view.TutorialActionReady(fact) || controller.TutorialArmedFact != fact)
                 {
@@ -296,6 +299,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 }
                 int before = controller.TutorialCompletedFactCount;
                 Step("training " + fact); Capture("prompt_" + fact);
+                yield return BatchTrainingBefore(fact);
                 switch (fact)
                 {
                     case "teleport": yield return Teleport(); break;
@@ -310,10 +314,17 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         break;
                     case "rotate": yield return MoveHeld(Vector3.zero, 45); break;
                     case "release": yield return Release(); break;
+                    case "notice": yield return RayClick("tutorial_notice"); break;
                     case "reference": yield return RayClick("reference"); break;
                     case "switch": yield return SwitchReference(); break;
                     case "reposition": yield return DragReference(); break;
-                    case "close": yield return ReaderDistance(); yield return RayClick("reference_close"); break;
+                    case "close": yield return RayClick("reference_close"); break;
+                    case "pause":
+                        yield return RayClick("pause"); yield return Settle();
+                        Require(controller.Flow.Paused, "Pause practice paused the session.");
+                        yield return RayClick("session_resume"); yield return Settle();
+                        Require(!controller.Flow.Paused, "Continue resumed Training.");
+                        break;
                     case "inspect":
                         if (controller.trainingStation) yield return MakeTrainerReady();
                         yield return RayClick("inspect"); break;
@@ -331,7 +342,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     case "loosen": yield return TwistScrew(-1); break;
                     case "cable_connect": yield return MoveLead(true); break;
                     case "cable_disconnect": yield return MoveLead(false); break;
-                    default: throw new InvalidOperationException("No native driver for tutorial fact " + fact);
+                    default: yield return BatchTrainingMedia(fact); break;
                 }
                 until = activeTime + 8;
                 while (controller.TutorialCompletedFactCount == before && controller.Flow.State != ResearchFlowState.TutorialComplete)
@@ -340,9 +351,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                     yield return null;
                 }
                 yield return Wait(.2); Capture("after_" + fact);
+                yield return BatchTrainingAfter(fact);
                 Require(controller.TutorialLastCompletedFact == fact || controller.Flow.State == ResearchFlowState.TutorialComplete || controller.TutorialCompletedFactCount > before,
                     "Credit belongs to " + fact);
                 yield return Settle();
+                if (BatchVideoPlaybackCheck && fact == "video_pause") yield break; // Focused DEV regression, not completed Training.
             }
         }
 
@@ -499,6 +512,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // Reader distance preset (technical sessions): one ray press brings the Reader nearer, a second returns it to its anchor.
+        public static string ReaderDistanceCheck() => Start(ReaderDistance(), 30);
+
         static IEnumerator ReaderDistance()
         {
             var panel = controller.view.referencePanel.transform; var head = controller.origin.Camera.transform;
@@ -518,9 +533,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             double until = activeTime + 10;
             ResearchUIAction action;
+            bool lookedAtMain = false;
             while (!(action = controller.view.GetComponentsInChildren<ResearchUIAction>(false).FirstOrDefault(a => a.command == command && a.GetComponent<Button>().IsInteractable())))
             {
                 Require(activeTime < until, "No interactable button: " + command + " in " + controller.Flow?.State);
+                var main = controller.view.mainPanel;
+                if (!lookedAtMain && main && main.isActiveAndEnabled && main.HasAcceptedPose && !main.PlacementBlocked && !main.IsReadableFromHead)
+                {
+                    // Gaze ownership hides Pause while Main is out of view; look before requiring active children.
+                    var offered = main.GetComponentsInChildren<ResearchUIAction>(true).FirstOrDefault(a => a.command == command
+                        && a.enabled && a.GetComponent<Button>().enabled && a.GetComponent<Button>().interactable);
+                    if (offered)
+                    {
+                        var panelRect = (RectTransform)main.transform;
+                        ResearchFlowVisualInput.SetHeadFacing(panelRect.TransformPoint(panelRect.rect.center));
+                        lookedAtMain = true;
+                    }
+                }
                 yield return null;
             }
             var ray = Ray(1);
@@ -530,6 +559,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 yield return null;
             }
             var rect = action.GetComponent<RectTransform>();
+            Require(action.GetComponentsInParent<RectMask2D>().All(mask => !mask.isActiveAndEnabled || Inside(mask.GetComponent<RectTransform>(), rect.TransformPoint(rect.rect.center))), "Button center is masked; expose it before SDK click: " + command);
             HandNearBody(1);
             // Leave any previously hovered target first so this acquisition is fresh.
             var away = Hand(1); away.rotation = Quaternion.AngleAxis(40, Vector3.up) * away.rotation; Drive(1, away);
@@ -542,6 +572,24 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Drive(1, pose);
                 yield return Wait(.04);
                 onTarget = ray.isActiveAndEnabled && ray.State == InteractorState.Hover && ray.CollisionInfo.HasValue && Inside(rect, ray.CollisionInfo.Value.Point);
+                // A nearer canvas can intercept the low, lateral hand ray although the target is visible.
+                // Move the controller to the body's center once; keep actual SDK hover/hit and Trigger checks.
+                if (i == 19 && !onTarget && ray.isActiveAndEnabled && ray.State == InteractorState.Hover
+                    && ray.CollisionInfo.HasValue && ray.Candidate)
+                {
+                    var hitCanvas = ray.Candidate.GetComponentInParent<Canvas>();
+                    var targetCanvas = rect.GetComponentInParent<Canvas>();
+                    if (hitCanvas && targetCanvas && hitCanvas != targetCanvas
+                        && Vector3.Distance(ray.Origin, ray.CollisionInfo.Value.Point)
+                            < Vector3.Distance(ray.Origin, rect.TransformPoint(rect.rect.center)))
+                    {
+                        var head = controller.origin.Camera.transform;
+                        var flat = Quaternion.LookRotation(Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized, Vector3.up);
+                        var centered = Hand(1);
+                        centered.position = head.position + flat * new Vector3(0f, -.25f, .4f);
+                        Drive(1, centered);
+                    }
+                }
             }
             Require(onTarget, "SDK ray hovers " + command + ": state=" + ray.State + " hit=" + (ray.CollisionInfo.HasValue ? ray.CollisionInfo.Value.Point.ToString("F3") : "none"));
             if (cycles > 1) TraceSdkControl(action);
@@ -865,13 +913,18 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         static IEnumerator ExamineTrainer()
         {
             var target = Station.GetComponentInChildren<ResearchExamineTarget>(true);
+            var colliders = Station.module.GetComponentsInChildren<Collider>(true)
+                .Where(c => !c.isTrigger && c.enabled && c.gameObject.activeInHierarchy).ToArray();
+            Require(target && colliders.Length > 0, "Training Examine needs a visible physical module collider.");
+            var aim = colliders.OrderBy(c => Vector3.Distance(c.bounds.center, controller.origin.Camera.transform.position)).First().bounds.center;
+            ResearchFlowVisualInput.SetHeadFacing(aim);
+            yield return Wait(.2);
             var ray = Ray(1); HandNearBody(1);
-            var module = Station.module.transform;
             bool visible = false;
             for (int i = 0; i < 40 && !visible; i++)
             {
                 var pose = Hand(1);
-                pose.rotation = Quaternion.FromToRotation(ray.Forward, (module.position - ray.Origin).normalized) * pose.rotation;
+                pose.rotation = Quaternion.FromToRotation(ray.Forward, (aim - ray.Origin).normalized) * pose.rotation;
                 Drive(1, pose); yield return Wait(.05);
                 visible = target.ChipVisible;
             }
@@ -1240,7 +1293,9 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
 
         static ResearcherConsole Console()
         {
-            var console = Resources.FindObjectsOfTypeAll<ResearcherConsole>().FirstOrDefault() ?? EditorWindow.GetWindow<ResearcherConsole>("Researcher Console", false);
+            var console = Resources.FindObjectsOfTypeAll<ResearcherConsole>().FirstOrDefault();
+            if (BatchStrictFocus) Require(console, "Open the Researcher Console before the batch; no window creation or autofocus.");
+            else if (!console) console = EditorWindow.GetWindow<ResearcherConsole>("Researcher Console", false);
             FocusGame();
             return console;
         }
@@ -1274,7 +1329,11 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         }
 
         // The Editor Game View owns Application.isFocused; a researcher click elsewhere is a real focus loss the app pauses on.
-        static void FocusGame() => EditorWindow.FocusWindowIfItsOpen(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+        static void FocusGame()
+        {
+            if (BatchStrictFocus) Require(BatchFocused, "Batch needs the already focused Game View; no autofocus.");
+            else EditorWindow.FocusWindowIfItsOpen(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView"));
+        }
 
         static void Require(bool ok, string message) { if (!ok) throw new InvalidOperationException(message); }
     }

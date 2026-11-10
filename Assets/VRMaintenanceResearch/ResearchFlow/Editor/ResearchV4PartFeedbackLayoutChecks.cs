@@ -95,7 +95,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         finally { ownedCamera.targetTexture = previousTarget; render.Release(); UnityEngine.Object.DestroyImmediate(render); }
                         var port = controller.taskPorts.Single(p => p.taskId == task);
                         Check(controller.Flow.IsTaskActive && port.InteractionAllowed, prefix + "/actual task action started");
-                        Check(controller.ReaderResource.Contains(task + "5_"), prefix + "/new reader routing", controller.ReaderResource);
+                        Check(controller.ReaderResource.Contains(task + "6_"), prefix + "/new reader routing", controller.ReaderResource);
                         Check(!view.GetComponentsInChildren<ResearchUIAction>(false).Any(a => a.command == "examine_open"), prefix + "/new Examine absent");
                         var state = new S1TaskBState { systemIntegrityValid = true, powerIsolated = true, frontGuardPlacement = S1Placement.Seated,
                             frontGuardAligned = true, frontGuardClipped = true, rearGuardPlacement = S1Placement.Seated, rearLock = S1ThreadState.Tight };

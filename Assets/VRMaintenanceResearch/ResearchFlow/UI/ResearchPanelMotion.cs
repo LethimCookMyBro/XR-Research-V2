@@ -22,6 +22,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         readonly List<Button> buttons = new List<Button>();
         readonly List<ResearchDragHandle> handles = new List<ResearchDragHandle>();
         readonly List<Vector3> actionPoints = new List<Vector3>();
+        readonly List<RectMask2D> actionMasks = new List<RectMask2D>();
         long placementTicks;
         public int PlacementCalls { get; private set; }
         public int PlacementRejections { get; private set; }
@@ -51,6 +52,8 @@ namespace VRMaintenanceResearch.ResearchFlow
         float faceTransitionSince = float.NegativeInfinity;
         // Re-show only after the accepted pose stays clear this long; input stays off while waiting.
         const float RecoverDwellSeconds = .25f;
+        // Stations stand about 10 m apart; a panel within this of the current one is not a stale pose from another station.
+        const float StationRadiusMetres = 4f;
         float clearSince = float.NegativeInfinity;
         Pose? pendingRestore;
         Pose? deferredViewportHead;
@@ -102,7 +105,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void Recenter(bool participant, bool animate = true, string input = "None", bool onlyIfNeeded = false, string reason = "recenter")
         {
             if (!view || !view.Head) return;
+            // A cue/layout refresh may already fit. Do not hide an accepted Reader and cancel its decoder
+            // while deferring a no-op placement; use the same full checks as the deferred keep-pose path.
+            if (onlyIfNeeded && placementAccepted && !PlacementBlocked && !RecenterPending
+                && ReadableFace(transform.position, transform.rotation) && FitsView(transform.position, transform.rotation)
+                && PlacementClear(transform.position, transform.rotation)) return;
             if (reason != "clearance_retry") placementAccepted = false;
+            ParticipantPlaced = false;
             pendingRestore = null;
             deferredViewportHead = null;
             pendingOnlyIfNeeded = onlyIfNeeded; pendingRequireView = true;
@@ -162,7 +171,17 @@ namespace VRMaintenanceResearch.ResearchFlow
                     if (PlacementBlocked && !faceHidden && facing >= .58f)
                     {
                         if (float.IsNegativeInfinity(clearSince)) clearSince = Time.unscaledTime;
-                        if (Time.unscaledTime - clearSince >= RecoverDwellSeconds) { SetPlacementBlocked(false); clearSince = float.NegativeInfinity; }
+                        if (Time.unscaledTime - clearSince >= RecoverDwellSeconds)
+                        {
+                            // Owner 10 Nov: a task panel that no candidate pose would take (fan guard in the sight line, or the wearer
+                            // looking down) was re-shown here but never counted as placed, so it was re-placed, hidden and re-shown
+                            // once a second for the rest of the task (91 times in one Task B). Presses in the hidden quarter-second
+                            // were lost and the Reader waited behind it. Shown, world-clear and at this station, it is placed.
+                            if (panelId == "task_information" && !placementAccepted && FixedWorkingSlate
+                                && view.controller.TryStationFrame(out var station, out _, out _, out _)
+                                && Vector3.Distance(transform.position, station.position) < StationRadiusMetres) AcceptPose();
+                            SetPlacementBlocked(false); clearSince = float.NegativeInfinity;
+                        }
                     }
                     else clearSince = float.NegativeInfinity;
                     bool change = faceHidden ? facing >= .58f : facing < .52f;
@@ -406,6 +425,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             return false;
         }
 
+        // Owner 31 Oct: drags froze whenever a slate corner left either eye's view or equipment sat in the sight line (60-90 % of
+        // task drag samples rejected). A held slate follows the ray wherever it faces the wearer, clears geometry and keeps off the other panel.
+        bool dragCheck;
+        // A pose the wearer dragged to is revalidated by the drag rule, so a later layout change cannot hide or move it.
+        public bool ParticipantPlaced { get; set; }
+        public bool DragPoseClear(Vector3 position, Quaternion rotation)
+        {
+            if (!ReadableFace(position, rotation)) return false;
+            dragCheck = true;
+            try { return PlacementClear(position, rotation); }
+            finally { dragCheck = false; }
+        }
+
         public bool ReadableFromHeadForDrag(Vector3 position, Quaternion rotation)
         {
             if (!ReadableFace(position, rotation)) return false;
@@ -460,6 +492,11 @@ namespace VRMaintenanceResearch.ResearchFlow
         public void EnsureClear(bool requireView = true)
         {
             clearanceKnown = false;
+            if (ParticipantPlaced && !PlacementBusy)
+            {
+                if (DragPoseClear(transform.position, transform.rotation)) { if (!RecenterPending) SetPlacementBlocked(false); return; }
+                ParticipantPlaced = false;
+            }
             if (FixedWorkingSlate && placementAccepted)
             {
                 bool clear = ReadableFace(transform.position, transform.rotation)
@@ -664,7 +701,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             sightVolume[5] = new Plane(-(rotation * Vector3.forward), centre);
             if (peer.HasValue && GeometryUtility.TestPlanesAABB(sightVolume, peer.Value))
             { LastRejection = "other_panel_occluded"; return false; }
-            if (EquipmentMayCover) return true;
+            if (EquipmentMayCover || dragCheck) return true;
             var reach = box; reach.Encapsulate(eye);
             int overlaps = Physics.OverlapBoxNonAlloc(reach.center, reach.extents, overlapBuffer, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
             if (overlaps == overlapBuffer.Length) { LastRejection = "sight_buffer_full"; return false; }
@@ -739,6 +776,36 @@ namespace VRMaintenanceResearch.ResearchFlow
         void AddActionPoints(RectTransform control)
         {
             control.GetWorldCorners(otherCorners);
+            var graphic = control.GetComponent<MaskableGraphic>();
+            var clipper = graphic && graphic.maskable ? MaskUtilities.GetRectMaskForClippable(graphic) : null;
+            if (clipper)
+            {
+                MaskUtilities.GetRectMasksForClip(clipper, actionMasks);
+                var clip = Clipping.FindCullAndClipWorldRect(actionMasks, out bool valid);
+                if (!valid) return;
+                var canvas = clipper.GetComponentInParent<Canvas>();
+                if (canvas)
+                {
+                    var canvasTransform = canvas.rootCanvas.transform;
+                    var min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+                    var max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+                    foreach (var corner in otherCorners)
+                    {
+                        var point = canvasTransform.InverseTransformPoint(corner);
+                        min = Vector3.Min(min, point); max = Vector3.Max(max, point);
+                    }
+                    min.x = Mathf.Max(min.x, clip.xMin); min.y = Mathf.Max(min.y, clip.yMin);
+                    max.x = Mathf.Min(max.x, clip.xMax); max.y = Mathf.Min(max.y, clip.yMax);
+                    if (max.x <= min.x || max.y <= min.y) return;
+                    for (int x = 0; x < 2; x++)
+                        for (int y = 0; y < 2; y++)
+                            for (int z = 0; z < 2; z++)
+                                actionPoints.Add(transform.InverseTransformPoint(canvasTransform.TransformPoint(
+                                    new Vector3(x == 0 ? min.x : max.x, y == 0 ? min.y : max.y, z == 0 ? min.z : max.z))));
+                    actionPoints.Add(transform.InverseTransformPoint(canvasTransform.TransformPoint((min + max) * .5f)));
+                    return;
+                }
+            }
             foreach (var corner in otherCorners) actionPoints.Add(transform.InverseTransformPoint(corner));
             actionPoints.Add(transform.InverseTransformPoint((otherCorners[0] + otherCorners[2]) * .5f));
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace VRMaintenanceResearch.ResearchFlow
 {
-    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect }
+    public enum PartOperation { Held, Manipulate, Move, Turn, Insert, Remove, Open, Close, Connect, Disconnect, Tighten, Loosen }
     public enum PartBlockReason { None, Unspecified, ClipClosed, GuardNotSeated, Retained, Alignment, EndStop, Contact, CableLimit, OtherHeld, FrontGuardPresent, BladeCapPresent, BladePresent, RearRingPresent, LatchClosed, MountNotReady }
 
     public readonly struct PartInteraction
@@ -51,6 +51,23 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
         }
 
+        // A hand near a part, before any grab. Display-only (not logged); every grabbable part reports it the same way.
+        string hoverTarget, hoverInput;
+        int hoverPointer = int.MinValue;
+        public (string Target, string InputSource)? CurrentHover =>
+            InteractionAllowed && hoverTarget != null && (demoMode || IsReadyForStudy) ? (hoverTarget, hoverInput) : ((string, string)?)null;
+
+        public void Hover(string target, string inputSource, int pointer)
+        {
+            if (!InteractionAllowed || string.IsNullOrEmpty(target) || inputSource == "None") return;
+            hoverTarget = target; hoverInput = inputSource; hoverPointer = pointer;
+        }
+
+        public void Unhover(string target, int pointer)
+        {
+            if (pointer == hoverPointer && target == hoverTarget) { hoverTarget = null; hoverPointer = int.MinValue; }
+        }
+
         public sealed class Attempt
         {
             public string Id { get; } = Guid.NewGuid().ToString("N");
@@ -70,10 +87,15 @@ namespace VRMaintenanceResearch.ResearchFlow
             public string TaskId { get; }
             public object TaskState { get; }
             public bool SystemTerminal { get; }
-            internal AttemptPayload(Attempt attempt, object state, string action, string phase, bool blocked, bool system, bool technical)
+            internal AttemptPayload(Attempt attempt, object state, string action, string phase, bool blocked, bool system, bool technical, PartInteraction? observation = null)
             {
                 AttemptId = attempt.Id; TaskId = attempt.TaskId; TaskState = state; SystemTerminal = system;
-                this["payload_version"] = "research.task-attempt.1";
+                this["payload_version"] = "research.task-attempt.2";
+                var observed = observation ?? attempt.interaction;
+                this["interaction_operation"] = observed.Operation.ToString();
+                this["block_reason"] = observed.Reason.ToString();
+                this["interaction_sequence"] = observed.Sequence;
+                this["interaction_observed_unscaled_seconds"] = observed.ObservedAt;
                 this["attempt_id"] = attempt.Id; this["action_type"] = action; this["phase"] = phase;
                 this["input_source"] = attempt.InputSource; this["task_state"] = state;
                 this["source"] = system ? "System" : "User"; this["blocked"] = blocked;
@@ -85,6 +107,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         // Arguments: event, target, before payload, after payload. Payloads retain raw provenance.
         public event Action<string, string, object, object> Behavior;
+        public event Action<string, string, object, object> Observation;
 
         public bool IsReadyForStudy => ValidTask && !demoMode && (contentApproved || ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) && state != null && evaluate != null && (ResearchUIPolicy.StudyOpenWithoutDeviceApprovals || (reference != null && referenceMediaReady != null && referenceMediaReady())) && interactionGate != null;
         private bool ValidTask => taskId == "A" || taskId == "B";
@@ -113,7 +136,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             InteractionAllowed = allowed;
             try { interactionGate?.Invoke(allowed); }
             catch { InteractionAllowed = false; throw; }
-            finally { if (!InteractionAllowed) CancelAttempts(); }
+            finally { if (!InteractionAllowed) { CancelAttempts(); hoverTarget = null; hoverPointer = int.MinValue; } }
         }
 
         // Spec §7 fixes one participant sentence per outcome category; the key is resolved by the view in the session language.
@@ -199,11 +222,25 @@ namespace VRMaintenanceResearch.ResearchFlow
             return reference?.Invoke(section, language) ?? string.Empty;
         }
 
-        public void Examine(string target, string inputSource)
+        // §10 EXAMINE fields (observation_id, access_state, shown text). Null keeps the earlier payload unchanged.
+        private Func<string, Dictionary<string, object>> examineDetail;
+        public void BindExamineDetail(Func<string, Dictionary<string, object>> detail) => examineDetail = detail ?? throw new ArgumentNullException(nameof(detail));
+        public Dictionary<string, object> ExamineDetail(string target) => ValidTask && InteractionAllowed && (demoMode || IsReadyForStudy) ? examineDetail?.Invoke(target) : null;
+
+        // §6.3: an area that cannot be seen yet (blocked or unavailable) is logged as EXAMINE_REJECTED, never as EXAMINE, so H2 counts
+        // only areas actually examined. Returns whether the area was examined.
+        public bool Examine(string target, string inputSource)
         {
             ValidateInteraction(target, inputSource);
             var snapshot = CaptureState();
-            Behavior?.Invoke("EXAMINE", target, Payload(snapshot, inputSource, snapshot), Payload(snapshot, inputSource, snapshot));
+            var after = (Dictionary<string, object>)Payload(snapshot, inputSource, snapshot);
+            var detail = examineDetail?.Invoke(target);
+            object access = null;
+            bool examined = detail == null || (detail.TryGetValue("access_state", out access) && Equals(access, "accessible"));
+            if (detail != null) after["examine"] = detail;
+            if (!examined) after["rejected_reason"] = access ?? "access_state_missing";
+            Behavior?.Invoke(examined ? "EXAMINE" : "EXAMINE_REJECTED", target, Payload(snapshot, inputSource, snapshot), after);
+            return examined;
         }
 
         public void Action(string target, object before, object after, string inputSource, bool repair = false)
@@ -234,7 +271,12 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             if (!IsAttemptActive(attempt)) return false;
             ValidateInteraction(attempt.Target, attempt.InputSource);
+            var previous = attempt.interaction;
             attempt.interaction = new PartInteraction(attempt, operation, reason, ++interactionSequence);
+            if (previous.Operation != operation || previous.Reason != reason)
+                Observation?.Invoke("PART_INTERACTION_CHANGED", attempt.Target,
+                    new AttemptPayload(attempt, attempt.lastState, null, "changed", previous.Reason != PartBlockReason.None, false, demoMode, previous),
+                    new AttemptPayload(attempt, CaptureState(), null, "changed", reason != PartBlockReason.None, false, demoMode));
             return true;
         }
 

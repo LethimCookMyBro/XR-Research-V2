@@ -22,7 +22,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             check(initial.ram.All(p => p.placement == S1Placement.NotInstalled), "RAM installed during authoring.");
             check(initial.ssds.All(p => p.placement == S1Placement.NotInstalled && p.trayFastener == S1ThreadState.Absent), "SSD auto fastened.");
             check(initial.gpus.All(p => p.placement == S1Placement.NotInstalled && p.bracketFastener == S1ThreadState.Absent), "GPU auto fastened.");
-            check(initial.cables.Length == 3 && initial.cables.All(c => c.sourceConnected && !c.targetConnected), "Cable device ends must start loose with measured source continuity.");
+            check(initial.cables.Length == 3 && initial.cables.All(c => !c.sourceConnected && !c.targetConnected), "Task cables must start loose at both ends.");
             check(initial.baseState.atx24Connected && initial.baseState.epsConnected && initial.baseState.cpuFanConnected && initial.baseState.frontPanelConnected && initial.baseState.powerIsolated, "Preassembled physical base wiring not ready.");
             check(!task.port.contentApproved, "Authoring cannot approve study content.");
             foreach (var label in task.GetComponentsInChildren<TMPro.TextMeshPro>(true))

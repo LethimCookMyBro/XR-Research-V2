@@ -9,16 +9,17 @@ namespace VRMaintenanceResearch.ResearchFlow
         static readonly List<Collider> colliders = new List<Collider>(32);
         static Collider[] overlaps = new Collider[64];
         static RaycastHit[] castHits = new RaycastHit[64];
-        static readonly Matrix4x4[] rootPoses = new Matrix4x4[513];
-        static readonly Matrix4x4[] colliderPoses = new Matrix4x4[513];
+        const int MaximumSamples = 8192;
+        static Matrix4x4[] rootPoses = new Matrix4x4[513];
+        static Matrix4x4[] colliderPoses = new Matrix4x4[513];
 
         public static int Samples(float travel, float angle, float radius)
         {
             if (float.IsNaN(travel) || float.IsInfinity(travel) || float.IsNaN(angle) || float.IsInfinity(angle) || float.IsNaN(radius) || float.IsInfinity(radius) || travel < 0 || angle < 0 || radius < 0) return -1;
             float distance = travel + angle * Mathf.Deg2Rad * radius;
-            if (distance > .128f) return -1;
+            if (float.IsInfinity(distance) || distance > MaximumSamples * .00025f) return -1;
             int count = Mathf.CeilToInt(distance / .00025f);
-            return count > 512 ? -1 : Mathf.Max(1, count);
+            return count > MaximumSamples ? -1 : Mathf.Max(1, count);
         }
 
         public static bool Allows(Transform root, Matrix4x4 desired, Collider constrainedThreadContact = null)
@@ -39,13 +40,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             float angle = Quaternion.Angle(root.rotation, desired.rotation);
             int samples = Samples(travel, angle, radius);
             if (samples < 0) return false;
-            rootPoses[0] = start;
-            for (int i = 1; i <= samples; i++)
-            {
-                float fraction = (float)i / samples;
-                rootPoses[i] = Matrix4x4.TRS(Vector3.Lerp(start.GetColumn(3), desired.GetColumn(3), fraction),
-                    Quaternion.Slerp(start.rotation, desired.rotation, fraction), start.lossyScale);
-            }
+            bool posesPrepared = false;
             foreach (var collider in colliders)
             {
                 float reach = collider.bounds.extents.magnitude + travel + Quaternion.Angle(start.rotation, desired.rotation) * Mathf.Deg2Rad * radius + .001f;
@@ -57,6 +52,23 @@ namespace VRMaintenanceResearch.ResearchFlow
                         overlaps[foreign++] = other;
                 }
                 if (foreign == 0) continue;
+                if (!posesPrepared)
+                {
+                    if (rootPoses.Length <= samples)
+                    {
+                        int capacity = Mathf.NextPowerOfTwo(samples + 1);
+                        Array.Resize(ref rootPoses, capacity);
+                        Array.Resize(ref colliderPoses, capacity);
+                    }
+                    rootPoses[0] = start;
+                    for (int i = 1; i <= samples; i++)
+                    {
+                        float fraction = (float)i / samples;
+                        rootPoses[i] = Matrix4x4.TRS(Vector3.Lerp(start.GetColumn(3), desired.GetColumn(3), fraction),
+                            Quaternion.Slerp(start.rotation, desired.rotation, fraction), start.lossyScale);
+                    }
+                    posesPrepared = true;
+                }
                 var local = root.worldToLocalMatrix * collider.transform.localToWorldMatrix;
                 for (int i = 0; i <= samples; i++) colliderPoses[i] = rootPoses[i] * local;
                 var box = (BoxCollider)collider;
@@ -76,7 +88,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                         bool touching = Physics.ComputePenetration(collider, next.GetColumn(3), next.rotation,
                             other, other.transform.position, other.transform.rotation, out direction, out depth);
                         if (!touching) depth = 0;
-                        if (depth > .0001f && (baseline <= .0001f || depth >= previous - .0000001f)) return false;
+                        if (depth > .0001f && (baseline <= .0001f || depth > baseline + .0000001f || depth > previous + .0000001f)) return false;
                         previous = depth;
                     }
                 }
@@ -99,6 +111,31 @@ namespace VRMaintenanceResearch.ResearchFlow
             }
             return true;
         }
+
+        // Owner 2 Nov: a held part that touched the case or fan froze while the hand moved on, so it felt stuck.
+        // A blocked move now keeps the part's rotation and takes the longest axis-subset of the translation that is clear,
+        // so it slides along the surface it touches.
+        static readonly Vector3[] slideMasks = { Vector3.one, new Vector3(0, 1, 1), new Vector3(1, 0, 1), new Vector3(1, 1, 0), Vector3.right, Vector3.up, Vector3.forward };
+        static readonly Vector3[] slideSteps = new Vector3[7];
+
+        public static Matrix4x4 Slide(Transform root, Matrix4x4 desired, Func<Matrix4x4, bool> allows)
+        {
+            var current = root.localToWorldMatrix;
+            if (allows(desired)) return desired;
+            Vector3 delta = (Vector3)desired.GetColumn(3) - root.position;
+            for (int i = 0; i < slideMasks.Length; i++) slideSteps[i] = Vector3.Scale(delta, slideMasks[i]);
+            Array.Sort(slideSteps, (a, b) => b.sqrMagnitude.CompareTo(a.sqrMagnitude));
+            foreach (var step in slideSteps)
+            {
+                if (step.sqrMagnitude < 1e-8f) break;
+                var pose = Matrix4x4.TRS(root.position + step, root.rotation, root.lossyScale);
+                if (allows(pose)) return pose;
+            }
+            return current;
+        }
+
+        public static bool Moved(Matrix4x4 from, Matrix4x4 to)
+            => Vector3.Distance(from.GetColumn(3), to.GetColumn(3)) > .00001f || Quaternion.Angle(from.rotation, to.rotation) > .01f;
 
         static int Overlap(Vector3 center, float radius)
         {

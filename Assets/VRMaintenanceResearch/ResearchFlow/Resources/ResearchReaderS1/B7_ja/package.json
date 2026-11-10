@@ -1,0 +1,1537 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.B7.ja",
+  "approval": "S1_ENGINEERING_DRAFT_PENDING_HUMAN_REVIEW",
+  "source_pdf": "B7_ja.pdf",
+  "source_pdf_resource": "ResearchReaderS1/B7_ja/source_pdf",
+  "source_sha256": "64968d97ab3c71aa9a29cd0aa274dcf0ef247100e10d59d322df4d35ebfa8840",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p01",
+      "sha256": "97674a79747455c5adb1e9f0110bbcbfc9f42b75daff20703e0d73131473675b"
+    },
+    {
+      "page": 2,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p02",
+      "sha256": "7d4c191d8dd644fa78f3a50cba9c48652675a4906633b406fe4f025e324a5c27"
+    },
+    {
+      "page": 3,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p03",
+      "sha256": "ef4f05aee6a0a01586646de8c145362846d9f5747ce4142d5709c1d39157e6ba"
+    },
+    {
+      "page": 4,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p04",
+      "sha256": "4e384510873bdc66f577ed8226c95f67e76d6808d605d624a98b3cba53d4da50"
+    },
+    {
+      "page": 5,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p05",
+      "sha256": "a971c52b5e6ebcf846a5182d0f59681325f9d31e089c9dd02e14986920fb6006"
+    },
+    {
+      "page": 6,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p06",
+      "sha256": "c1e67bfe426834154103b7d2aa1ddeb8dd2aa939f0ab0f5976a0c33b21566486"
+    },
+    {
+      "page": 7,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1/B7_ja/pages/p07",
+      "sha256": "6d784c89bbf367fb3f441f7e704c07210c189ecfb31388f8e16076535f1b7b32"
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "B.start",
+      "topic_id": "overview",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_01",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "ตรวจพัดลม F2 ที่สั่นหรือมีเสียงกระทบ",
+        "caption_ja": "振動や打音がする F2 を調べる",
+        "caption_en": "Check F2 for vibration or knocking"
+      },
+      "units": [
+        "problem",
+        "choose",
+        "areas",
+        "scope"
+      ],
+      "text_th": "ตรวจพัดลม F2 ที่สั่นหรือมีเสียงกระทบ\nเลือกดูหน้า ใบพัด หรือหลังได้ ไม่ต้องตรวจทุกจุด\nระหว่างซ่อมพัดลมไม่มีไฟเข้า ซ่อมเฉพาะตะแกรง ใบพัด และตัวยึด",
+      "text_ja": "振動や打音がする F2 を調べる\n前、羽根、後ろから選ぶ。全部を調べる必要はない\n修理中は電源なし。直すのはガード・羽根・固定部品だけ",
+      "text_en": "Check F2 for vibration or knocking\nChoose the front, blade or rear. You need not check every part.\nNo power while you repair. Work only on guards, blade and fasteners."
+    },
+    {
+      "step_id": "B.scope",
+      "topic_id": "overview",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_02",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "คงมอเตอร์และฐานไว้",
+        "caption_ja": "モーター・台はそのままにする",
+        "caption_en": "Leave motor and base intact"
+      },
+      "units": [
+        "scope"
+      ],
+      "text_th": "คงมอเตอร์และฐานไว้\nไม่มีไฟระหว่างซ่อม ไม่เปิดมอเตอร์ ไม่ถอดฐาน เสา หรือหัวพัดลม\nทำเฉพาะตะแกรง ใบพัด และตัวยึด",
+      "text_ja": "モーター・台はそのままにする\n修理中は電源なし。モーターを開けない。台・支柱・ヘッドは外さない\nガード・羽根・固定部品だけを扱う",
+      "text_en": "Leave motor and base intact\nNo power during repair. Do not open motor or remove base, pole or head.\nWork only on guards, blade and fasteners."
+    },
+    {
+      "step_id": "B.examine",
+      "topic_id": "overview",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_03",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "ดูสภาพชิ้นส่วนของพัดลม",
+        "caption_ja": "扇風機の部品の状態を見る",
+        "caption_en": "View the fan part condition"
+      },
+      "units": [
+        "areas",
+        "choose",
+        "present_not_tight"
+      ],
+      "text_th": "ดูสภาพชิ้นส่วนของพัดลม\nชี้ไปที่ตะแกรงหน้า ใบพัด หรือตะแกรงหลัง แล้วกด “ดูสภาพชิ้นส่วน” ที่ขึ้นข้างชิ้นนั้นด้วย Trigger\nผลแสดงบนแผงงาน ตะแกรงหลังดูได้จากด้านข้างพัดลม การดูไม่ซ่อมชิ้นส่วน และไม่ใช่การตรวจผลงาน",
+      "text_ja": "扇風機の部品の状態を見る\n前ガード・羽根・後ガードのどれかを指し、横に出る「状態を見る」を Trigger で選びます。\n結果は作業パネルに表示されます。後ガードは扇風機の横から見られます。 見るだけで部品は直らず、仕上がり確認でもありません。",
+      "text_en": "View the fan part condition\nPoint at the front guard, blade or rear guard and select the View condition chip beside it with Trigger.\nThe result shows on the task panel; the rear guard can be viewed from the side of the fan. Viewing does not repair parts and is not Check my work."
+    },
+    {
+      "step_id": "B.front.check",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_04",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "ตรวจขอบตะแกรงหน้า",
+        "caption_ja": "前ガードの縁を確認する",
+        "caption_en": "Check the front guard rim"
+      },
+      "units": [
+        "front_check",
+        "present_not_tight"
+      ],
+      "text_th": "ตรวจขอบตะแกรงหน้า\nดูเครื่องหมายและคลิปที่ขอบ\nเครื่องหมายตรง ขอบแนบ คลิปปิด ใส่อยู่แต่เครื่องหมายเยื้องหรือคลิปเปิด ยังไม่ล็อก",
+      "text_ja": "前ガードの縁を確認する\n縁のマークとクリップを見る\nマークが合い、縁が密着し、クリップが閉じる。付いていても、マークがずれているかクリップが開いていれば固定されていない",
+      "text_en": "Check the front guard rim\nLook at the rim marks and clip.\nMarks align, rim flush, clip closed. Fitted with the marks offset or the clip open is not locked."
+    },
+    {
+      "step_id": "B.front.clip.open",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_05",
+        "sha256": "431630ea21c6d13ad18581b8e28b4170df9d6433487d594131d91a93186922f2",
+        "caption_th": "เปิดคลิปตะแกรงหน้า",
+        "caption_ja": "前ガードのクリップを開く",
+        "caption_en": "Open the front clip"
+      },
+      "units": [
+        "open_front",
+        "present_not_tight"
+      ],
+      "text_th": "เปิดคลิปตะแกรงหน้า\nกด Trigger ที่คลิปหนึ่งครั้ง\nคลิปเปิดพร้อมหมุนปลดตะแกรง การเปิดทางยังไม่ซ่อม",
+      "text_ja": "前ガードのクリップを開く\nクリップで Trigger を1回押す\nクリップが開きガードを回せる。外すだけでは修理にならない",
+      "text_en": "Open the front clip\nPress Trigger once at the clip.\nClip opens for unlocking. Opening access does not repair."
+    },
+    {
+      "step_id": "B.front.turn",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_06",
+        "sha256": "4fae48066393551784c7532d858dd3d4cc75e508e01b68c6a794de6d63388364",
+        "caption_th": "หมุนตะแกรงหน้าตามเครื่องหมาย",
+        "caption_ja": "前ガードをマークまで回す",
+        "caption_en": "Turn the front guard to its mark"
+      },
+      "units": [
+        "open_front"
+      ],
+      "text_th": "หมุนตะแกรงหน้าตามเครื่องหมาย\nจับขอบด้วย Grip ค้างแล้วหมุน\nตำแหน่งล็อกคลายพร้อมดึงออก",
+      "text_ja": "前ガードをマークまで回す\nGrip で縁を持って回す\n固定が外れ、引き抜ける",
+      "text_en": "Turn the front guard to its mark\nHold rim with Grip and turn.\nThe lock is released for removal."
+    },
+    {
+      "step_id": "B.front.remove",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_07",
+        "sha256": "cc4e4125ef18e4aa757ff83984f4e335e6f1305e2a23eeb57d282a64d63d7231",
+        "caption_th": "ดึงตะแกรงหน้าตรงออก",
+        "caption_ja": "前ガードをまっすぐ抜く",
+        "caption_en": "Pull the front guard straight off"
+      },
+      "units": [
+        "open_front"
+      ],
+      "text_th": "ดึงตะแกรงหน้าตรงออก\nค้าง Grip ที่ขอบหลังปลดล็อก\nเห็นใบพัดและฝาล็อก",
+      "text_ja": "前ガードをまっすぐ抜く\n固定解除後に縁を Grip で持つ\n羽根とキャップが見える",
+      "text_en": "Pull the front guard straight off\nHold the rim with Grip after unlocking.\nBlade and cap become visible."
+    },
+    {
+      "step_id": "B.front.seat",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_08",
+        "sha256": "c4fb86688014a4e6903cb37decd45dc8d8de1027c2c1509362839782b13df217",
+        "caption_th": "ใส่ตะแกรงหน้าให้ขอบแนบ",
+        "caption_ja": "前ガードの縁を密着させる",
+        "caption_en": "Seat front guard flush"
+      },
+      "units": [
+        "fix_front"
+      ],
+      "text_th": "ใส่ตะแกรงหน้าให้ขอบแนบ\nจับขอบด้วย Grip จัดเครื่องหมายแล้วดันเข้า\nตะแกรงนั่งแนบก่อนหมุนล็อก",
+      "text_ja": "前ガードの縁を密着させる\nGrip で縁を持ちマークを合わせて押す\n回して固定する前にガードが密着する",
+      "text_en": "Seat front guard flush\nHold rim with Grip, align marks and push in.\nGuard seats flush before locking."
+    },
+    {
+      "step_id": "B.front.lock",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_09",
+        "sha256": "fde801e78095e10d0bd5f2882d61a95ed2c4f1a6e024b756e080b474a859a951",
+        "caption_th": "หมุนตะแกรงหน้าให้ล็อก",
+        "caption_ja": "前ガードを回して固定する",
+        "caption_en": "Turn front guard to lock"
+      },
+      "units": [
+        "fix_front",
+        "front_check"
+      ],
+      "text_th": "หมุนตะแกรงหน้าให้ล็อก\nค้าง Grip หมุนตามเครื่องหมาย\nเครื่องหมายตรง ขอบแนบ",
+      "text_ja": "前ガードを回して固定する\nGrip でマークまで回す\nマークが合い、縁が密着する",
+      "text_en": "Turn front guard to lock\nHold Grip and turn to the marks.\nMarks align and rim is flush."
+    },
+    {
+      "step_id": "B.front.clip.close",
+      "topic_id": "front",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_10",
+        "sha256": "eb4cbf0f9947fea5ac1ff1aa604e41b228743848a6fb12900336fd8f9d678289",
+        "caption_th": "ปิดคลิปตะแกรงหน้า",
+        "caption_ja": "前ガードのクリップを閉じる",
+        "caption_en": "Close the front clip"
+      },
+      "units": [
+        "fix_front",
+        "guards_first"
+      ],
+      "text_th": "ปิดคลิปตะแกรงหน้า\nกด Trigger ที่คลิปหนึ่งครั้ง\nคลิปปิด ตะแกรงครบก่อนทดสอบหมุน",
+      "text_ja": "前ガードのクリップを閉じる\nクリップで Trigger を1回押す\nクリップが閉じる。回転確認前に全ガードが必要",
+      "text_en": "Close the front clip\nPress Trigger once at the clip.\nClip closed; both guards must be fitted before the spin test."
+    },
+    {
+      "step_id": "B.blade.check",
+      "topic_id": "blade",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_11",
+        "sha256": "655c8a02ede432f2f76e23bc00f8d5ab147f773a0cbcfc879c0934106ef3a8c3",
+        "caption_th": "ตรวจใบพัดและฝาล็อก",
+        "caption_ja": "羽根とキャップを確認する",
+        "caption_en": "Check the blade and its cap"
+      },
+      "units": [
+        "blade_check",
+        "present_not_tight"
+      ],
+      "text_th": "ตรวจใบพัดและฝาล็อก\nถอดตะแกรงหน้าก่อนดูใบพัด ฝาล็อกคือชิ้นกลมกลางใบพัด\nใบพัดสวมพินสุด ฝาล็อกแน่น ฝาล็อกที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+      "text_ja": "羽根とキャップを確認する\n前ガードを外してから羽根を見る。キャップは羽根の中央の丸い部品\n羽根はピンの奥、キャップは締まる。キャップがねじに入っていても、締まっていないことがある",
+      "text_en": "Check the blade and its cap\nRemove the front guard before viewing the blade. The cap is the round part at its centre.\nBlade fully on pin, cap tight. A threaded cap may still be loose."
+    },
+    {
+      "step_id": "B.blade.cap.off",
+      "topic_id": "blade",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_12",
+        "sha256": "ef97d8d6b7290773a9a28bae0dc661e4d90c2d4e982c4b1e74a27b297d0093fe",
+        "caption_th": "คลายฝาล็อกใบพัดจนหลุดเกลียว",
+        "caption_ja": "羽根キャップのねじを外す",
+        "caption_en": "Unthread the blade cap"
+      },
+      "units": [
+        "spinner_dir"
+      ],
+      "text_th": "คลายฝาล็อกใบพัดจนหลุดเกลียว\nมองจากด้านหน้า ใช้ Trigger ค้าง หมุนตามเข็มนาฬิกา\nฝาล็อกเป็นเกลียวซ้าย หลุดเกลียวจึงถอดได้",
+      "text_ja": "羽根キャップのねじを外す\n正面から Trigger で持って時計回り\nキャップは左ねじ。ねじが外れてから取り外せる",
+      "text_en": "Unthread the blade cap\nFrom the front, hold Trigger and turn clockwise.\nCap has a left-hand thread; remove only after unthreading."
+    },
+    {
+      "step_id": "B.blade.remove",
+      "topic_id": "blade",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_13",
+        "sha256": "f186a94c9652164d67b49a50d39a5626c89c73c12a68c199c913c0f6f6eb9958",
+        "caption_th": "ดึงใบพัดตามแนวแกน",
+        "caption_ja": "羽根を軸に沿って抜く",
+        "caption_en": "Pull the blade along its shaft"
+      },
+      "units": [
+        "blade_off",
+        "rear_check",
+        "present_not_tight"
+      ],
+      "text_th": "ดึงใบพัดตามแนวแกน\nจับใบพัดด้วย Grip หลังถอดฝาล็อก\nเห็นหน้าวงแหวนด้านหลัง การถอดสิ่งกีดขวางยังไม่ซ่อม",
+      "text_ja": "羽根を軸に沿って抜く\nキャップを外して Grip で羽根を持つ\n後ろのリング面が見える。部品を外すだけでは修理にならない",
+      "text_en": "Pull the blade along its shaft\nHold blade with Grip after removing the cap.\nRear ring face becomes visible. Removing an obstacle does not repair."
+    },
+    {
+      "step_id": "B.blade.seat",
+      "topic_id": "blade",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_14",
+        "sha256": "7059a7fbcde8550aedb96b7ab70f50cfbe28bede37e62ecd8248b63282f9d2c7",
+        "caption_th": "ใส่ใบพัดให้ร่องตรงพินจนสุด",
+        "caption_ja": "羽根の溝をピンに合わせ奥まで入れる",
+        "caption_en": "Seat blade groove fully on pin"
+      },
+      "units": [
+        "fix_blade"
+      ],
+      "text_th": "ใส่ใบพัดให้ร่องตรงพินจนสุด\nจับใบพัดด้วย Grip และดันตามแนวแกน\nใบพัดสวมพินสุดก่อนขันฝาล็อก",
+      "text_ja": "羽根の溝をピンに合わせ奥まで入れる\nGrip で羽根を持ち軸に沿って押す\nキャップを締める前に羽根を奥まで入れる",
+      "text_en": "Seat blade groove fully on pin\nHold blade with Grip and push along shaft.\nBlade fully on pin before tightening cap."
+    },
+    {
+      "step_id": "B.blade.cap.on",
+      "topic_id": "blade",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_15",
+        "sha256": "cfe8df039028f9e5b5d044bbd9b41b33a364bee0b01a0ee7d54e10fc811c6d03",
+        "caption_th": "ขันฝาล็อกใบพัดให้แน่น",
+        "caption_ja": "羽根キャップを締める",
+        "caption_en": "Tighten the blade cap"
+      },
+      "units": [
+        "spinner_dir",
+        "fix_blade"
+      ],
+      "text_th": "ขันฝาล็อกใบพัดให้แน่น\nใช้ Trigger ค้าง หมุนทวนเข็มเมื่อมองจากด้านหน้า\nฝาล็อกแน่น ไม่ใช่เพียงเข้าเกลียว",
+      "text_ja": "羽根キャップを締める\nTrigger で正面から反時計回り\nキャップが締まる。ねじに入っただけでは不十分",
+      "text_en": "Tighten the blade cap\nHold Trigger; turn counterclockwise from the front.\nCap tight, not merely threaded."
+    },
+    {
+      "step_id": "B.rear.check",
+      "topic_id": "rear",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_16",
+        "sha256": "7b8ed1433e8c9b54a2d781a40508228abdb92aeb39c2effbabebf9a4a227ab1a",
+        "caption_th": "ดูสภาพขอบตะแกรงหลัง",
+        "caption_ja": "後ガードの縁の状態を確認する",
+        "caption_en": "Examine the rear guard rim"
+      },
+      "units": [
+        "rear_check",
+        "present_not_tight"
+      ],
+      "text_th": "ดูสภาพขอบตะแกรงหลัง\nชี้ขอบตะแกรงหลังจากด้านข้างพัดลม แล้วกด “ดูสภาพชิ้นส่วน”\nอ่านข้อความของขอบด้านนอก: ขอบต้องไม่โยก วงแหวนที่เข้าเกลียวแล้วอาจยังไม่แน่น",
+      "text_ja": "後ガードの縁の状態を確認する\n扇風機の横から後ガードの縁を指し、「状態を見る」を選びます\n外周の状態の表示を読む。縁はぐらつかない。リングがねじに入っていても、締まっていないことがある",
+      "text_en": "Examine the rear guard rim\nPoint at the rear guard rim from the side of the fan and select View condition.\nRead the outer-rim observation: the rim should stay still. A threaded ring may still be loose."
+    },
+    {
+      "step_id": "B.rear.access",
+      "topic_id": "rear",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_17",
+        "sha256": "0e587baaaa28b7c85786d88def20417777cafae7267e7887172bd783a00f0336",
+        "caption_th": "ตรวจการเข้าถึงวงแหวน",
+        "caption_ja": "リングへのアクセスを確認する",
+        "caption_en": "Check ring access"
+      },
+      "units": [
+        "rear_check",
+        "present_not_tight"
+      ],
+      "text_th": "ตรวจการเข้าถึงวงแหวน\nขอบหลังเห็นจากภายนอกได้ แต่หน้าวงแหวนต้องถอดใบพัดก่อน\nมีชิ้นอยู่หรือเข้าเกลียวแล้วไม่ได้แปลว่าแน่น",
+      "text_ja": "リングへのアクセスを確認する\n外縁は外から見えるが、リング正面は羽根を外してから\n付いていても、ねじに入っていても、締まっているとは限らない",
+      "text_en": "Check ring access\nOuter rear rim is accessible outside; ring front requires blade removal.\nFitted or threaded does not imply tight."
+    },
+    {
+      "step_id": "B.rear.ring.off",
+      "topic_id": "rear",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_18",
+        "sha256": "c42adbf254ac1df8b96d0ba93c85c9b734ad7c41889de62a531d126446f80643",
+        "caption_th": "คลายวงแหวนตะแกรงหลัง",
+        "caption_ja": "後ガードのリングをゆるめる",
+        "caption_en": "Unthread the rear ring"
+      },
+      "units": [
+        "rear_dir"
+      ],
+      "text_th": "คลายวงแหวนตะแกรงหลัง\nมองจากด้านหน้า ใช้ Trigger ค้าง หมุนทวนเข็มจนหลุดเกลียว\nเกลียวขวายังยึดตะแกรงไว้ขณะเข้าเกลียว",
+      "text_ja": "後ガードのリングをゆるめる\n正面から Trigger で反時計回りにねじを外す\n右ねじ。ねじが掛かっている間はガードを保持する",
+      "text_en": "Unthread the rear ring\nFrom the front, hold Trigger and turn counterclockwise until free.\nRight-hand thread holds the guard while engaged."
+    },
+    {
+      "step_id": "B.rear.align",
+      "topic_id": "rear",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_19",
+        "sha256": "f37c8e88cb33c6acd90c8bf80a590cbe662ce32b09c34653e6ede1c021802bd1",
+        "caption_th": "จัดตะแกรงหลังให้ตรง",
+        "caption_ja": "後ガードの位置を合わせる",
+        "caption_en": "Align the rear guard"
+      },
+      "units": [
+        "fix_rear"
+      ],
+      "text_th": "จัดตะแกรงหลังให้ตรง\nจับตะแกรงด้วย Grip หลังปลดวงแหวน\nตะแกรงเข้าตำแหน่งก่อนใส่วงแหวน",
+      "text_ja": "後ガードの位置を合わせる\nリングを外して Grip でガードを持つ\nリングを戻す前にガードを正しく置く",
+      "text_en": "Align the rear guard\nHold guard with Grip after releasing the ring.\nGuard aligned before refitting the ring."
+    },
+    {
+      "step_id": "B.rear.tighten",
+      "topic_id": "rear",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_20",
+        "sha256": "e542688d57da49f1b3e09bf4bcf89d3ccca8c5cf938cc2837b177b2992a1ec7c",
+        "caption_th": "ขันวงแหวนตะแกรงหลังให้แน่น",
+        "caption_ja": "後ガードのリングを締める",
+        "caption_en": "Tighten the rear ring"
+      },
+      "units": [
+        "rear_dir",
+        "fix_rear",
+        "rear_check"
+      ],
+      "text_th": "ขันวงแหวนตะแกรงหลังให้แน่น\nใส่วงแหวน ใช้ Trigger ค้าง หมุนตามเข็มเมื่อมองจากด้านหน้า\nขอบตะแกรงไม่โยกเมื่อเทียบหัวพัดลม",
+      "text_ja": "後ガードのリングを締める\nリングを戻し Trigger で正面から時計回り\nガードの縁がヘッドに対してぐらつかない",
+      "text_en": "Tighten the rear ring\nRefit ring; hold Trigger and turn clockwise from the front.\nGuard rim does not move relative to fan head."
+    },
+    {
+      "step_id": "B.reassemble",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_21",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "ตรวจลำดับประกอบกลับ",
+        "caption_ja": "組み立て直す順序を確認する",
+        "caption_en": "Review reassembly order"
+      },
+      "units": [
+        "reassemble"
+      ],
+      "text_th": "ตรวจลำดับประกอบกลับ\nตะแกรงหลังและวงแหวน → ใบพัด → ฝาล็อก → ตะแกรงหน้า → คลิป\nใส่ชิ้นที่ถอดกลับครบ ไม่จำเป็นต้องถอดทุกชิ้น",
+      "text_ja": "組み立て直す順序を確認する\n後ガードとリング → 羽根 → キャップ → 前ガード → クリップ\n外した部品を戻す。全部を外す必要はない",
+      "text_en": "Review reassembly order\nRear guard and ring → blade → cap → front guard → clip\nRefit removed parts; removing every part is not required."
+    },
+    {
+      "step_id": "B.inspect",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_22",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "กดตรวจผลงานบนแผงงาน แล้วฟังเสียง",
+        "caption_ja": "作業パネルで「仕上がりを確認」を押し、音を聞く",
+        "caption_en": "Select Check my work on the task panel and listen"
+      },
+      "units": [
+        "inspect",
+        "done",
+        "guards_first"
+      ],
+      "text_th": "กดตรวจผลงานบนแผงงาน แล้วฟังเสียง\nหมุน 3 วินาที ใช้ได้ทั้งก่อนและหลังซ่อม ตะแกรงไม่ครบจะไม่หมุน ระบบขัดข้องให้แจ้งผู้วิจัย\nผลผ่านพร้อมใช้งานคือเสร็จ เสียงผิดปกติคือยังหลวมหรือไม่เข้าที่ แก้แล้วตรวจใหม่ได้",
+      "text_ja": "作業パネルで「仕上がりを確認」を押し、音を聞く\n3秒回転し、修理前後どちらでも使える。ガード不足では回らない。不具合は研究者へ\n合格・使用可能で完了。異音が残ればゆるみやずれがある。直してもう一度確認できる",
+      "text_en": "Select Check my work on the task panel and listen\nIt runs for 3 seconds, before or after repair. Missing guards prevent the test. Report system faults to the researcher.\nPassed and ready means done. Abnormal noise means looseness or misalignment remains; correct it and test again."
+    },
+    {
+      "step_id": "B.inspect.result",
+      "topic_id": "inspect",
+      "picture": {
+        "resource": "ResearchReaderS1/B7_ja/step_23",
+        "sha256": "c67bec0c006c89c7656a276449fb5bab493107bdc1a7bbd545fa24cd5f9bbbbd",
+        "caption_th": "อ่านผลตรวจผลงาน",
+        "caption_ja": "仕上がりを確認の結果を読む",
+        "caption_en": "Read the check result"
+      },
+      "units": [
+        "inspect",
+        "done",
+        "guards_first"
+      ],
+      "text_th": "อ่านผลตรวจผลงาน\nผ่านพร้อมใช้งานคือเสร็จ เสียงผิดปกติไม่บอกบริเวณที่ผิด\nถ้ายังไม่ผ่านแก้แล้วตรวจใหม่ได้ ตะแกรงไม่ครบไม่หมุน ระบบขัดข้องแจ้งผู้วิจัย",
+      "text_ja": "仕上がりを確認の結果を読む\n合格・使用可能で完了。異音だけでは故障箇所は分からない\n未合格なら直して再確認。ガード不足では回らない。不具合は研究者へ",
+      "text_en": "Read the check result\nPassed and ready means done; abnormal sound does not locate the fault.\nCorrect and retry if failed. Missing guards prevent spin. Report system faults to researcher."
+    }
+  ],
+  "images": [
+    {
+      "id": "B.overview",
+      "resource": "ResearchReaderS1/B7_ja/overview",
+      "sha256": "4a6869df8ce401f8a382d1833ca765e0300c7baaf58c4e451b6972ba8671fe79",
+      "regions": [
+        {
+          "id": "B.overview.front",
+          "x": 0.0140625,
+          "y": 0.15384615384615385,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "front_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.overview.blade",
+          "x": 0.341143798828125,
+          "y": 0.15384615384615385,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "blade_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.overview.rear",
+          "x": 0.66822509765625,
+          "y": 0.15384615384615385,
+          "width": 0.317706298828125,
+          "height": 0.5538461538461539,
+          "units": [
+            "rear_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.process_overview",
+          "x": 0.0140625,
+          "y": 0.7292307692307692,
+          "width": 0.971875,
+          "height": 0.07629807692307693,
+          "units": []
+        }
+      ],
+      "caption_th": "ภาพรวม · เลือกหัวข้อได้อิสระ",
+      "caption_ja": "全体図・項目の順番は自由",
+      "caption_en": "Overview · choose any topic"
+    },
+    {
+      "id": "B.detail_overview_1",
+      "resource": "ResearchReaderS1/B7_ja/detail_overview_1",
+      "sha256": "f5416cdfcdd6e1e612f6ae69c34db8caaec4b68004c96b970e7fc76a310d52f1",
+      "regions": [
+        {
+          "id": "B.start",
+          "x": 0.0140625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "problem",
+            "choose",
+            "areas",
+            "scope"
+          ]
+        },
+        {
+          "id": "B.scope",
+          "x": 0.341143798828125,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "scope"
+          ]
+        },
+        {
+          "id": "B.examine",
+          "x": 0.66822509765625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "areas",
+            "choose",
+            "present_not_tight"
+          ]
+        }
+      ],
+      "caption_th": "ก่อนเริ่ม / เลือกบริเวณ · 1",
+      "caption_ja": "はじめに / 部分を選ぶ · 1",
+      "caption_en": "overview · 1"
+    },
+    {
+      "id": "B.detail_front_1",
+      "resource": "ResearchReaderS1/B7_ja/detail_front_1",
+      "sha256": "48c724ae2e7c736aadc9785889022c310b1619dedd4dfe3d72885e6bea0d75f2",
+      "regions": [
+        {
+          "id": "B.front.check",
+          "x": 0.0140625,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "front_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.front.clip.open",
+          "x": 0.5046875,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "open_front",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.front.turn",
+          "x": 0.0140625,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "open_front"
+          ]
+        },
+        {
+          "id": "B.front.remove",
+          "x": 0.5046875,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "open_front"
+          ]
+        }
+      ],
+      "caption_th": "ตะแกรงหน้า · 1",
+      "caption_ja": "前ガード · 1",
+      "caption_en": "front · 1"
+    },
+    {
+      "id": "B.detail_front_2",
+      "resource": "ResearchReaderS1/B7_ja/detail_front_2",
+      "sha256": "31629dbdab05d830a1b5d7fbbf944453824a6ade9adf276622ff6469c7b54c17",
+      "regions": [
+        {
+          "id": "B.front.seat",
+          "x": 0.0140625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "fix_front"
+          ]
+        },
+        {
+          "id": "B.front.lock",
+          "x": 0.341143798828125,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "fix_front",
+            "front_check"
+          ]
+        },
+        {
+          "id": "B.front.clip.close",
+          "x": 0.66822509765625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "fix_front",
+            "guards_first"
+          ]
+        }
+      ],
+      "caption_th": "ตะแกรงหน้า · 2",
+      "caption_ja": "前ガード · 2",
+      "caption_en": "front · 2"
+    },
+    {
+      "id": "B.detail_blade_1",
+      "resource": "ResearchReaderS1/B7_ja/detail_blade_1",
+      "sha256": "d9c5a26f898d1ddb4c2e65e5fe55bf6a44380cb479ac5ac2f3db11543ee39012",
+      "regions": [
+        {
+          "id": "B.blade.check",
+          "x": 0.0140625,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "blade_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.blade.cap.off",
+          "x": 0.5046875,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "spinner_dir"
+          ]
+        },
+        {
+          "id": "B.blade.remove",
+          "x": 0.0140625,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "blade_off",
+            "rear_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.blade.seat",
+          "x": 0.5046875,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "fix_blade"
+          ]
+        }
+      ],
+      "caption_th": "ใบพัดและฝาล็อก · 1",
+      "caption_ja": "羽根とキャップ · 1",
+      "caption_en": "blade · 1"
+    },
+    {
+      "id": "B.detail_blade_2",
+      "resource": "ResearchReaderS1/B7_ja/detail_blade_2",
+      "sha256": "2bd3ad1c3367a8c7cacdec3431103cdb0ae1bd0cdef9aac2099ae90aa56c19df",
+      "regions": [
+        {
+          "id": "B.blade.cap.on",
+          "x": 0.027607361963190184,
+          "y": 0.1524390243902439,
+          "width": 0.9447852760736196,
+          "height": 0.7774390243902439,
+          "units": [
+            "spinner_dir",
+            "fix_blade"
+          ]
+        }
+      ],
+      "caption_th": "ใบพัดและฝาล็อก · 2",
+      "caption_ja": "羽根とキャップ · 2",
+      "caption_en": "blade · 2"
+    },
+    {
+      "id": "B.detail_rear_1",
+      "resource": "ResearchReaderS1/B7_ja/detail_rear_1",
+      "sha256": "068319faa0261d543ea0faacf4698e5ef8709e3520b5d493de29d10f7e17069a",
+      "regions": [
+        {
+          "id": "B.rear.check",
+          "x": 0.0140625,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "rear_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.rear.access",
+          "x": 0.5046875,
+          "y": 0.0851063829787234,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "rear_check",
+            "present_not_tight"
+          ]
+        },
+        {
+          "id": "B.rear.ring.off",
+          "x": 0.0140625,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "rear_dir"
+          ]
+        },
+        {
+          "id": "B.rear.align",
+          "x": 0.5046875,
+          "y": 0.5293617021276595,
+          "width": 0.48125,
+          "height": 0.4340425531914894,
+          "units": [
+            "fix_rear"
+          ]
+        }
+      ],
+      "caption_th": "ตะแกรงหลัง · 1",
+      "caption_ja": "後ガード · 1",
+      "caption_en": "rear · 1"
+    },
+    {
+      "id": "B.detail_rear_2",
+      "resource": "ResearchReaderS1/B7_ja/detail_rear_2",
+      "sha256": "9b6145f37aeeb0bcb50aea063da1135617ef1a937548b122f0fe844d765c3b03",
+      "regions": [
+        {
+          "id": "B.rear.tighten",
+          "x": 0.027607361963190184,
+          "y": 0.1524390243902439,
+          "width": 0.9447852760736196,
+          "height": 0.7774390243902439,
+          "units": [
+            "rear_dir",
+            "fix_rear",
+            "rear_check"
+          ]
+        }
+      ],
+      "caption_th": "ตะแกรงหลัง · 2",
+      "caption_ja": "後ガード · 2",
+      "caption_en": "rear · 2"
+    },
+    {
+      "id": "B.detail_inspect_1",
+      "resource": "ResearchReaderS1/B7_ja/detail_inspect_1",
+      "sha256": "546dff5ac10ab94a726426c170fa3052954511c4efb13b1e19dfe06327bee133",
+      "regions": [
+        {
+          "id": "B.reassemble",
+          "x": 0.0140625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "reassemble"
+          ]
+        },
+        {
+          "id": "B.inspect",
+          "x": 0.341143798828125,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "inspect",
+            "done",
+            "guards_first"
+          ]
+        },
+        {
+          "id": "B.inspect.result",
+          "x": 0.66822509765625,
+          "y": 0.1524390243902439,
+          "width": 0.317706298828125,
+          "height": 0.7774390243902439,
+          "units": [
+            "inspect",
+            "done",
+            "guards_first"
+          ]
+        }
+      ],
+      "caption_th": "ตรวจผลงาน / เมื่อยังไม่ผ่าน · 1",
+      "caption_ja": "仕上がりを確認 / 未合格のとき · 1",
+      "caption_en": "inspect · 1"
+    }
+  ],
+  "reader_features": [
+    "steps_view_all",
+    "image_viewport"
+  ],
+  "contents": [
+    {
+      "id": "pdf_task",
+      "index": 1,
+      "format": "pdf",
+      "title_ja": "扇風機 F2 を点検・修理する"
+    },
+    {
+      "id": "pdf_front_guard",
+      "index": 2,
+      "format": "pdf",
+      "title_ja": "前ガードとクリップ"
+    },
+    {
+      "id": "pdf_blade",
+      "index": 3,
+      "format": "pdf",
+      "title_ja": "羽根と中央のキャップ"
+    },
+    {
+      "id": "pdf_rear_guard",
+      "index": 4,
+      "format": "pdf",
+      "title_ja": "後ガードと軸のまわりのリング"
+    },
+    {
+      "id": "pdf_finish",
+      "index": 5,
+      "format": "pdf",
+      "title_ja": "組み立て直して確認する"
+    },
+    {
+      "id": "pdf_scope",
+      "index": 6,
+      "format": "pdf",
+      "title_ja": "注意"
+    },
+    {
+      "id": "pdf_troubleshooting",
+      "index": 7,
+      "format": "pdf",
+      "title_ja": "トラブルシューティングと注意事項"
+    },
+    {
+      "id": "steps_B_start",
+      "format": "steps",
+      "index": 1,
+      "title_th": "ตรวจพัดลม F2 ที่สั่นหรือมีเสียงกระทบ",
+      "title_ja": "振動や打音がする F2 を調べる",
+      "title_en": "Check F2 for vibration or knocking"
+    },
+    {
+      "id": "steps_B_scope",
+      "format": "steps",
+      "index": 2,
+      "title_th": "คงมอเตอร์และฐานไว้",
+      "title_ja": "モーター・台はそのままにする",
+      "title_en": "Leave motor and base intact"
+    },
+    {
+      "id": "steps_B_examine",
+      "format": "steps",
+      "index": 3,
+      "title_th": "ดูสภาพชิ้นส่วนของพัดลม",
+      "title_ja": "扇風機の部品の状態を見る",
+      "title_en": "View the fan part condition"
+    },
+    {
+      "id": "steps_B_front_check",
+      "format": "steps",
+      "index": 4,
+      "title_th": "ตรวจขอบตะแกรงหน้า",
+      "title_ja": "前ガードの縁を確認する",
+      "title_en": "Check the front guard rim"
+    },
+    {
+      "id": "steps_B_front_clip_open",
+      "format": "steps",
+      "index": 5,
+      "title_th": "เปิดคลิปตะแกรงหน้า",
+      "title_ja": "前ガードのクリップを開く",
+      "title_en": "Open the front clip"
+    },
+    {
+      "id": "steps_B_front_turn",
+      "format": "steps",
+      "index": 6,
+      "title_th": "หมุนตะแกรงหน้าตามเครื่องหมาย",
+      "title_ja": "前ガードをマークまで回す",
+      "title_en": "Turn the front guard to its mark"
+    },
+    {
+      "id": "steps_B_front_remove",
+      "format": "steps",
+      "index": 7,
+      "title_th": "ดึงตะแกรงหน้าตรงออก",
+      "title_ja": "前ガードをまっすぐ抜く",
+      "title_en": "Pull the front guard straight off"
+    },
+    {
+      "id": "steps_B_front_seat",
+      "format": "steps",
+      "index": 8,
+      "title_th": "ใส่ตะแกรงหน้าให้ขอบแนบ",
+      "title_ja": "前ガードの縁を密着させる",
+      "title_en": "Seat front guard flush"
+    },
+    {
+      "id": "steps_B_front_lock",
+      "format": "steps",
+      "index": 9,
+      "title_th": "หมุนตะแกรงหน้าให้ล็อก",
+      "title_ja": "前ガードを回して固定する",
+      "title_en": "Turn front guard to lock"
+    },
+    {
+      "id": "steps_B_front_clip_close",
+      "format": "steps",
+      "index": 10,
+      "title_th": "ปิดคลิปตะแกรงหน้า",
+      "title_ja": "前ガードのクリップを閉じる",
+      "title_en": "Close the front clip"
+    },
+    {
+      "id": "steps_B_blade_check",
+      "format": "steps",
+      "index": 11,
+      "title_th": "ตรวจใบพัดและฝาล็อก",
+      "title_ja": "羽根とキャップを確認する",
+      "title_en": "Check the blade and its cap"
+    },
+    {
+      "id": "steps_B_blade_cap_off",
+      "format": "steps",
+      "index": 12,
+      "title_th": "คลายฝาล็อกใบพัดจนหลุดเกลียว",
+      "title_ja": "羽根キャップのねじを外す",
+      "title_en": "Unthread the blade cap"
+    },
+    {
+      "id": "steps_B_blade_remove",
+      "format": "steps",
+      "index": 13,
+      "title_th": "ดึงใบพัดตามแนวแกน",
+      "title_ja": "羽根を軸に沿って抜く",
+      "title_en": "Pull the blade along its shaft"
+    },
+    {
+      "id": "steps_B_blade_seat",
+      "format": "steps",
+      "index": 14,
+      "title_th": "ใส่ใบพัดให้ร่องตรงพินจนสุด",
+      "title_ja": "羽根の溝をピンに合わせ奥まで入れる",
+      "title_en": "Seat blade groove fully on pin"
+    },
+    {
+      "id": "steps_B_blade_cap_on",
+      "format": "steps",
+      "index": 15,
+      "title_th": "ขันฝาล็อกใบพัดให้แน่น",
+      "title_ja": "羽根キャップを締める",
+      "title_en": "Tighten the blade cap"
+    },
+    {
+      "id": "steps_B_rear_check",
+      "format": "steps",
+      "index": 16,
+      "title_th": "ดูสภาพขอบตะแกรงหลัง",
+      "title_ja": "後ガードの縁の状態を確認する",
+      "title_en": "Examine the rear guard rim"
+    },
+    {
+      "id": "steps_B_rear_access",
+      "format": "steps",
+      "index": 17,
+      "title_th": "ตรวจการเข้าถึงวงแหวน",
+      "title_ja": "リングへのアクセスを確認する",
+      "title_en": "Check ring access"
+    },
+    {
+      "id": "steps_B_rear_ring_off",
+      "format": "steps",
+      "index": 18,
+      "title_th": "คลายวงแหวนตะแกรงหลัง",
+      "title_ja": "後ガードのリングをゆるめる",
+      "title_en": "Unthread the rear ring"
+    },
+    {
+      "id": "steps_B_rear_align",
+      "format": "steps",
+      "index": 19,
+      "title_th": "จัดตะแกรงหลังให้ตรง",
+      "title_ja": "後ガードの位置を合わせる",
+      "title_en": "Align the rear guard"
+    },
+    {
+      "id": "steps_B_rear_tighten",
+      "format": "steps",
+      "index": 20,
+      "title_th": "ขันวงแหวนตะแกรงหลังให้แน่น",
+      "title_ja": "後ガードのリングを締める",
+      "title_en": "Tighten the rear ring"
+    },
+    {
+      "id": "steps_B_reassemble",
+      "format": "steps",
+      "index": 21,
+      "title_th": "ตรวจลำดับประกอบกลับ",
+      "title_ja": "組み立て直す順序を確認する",
+      "title_en": "Review reassembly order"
+    },
+    {
+      "id": "steps_B_inspect",
+      "format": "steps",
+      "index": 22,
+      "title_th": "กดตรวจผลงานบนแผงงาน แล้วฟังเสียง",
+      "title_ja": "作業パネルで「仕上がりを確認」を押し、音を聞く",
+      "title_en": "Select Check my work on the task panel and listen"
+    },
+    {
+      "id": "steps_B_inspect_result",
+      "format": "steps",
+      "index": 23,
+      "title_th": "อ่านผลตรวจผลงาน",
+      "title_ja": "仕上がりを確認の結果を読む",
+      "title_en": "Read the check result"
+    },
+    {
+      "id": "images_B_overview",
+      "format": "images",
+      "index": 1,
+      "title_th": "ภาพรวม · เลือกหัวข้อได้อิสระ",
+      "title_ja": "全体図・項目の順番は自由",
+      "title_en": "Overview · choose any topic"
+    },
+    {
+      "id": "images_B_detail_overview_1",
+      "format": "images",
+      "index": 2,
+      "title_th": "ก่อนเริ่ม / เลือกบริเวณ · 1",
+      "title_ja": "はじめに / 部分を選ぶ · 1",
+      "title_en": "overview · 1"
+    },
+    {
+      "id": "images_B_detail_front_1",
+      "format": "images",
+      "index": 3,
+      "title_th": "ตะแกรงหน้า · 1",
+      "title_ja": "前ガード · 1",
+      "title_en": "front · 1"
+    },
+    {
+      "id": "images_B_detail_front_2",
+      "format": "images",
+      "index": 4,
+      "title_th": "ตะแกรงหน้า · 2",
+      "title_ja": "前ガード · 2",
+      "title_en": "front · 2"
+    },
+    {
+      "id": "images_B_detail_blade_1",
+      "format": "images",
+      "index": 5,
+      "title_th": "ใบพัดและฝาล็อก · 1",
+      "title_ja": "羽根とキャップ · 1",
+      "title_en": "blade · 1"
+    },
+    {
+      "id": "images_B_detail_blade_2",
+      "format": "images",
+      "index": 6,
+      "title_th": "ใบพัดและฝาล็อก · 2",
+      "title_ja": "羽根とキャップ · 2",
+      "title_en": "blade · 2"
+    },
+    {
+      "id": "images_B_detail_rear_1",
+      "format": "images",
+      "index": 7,
+      "title_th": "ตะแกรงหลัง · 1",
+      "title_ja": "後ガード · 1",
+      "title_en": "rear · 1"
+    },
+    {
+      "id": "images_B_detail_rear_2",
+      "format": "images",
+      "index": 8,
+      "title_th": "ตะแกรงหลัง · 2",
+      "title_ja": "後ガード · 2",
+      "title_en": "rear · 2"
+    },
+    {
+      "id": "images_B_detail_inspect_1",
+      "format": "images",
+      "index": 9,
+      "title_th": "ตรวจผลงาน / เมื่อยังไม่ผ่าน · 1",
+      "title_ja": "仕上がりを確認 / 未合格のとき · 1",
+      "title_en": "inspect · 1"
+    },
+    {
+      "id": "video_B_start",
+      "format": "video",
+      "start_seconds": 0,
+      "title_ja": "振動や打音がする F2 を調べる"
+    },
+    {
+      "id": "video_B_scope",
+      "format": "video",
+      "start_seconds": 15.958,
+      "title_ja": "モーター・台はそのままにする"
+    },
+    {
+      "id": "video_B_examine",
+      "format": "video",
+      "start_seconds": 31.167,
+      "title_ja": "扇風機の部品の状態を見る"
+    },
+    {
+      "id": "video_B_front_check",
+      "format": "video",
+      "start_seconds": 53.292,
+      "title_ja": "前ガードの縁を確認する"
+    },
+    {
+      "id": "video_B_front_clip_open",
+      "format": "video",
+      "start_seconds": 69.542,
+      "title_ja": "前ガードのクリップを開く"
+    },
+    {
+      "id": "video_B_front_turn",
+      "format": "video",
+      "start_seconds": 81.25,
+      "title_ja": "前ガードをマークまで回す"
+    },
+    {
+      "id": "video_B_front_remove",
+      "format": "video",
+      "start_seconds": 88.958,
+      "title_ja": "前ガードをまっすぐ抜く"
+    },
+    {
+      "id": "video_B_front_seat",
+      "format": "video",
+      "start_seconds": 96.75,
+      "title_ja": "前ガードの縁を密着させる"
+    },
+    {
+      "id": "video_B_front_lock",
+      "format": "video",
+      "start_seconds": 107.083,
+      "title_ja": "前ガードを回して固定する"
+    },
+    {
+      "id": "video_B_front_clip_close",
+      "format": "video",
+      "start_seconds": 115.292,
+      "title_ja": "前ガードのクリップを閉じる"
+    },
+    {
+      "id": "video_B_blade_check",
+      "format": "video",
+      "start_seconds": 126.625,
+      "title_ja": "羽根とキャップを確認する"
+    },
+    {
+      "id": "video_B_blade_cap_off",
+      "format": "video",
+      "start_seconds": 143.792,
+      "title_ja": "羽根キャップのねじを外す"
+    },
+    {
+      "id": "video_B_blade_remove",
+      "format": "video",
+      "start_seconds": 154.958,
+      "title_ja": "羽根を軸に沿って抜く"
+    },
+    {
+      "id": "video_B_blade_seat",
+      "format": "video",
+      "start_seconds": 166.708,
+      "title_ja": "羽根の溝をピンに合わせ奥まで入れる"
+    },
+    {
+      "id": "video_B_blade_cap_on",
+      "format": "video",
+      "start_seconds": 177.0,
+      "title_ja": "羽根キャップを締める"
+    },
+    {
+      "id": "video_B_rear_check",
+      "format": "video",
+      "start_seconds": 187.125,
+      "title_ja": "後ガードの縁の状態を確認する"
+    },
+    {
+      "id": "video_B_rear_access",
+      "format": "video",
+      "start_seconds": 206.667,
+      "title_ja": "リングへのアクセスを確認する"
+    },
+    {
+      "id": "video_B_rear_ring_off",
+      "format": "video",
+      "start_seconds": 220.042,
+      "title_ja": "後ガードのリングをゆるめる"
+    },
+    {
+      "id": "video_B_rear_align",
+      "format": "video",
+      "start_seconds": 232.208,
+      "title_ja": "後ガードの位置を合わせる"
+    },
+    {
+      "id": "video_B_rear_tighten",
+      "format": "video",
+      "start_seconds": 241.708,
+      "title_ja": "後ガードのリングを締める"
+    },
+    {
+      "id": "video_B_reassemble",
+      "format": "video",
+      "start_seconds": 251.917,
+      "title_ja": "組み立て直す順序を確認する"
+    },
+    {
+      "id": "video_B_inspect",
+      "format": "video",
+      "start_seconds": 264.583,
+      "title_ja": "作業パネルで「仕上がりを確認」を押し、音を聞く"
+    },
+    {
+      "id": "video_B_inspect_result",
+      "format": "video",
+      "start_seconds": 288.792,
+      "title_ja": "仕上がりを確認の結果を読む"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1/B7_ja_v8.mp4",
+    "sha256": "251cccdc454a5fcf095392ab8144b52c89eff68c8bc917f82805a196c48c6be5",
+    "chapters": [
+      {
+        "id": "B.start",
+        "stage": "振動や打音がする F2 を調べる",
+        "start_seconds": 0.0,
+        "end_seconds": 15.542,
+        "units": [
+          "problem",
+          "choose",
+          "areas",
+          "scope"
+        ]
+      },
+      {
+        "id": "B.scope",
+        "stage": "モーター・台はそのままにする",
+        "start_seconds": 15.542,
+        "end_seconds": 30.333,
+        "units": [
+          "scope"
+        ]
+      },
+      {
+        "id": "B.examine",
+        "stage": "扇風機の部品の状態を見る",
+        "start_seconds": 30.333,
+        "end_seconds": 52.083,
+        "units": [
+          "areas",
+          "choose",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.front.check",
+        "stage": "前ガードの縁を確認する",
+        "start_seconds": 52.083,
+        "end_seconds": 67.917,
+        "units": [
+          "front_check",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.front.clip.open",
+        "stage": "前ガードのクリップを開く",
+        "start_seconds": 67.917,
+        "end_seconds": 79.208,
+        "units": [
+          "open_front",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.front.turn",
+        "stage": "前ガードをマークまで回す",
+        "start_seconds": 79.208,
+        "end_seconds": 86.542,
+        "units": [
+          "open_front"
+        ]
+      },
+      {
+        "id": "B.front.remove",
+        "stage": "前ガードをまっすぐ抜く",
+        "start_seconds": 86.542,
+        "end_seconds": 93.917,
+        "units": [
+          "open_front"
+        ]
+      },
+      {
+        "id": "B.front.seat",
+        "stage": "前ガードの縁を密着させる",
+        "start_seconds": 93.917,
+        "end_seconds": 103.833,
+        "units": [
+          "fix_front"
+        ]
+      },
+      {
+        "id": "B.front.lock",
+        "stage": "前ガードを回して固定する",
+        "start_seconds": 103.833,
+        "end_seconds": 111.667,
+        "units": [
+          "fix_front",
+          "front_check"
+        ]
+      },
+      {
+        "id": "B.front.clip.close",
+        "stage": "前ガードのクリップを閉じる",
+        "start_seconds": 111.667,
+        "end_seconds": 122.625,
+        "units": [
+          "fix_front",
+          "guards_first"
+        ]
+      },
+      {
+        "id": "B.blade.check",
+        "stage": "羽根とキャップを確認する",
+        "start_seconds": 122.625,
+        "end_seconds": 139.375,
+        "units": [
+          "blade_check",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.blade.cap.off",
+        "stage": "羽根キャップのねじを外す",
+        "start_seconds": 139.375,
+        "end_seconds": 150.167,
+        "units": [
+          "spinner_dir"
+        ]
+      },
+      {
+        "id": "B.blade.remove",
+        "stage": "羽根を軸に沿って抜く",
+        "start_seconds": 150.167,
+        "end_seconds": 161.5,
+        "units": [
+          "blade_off",
+          "rear_check",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.blade.seat",
+        "stage": "羽根の溝をピンに合わせ奥まで入れる",
+        "start_seconds": 161.5,
+        "end_seconds": 171.417,
+        "units": [
+          "fix_blade"
+        ]
+      },
+      {
+        "id": "B.blade.cap.on",
+        "stage": "羽根キャップを締める",
+        "start_seconds": 171.417,
+        "end_seconds": 181.167,
+        "units": [
+          "spinner_dir",
+          "fix_blade"
+        ]
+      },
+      {
+        "id": "B.rear.check",
+        "stage": "後ガードの縁の状態を確認する",
+        "start_seconds": 181.167,
+        "end_seconds": 200.333,
+        "units": [
+          "rear_check",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.rear.access",
+        "stage": "リングへのアクセスを確認する",
+        "start_seconds": 200.333,
+        "end_seconds": 213.333,
+        "units": [
+          "rear_check",
+          "present_not_tight"
+        ]
+      },
+      {
+        "id": "B.rear.ring.off",
+        "stage": "後ガードのリングをゆるめる",
+        "start_seconds": 213.333,
+        "end_seconds": 225.125,
+        "units": [
+          "rear_dir"
+        ]
+      },
+      {
+        "id": "B.rear.align",
+        "stage": "後ガードの位置を合わせる",
+        "start_seconds": 225.125,
+        "end_seconds": 234.25,
+        "units": [
+          "fix_rear"
+        ]
+      },
+      {
+        "id": "B.rear.tighten",
+        "stage": "後ガードのリングを締める",
+        "start_seconds": 234.25,
+        "end_seconds": 244.042,
+        "units": [
+          "rear_dir",
+          "fix_rear",
+          "rear_check"
+        ]
+      },
+      {
+        "id": "B.reassemble",
+        "stage": "組み立て直す順序を確認する",
+        "start_seconds": 244.042,
+        "end_seconds": 256.333,
+        "units": [
+          "reassemble"
+        ]
+      },
+      {
+        "id": "B.inspect",
+        "stage": "作業パネルで「仕上がりを確認」を押し、音を聞く",
+        "start_seconds": 256.333,
+        "end_seconds": 280.167,
+        "units": [
+          "inspect",
+          "done",
+          "guards_first"
+        ]
+      },
+      {
+        "id": "B.inspect.result",
+        "stage": "仕上がりを確認の結果を読む",
+        "start_seconds": 280.167,
+        "end_seconds": 298.083,
+        "units": [
+          "inspect",
+          "done",
+          "guards_first"
+        ]
+      }
+    ],
+    "media_version": "S1_VIDEO_V8_MOTION_NARRATION_ONLY_20261108",
+    "burned_in_text": false,
+    "previous_streaming_path": "ResearchReaderS1/B7_ja.mp4"
+  },
+  "version": "v7-b54080694e2ee372+video_v8"
+}

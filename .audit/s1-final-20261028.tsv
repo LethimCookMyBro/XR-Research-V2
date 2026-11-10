@@ -1,0 +1,14 @@
+time	step	change	evidence	predicate_moved
+23:51	orient	HEAD b8cfb55 main clean; Unity 80400 owns canonical project (opened 20:34 for RC5); codex app-server present, no repo writes since 22:40	git status; Win32_Process; find -newermt	no
+00:05	quest	Quest 3 asleep (no wearer); installed base.apk sha 5f6bda0a = RC6; registry.json 1b7006a6 unchanged	adb sha256sum	yes
+00:10	icon	RC6 adaptive fg==bg opaque logo; 72dp viewport + circle mask loses 15.9% of white artwork (headset sides, gear clipped)	scratchpad/icon/rc6_icon_sheet.png	partial
+00:20	icon-fix	keyed transparent fg scaled into 66dp safe circle + solid #0168E8 bg; 0% artwork lost; not yet applied to source	scratchpad/icon/layers/preview_fixed.png	pending decision
+00:25	audits	content parity + video audits dispatched read-only	scratchpad/content_audit, video_audit	pending
+00:40	audits-done	content: 48/48 facts consistent, no P0; video: Task A shows S01/G02 installed (P0), B reveal suspected	content_audit/, video_audit/	yes
+00:45	verify-P0	confirmed S01 300TBW / G02 200W labels in A_th 244.8-362.8 s; B suspicion refuted (front guard/blade/spinner move, rear lock static)	verify/A_th_260.png, b_zoom.png	yes
+00:50	mask	per-frame template mask; masked min score 0.874 vs unmasked max 0.417; captions/frames unchanged	mask logs	yes
+00:55	commit	20300ee videos+package hashes+adaptive icon layers (local main, not pushed)	git log	yes
+00:58	build	isolated RC6 project + byte-verified overlay; 0 errors 671 warnings; apk ab5fecf5	evidence/build	yes
+01:00	verify	verify_rc7_apk.py all_pass; RC6 negative control fails icon+videos as expected	evidence/apk_verification	yes
+01:05	review	independent reviewer APPROVE	review/INDEPENDENT_REVIEW.md	yes
+01:20	install	RC7 NOT installed: first push overwritten by my premature re-push; second push reaped for host low memory; device still RC6, registry unchanged	INSTALL_RESULT_TH.md	no

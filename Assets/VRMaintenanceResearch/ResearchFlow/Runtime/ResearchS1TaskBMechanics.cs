@@ -9,6 +9,9 @@ namespace VRMaintenanceResearch.ResearchFlow
     {
         // S1_TASKB_SHORT_THREADS_20261029: 720/540 deg made removal and refit the slowest part of Task B (owner target 5-6 min).
         public const string ThreadVersion = "S1_TASKB_SHORT_THREADS_20261029";
+        // Spec 6.3 front-guard check reads alignment marks; the source fan model had none. Visual only, fixed neutral colour.
+        public const string AlignmentMarksVersion = "S1_FRONT_GUARD_ALIGNMENT_MARKS_20261103";
+        public const string FrontMarkName = "MARK_FAN_PED_GUARD_FRONT_Triangle", RearMarkName = "MARK_FAN_PED_GUARD_REAR_Tab";
         public const float SpinnerTurnDegrees = 270, RearLockTurnDegrees = 180, RearLockFaultGapDegrees = 20;
         public ResearchTaskPort port;
         public ResearchSessionFlowController controller;
@@ -42,7 +45,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             }, Gate);
             port.BindFeedback(value => "inspect.s1.B." + ResearchS1TaskEvaluator.Evaluate((S1TaskBState)value).Category);
             port.BindExamineInfo(Observation);
+            port.BindExamineDetail(target => controller && controller.AreaExamineActive ? ExamineDetail(Capture(), target, controller.Language, controller.ExamineVersion) : null);
         }
+
+        public static System.Collections.Generic.Dictionary<string, object> ExamineDetail(S1TaskBState state, string target, string language, string version = ResearchUIPolicy.DevExamineVersion) =>
+            new System.Collections.Generic.Dictionary<string, object>
+            {
+                ["examine_version"] = version, ["observation_id"] = ResearchS1FanObservations.Id(state, target),
+                ["access_state"] = ResearchS1FanObservations.Access(state, target), ["shown_text"] = ResearchS1FanObservations.Get(state, target, language),
+                ["language"] = language, ["selection_source"] = "task_panel_area_list"
+            };
 
         public void KeepAuthoredGuardDetail()
         {
@@ -207,9 +219,32 @@ namespace VRMaintenanceResearch.ResearchFlow
         internal bool AllowsThreadPose(ResearchS1FanPart part, Matrix4x4 desired, bool previouslyCaptured)
             => ResearchS1HeldCollision.Allows(part.transform, desired, ThreadContact(part, desired, previouslyCaptured));
 
-        // The shared swept test permits escape from existing proxy overlap without tunneling.
+        Collider GuardEntryContact(ResearchS1FanPart part, Matrix4x4 desired)
+        {
+            if (part != frontGuard || !frontClip || frontClip.ClipClosed || !spinner
+                || spinner.IsHeld || spinner.Placement != S1Placement.Seated || spinner.ThreadState == S1ThreadState.Absent
+                || !part.seat || !part.mate || !CanMount(part) || !ResearchS1TaskAMechanics.Finite(desired)) return null;
+            var current = part.Pose;
+            var target = VRMaintenanceResearch.AssetLibraryQA.SocketRules.Measure(part.seat.localToWorldMatrix,
+                desired * part.transform.worldToLocalMatrix * part.mate.localToWorldMatrix);
+            bool withdrawing = part.Placement != S1Placement.NotInstalled && target.depthMm > current.depthMm;
+            bool entering = current.depthMm > target.depthMm && current.depthMm <= part.approachMm + 60
+                && target.depthMm >= 0 && target.depthMm <= part.approachMm + 60;
+            if ((!withdrawing && !entering) || current.depthMm < -.3f
+                || current.lateralMm > part.positionToleranceMm || target.lateralMm > part.positionToleranceMm
+                || current.tiltDeg > part.angleToleranceDegrees || target.tiltDeg > part.angleToleranceDegrees
+                || Mathf.Abs(Mathf.DeltaAngle(current.turnDeg, part.insertTurnDegrees)) > part.angleToleranceDegrees
+                || Mathf.Abs(Mathf.DeltaAngle(target.turnDeg, part.insertTurnDegrees)) > part.angleToleranceDegrees) return null;
+            // The guard shell proxy fills its cavity; only the seated cap inside that cavity is exempt during bayonet travel.
+            return spinner.GetComponentInChildren<BoxCollider>();
+        }
+
         public Matrix4x4 FreePose(ResearchS1FanPart part, Matrix4x4 desired)
-            => ResearchS1HeldCollision.Allows(part.transform, desired, ThreadContact(part, desired)) ? desired : part.transform.localToWorldMatrix;
+        {
+            var contact = ThreadContact(part, desired);
+            if (!contact) contact = GuardEntryContact(part, desired);
+            return ResearchS1HeldCollision.Slide(part.transform, desired, pose => ResearchS1HeldCollision.Allows(part.transform, pose, contact));
+        }
 
         private string Observation(string target, string language) => ResearchS1FanObservations.Get(Capture(), target, language);
 

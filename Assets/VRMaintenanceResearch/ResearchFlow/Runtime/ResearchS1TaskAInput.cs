@@ -43,6 +43,8 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         private void Pointer(PointerEvent evt)
         {
+            if (evt.Type == PointerEventType.Hover) owner.port.Hover(stableId, owner.InputSource(evt.Identifier), evt.Identifier);
+            else if (evt.Type == PointerEventType.Unhover) owner.port.Unhover(stableId, evt.Identifier);
             if (evt.Type == PointerEventType.Select)
             {
                 Finish(attempt != null && !endPending || cancelled);
@@ -74,7 +76,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!Allowed) return;
             last = owner.Capture();
             var operation = latch ? (action == "FASTEN" ? PartOperation.Close : PartOperation.Open)
-                : action == "FASTEN" || action == "UNFASTEN" || action == "ROTATE_WORKPIECE" ? PartOperation.Turn
+                : action == "FASTEN" ? PartOperation.Tighten : action == "UNFASTEN" ? PartOperation.Loosen : action == "ROTATE_WORKPIECE" ? PartOperation.Turn
                 : action == "INSTALL" ? PartOperation.Insert : action == "REMOVE" ? PartOperation.Remove
                 : action == "CONNECT" ? PartOperation.Connect : action == "DISCONNECT" ? PartOperation.Disconnect : PartOperation.Move;
             owner.port.UpdateAttempt(attempt, action, before, last, blocked, operation, reason);

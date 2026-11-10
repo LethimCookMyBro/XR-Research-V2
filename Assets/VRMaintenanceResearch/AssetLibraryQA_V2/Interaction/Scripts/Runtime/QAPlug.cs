@@ -19,6 +19,8 @@ namespace VRMaintenanceResearch.AssetLibraryQA
         public bool IsHeld => grabbable && grabbable.SelectingPointsCount > 0;
         public Matrix4x4 LastFreePose { get; private set; }
         public System.Predicate<Matrix4x4> PoseAllowed;
+        // Optional: the clear pose nearest a blocked free pose, so a blocked part slides instead of freezing.
+        public System.Func<Matrix4x4, Matrix4x4> SlideFree;
 
         // Diagnostics for the QA runner: how many pointers drive the grab and how often per frame.
         public int MaxGrabPoints { get; private set; }

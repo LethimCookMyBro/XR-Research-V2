@@ -156,6 +156,27 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         bool moved = Vector3.Distance(panel.transform.position, pose) > .005f && handle.RejectedSamples == 0;
                         handle.OnEndDrag(pointer); return moved;
                     });
+                    // Owner 31 Oct: drags froze when a slate corner left the view or equipment sat between eye and slate.
+                    Check("held_drag_follows_past_view_edge", () =>
+                    {
+                        Reset(); begin.Invoke(handle, new object[] { pointer, pose });
+                        var target = pose + Vector3.right * 1.5f;
+                        bool leftView = !panel.ReadableFromHeadForDrag(target, Quaternion.identity);
+                        move.Invoke(handle, new object[] { target, 1f / 72 });
+                        bool moved = Vector3.Distance(panel.transform.position, pose) > .5f && handle.RejectedSamples == 0;
+                        handle.OnEndDrag(pointer); return leftView && moved;
+                    });
+                    Check("held_drag_follows_behind_equipment", () =>
+                    {
+                        Reset(); begin.Invoke(handle, new object[] { pointer, pose });
+                        var target = pose + Vector3.up * .05f;
+                        Obstacle(nominalHead + Vector3.forward * .6f, Vector3.one * .08f, false, true);
+                        bool sightBlocked = !panel.PlacementClear(target, panel.transform.rotation);
+                        move.Invoke(handle, new object[] { target, 1f / 72 });
+                        bool moved = Vector3.Distance(panel.transform.position, pose) > .005f && handle.RejectedSamples == 0;
+                        blocker.SetActive(false); Physics.SyncTransforms(); handle.OnEndDrag(pointer);
+                        return sightBlocked && moved;
+                    });
                 }
                 // Owner 29 Oct: equipment that comes between the eye and an already placed panel (the wearer walked) does not hide it;
                 // hiding and re-showing it on every head move was the reported flicker. New placements still reject such a pose.

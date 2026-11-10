@@ -81,36 +81,26 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         int Count(string key) => Events().Count(e=>(string)e["event"]==key);
                         if(stage=="details")
                         {
+                            // 3 Nov: the legacy self-setup card on Main (Details/Start/language/order segments) is retired; DEV builds open
+                            // ResearcherSetupView, whose dropdowns and Start gate ResearchFocusedOperatorUIChecks and ResearchCompactUIChecks
+                            // cover. Here: no retired control stays reachable by a real pointer, and the safety gates the old clicks
+                            // proved (no session from a stray or stale press, preview does not mutate the registry, DEV id reuse) still hold.
                             var ownedRecord=c.Record; string registryHash=Hash(c.Registry.RegistryPath);
                             Set(c,"Record",null); Set(c,"Flow",null); Set(c,"TechnicalSelfSetup",true);
                             c.guards[0].side=Oculus.Interaction.Input.Handedness.Left; c.guards[1].side=Oculus.Interaction.Input.Handedness.Right; Flush();
                             bool Visible() => Field<bool>(v,"setupDetailsVisible");
                             Check(c.TechnicalReady&&!Visible(),name+"/ready compact precondition",new { c.TechnicalReady,visible=Visible() });
-                            Click("technical_details"); Check(Visible(),name+"/actual click expands",Visible());
-                            Click("technical_details"); Check(!Visible(),name+"/actual second click collapses",Visible());
-                            var a=Action("technical_details"); Up(a,new PointerEventData(eventSystem){pointerId=74101,button=PointerEventData.InputButton.Left,clickCount=1});
-                            Check(!Visible(),name+"/orphan release cannot toggle",Visible());
-                            a=Action("technical_details"); var held=Down(a); Up(Action("technical_start"),held);
-                            Check(c.Record==null&&c.Flow==null&&!Visible(),name+"/wrong-control release cannot start session",new { c.Record,c.Flow });
-                            Call(fixture,"CancelPress",a);
-                            a=Action("technical_details"); held=Down(a); Set(c,"Error","owned context changed"); Up(a,held); Set(c,"Error",""); Flush();
-                            Check(!Visible(),name+"/stale context release cannot toggle",Visible());
+                            int Reachable(string command) => v.GetComponentsInChildren<ResearchUIAction>(false).Count(x=>x.command==command&&x.isActiveAndEnabled);
+                            var retired=new[]{"technical_details","technical_start","technical_language.Thai","technical_language.Japanese","technical_order.AB","technical_order.BA"};
+                            Check(retired.All(r=>Reachable(r)==0),name+"/retired setup controls not reachable by pointer",retired.ToDictionary(r=>r,Reachable));
+                            Check(c.Record==null&&c.Flow==null,name+"/no session from the setup surface without a researcher Start",new { c.Record,c.Flow });
+                            Set(c,"Error","owned context changed"); bool staleStart=c.StartTechnicalSelfTest(); Set(c,"Error",""); Flush();
+                            Check(!staleStart&&c.Record==null&&c.Flow==null,name+"/stale context cannot start a session",staleStart);
                             Check(Hash(c.Registry.RegistryPath)==registryHash&&c.Registry.List(ParticipantGroup.Test).Single().run_id==ownedRecord.run_id,name+"/no new session or registry mutation",c.Registry.RegistryPath);
-                            // Quest 16 Oct: the tester could only change language/order inside the dense researcher panel.
-                            var startLanguage=c.SetupLanguage; var startOrder=c.SetupOrder;
-                            var otherLanguage=startLanguage==ParticipantLanguage.Thai?ParticipantLanguage.Japanese:ParticipantLanguage.Thai; var otherOrder=startOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB;
-                            Click("technical_details");
-                            Click("technical_language."+otherLanguage); Check(c.SetupLanguage==otherLanguage,name+"/details language segment clicks",c.SetupLanguage.ToString());
-                            Click("technical_language."+startLanguage); Check(c.SetupLanguage==startLanguage,name+"/details language segment returns",c.SetupLanguage.ToString());
-                            Click("technical_order."+otherOrder); Check(c.SetupOrder==otherOrder,name+"/details order segment clicks",c.SetupOrder.ToString());
-                            var note=Field<TMPro.TMP_Text>(v,"setupNote"); var next=c.TechnicalNextRun();
-                            Check((next.layout=="P"||next.layout=="Q")&&note.gameObject.activeInHierarchy&&note.text.Contains(next.layout),name+"/details page names the table layout Start will use",new { next.layout,note.text });
-                            Click("technical_details");
-                            var idValue=Field<TMPro.TMP_Text>(v,"setupIdValue");
-                            Check(next.id=="DEV001"&&idValue.gameObject.activeInHierarchy&&idValue.text==next.id,name+"/card names the DEV id Start will use",new { next.id,idValue.text });
+                            var next=c.TechnicalNextRun();
+                            Check(next.id=="DEV001"&&(next.layout=="P"||next.layout=="Q"),name+"/next DEV id and table layout resolved before Start",new { next.id,next.layout });
                             Check(Hash(c.Registry.RegistryPath)==registryHash,name+"/previewing creates no record",null);
-                            Call(fixture,"Capture","setup_card",v.mainPanel,new List<object>(),rows);
-                            Click("technical_details"); Click("technical_order."+startOrder); Check(c.SetupOrder==startOrder,name+"/details order segment returns",c.SetupOrder.ToString()); Click("technical_details");
+                            var startOrder=c.SetupOrder;
                             // A Start that fails after CreateNext leaves an unstarted DEV record; the next Start reuses it.
                             var orphan=c.Registry.CreateNext(ParticipantGroup.Dev);
                             Set(c,"SetupOrder",c.SetupOrder==TaskOrder.AB?TaskOrder.BA:TaskOrder.AB); Set(c,"SetupOrder",startOrder);

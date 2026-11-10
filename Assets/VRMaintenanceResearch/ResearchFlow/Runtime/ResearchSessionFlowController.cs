@@ -70,6 +70,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             Record != null ? "A session is already open: " + Record.participant_id
             : record == null ? "Select or create a participant ID."
             : record.session_state != RegistryState.Available && record.session_state != RegistryState.InProgress ? record.participant_id + " is " + record.session_state + " and stays locked."
+            : !ResearchBuildFlavor.Allows(record.group) ? ResearchBuildFlavor.DevStudyBlocker
             : !string.IsNullOrEmpty(Error) ? Error
             : !FloorReady ? "Device not ready: floor/boundary is not confirmed."
             : !DeviceReady ? "Device not ready: both controllers must be tracked."
@@ -142,6 +143,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
         public void SetLanguage(ParticipantLanguage lang)
         {
+            if (SetupLanguage != lang) ResearchExamineTarget.CancelPresses(this);
             SetupLanguage = lang;
             if (view) view.Refresh();
         }
@@ -238,9 +240,19 @@ namespace VRMaintenanceResearch.ResearchFlow
             .Concat(new[] { ResearchTrainingStation.SequenceFor(Record?.training_version) }).ToArray();
         static string[][] WithTrainer(string[][] basic) => basic.Take(4)
             .Concat(new[] { ResearchTrainingStation.Facts.Concat(new[] { "inspect" }).ToArray() }).ToArray();
-        string[][] TutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
+        string[][] LegacyTutorialFacts => ResearchUIPolicy.TrainingIncludesPanelDrag
             ? (trainingStation ? TrainerTutorialFacts : BasicTutorialFacts)
             : (trainingStation ? FixedTrainerTutorialFacts : FixedBasicTutorialFacts);
+        static readonly string[] TrainerV7ReferenceFacts = { "reference", "switch", "manual_contents", "manual_select", "manual_next", "steps_next", "steps_back", "steps_contents", "steps_select", "steps_all", "steps_choose", "image_zoom", "image_pan", "video_play", "video_pause", "video_seek", "video_chapter", "close" };
+        static readonly string[] TrainerNoticeFacts = { "notice" };
+        static readonly string[] ReaderPauseFacts = { "reference", "switch", "close", "pause" };
+        public bool TutorialNoticeActive => Flow?.IsTutorial == true && ResearchUIPolicy.UsesTutorialNotice(Record?.training_version);
+        string[][] TutorialFacts => ResearchUIPolicy.UsesTutorialNotice(Record?.training_version)
+            ? LegacyTutorialFacts.Select((facts, group) => group == 3 ? TrainerNoticeFacts : facts).ToArray()
+            : ResearchUIPolicy.UsesPausePractice(Record?.training_version)
+            ? LegacyTutorialFacts.Select((facts, group) => group == 3 ? ReaderPauseFacts : facts).ToArray()
+            : Record?.training_version == ResearchUIPolicy.TrainingTrainerV7
+            ? LegacyTutorialFacts.Select((facts, group) => group == 3 ? TrainerV7ReferenceFacts : facts).ToArray() : LegacyTutorialFacts;
         /// <summary>True when the current policy's training requires this practice fact (e.g. "reposition" only in the legacy policy).</summary>
         public bool TutorialRequires(string fact) => TutorialFacts.Any(facts => facts.Contains(fact));
         public bool TutorialGroupRequires(string fact) => Flow?.IsTutorial == true && Flow.TutorialCompleted < TutorialFacts.Length
@@ -262,8 +274,9 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (Flow?.IsTutorial != true || Flow.TutorialCompleted >= TutorialFacts.Length) return null;
                 string fact = TutorialFacts[Flow.TutorialCompleted].FirstOrDefault(f => !tutorialEvidence.Contains(f));
                 if (fact == null) return null;
+                if (TutorialNoticeActive && Flow.TutorialCompleted == 3) return fact;
                 if (Flow.TutorialCompleted == 3 && ReferenceOpen && ReferenceMinimized) return "restore";
-                return Flow.TutorialCompleted == 3 && !ReferenceOpen ? "reference" : fact;
+                return Flow.TutorialCompleted == 3 && !ReferenceOpen && fact != "pause" ? "reference" : fact;
             }
         }
         public string TutorialInstructionKey
@@ -274,6 +287,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 if (fact == null) return "tutorial.complete.body";
                 if (TutorialNeedsGrab) return "tutorial.try.regrab" + (TutorialUsesHands ? ".hand" : ".controller");
                 if (fact == "restore") return "tutorial.try.restore";
+                if (fact == "examine" && IntentionalExamineActive) return "tutorial.try.examine.physical";
                 if (fact == "inspect" && trainingStation)
                     return ResearchUIPolicy.TrainingIncludesPanelDrag ? "tutorial.try.inspect.trainer" : "tutorial.try.inspect.trainer_ready";
                 if (fact == "inspect_fail" && !ResearchUIPolicy.TrainingIncludesPanelDrag) return "tutorial.try.inspect_fail.start";
@@ -356,10 +370,36 @@ namespace VRMaintenanceResearch.ResearchFlow
         public PartInteraction? CurrentInteraction => UsesDirectPartFeedback && Flow?.IsTaskActive == true && Flow.CanInteract
             && interactionAllowed && !Transitioning && string.IsNullOrEmpty(Error) && taskTiming.CanManipulate && CurrentPort
             ? CurrentPort.CurrentInteraction : null;
+        public (string Target, string InputSource)? CurrentHover => UsesDirectPartFeedback && Flow?.IsTaskActive == true && Flow.CanInteract
+            && interactionAllowed && !Transitioning && string.IsNullOrEmpty(Error) && taskTiming.CanManipulate && CurrentPort
+            ? CurrentPort.CurrentHover : null;
+        // Recorded V7 capability; older V6 sessions keep their original DEV-only Examine route.
+        public bool IntentionalExamineActive => ResearchUIPolicy.UsesIntentionalExamine(Record?.training_version);
+        public bool PointedExamineActive => ResearchUIPolicy.UsesPointedExamine(Record?.training_version);
+        public bool DevExamineActive => DevReaderPrototypeActive && UsesDirectPartFeedback;
+        public bool AreaExamineActive => IntentionalExamineActive || DevExamineActive;
+        public string ExamineVersion => ResearchUIPolicy.ExamineVersionFor(Record?.training_version, DevReaderPrototypeActive);
+        public string[] ExamineAreas => AreaExamineActive && Flow?.IsTaskActive == true && Flow.CurrentTask == "B" ? ResearchS1FanObservations.Areas : Array.Empty<string>();
+
+        public Dictionary<string, object> ExamineDetail(string area) => AreaExamineActive && CurrentPort ? CurrentPort.ExamineDetail(area) : null;
+
+        // Read-only: logs EXAMINE (or EXAMINE_REJECTED when the area is blocked or unavailable) through the task port and returns the
+        // sentence for the chosen area. A rejected area shows only its access sentence (e.g. the front guard hides the blade).
+        public bool TryExamineArea(string target, string input, out string information)
+        {
+            information = null;
+            if (Array.IndexOf(ExamineAreas, target) < 0 || !LocalUICommandsAllowed || !Flow.CanInteract || !CurrentPort || !CurrentPort.InteractionAllowed
+                || string.IsNullOrEmpty(input) || (!IsTechnical && (input == "None" || input.StartsWith("Simulated", StringComparison.Ordinal)))) return false;
+            information = CurrentPort.ExamineInfo(target, Language);
+            CurrentPort.Examine(target, input);
+            return string.IsNullOrEmpty(Error);
+        }
+
         public string CurrentPartObservation
         {
             get
             {
+                if (IntentionalExamineActive) return null;
                 var current = CurrentInteraction;
                 if (!current.HasValue) return null;
                 string target = ResearchS1FanObservations.TargetForPart(current.Value.Target);
@@ -409,7 +449,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     var capturedPort = port;
                     Action<string, string, object, object> listener = (name, target, before, after) =>
                     { if (capturedPort == CurrentPort || (after as ResearchTaskPort.AttemptPayload)?.SystemTerminal == true) TaskBehavior(name, target, before, after); };
-                    port.Behavior += listener; portListeners.Add(port, listener);
+                    port.Behavior += listener; port.Observation += listener; portListeners.Add(port, listener);
                 }
             // Technical self-setup keeps the guards' own tracking/neutral gates so the tester can ray-select Start;
             // Refresh() below still disables objects, locomotion and task ports until the session exists.
@@ -441,8 +481,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (view) view.ReferenceVisibilityChanged += ReferenceVisibilityChanged;
             ResearchHandContactProxy.Install(this);
             ResearchHeldObjectConstraint.Install(this);
-            // Optional DEV-only HTTPS sync reads completed immutable bundles; absent provisioning is a no-op.
-            if (!Application.isEditor && TechnicalBuild && !GetComponent<ResearchQuestCloudUploader>())
+            // HTTPS sync of completed immutable bundles (all Quest builds); no provisioning file and no built-in install key is a no-op.
+            if (!Application.isEditor && !GetComponent<ResearchQuestCloudUploader>())
                 gameObject.AddComponent<ResearchQuestCloudUploader>();
             if (TechnicalSelfSetup)
             {
@@ -481,6 +521,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 var selected = Enum.GetValues(typeof(ParticipantGroup)).Cast<ParticipantGroup>().SelectMany(Registry.List).Single(p => p.participant_id == id);
                 bool technical = ResearchParticipantRegistry.IsTechnical(selected.group);
                 bool resume = selected.session_state == RegistryState.InProgress;
+                if (!ResearchBuildFlavor.Allows(selected.group)) throw new InvalidOperationException(ResearchBuildFlavor.DevStudyBlocker);
                 if (!technical && (!DeviceReady || !(translationsReviewed || ResearchUIPolicy.StudyOpenWithoutDeviceApprovals) || taskPorts.Length != 2 || taskPorts.Any(t => !t || !t.IsReadyForStudy)
                     || taskPorts.Select(t => t.taskId).Distinct().Count() != 2))
                     throw new InvalidOperationException("Study requires tracked device, bilingual review and two approved task adapters. Use DEV/TEST for the integration demo.");
@@ -501,7 +542,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 Logger = new HandsLabLogger(logRoot, "None", "UnityXR / OpenXR", executionEnvironment: Application.isEditor ? "Editor" : "QuestStandalone",
                     phase: "ResearchSession", taskId: "session", contentVersion: "research.flow.1", technicalTest: Record.test_data, testData: Record.test_data,
                     runId: Record.run_id, resume: resume,
-                protocolVersions: new { station_anchor_version = ResearchStationAnchors.Version, reader_ui_version = ResearchFlowView.ReaderFeedbackVersion });
+                protocolVersions: new { station_anchor_version = ResearchStationAnchors.Version, reader_ui_version = ResearchFlowView.ReaderFeedbackVersion,
+                    participant_text_version = ResearchUIPolicy.ParticipantTextVersion, layout_version = Record.layout_version });
                 Logger.WriteFailed += LoggerFailed;
                 if (Logger.State != HandsLabLogState.Active) throw new IOException(Logger.LastError);
                 if (resume && Record.ui_policy == null)
@@ -517,11 +559,19 @@ namespace VRMaintenanceResearch.ResearchFlow
                     recorded_ui_policy = Record.ui_policy, protocol_version = Record.protocol_version ?? ResearchUIPolicy.ProtocolFor(ResearchUIPolicy.Active),
                     training_version = Record.training_version ?? ResearchUIPolicy.TrainingFor(ResearchUIPolicy.Active),
                     layout_version = Record.layout_version, task_a_layout = Record.task_a_layout,
+                    fan_reach_version = ResearchUIPolicy.LowersFan(Record.layout_version) ? ResearchS1FanReachProfile.Version : "authored_height",
+                    fan_head_lowering_m = ResearchUIPolicy.LowersFan(Record.layout_version) ? ResearchS1FanReachProfile.LoweringMetres : 0,
+                    held_collision_version = "S1_HELD_CONTACT_SLIDE_20261102", participant_text_version = ResearchUIPolicy.ParticipantTextVersion,
+                    part_motion_observation_version = ResearchPartMotionObserver.Version,
+                    part_motion_sample_period_seconds = ResearchPartMotionCadence.SamplePeriodSeconds,
                     station_anchor_version = ResearchStationAnchors.Version, reader_ui_version = ResearchFlowView.ReaderFeedbackVersion,
-                    study_gate_version = ResearchUIPolicy.StudyGateVersion, task_a_thread_version = ResearchS1TaskAFastener.ThreadVersion, task_b_thread_version = ResearchS1TaskBMechanics.ThreadVersion, release_physics_version = "S1_FREE_PART_PHYSICS_20261030",
+                    reader_video_resume_version = ResearchReferenceViewer.VideoResumeVersion,
+                    study_gate_version = ResearchUIPolicy.StudyGateVersion, build_flavor = ResearchBuildFlavor.Name,
+                    task_b_reader = !IntentionalExamineActive && DevReaderPrototypeActive ? ResearchReferenceViewer.DevPrototypeContent : null, task_a_thread_version = ResearchS1TaskAFastener.ThreadVersion, task_b_thread_version = ResearchS1TaskBMechanics.ThreadVersion, task_b_alignment_marks_version = ResearchS1TaskBMechanics.AlignmentMarksVersion, release_physics_version = "S1_FREE_PART_PHYSICS_LIFT_20261102",
                 panel_drag_allowed = ResearchUIPolicy.PanelDragAllowed, participant_recenter_allowed = ResearchUIPolicy.ParticipantRecenterAllowed,
                     reader_distance_preset = ResearchUIPolicy.ReaderDistanceAllowed(IsTechnical) ? ResearchUIPolicy.ReaderDistanceVersion : null,
-                    tutorial_facts = TutorialFacts, interaction_ui_version = UsesDirectPartFeedback ? ResearchUIPolicy.InteractionFeedbackVersion : null, attribution = policyAttribution }, source: "System", reason: policyAttribution);
+                    tutorial_facts = TutorialFacts, interaction_ui_version = UsesDirectPartFeedback ? ResearchUIPolicy.InteractionFeedbackVersion : null,
+                    examine_version = ExamineVersion, examine_tasks = ResearchUIPolicy.ExamineTasksFor(Record?.training_version, DevReaderPrototypeActive), attribution = policyAttribution }, source: "System", reason: policyAttribution);
                 if (!resume && Record.task_order_overridden) Log("TASK_ORDER_OVERRIDE", "session.task_order", Record.task_order.ToString(), source: "System");
                 Error = "";
                 if (resume && Flow.IsTaskActive)
@@ -640,6 +690,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!string.IsNullOrEmpty(Error)) return false;
             if (command == "pause")
             {
+                // Pause practice is credited at the press while the prompt is armed; Resume is still needed to continue.
+                if (TutorialGroupRequires("pause")) Evidence("pause", inputSource);
                 CloseReference("safety_pause", "System");
                 if (!Pause("participant")) return false;
                 Log("SESSION_PAUSED", "safety", "Paused", after: PauseTiming(), source: "User", inputSource: inputSource, reason: "participant_pause"); Save(); Refresh();
@@ -660,6 +712,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             {
                 case "tutorial_start": changed = Flow.StartTutorial(); if (changed && origin && origin.Camera) physicalHeadStart = origin.Camera.transform.localPosition; break;
                 case "tutorial_select": if (Flow.TutorialCompleted == 1) accepted = Evidence("select", inputSource); break;
+                case "tutorial_notice": if (TutorialNoticeActive && Flow.TutorialCompleted == 3) accepted = Evidence("notice", inputSource); break;
                 case "tutorial_continue":
                     if (Flow.State == ResearchFlowState.TutorialComplete) CloseReference("tutorial_complete", "System");
                     changed = Flow.Continue(); if (changed) StartCoroutine(MoveToStation(Flow.CurrentTask == "A" ? 1 : 2)); break;
@@ -674,6 +727,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                         TaskStartConfirmation = true;
                         accepted = Log("TASK_START_REQUESTED", "task." + Flow.CurrentTask, "AwaitingConfirmation", inputSource: inputSource);
                         if (!accepted) TaskStartConfirmation = false;
+                        // Validate the task's Reader package now, before the task clock runs, so its first open does not stall a frame.
+                        else ResearchReferenceViewer.Warm(ReaderResource);
                         view?.Refresh(); break;
                     }
                     if (!TaskStartConfirmation) break;
@@ -726,7 +781,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                     { string previous = ReferenceSection; SwitchReference(command.Substring(14), inputSource); accepted = ReferenceSection != previous; }
                     break;
             }
-            if (changed) { Save(); Refresh(); }
+            if (changed) { ResearchExamineTarget.CancelPresses(this); Save(); Refresh(); }
             return (changed || accepted) && string.IsNullOrEmpty(Error);
         }
 
@@ -894,6 +949,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             TaskStartConfirmation = false;
             AdvanceTaskTiming();
             if (!Flow.Pause()) return false;
+            ResearchExamineTarget.CancelPresses(this);
             pauseStart = Logger?.Timestamp ?? double.NaN;
             if (Flow.IsTaskActive && taskTiming.Started && !taskTiming.Ended) taskTiming.Pause(pauseStart);
             InvalidateTutorialInstruction("pause_" + kind);
@@ -1006,6 +1062,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 ((TechnicalSelfSetup && Record == null) || (FloorReady && Flow != null
                     && Record?.session_state == RegistryState.InProgress && Logger?.State == HandsLabLogState.Active));
             bool allow = uiAllowed && FloorReady && Flow != null && Flow.CanInteract && (!Flow.IsTaskActive || taskTiming.CanManipulate);
+            if (!allow) ResearchExamineTarget.CancelPresses(this);
             interactionAllowed = allow;
             bool practice = allow && Flow.CanInteract && Flow.IsTutorial;
             foreach (var item in trainingObjects)
@@ -1045,6 +1102,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void BlockInteractions(string reason)
         {
+            ResearchExamineTarget.CancelPresses(this);
             if (!string.IsNullOrEmpty(Error) && Flow?.IsTaskActive == true && taskTiming.Started && !taskTiming.Ended && Logger != null)
             {
                 taskTiming.End("technical_failure", Logger.Timestamp);
@@ -1394,6 +1452,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void InvalidateTutorialInstruction(string reason)
         {
+            tutorialMediaRequest = null;
             visibleTutorialFact = null;
             if (tutorialInstruction == null) return;
             var previous = tutorialInstruction; tutorialInstruction = null; ++tutorialEpoch;
@@ -1512,10 +1571,13 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         public void OpenReference(string input)
         {
-            if (ReferenceOpen || !LocalUICommandsAllowed || (Flow?.IsTutorial != true && !TaskContentAvailable)) return;
+            if (TutorialNoticeActive || ReferenceOpen || !LocalUICommandsAllowed || (Flow?.IsTutorial != true && !TaskContentAvailable)) return;
+            ResearchExamineTarget.CancelPresses(this);
             long instruction = TutorialActionEpoch("reference"); string action = Logger?.NewActionId();
             if (Flow?.IsTutorial != true && referenceChoiceTask != Flow?.CurrentTask) ReferenceSection = "";
-            if (Flow?.IsTutorial == true && !ReferenceAvailable(ReferenceSection)) ReferenceSection = ResearchReferenceScheme.Active.First(ReferenceAvailable);
+            // An unavailable registry must open its error surface, not throw before the Reader exists.
+            if (Flow?.IsTutorial == true && !ReferenceAvailable(ReferenceSection)) ReferenceSection = ResearchReferenceScheme.Active.FirstOrDefault(ReferenceAvailable)
+                ?? ResearchReferenceScheme.Active.FirstOrDefault() ?? "user_manual";
             else if (Flow?.IsTutorial != true && !ReferenceAvailable(ReferenceSection)) ReferenceSection = "";
             ReferenceOpen = true; ReferenceMinimized = false; exposureSource = input;
             exposureSelectionKind = Flow?.IsTutorial == true ? "automatic_default" : "restore";
@@ -1523,12 +1585,14 @@ namespace VRMaintenanceResearch.ResearchFlow
             Log("REFERENCE_OPEN", "reference", "Opened", before: false,
                 after: new { reference_open = ReferenceOpen, reference_minimized = ReferenceMinimized, language = Language, reference_section = ReferenceSection, incoming_binding_pending = true },
                 source: actor, inputSource: input, actionId: action);
-            TutorialActionCommitted("reference", instruction, action, input, source: actor); Refresh();
+            if (ReferenceAvailable(ReferenceSection)) TutorialActionCommitted("reference", instruction, action, input, source: actor);
+            Refresh();
             if (view && view.IsReferenceActuallyVisible) OpenExposure(input);
         }
         public void CloseReference(string reason, string source, string input = "None")
         {
             if (!ReferenceOpen) return;
+            ResearchExamineTarget.CancelPresses(this);
             long instruction = TutorialActionEpoch("close");
             string actor = source == "User" && input == "None" && IsTechnical ? "Tester" : source;
             Log("REFERENCE_CLOSE", "reference", "Closed", before: new { reference_open = ReferenceOpen, reference_minimized = ReferenceMinimized },
@@ -1541,6 +1605,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         void SwitchReference(string section, string input)
         {
             if (!ReferenceOpen || ReferenceMinimized || section == ReferenceSection || !ReferenceAvailable(section)) return;
+            ResearchExamineTarget.CancelPresses(this);
             long instruction = TutorialActionEpoch("switch"); string action = Logger?.NewActionId();
             CloseExposure("tab_changed", "User", input); string previous = ReferenceSection; ReferenceSection = section;
             if (Flow?.IsTutorial != true) referenceChoiceTask = Flow?.CurrentTask;
@@ -1552,11 +1617,13 @@ namespace VRMaintenanceResearch.ResearchFlow
                 source: actor, inputSource: input, actionId: action);
             view?.RefreshReference();
             if (view && view.IsReferenceActuallyVisible) OpenExposure(input);
-            TutorialActionCommitted("switch", instruction, action, input, source: actor);
+            if (Record?.training_version != ResearchUIPolicy.TrainingTrainerV7 || TutorialArmedFact == "switch")
+                TutorialActionCommitted("switch", instruction, action, input, source: actor);
         }
         void MinimizeReference(string input)
         {
             if (!ReferenceOpen || ReferenceMinimized) return;
+            ResearchExamineTarget.CancelPresses(this);
             CloseExposure("minimized", "User", input); ReferenceMinimized = true;
             Log("PANEL_MINIMIZE", "reference", "Minimized", before: false,
                 after: new { reference_minimized = ReferenceMinimized, language = Language, reference_section = ReferenceSection, viewer_at_action = view?.ReferenceViewer?.Metadata },
@@ -1565,6 +1632,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         void RestoreReference(string input)
         {
             if (!ReferenceOpen || !ReferenceMinimized) return;
+            ResearchExamineTarget.CancelPresses(this);
             long instruction = TutorialActionEpoch("restore"); string action = Logger?.NewActionId();
             ReferenceMinimized = false; exposureSource = input; exposureSelectionKind = "restore";
             string actor = input == "None" && IsTechnical ? "Tester" : "User";
@@ -1605,17 +1673,114 @@ namespace VRMaintenanceResearch.ResearchFlow
                 source: source == "User" && input == "None" && IsTechnical ? "Tester" : source, inputSource: input, actionId: closingAction,
                 phaseOverride: exposurePhase, taskIdOverride: exposureTask, reason: reason);
         }
-        public bool ReferenceAvailable(string section) => ResearchReferenceScheme.Contains(section)
+        public bool ReferenceAvailable(string section) => !TutorialNoticeActive && ResearchReferenceScheme.Contains(section)
             && (Flow?.IsTutorial == true || TaskContentAvailable) && ReaderAuthorized
             && ResearchReferenceViewer.Available(section, ReaderResource)
             && (IsTechnical || Flow?.IsTutorial == true || CurrentPort && CurrentPort.IsReadyForStudy);
-        public string ReaderResource => ResearchReferenceViewer.ResourceFor(Flow?.IsTutorial == true
-                ? (Record?.training_version == ResearchUIPolicy.TrainingTrainerV5 ? "T5" : UsesDirectPartFeedback ? "T4" : Record?.training_version == ResearchUIPolicy.TrainingTrainerV3 ? "T3" :
-                    Record?.training_version == ResearchUIPolicy.TrainingTrainerV2 ? "T2" : "T") : UsesDirectPartFeedback && !string.IsNullOrEmpty(Flow?.CurrentTask) ? Flow.CurrentTask + (Record?.training_version == ResearchUIPolicy.TrainingTrainerV5 ? "5" : "4") : Flow?.CurrentTask, Language);
+        // Technical sessions only: a study record never resolves to the prototype, whatever the build.
+        bool DevReaderPrototypeActive => ResearchBuildFlavor.DevReaderPrototype && Record != null && Record.test_data && ResearchBuildFlavor.Allows(Record.group);
+        public string ReaderResource => TutorialNoticeActive ? null : !IntentionalExamineActive && Flow?.IsTutorial != true && Flow?.CurrentTask == "B" && DevReaderPrototypeActive
+            ? ResearchReferenceViewer.DevPrototypeFor(Language) : ResearchReferenceViewer.ResourceFor(
+                ResearchUIPolicy.ReaderTaskFor(Record?.training_version, Flow?.CurrentTask, Flow?.IsTutorial == true, Record?.layout_version), Language);
+        sealed class TutorialMediaRequest
+        {
+            public string fact, binding, action, input, completion;
+            public long epoch;
+            public bool requested;
+        }
+        TutorialMediaRequest tutorialMediaRequest;
+
+        public static bool TutorialMediaCommandMatches(string fact, string section, string command)
+        {
+            if (string.IsNullOrEmpty(command)) return false;
+            switch (section)
+            {
+                case "user_manual":
+                    return fact == "manual_contents" && command == "reference_media.contents"
+                        || fact == "manual_select" && command.StartsWith("reference_media.section.", StringComparison.Ordinal)
+                        || fact == "manual_next" && (command == "reference_next" || command == "reference_previous");
+                case "step_by_step":
+                    return fact == "steps_next" && command == "reference_next" || fact == "steps_back" && command == "reference_previous"
+                        || fact == "steps_contents" && command == "reference_media.contents"
+                        || fact == "steps_select" && command.StartsWith("reference_media.section.", StringComparison.Ordinal)
+                        || fact == "steps_all" && command == "reference_media.view_all"
+                        || fact == "steps_choose" && command.StartsWith("reference_media.step.", StringComparison.Ordinal);
+                case "illustrated":
+                    return fact == "image_zoom" && command == "reference_media.zoom_in"
+                        || fact == "image_pan" && (command == "reference_media.pan_left" || command == "reference_media.pan_right");
+                case "video":
+                    return fact == "video_play" && command == "reference_media.play" || fact == "video_pause" && command == "reference_media.pause"
+                        || fact == "video_seek" && (command == "reference_media.seek_forward" || command == "reference_media.seek_back")
+                        || fact == "video_chapter" && command.StartsWith("reference_media.section.", StringComparison.Ordinal);
+                default: return false;
+            }
+        }
+        public static string TutorialMediaCompletionFor(string fact)
+        {
+            switch (fact)
+            {
+                case "video_play": return "REFERENCE_VIDEO_PLAYING";
+                case "video_pause": return "REFERENCE_VIDEO_PAUSED";
+                case "video_seek": case "video_chapter": return "REFERENCE_VIDEO_SEEK_COMPLETED";
+                default: return null;
+            }
+        }
+        public bool TutorialReferenceCommand(string command, string input, Func<bool> execute)
+        {
+            tutorialMediaRequest = null;
+            string fact = TutorialArmedFact;
+            long epoch = string.IsNullOrEmpty(fact) ? 0 : TutorialActionEpoch(fact);
+            if (Record?.training_version != ResearchUIPolicy.TrainingTrainerV7 || epoch == 0
+                || !TutorialMediaCommandMatches(fact, ReferenceSection, command)) return execute();
+            var viewer = view?.ReferenceViewer;
+            if (!viewer || !viewer.IsReady || !ReferenceOpen || ReferenceMinimized) return execute();
+            int previousIndex = viewer.PageIndex;
+            var request = new TutorialMediaRequest { fact = fact, epoch = epoch, binding = viewer.BindingToken,
+                action = Logger?.NewActionId(), input = input, completion = TutorialMediaCompletionFor(fact) };
+            tutorialMediaRequest = request.completion == null ? null : request;
+            bool accepted = execute();
+            if (!accepted) { tutorialMediaRequest = null; return false; }
+            if (request.completion != null)
+            {
+                if (!request.requested) tutorialMediaRequest = null;
+                return true;
+            }
+            bool stateReached = fact == "manual_contents" || fact == "steps_contents" ? viewer.ContentsOpen
+                : fact == "steps_all" ? (bool?)JObject.FromObject(viewer.Metadata)["steps_view_all"] == true
+                : fact == "steps_next" ? viewer.PageIndex > previousIndex : fact == "steps_back" ? viewer.PageIndex < previousIndex : true;
+            if (stateReached && viewer.IsReady && request.binding == viewer.BindingToken && TutorialActionEpoch(fact) == epoch)
+                TutorialActionCommitted(fact, epoch, request.action, input, source: input == "None" && IsTechnical ? "Tester" : "User");
+            return true;
+        }
+        void TutorialMediaEvent(string eventName, string source, string input)
+        {
+            var request = tutorialMediaRequest;
+            if (request == null) return;
+            if (request.binding != view?.ReferenceViewer?.BindingToken || TutorialActionEpoch(request.fact) != request.epoch
+                || !LocalUICommandsAllowed || !ReferenceOpen || ReferenceMinimized || eventName == "REFERENCE_VIEWER_ERROR")
+            { tutorialMediaRequest = null; return; }
+            string expectedRequest = request.fact == "video_play" ? "REFERENCE_VIDEO_PLAY_REQUESTED"
+                : request.fact == "video_pause" ? "REFERENCE_VIDEO_PAUSE_REQUESTED" : "REFERENCE_VIDEO_SEEK_REQUESTED";
+            if ((eventName == expectedRequest || (request.fact == "video_play" && eventName == "REFERENCE_VIDEO_SEEK_REQUESTED"))
+                && input == request.input && (source == "User" || source == "Tester"))
+            {
+                if (request.requested) { tutorialMediaRequest = null; return; }
+                request.requested = true;
+            }
+            else if ((source == "User" || source == "Tester") && eventName.EndsWith("_REQUESTED", StringComparison.Ordinal))
+            { tutorialMediaRequest = null; return; }
+            if (eventName != request.completion || !request.requested) return;
+            tutorialMediaRequest = null;
+            TutorialActionCommitted(request.fact, request.epoch, request.action, request.input,
+                source: request.input == "None" && IsTechnical ? "Tester" : "User");
+        }
+
         public void ReferenceMediaEvent(string eventName, object after, string source = "User", string input = "None", string boundSection = null)
         {
-            Log(eventName, "reference." + (boundSection ?? ReferenceSection), "Recorded", after: after, source: source, inputSource: input);
+            bool recorded = Log(eventName, "reference." + (boundSection ?? ReferenceSection), "Recorded", after: after, source: source, inputSource: input);
             view?.NotifyReferenceVisibility("media_" + eventName);
+            if (recorded) TutorialMediaEvent(eventName, source, input);
+            else tutorialMediaRequest = null;
         }
         public string ReferenceText => !ReferenceAvailable(ReferenceSection) ? "" : Flow?.IsTutorial == true
             ? ResearchStrings.Get("reference.training." + ReferenceSection + (ReferenceSection == "step_by_step" && TutorialUsesHands ? ".hand" : ""), Language)
@@ -1638,13 +1803,13 @@ namespace VRMaintenanceResearch.ResearchFlow
         }
 
         bool closeGeometry;
+        readonly Dictionary<ResearchS1TaskBMechanics, ResearchS1FanReachProfile> fanReachProfiles = new Dictionary<ResearchS1TaskBMechanics, ResearchS1FanReachProfile>();
         readonly Dictionary<Transform, Vector3> landingRingScales = new Dictionary<Transform, Vector3>();
         readonly Dictionary<SphereCollider, float> landingRadii = new Dictionary<SphereCollider, float>();
 
         void ApplySessionGeometry(string layoutVersion)
         {
-            bool close = layoutVersion == ResearchUIPolicy.LayoutVersion;
-            if (close == closeGeometry) return;
+            bool close = ResearchUIPolicy.LowersFan(layoutVersion) || layoutVersion == ResearchUIPolicy.ReachLayoutVersion;
             var computers = FindObjectsByType<ResearchS1TaskAMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(a => a.controller == this).ToArray();
             var fans = FindObjectsByType<ResearchS1TaskBMechanics>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(b => b.controller == this).ToArray();
             var sceneTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.gameObject.scene == gameObject.scene).ToArray();
@@ -1658,6 +1823,13 @@ namespace VRMaintenanceResearch.ResearchFlow
             var roots = computerRoots.Concat(fans.Select(b => b.transform)).ToArray();
             if (roots.Any(root => root.GetComponentsInChildren<Oculus.Interaction.Grabbable>(true).Any(g => g.SelectingPointsCount > 0)))
                 throw new InvalidOperationException("Release the workpiece before changing the session layout.");
+            foreach (var fan in fans)
+            {
+                if (!fanReachProfiles.TryGetValue(fan, out var profile))
+                    fanReachProfiles.Add(fan, profile = new ResearchS1FanReachProfile(fan));
+                profile.SetLowered(ResearchUIPolicy.LowersFan(layoutVersion));
+            }
+            if (close == closeGeometry) return;
             float direction = close ? 1 : -1;
             foreach (var root in computerRoots) root.position += Vector3.forward * (.20f * direction);
             if (wristStrap) wristStrap.position += Vector3.forward * (.20f * direction);
@@ -1897,7 +2069,8 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (view) view.ReferenceVisibilityChanged -= ReferenceVisibilityChanged;
             CloseReference("runtime_stopped", "System"); BlockInteractions("runtime_stopped");
             foreach (var pair in objectListeners) if (pair.Key && pair.Key.grabbable) pair.Key.grabbable.WhenPointerEventRaised -= pair.Value;
-            foreach (var pair in portListeners) if (pair.Key) pair.Key.Behavior -= pair.Value;
+            foreach (var pair in portListeners)
+                if (pair.Key) { pair.Key.Behavior -= pair.Value; pair.Key.Observation -= pair.Value; }
             foreach (var guard in guards) if (guard) guard.StateChanged -= TutorialInputChanged;
             GetComponent<ResearchMovementSampler>()?.FlushAndStop("runtime_stopped");
             if (Logger != null) { Logger.WriteFailed -= LoggerFailed; Logger.Dispose(); }

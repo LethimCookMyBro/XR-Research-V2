@@ -18,12 +18,57 @@ namespace VRMaintenanceResearch.ResearchFlow
         {
             grab = value; plug.Initialize(value);
             plug.PoseAllowed = pose => owner.AllowsMotion(transform, pose);
+            plug.SlideFree = pose => owner.FreeMove(transform, pose, out _);
         }
+        // S1_LAYOUT_CABLE_TRAY_20261110: both ends of a task cable are loose plugs. A head let go away from a port goes to the
+        // tray beside the case. As a free body it hung inside the case, dropped behind it or stopped in mid-air at the cable limit.
+        const float ReturnMetresPerSecond = 1.5f, ReturnDegreesPerSecond = 720;
+        bool Parks => cable && cable.ParkOf(transform) != null;
+
+        // Where this loose head belongs now. While the hand holds the other end of a cable that is loose at both ends, the
+        // whole folded cable comes along: this end keeps its folded place beside the held one. With the other end in a port it lies in the tray corner on that port's side of the motherboard tray,
+        // lead toward the case. Otherwise it lies folded in its start slot. A slot the lead cannot reach is skipped.
+        bool TryParkPose(out Pose pose, out bool carried)
+        {
+            var park = cable.ParkOf(transform); var slots = park.slots;
+            var end = System.Array.Find(owner.wiring.ends, e => e.plug == plug || e.sourcePlug == plug);
+            var other = end.plug == plug ? end.sourcePlug : end.plug;
+            carried = other.IsHeld && !other.Socket;
+            if (carried)
+            {
+                pose = cable.FoldedPose(transform);
+                return true;
+            }
+            if (other.IsHeld) { pose = default; return false; } // the other end is being pulled out of a port; wait where it is
+            bool rear = cable.transform.InverseTransformPoint(other.transform.position).z > cable.passPlane;
+            var order = !other.Socket ? new[] { 0 } : (park.waitSlot > 0 ? park.waitSlot == 2 : rear) ? new[] { 2, 1, 0 } : new[] { 1, 2, 0 };
+            foreach (int i in order)
+            {
+                pose = cable.SlotPose(slots[i]);
+                if ((transform.position == pose.position && transform.rotation == pose.rotation) ||
+                    owner.wiring.Allows(transform, Matrix4x4.TRS(pose.position, pose.rotation, transform.lossyScale))) return true;
+            }
+            pose = default;
+            return false;
+        }
+
         private void Start()
         {
             gameObject.AddComponent<ResearchS1FreeBody>().Configure(plug.body, plug.grabbable,
-                () => plug.Socket != null, () => owner.port && owner.port.InteractionAllowed,
+                () => plug.Socket != null || Parks, () => owner.port && owner.port.InteractionAllowed,
                 pose => owner.wiring.Allows(transform, pose));
+        }
+
+        private void LateUpdate()
+        {
+            // Stateless: the socket lets go a frame or two after the hand does, so the head converges whenever it is loose and free.
+            if (!Parks || plug.IsHeld || plug.Socket || !TryParkPose(out var park, out bool carried)) return;
+            if (transform.position == park.position && transform.rotation == park.rotation) return;
+            var position = carried ? park.position : Vector3.MoveTowards(transform.position, park.position, ReturnMetresPerSecond * Time.deltaTime);
+            var rotation = carried ? park.rotation : Quaternion.RotateTowards(transform.rotation, park.rotation, ReturnDegreesPerSecond * Time.deltaTime);
+            if (position == park.position && Quaternion.Angle(rotation, park.rotation) < .01f) rotation = park.rotation;
+            transform.SetPositionAndRotation(position, rotation);
+            plug.body.position = position; plug.body.rotation = rotation;
         }
 
         public void BeginTransform()

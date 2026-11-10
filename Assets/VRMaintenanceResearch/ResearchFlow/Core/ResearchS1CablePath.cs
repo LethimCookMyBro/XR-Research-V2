@@ -42,8 +42,10 @@ namespace VRMaintenanceResearch.ResearchFlow
             return null;
         }
         public static Vector3[] SolveGuided(Vector3 a, Vector3 b, Vector3 outwardA, Vector3 outwardB,
-            double length, Vector3[] guides, Vector3 slackDirection, double minimumRadius)
+            double length, Vector3[] guides, Vector3 slackDirection, double minimumRadius, float[] slackWeights = null)
         {
+            // slackWeights: per segment (guides + 1), how much of the spare length it takes; null = every segment alike.
+            if (slackWeights != null && (slackWeights.Length != (guides?.Length ?? 0) + 1 || !Array.Exists(slackWeights, w => w > 0))) return null;
             if (!Valid(a) || !Valid(b) || !Valid(outwardA) || !Valid(outwardB) || !Valid(slackDirection) ||
                 guides == null || guides.Length < 1 || guides.Length > 32 ||
                 double.IsNaN(length) || double.IsInfinity(length) || length <= 0 ||
@@ -70,7 +72,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 for (int i = 1; i < knots.Length - 1; i++)
                     tangents[i] = (knots[i + 1] - knots[i - 1]).normalized * tension *
                         Math.Min((float)length / (16 * tension), Math.Min(Vector3.Distance(knots[i - 1], knots[i]), Vector3.Distance(knots[i], knots[i + 1])));
-                GuidedCurve(knots, tangents, slackDirection.normalized, 0, path);
+                GuidedCurve(knots, tangents, slackDirection.normalized, 0, path, slackWeights);
                 double previous = Length(path) - length;
                 if (Math.Abs(previous) <= 1e-5 && GuidedRadiusValid(path, minimumRadius)) return path;
                 double low = 0, high = 0;
@@ -78,7 +80,7 @@ namespace VRMaintenanceResearch.ResearchFlow
                 for (int sample = 1; sample <= 64; sample++)
                 {
                     high = length * 2 * sample / 64;
-                    GuidedCurve(knots, tangents, slackDirection.normalized, (float)high, path);
+                    GuidedCurve(knots, tangents, slackDirection.normalized, (float)high, path, slackWeights);
                     double current = Length(path) - length;
                     if (previous * current <= 0) { bracketed = true; break; }
                     previous = current; low = high;
@@ -87,29 +89,30 @@ namespace VRMaintenanceResearch.ResearchFlow
                 for (int iteration = 0; iteration < 24; iteration++)
                 {
                     double middle = (low + high) / 2;
-                    GuidedCurve(knots, tangents, slackDirection.normalized, (float)middle, path);
+                    GuidedCurve(knots, tangents, slackDirection.normalized, (float)middle, path, slackWeights);
                     double value = Length(path) - length;
                     if (previous * value <= 0) high = middle;
                     else { low = middle; previous = value; }
                 }
-                GuidedCurve(knots, tangents, slackDirection.normalized, (float)((low + high) / 2), path);
+                GuidedCurve(knots, tangents, slackDirection.normalized, (float)((low + high) / 2), path, slackWeights);
                 if (Math.Abs(Length(path) - length) <= 1e-4 && GuidedRadiusValid(path, minimumRadius)) return path;
             }
             return null;
         }
 
-        static void GuidedCurve(Vector3[] knots, Vector3[] tangents, Vector3 side, float slack, Vector3[] path)
+        static void GuidedCurve(Vector3[] knots, Vector3[] tangents, Vector3 side, float slack, Vector3[] path, float[] weights)
         {
             int index = 0;
             for (int segment = 0; segment < knots.Length - 1; segment++)
             {
+                float bump = slack * (weights == null ? 1 : weights[segment]);
                 Vector3 p0 = knots[segment], p1 = p0 + tangents[segment];
                 Vector3 p3 = knots[segment + 1], p2 = p3 - tangents[segment + 1];
                 for (int sample = 0; sample < 64; sample++)
                 {
                     float t = sample / 64f, u = 1 - t;
                     path[index++] = p0 * (u * u * u) + p1 * (3 * u * u * t) +
-                        p2 * (3 * u * t * t) + p3 * (t * t * t) + side * (slack * 16 * t * t * u * u);
+                        p2 * (3 * u * t * t) + p3 * (t * t * t) + side * (bump * 16 * t * t * u * u);
                 }
             }
             path[index] = knots[knots.Length - 1];

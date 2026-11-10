@@ -12,7 +12,7 @@ git remote get-url origin
 
 - Read `OWNER_UI_DIRECTION_20261028.md` and root `design_rule.md` before UI work. The 28 Oct owner direction supersedes the earlier no-drag amendment.
 - Read `OWNER_TASK_EASE_AMENDMENT_20261029.md` before changing Task A/B mechanics, thread angles, sounds or Reader content: shorter threads, a 3 deg tight tolerance, the Inspect fan sound and the 29 Oct content changes.
-- New sessions use `S1_TRAINING_TRAINER_V5_20261030` with A5/B5/T5 Reader packages. Existing V4/T3/T2/legacy sessions retain their original routes; do not relabel recorded sessions.
+- Current source uses `S1_TRAINING_TRAINER_V6_20261031` with A6/B6/T6 Reader packages. Read `OWNER_USABILITY_RECOVERY_20261031.md` for the new source, build and untested hardware checks. Existing V5/V4/T3/T2/legacy sessions retain their original routes; do not relabel recorded sessions.
 - `S1_LAYOUT_REACH_20261029` is a new-session geometry version. Do not apply it retrospectively to an older recorded session.
 - Reader generation lives in `Tools/s1_reader_v2/`. Training packages T2/T3 retain their separate versions; English remains existing Training support, not an English experimental A/B group. Source-version hashing normalizes text newlines and generated package JSON is LF so recipient checkout hashes match.
 - The Japanese source-font dependency is intentionally not redistributed as a loose font. Follow `Assets/VRMaintenanceResearch/ResearchFlow/UI/Fonts/SOURCE.md` for the pinned download, SHA256 and existing `.meta` GUID before opening Unity.

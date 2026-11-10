@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
@@ -31,6 +32,10 @@ namespace VRMaintenanceResearch.ResearchFlow
         public ExperimentInputMode? input_mode;
         public TaskOrder? task_order;
         public string task_a_layout;
+        public long? record_revision;
+        public ResearchFlowState? expected_state;
+        public bool? expected_paused;
+        public string run_id, issued_utc;
     }
 
     // Local provenance assertion, not an approval authority: no default grants and no generated approvals.
@@ -118,12 +123,25 @@ namespace VRMaintenanceResearch.ResearchFlow
             return "ProductionApprovedExternalAssertions";
         }
 
-        public static void DemandRequest(ResearchOperatorCommand request, ParticipantRecord record)
+        public static void DemandRequest(ResearchOperatorCommand request, ParticipantRecord record, ResearchFlowState? currentState = null, bool? currentPaused = null)
         {
-            if (request == null || request.schema != "research.operator-command.1" || !Guid.TryParseExact(request.request_id, "N", out _))
+            if (request == null || (request.schema != "research.operator-command.1" && request.schema != "research.operator-command.2") || !Guid.TryParseExact(request.request_id, "N", out _))
                 throw new InvalidOperationException("A versioned local command with a UUID request ID is required.");
             if (record == null || request.participant_id != record.participant_id || request.session_id != (record.session_id ?? ""))
                 throw new InvalidOperationException("Local command participant/session identity does not match the current record.");
+            if (request.schema == "research.operator-command.2")
+            {
+                if (!request.record_revision.HasValue || request.record_revision != record.revision
+                    || request.run_id == null || request.run_id != (record.run_id ?? "")
+                    || !request.expected_state.HasValue || !Enum.IsDefined(typeof(ResearchFlowState), request.expected_state.Value)
+                    || request.expected_state != (currentState ?? record.flow_state)
+                    || !request.expected_paused.HasValue || request.expected_paused != (currentPaused ?? record.paused))
+                    throw new InvalidOperationException("Local command revision/run/state binding is stale or incomplete.");
+                if (string.IsNullOrEmpty(request.issued_utc) || !request.issued_utc.EndsWith("Z", StringComparison.Ordinal)
+                    || !DateTimeOffset.TryParse(request.issued_utc, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var issued)
+                    || issued > DateTimeOffset.UtcNow.AddSeconds(5) || issued < DateTimeOffset.UtcNow.AddMinutes(-5))
+                    throw new InvalidOperationException("Local command issue time is missing, invalid or expired.");
+            }
             if (request.termination_reason != null && !ValidTerminationReason(request.termination_reason))
                 throw new InvalidOperationException("Local command termination reason is unsupported.");
             if ((request.command == "abort" || request.command == "invalidate") && request.termination_reason == "pass")

@@ -30,6 +30,7 @@ namespace VRMaintenanceResearch.ResearchFlow
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
+            if (!ResearchBuildFlavor.DiagnosticsEnabled) return;
             if (!Application.identifier.EndsWith(".technical", StringComparison.Ordinal) || Application.platform != RuntimePlatform.Android) return;
             var owner = FindFirstObjectByType<ResearchSessionFlowController>();
             if (!owner) return;
@@ -55,7 +56,7 @@ namespace VRMaintenanceResearch.ResearchFlow
 
         void Update()
         {
-            if (busy || Time.unscaledTime < nextPoll) return;
+            if (!ResearchBuildFlavor.DiagnosticsEnabled || busy || Time.unscaledTime < nextPoll) return;
             nextPoll = Time.unscaledTime + .5f;
             string path = Path.Combine(Application.persistentDataPath, CommandFile);
             if (!File.Exists(path)) return;

@@ -97,7 +97,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 check(!ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position, Quaternion.Euler(0, 90, 0), Vector3.one)), "Rotating held part crossed another part.");
                 obstacle.SetActive(false);
                 check(ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position, Quaternion.Euler(0, 90, 0), Vector3.one)), "Unobstructed yaw denied.");
-                check(!ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position + Vector3.right, Quaternion.identity, Vector3.one)), "Tracking-size jump bypassed bounded sweep.");
+                check(!ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position + Vector3.right * 3, Quaternion.identity, Vector3.one)), "Tracking-size jump bypassed bounded sweep.");
                 check(!ResearchS1HeldCollision.Allows(root.transform, Matrix4x4.TRS(root.transform.position, Quaternion.identity, Vector3.one * 2)), "Scale mutation accepted.");
                 Vector3 direction;
                 check(!ResearchS1ServiceYaw.HandDirection(Vector3.zero, Vector3.up, out direction), "Vertical hand motion fabricated yaw.");

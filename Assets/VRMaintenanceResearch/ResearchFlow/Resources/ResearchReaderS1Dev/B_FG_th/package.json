@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "content_id": "s1.reader.dev.B_front_guard.th",
+  "version": "proto-fg-out_v3.f5cabfaec9c62ad8",
+  "approval": "S1_DEV_PROTOTYPE_NOT_STUDY",
+  "source_pdf": "S1_TaskB_FrontGuard_Prototype_v3_TH.pdf",
+  "source_pdf_resource": "ResearchReaderS1Dev/B_FG_th/source_pdf",
+  "source_sha256": "9dae0dfbcceb462ddd749f1d56ee97553b8134ba6149e25faa3b15f2c48dc3bc",
+  "pages": [
+    {
+      "page": 1,
+      "width": 1273,
+      "height": 1800,
+      "resource": "ResearchReaderS1Dev/B_FG_th/pages/p01",
+      "sha256": "4e710729a8062d87c35b06125c405bb130f2397b7a081463c99050134c6c3fc4"
+    }
+  ],
+  "steps": [
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหน้า: ตรวจ</color></size>\n<size=36><b>1  ดูขอบบน: สามเหลี่ยมบนตะแกรงหน้าชี้ตรงแท็บบนตะแกรงหลังหรือไม่\n2  ดูคลิปที่ขอบล่างว่าปิดอยู่หรือไม่\n3  ดูขอบตะแกรงรอบวงว่าแนบกับตะแกรงหลัง</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> ปกติ: สามเหลี่ยมชี้ตรงแท็บ คลิปปิด ขอบแนบรอบวง</color></size>\n<size=32><color=#B3261E><b>×</b> ใส่อยู่ไม่ได้แปลว่าล็อกแล้ว: ถ้าสามเหลี่ยมเยื้องหรือคลิปเปิด ตะแกรงยังไม่ล็อก</color></size>\n\n<size=26><color=#4A5A6E>→ ถ้าจะเปิดเข้าไปดูใบพัด หรือพบว่าผิดปกติ ไปที่ “ตะแกรงหน้า: ถอด”</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหน้า: ถอด</color></size>\n<size=36><b>1  กด Trigger หรือ Grip ที่คลิปหนึ่งครั้ง ให้คลิปเปิด\n2  กด Grip ค้างที่ขอบ หมุนทวนเข็มนาฬิกา (มองจากหน้าพัดลม) จนหมุนต่อไม่ได้\n3  ดึงตรงเข้าหาตัว แล้ววางบนโต๊ะ</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> ระหว่างหมุน สามเหลี่ยมเลื่อนออกจากแท็บ จากนั้นตะแกรงหน้าหลุดออก มองเห็นใบพัดและฝาล็อกใบพัด</color></size>\n\n<size=26><color=#4A5A6E>→ การถอดชิ้นส่วนเป็นการเปิดทางให้ตรวจด้านใน หากพบชิ้นส่วนที่หลวมหรือใส่ไม่เข้าที่ ต้องแก้ไขก่อนประกอบกลับ</color></size>"
+    },
+    {
+      "text_th": "<size=24><color=#5B6B7F>ตะแกรงหน้า: ใส่และล็อก</color></size>\n<size=36><b>1  กด Grip ค้างที่ขอบ ดันตะแกรงเข้าหาตะแกรงหลังจนขอบแนบ\n2  หมุนตามเข็มนาฬิกา (มองจากหน้าพัดลม) จนหมุนต่อไม่ได้ ให้สามเหลี่ยมชี้ตรงแท็บ\n3  ปล่อยมือ แล้วกด Trigger หรือ Grip ที่คลิปหนึ่งครั้งให้คลิปปิด</b></size>\n\n<size=32><color=#2E7D32><b>✓</b> สามเหลี่ยมชี้ตรงแท็บ คลิปปิด ขอบแนบรอบวง</color></size>\n\n<size=26><color=#4A5A6E>→ ใส่ตะแกรงครบแล้วจึงกด “ตรวจผลงาน”</color></size>"
+    }
+  ],
+  "images": [
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_th/images/i01",
+      "sha256": "0dc1aac0cc25fd6adb89b3b4609f26321e15e171ab349fdf4e6b5daec5fe7a60",
+      "caption_th": "ตะแกรงหน้า: จุดจับ คลิป และเครื่องหมาย"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_th/images/i02",
+      "sha256": "ae6428d9885442cf98ef72d61c06e48114f952deaa7897202622aee3671d545d",
+      "caption_th": "ปลดล็อก: เปิดคลิป หมุนทวนเข็มจนสุด แล้วดึงเข้าหาตัว"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_th/images/i03",
+      "sha256": "43ce6c07e6412a37fe769266e7af7d687cad8636505946774fb86b6830a1e9a6",
+      "caption_th": "ปกติกับผิดปกติ"
+    },
+    {
+      "resource": "ResearchReaderS1Dev/B_FG_th/images/i04",
+      "sha256": "aa39e17af7d2b6badddf42c66f9bf46b7a41001412c0b8c74897e012b692bd6c",
+      "caption_th": "ใส่: ดันให้แนบ หมุนตามเข็มจนสามเหลี่ยมชี้ตรงแท็บ แล้วปิดคลิป"
+    }
+  ],
+  "video": {
+    "streaming_path": "ResearchReaderS1Dev/B_FG_th.mp4",
+    "sha256": "079865b9c5dd76cc502fad3b1efad804c72ff01159433403ebc73f28527751c5",
+    "duration_seconds": 27.8,
+    "audio": "narration",
+    "chapters": [
+      {
+        "stage": "check",
+        "start_seconds": 0.0,
+        "end_seconds": 10.15
+      },
+      {
+        "stage": "remove",
+        "start_seconds": 10.15,
+        "end_seconds": 19.4
+      },
+      {
+        "stage": "refit",
+        "start_seconds": 19.4,
+        "end_seconds": 27.8
+      }
+    ]
+  },
+  "contents": [
+    {
+      "id": "m1",
+      "format": "pdf",
+      "title_th": "ตะแกรงหน้าและคลิป",
+      "index": 1,
+      "offset": 0.0411
+    },
+    {
+      "id": "m2",
+      "format": "pdf",
+      "title_th": "ส่วนที่ต้องรู้จัก",
+      "index": 1,
+      "offset": 0.1421
+    },
+    {
+      "id": "m3",
+      "format": "pdf",
+      "title_th": "สภาพปกติ / สภาพผิดปกติที่อาจพบ",
+      "index": 1,
+      "offset": 0.4297
+    },
+    {
+      "id": "m4",
+      "format": "pdf",
+      "title_th": "ปุ่มที่ใช้",
+      "index": 1,
+      "offset": 0.5641
+    },
+    {
+      "id": "m5",
+      "format": "pdf",
+      "title_th": "การทำงานของตัวล็อก (มองจากหน้าพัดลม)",
+      "index": 1,
+      "offset": 0.6575
+    },
+    {
+      "id": "m6",
+      "format": "pdf",
+      "title_th": "ข้อควรระวัง",
+      "index": 1,
+      "offset": 0.8155
+    },
+    {
+      "id": "check",
+      "format": "steps",
+      "title_th": "ตะแกรงหน้า: ตรวจ",
+      "index": 1
+    },
+    {
+      "id": "remove",
+      "format": "steps",
+      "title_th": "ตะแกรงหน้า: ถอด",
+      "index": 2
+    },
+    {
+      "id": "refit",
+      "format": "steps",
+      "title_th": "ตะแกรงหน้า: ใส่และล็อก",
+      "index": 3
+    },
+    {
+      "id": "where",
+      "format": "images",
+      "title_th": "ตะแกรงหน้า: ส่วนที่ต้องรู้จัก",
+      "index": 1
+    },
+    {
+      "id": "unlock",
+      "format": "images",
+      "title_th": "ตะแกรงหน้า: ถอด (ปลดล็อก)",
+      "index": 2
+    },
+    {
+      "id": "compare",
+      "format": "images",
+      "title_th": "ตะแกรงหน้า: ปกติกับผิดปกติ",
+      "index": 3
+    },
+    {
+      "id": "lock",
+      "format": "images",
+      "title_th": "ตะแกรงหน้า: ใส่และล็อก",
+      "index": 4
+    },
+    {
+      "id": "v_check",
+      "format": "video",
+      "title_th": "ตะแกรงหน้า: ตรวจ",
+      "start_seconds": 0.0
+    },
+    {
+      "id": "v_remove",
+      "format": "video",
+      "title_th": "ตะแกรงหน้า: ถอด",
+      "start_seconds": 10.15
+    },
+    {
+      "id": "v_refit",
+      "format": "video",
+      "title_th": "ตะแกรงหน้า: ใส่และล็อก",
+      "start_seconds": 19.4
+    }
+  ],
+  "provenance": {
+    "source": "D:\\VR_TMU\\S1_Delivery_Work_20261028\\proto_front_guard\\out_v3\\th",
+    "take": "take_20261103_170737",
+    "japanese": null
+  }
+}

@@ -36,6 +36,16 @@ namespace VRMaintenanceResearch.ResearchFlow
             return ResearchS1HeldCollision.Allows(moving, pose) ? PartBlockReason.None : PartBlockReason.Contact;
         }
 
+        public Matrix4x4 FreeMove(Transform moving, Matrix4x4 desired, out PartBlockReason reason)
+        {
+            reason = MotionBlockReason(moving, desired);
+            if (reason == PartBlockReason.None) return desired;
+            if (reason != PartBlockReason.Contact) return moving.localToWorldMatrix;
+            return ResearchS1HeldCollision.Slide(moving, desired, AllowsMotionTo(moving));
+        }
+
+        System.Func<Matrix4x4, bool> AllowsMotionTo(Transform moving) => pose => AllowsMotion(moving, pose);
+
         private void Start() => Bind();
 
         public void Bind()
@@ -45,6 +55,11 @@ namespace VRMaintenanceResearch.ResearchFlow
             port.BindFeedback(value => "inspect.s1.A." + ResearchS1TaskEvaluator.Evaluate((S1TaskAState)value).Category);
             port.BindExamineInfo((target, language) => ResearchS1TaskACatalog.Ids.Contains(target) ? ResearchS1TaskACatalog.Label(target)
                 : target == "A.module" ? ResearchStrings.Get("examine.info.A.module", language) : null);
+            port.BindExamineDetail(target => controller && controller.IntentionalExamineActive && ResearchS1TaskACatalog.Ids.Contains(target)
+                ? new System.Collections.Generic.Dictionary<string, object> {
+                    ["examine_version"] = controller.ExamineVersion, ["observation_id"] = "part_label." + target,
+                    ["access_state"] = "accessible", ["shown_text"] = ResearchS1TaskACatalog.Label(target),
+                    ["language"] = controller.Language, ["selection_source"] = "physical_part_ray" } : null);
         }
 
         // Mirrors each option category in place (ResearchS1TaskACatalog.LayoutIndex) before any part has been touched.
@@ -68,7 +83,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             if (!port || port.taskId != "A" || !controller || !servicePivot || (layout != "P" && layout != "Q") ||
                 fixedAssembly == null || fixedPositions == null || fixedRotations == null || fixedAssembly.Length != 5 ||
                 fixedPositions.Length != 5 || fixedRotations.Length != 5 || ramSlots == null || ramSlots.Length != 4 ||
-                gpuSlots == null || gpuSlots.Length != 2 || inputs == null || inputs.Length != 25 ||
+                gpuSlots == null || gpuSlots.Length != 2 || inputs == null || inputs.Length != 28 ||
                 traySeats == null || traySeats.Length != 2 || gpuScrewSeats == null || gpuScrewSeats.Length != 2 ||
                 sleds == null || sleds.Length != 3 || gpuScrews == null || gpuScrews.Length != 2) return false;
             string[] names = { "CASE_ATX_MID", "MB_B760_DDR4", "CPU_LGA1700", "COOLER_LGA1700_STOCK", "PSU_ATX_MX650" };
@@ -174,8 +189,8 @@ namespace VRMaintenanceResearch.ResearchFlow
                 .Concat(gpuScrews.Where(f => play && f.IsHeld || f.State == S1ThreadState.EngagedLoose).Select(f => new S1PendingAttempt { partId = f.input.stableId,
                     targetId = f.SocketIndex < 0 ? null : gpuSlots[f.SocketIndex].seatName, held = play && f.IsHeld,
                     placement = f.State == S1ThreadState.Tight ? S1Placement.Seated : f.State == S1ThreadState.EngagedLoose ? S1Placement.Partial : S1Placement.NotInstalled }))
-                .Concat(wiring.ends.Where(e => play && e.plug.IsHeld || e.plug.Socket && Placement(e.plug) == S1Placement.Partial).Select(e => new S1PendingAttempt { partId = e.plug.stableId,
-                    targetId = (e.plug.Socket ? e.plug.Socket : e.plug.HeldSocket)?.seatName, held = play && e.plug.IsHeld, placement = Placement(e.plug) }))
+                .Concat(wiring.ends.SelectMany(e => new[] { e.plug, e.sourcePlug }).Where(p => play && p.IsHeld || p.Socket && Placement(p) == S1Placement.Partial).Select(p => new S1PendingAttempt { partId = p.stableId,
+                    targetId = (p.Socket ? p.Socket : p.HeldSocket)?.seatName, held = play && p.IsHeld, placement = Placement(p) }))
                 .ToArray();
             wiring.Capture(state);
             return state;

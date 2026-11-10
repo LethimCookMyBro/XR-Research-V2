@@ -82,7 +82,11 @@ namespace VRMaintenanceResearch.AssetLibraryQA
                         return pose;
                     }
                 }
-            if (acceptsPose != null && !acceptsPose(freeRoot)) return plug.transform.localToWorldMatrix;
+            if (acceptsPose != null && !acceptsPose(freeRoot))
+            {
+                if (plug.SlideFree == null || current) return plug.transform.localToWorldMatrix;
+                return plug.SlideFree(freeRoot);
+            }
             if (current)
             {
                 current.Exit = SocketRules.Measure(current.seat.localToWorldMatrix, freeRoot * plug.MateInRoot(current.Mate));

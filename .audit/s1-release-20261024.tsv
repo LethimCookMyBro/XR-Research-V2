@@ -1,0 +1,4 @@
+ts	phase	decision	why	evidence	result
+2026-10-24T01:16:03.146845+00:00	start	Continue six-file handoff without rewriting	Current six hashes match handoff	D:\VR_TMU\transaction-verification-external\s1-release-20261024\drift.json	verified
+2026-10-24T01:42:18.507050+00:00	P0	Require latest InputSystem pose for readiness and fit Reader header	Actual inactive SDK stale pose and TH/JA header bounds failed	D:\VR_TMU\transaction-verification-external\s1-release-20261024\tracking-inactive.json; reader-production/reader-production.json	47 pose/UI checks and Reader production pass; native reproduction pending
+2026-10-24T01:48:55.490801+00:00	tracking-correction	Restore four files to pre-hypothesis bytes, retain Reader fix	Player before-render remained tracked while Editor buffer read zero; baseline was invalid	D:\VR_TMU\transaction-verification-external\s1-release-20261024\before-render-inactive.json	Earlier tracking-fix claim superseded; NOT_TESTED

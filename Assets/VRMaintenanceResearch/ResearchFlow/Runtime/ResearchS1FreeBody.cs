@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Oculus.Interaction;
 using UnityEngine;
 
@@ -53,6 +53,7 @@ namespace VRMaintenanceResearch.ResearchFlow
             IgnorePermanentChildContacts();
             SavePhysicsPose();
             Refresh();
+            ResearchPartMotionObserver.Attach(this, body, grab);
         }
 
         void IgnorePermanentChildContacts()

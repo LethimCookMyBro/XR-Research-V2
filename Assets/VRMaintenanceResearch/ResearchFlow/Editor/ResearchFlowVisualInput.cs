@@ -40,6 +40,14 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             if (!Running) throw new InvalidOperationException("Start the visual fixture first.");
             headMotion = new Pose(trackingOffset, Quaternion.Euler(0, yawDegrees, 0)); nextTick = 0; Tick();
         }
+        // Simulated step: moves the eye to a world XZ point in tracking space (height and facing unchanged); no rig or world transform moves.
+        public static void WalkHeadTo(Vector3 worldPoint)
+        {
+            if (!Running) throw new InvalidOperationException("Start the visual fixture first.");
+            var local = trackingSpace.InverseTransformPoint(worldPoint);
+            headMotion = new Pose(new Vector3(local.x - headLocalPosition.x, headMotion.position.y, local.z - headLocalPosition.z), headMotion.rotation);
+            nextTick = 0; Tick();
+        }
         public static void SetHeadFacing(Vector3 worldTarget)
         {
             if (!Running) throw new InvalidOperationException("Start the visual fixture first.");

@@ -188,16 +188,21 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var acceptedPart = new Pose(sled.part.transform.position, sled.part.transform.rotation);
             var acceptedController = ResearchFlowVisualInput.ControllerWorldPose(side);
             step = "unsupported-jump:" + storage; Record("before");
-            Send(new Pose(acceptedController.position + Vector3.up, acceptedController.rotation));
-            yield return AwaitObservation(() => SdkSettled() && SamePose(sled.input.transform, acceptedPart, .0005f, .1f), "unsupported one-metre S01 jump rejected", sled.input);
+            // Held collision sweeps ordinary carries up to 2.048 m (31 Oct usability recovery); a tracking jump beyond that is refused.
+            Send(new Pose(acceptedController.position + Vector3.up * 3, acceptedController.rotation));
+            yield return AwaitObservation(() => SdkSettled() && SamePose(sled.input.transform, acceptedPart, .0005f, .1f), "unsupported three-metre S01 jump rejected", sled.input);
             Require(sled.Tray < 0 && sled.Placement == S1Placement.NotInstalled, "Rejected S01 jump changed installation state.");
             Record("jump-rejection-observed");
             Send(acceptedController);
             yield return AwaitObservation(() => SdkSettled() && SamePose(sled.input.transform, acceptedPart, .0005f, .1f), "controller returned to accepted held input", sled.input);
-            yield return Translate(sled.input, Vector3.down * .02f);
+            // Released parts are free bodies (V5): lower to 2 mm above the rest pose and let go; it settles near, not exactly on, that pose.
+            yield return Translate(sled.input, Vector3.down * .018f);
             yield return Release();
-            Require(SamePose(sled.input.transform, originalSsd, .00075f, .25f) && sled.Tray < 0 && sled.Placement == S1Placement.NotInstalled,
-                storage + " did not retain its original loose pose after actual input return and release.");
+            double settle = EditorApplication.timeSinceStartup + 1;
+            while (EditorApplication.timeSinceStartup < settle) yield return null;
+            Record("released-loose-offset-mm:" + (Vector3.Distance(sled.input.transform.position, originalSsd.position) * 1000).ToString("0.0"));
+            Require(sled.Tray < 0 && sled.Placement == S1Placement.NotInstalled,
+                storage + " did not stay loose and uninstalled after actual input return and release.");
             Phase(storage + "_jump_rejected_return_and_release_observed");
             var m01 = task.ram.Single(p => p.stableId == "M01");
             var a2 = task.ramSlots.Single(s => s.seatName == "DIMM_A2");
@@ -314,6 +319,8 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             yield return Acquire(screw.input, true);
             step = "G01-bracket-entry";
             var approach = SocketRules.RootPose(seat, screw.travelMm + 4, 0, mateInRoot);
+            // A screw resting on its tray (free body since V5) is lifted before it is turned, or the turn presses it into the tray.
+            yield return MoveRoot(screw.input, new Pose(screw.transform.position + Vector3.up * .05f, screw.transform.rotation));
             yield return MoveRoot(screw.input, new Pose(screw.transform.position, approach.rotation));
             yield return MoveRoot(screw.input, new Pose(approach.GetColumn(3), approach.rotation));
             var engaged = SocketRules.RootPose(seat, screw.travelMm, 0, mateInRoot);
@@ -339,41 +346,63 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             {
                 var end = task.wiring.ends.Single(e => e.plug.stableId == connection.id);
                 var target = task.wiring.targets.Single(t => t.part == connection.part && t.connector == connection.connector);
-                var input = Input(end.plug);
-                Require(!end.plug.Socket && end.sourcePartId == connection.sourcePartId && end.sourceConnector == connection.sourceConnector,
-                    "The bound cable end must initially be loose with its exact source provenance.");
-                yield return Acquire(input, true);
-                var latch = end.plug.GetComponent<ResearchS1CableLatch>();
-                if (connection.connector == S1Connector.GpuPcie8) Require(latch, "PCIe power requires its authored head latch.");
-                if (latch) yield return AwaitObservation(() => !latch.latch.Closed, "actual cable head pinch opened its own latch", input);
-                step = "cable-entry:" + connection.id;
-                var mate = end.plug.mates.Single();
-                var entry = SocketRules.RootPose(target.socket.seat.localToWorldMatrix, target.socket.spec.approachMm + 10, 0, end.plug.MateInRoot(mate));
-                Require(task.wiring.Allows(input.transform, entry), "The proposed cable entry violates unchanged span constraints.");
-                // Lift the plug clear of the case before turning it; rest poses sit beside the PSU and board.
-                yield return MoveRoot(input, new Pose(OutsideCase(input.transform.position), input.transform.rotation));
-                var through = TrayRoute(input, new Pose(entry.GetColumn(3), entry.rotation)).ToArray();
-                var pass = through.Length > 0 ? through[0].rotation : entry.rotation;
-                yield return MoveRoot(input, new Pose(input.transform.position, pass));
-                var route = new[] { new Pose(OutsideCase(through.Length > 0 ? through[0].position : (Vector3)entry.GetColumn(3)), pass) }.Concat(through);
-                foreach (var waypoint in route.ToArray())
-                    yield return MoveRoot(input, waypoint);
-                yield return MoveRoot(input, new Pose(entry.GetColumn(3), entry.rotation));
-                step = "cable-insert:" + connection.id;
-                yield return Translate(input, target.socket.seat.forward * (target.socket.spec.approachMm + 10) * .001f);
-                yield return AwaitObservation(() => end.plug.Socket == target.socket && target.socket.Last.captured &&
-                    target.socket.Last.stop == VRMaintenanceResearch.AssetLibraryQA.Stop.Seat && Mathf.Abs(target.socket.Last.depthMm) <= target.socket.spec.seatedDepthTolMm,
-                    "actual bound cable target insertion", input);
-                yield return Release();
+                Require(!end.plug.Socket && !end.sourcePlug.Socket && end.sourcePartId == connection.sourcePartId && end.sourceConnector == connection.sourceConnector,
+                    "Both ends of the bound task cable must initially be loose, with its exact source provenance.");
+                // S1_LAYOUT_CABLE_TRAY_20261110: the board/PSU end first, as a participant at the open side would; the free SATA
+                // end then lies on the rear tray beside the SSD seats.
+                yield return ConnectHead(end.sourcePlug, end.sourceSockets[0], connection.id + ":source");
+                Phase(connection.id + "_source_connection_observed");
+                yield return ConnectHead(end.plug, target.socket, connection.id);
                 var observed = task.Capture().cables.Single(c => c.id == connection.id);
                 Require(!end.plug.IsHeld && observed.sourceConnected && observed.targetConnected &&
                     observed.sourcePartId == connection.sourcePartId && observed.sourceConnector == connection.sourceConnector &&
                     observed.targetPartId == connection.part.stableId && observed.targetConnector == connection.connector,
                     "Released cable did not retain the exact source and target connection.");
-                if (connection.connector == S1Connector.GpuPcie8) Require(target.socket.Retained && latch.latch.Closed,
+                var latch = end.plug.GetComponent<ResearchS1CableLatch>();
+                if (connection.connector == S1Connector.GpuPcie8) Require(latch && target.socket.Retained && latch.latch.Closed,
                     "Released PCIe power did not retain its actual closed head latch.");
                 Phase(connection.id + "_target_connection_observed");
             }
+        }
+
+        static IEnumerator ConnectHead(QAPlug plug, QASocket socket, string label)
+        {
+            var input = Input(plug);
+            // A head let go earlier glides to its tray slot; take it once it lies still.
+            Vector3 last = plug.transform.position;
+            yield return AwaitObservation(() => { bool still = Vector3.Distance(last, plug.transform.position) < .00001f; last = plug.transform.position; return still; },
+                "loose cable head at rest in a tray slot");
+            yield return Acquire(input, true);
+            var latch = plug.GetComponent<ResearchS1CableLatch>();
+            if (latch) yield return AwaitObservation(() => !latch.latch.Closed, "actual cable head pinch opened its own latch", input);
+            step = "cable-entry:" + label;
+            var mate = plug.mates.Single();
+            var entry = SocketRules.RootPose(socket.seat.localToWorldMatrix, socket.spec.approachMm + 10, 0, plug.MateInRoot(mate));
+            // With its other end still loose the whole cable rides along with the hand; only a cable whose other end is in a
+            // port has a span the entry pose must respect.
+            var end = task.wiring.ends.Single(e => e.plug == plug || e.sourcePlug == plug);
+            Require(!(end.plug == plug ? end.sourcePlug : end.plug).Socket || task.wiring.Allows(input.transform, entry),
+                "The proposed cable entry violates unchanged span constraints.");
+            // Lift the plug 0.1 m off its tray before turning it, as a hand does; turned in place its housing meets the tray.
+            yield return MoveRoot(input, new Pose(OutsideCase(input.transform.position) + Vector3.up * .1f, input.transform.rotation));
+            var through = TrayRoute(input, new Pose(entry.GetColumn(3), entry.rotation)).ToArray();
+            var pass = through.Length > 0 ? through[0].rotation : entry.rotation;
+            yield return MoveRoot(input, new Pose(input.transform.position, pass));
+            var outside = new Pose(OutsideCase(through.Length > 0 ? through[0].position : (Vector3)entry.GetColumn(3)), pass);
+            // From the tray beside the rear end of the case, come level with the first point outside the case before moving
+            // along its side: the straight line cut the corner of the case and the plug stopped against it.
+            var lateral = task.fixedAssembly[0].up;
+            yield return MoveRoot(input, new Pose(input.transform.position + lateral * Vector3.Dot(outside.position - input.transform.position, lateral), pass));
+            foreach (var waypoint in new[] { outside }.Concat(through).ToArray())
+                yield return MoveRoot(input, waypoint);
+            yield return MoveRoot(input, new Pose(entry.GetColumn(3), entry.rotation));
+            step = "cable-insert:" + label;
+            yield return Translate(input, socket.seat.forward * (socket.spec.approachMm + 10) * .001f);
+            yield return AwaitObservation(() => plug.Socket == socket && socket.Last.captured &&
+                socket.Last.stop == VRMaintenanceResearch.AssetLibraryQA.Stop.Seat && Mathf.Abs(socket.Last.depthMm) <= socket.spec.seatedDepthTolMm,
+                "actual bound cable insertion", input);
+            yield return Release();
+            Require(!plug.IsHeld && plug.Socket == socket, "Released cable head did not stay in its port.");
         }
 
         // Rear SSD connectors sit behind the motherboard tray, so the hand carries the plug through the nearest real routing slot,
@@ -638,9 +667,10 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             var bounds = task.fixedAssembly[0].GetComponentsInChildren<Renderer>().Where(r => r.enabled).Select(r => r.bounds)
                 .Aggregate((a, b) => { a.Encapsulate(b); return a; });
             bounds.Expand(.12f);
-            // Side panels are off, so leave along the case's lateral axis on the participant's side (imported case local Y is shell.up).
-            var lateral = task.fixedAssembly[0].up;
-            var toward = Vector3.Dot(task.controller.origin.Camera.transform.position - bounds.center, lateral) >= 0 ? lateral : -lateral;
+            // Side panels are off, so leave along the case's lateral axis (imported case local Y is shell.up) on the side of the
+            // motherboard tray the point is on: the SATA heads and SSD seats lie behind it since S1_LAYOUT_CABLE_TRAY_20261110.
+            var tray = task.fixedAssembly[0].GetComponentsInChildren<Transform>(true).Single(t => t.name == "COL_CASE_ATX_MID_Tray");
+            var toward = tray.up * Mathf.Sign(tray.InverseTransformPoint(point).y);
             while (bounds.Contains(point)) point += toward * .01f;
             return point;
         }
@@ -814,6 +844,23 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 logger_timestamp = task && task.controller && task.controller.Logger != null ? (double?)task.controller.Logger.Timestamp : null,
                 logger_sequence = task && task.controller && task.controller.Logger != null ? (long?)task.controller.Logger.LastSequence : null,
                 requested_yaw_step = requestedYaw, observed_yaw_step = observedYaw, yaw_positive = yawPositive, yaw_negative = yawNegative,
+                cable_failure = observation == "failure" && selected && selected.plug ? new {
+                    free_position = V(selected.plug.LastFreePose.GetColumn(3)), free_rotation = Q(selected.plug.LastFreePose.rotation),
+                    free_matrix = Enumerable.Range(0,16).Select(i => selected.plug.LastFreePose[i]).ToArray(),
+                    floor_cache = ((Collider[])typeof(ResearchS1Cable).GetField("surfaces", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).GetValue(null))?.Select(c => c ? new {
+                        id = c.GetInstanceID(), name = c.name, active = c.gameObject.activeInHierarchy, enabled = c.enabled, center = V(c.bounds.center), size = V(c.bounds.size)
+                    } : null).ToArray(),
+                    service_yaw = task.servicePivot.localEulerAngles.y,
+                    cables = task.wiring.cables.Select(c => new { c.assetId, preferred_bow = V(c.preferredBow), c.sideways,
+                        route_position = V(c.transform.position), route_rotation = Q(c.transform.rotation),
+                        spans = c.spans.Select(s => new { s.length, s.minimumRadius, s.carried, s.cached, s.cachedGuided,
+                            route_matrix = Enumerable.Range(0,16).Select(i => s.cachedRoutePose[i]).ToArray(),
+                            path = s.cachedPath == null ? null : s.cachedPath.Select(V).ToArray(),
+                            a = V(s.cachedA), b = V(s.cachedB), da = V(s.cachedDa), db = V(s.cachedDb),
+                            side = V(s.cachedSide), preferred = V(s.cachedPreferred), path_count = s.cachedPath == null ? 0 : s.cachedPath.Length,
+                            from_position = V(s.from.position), from_rotation = Q(s.from.rotation),
+                            to_position = V(s.to.position), to_rotation = Q(s.to.rotation) }).ToArray() }).ToArray()
+                } : null,
                 task_state = task ? task.Capture() : null, completed_phases = completed.ToArray(),
                 selected_id = hand && hand.Interactable ? hand.Interactable.GetInstanceID() : 0,
                 selected_target = selected ? selected.stableId : null, hand_state = hand ? hand.State.ToString() : null,

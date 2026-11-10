@@ -65,7 +65,6 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         fill.intensity = Mathf.Clamp(1.6f * distance * distance / 1.4f, .25f, 1.6f);
                     }
                     Aim(shot.Value, .35f);
-                    if (section == "A.ssd") cables.Single(c => c.assetId == "CABLE_SATA_DATA_S_500").transform.localRotation *= Quaternion.Euler(0, 0, 180);
                     var frames = new JArray();
                     int facts = Facts.TryGetValue(section, out int f) ? f : 1, perFact = Facts.ContainsKey(section) ? FramesPerFact : StaticFrames, n = 0;
                     for (int fact = 0; fact < facts; fact++)
@@ -75,7 +74,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                         {
                             double time = (double)k / (perFact - 1);
                             string label = section[0] == 'A' ? MotionA(a, section, fact, time) : MotionB(b, section, fact, time);
-                            foreach (var cable in cables) cable.RefreshShape();
+                            Physics.SyncTransforms(); foreach (var cable in cables) cable.RefreshShape();
                             // Static sections orbit +-8 degrees, the plan's neutral overview motion; motion sections keep the still's framing.
                             float orbit = Facts.ContainsKey(section) ? 0 : 8 * Mathf.Sin((float)time * Mathf.PI * 2);
                             camera.transform.position = centre + Quaternion.AngleAxis(orbit, Vector3.up) * direction * distance;
@@ -107,14 +106,48 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
         {
             if (!clip) throw new InvalidOperationException("Source latch animation is missing: " + root.name);
             root.GetLocalPositionAndRotation(out var position, out var rotation); var scale = root.localScale;
+            // The latch/clip sources key the root's own rotation (path ""); restoring it undid every latch and clip pose (video v8 review).
+            bool rootRotation = UnityEditor.AnimationUtility.GetCurveBindings(clip).Any(b => b.path == "" && b.propertyName.StartsWith("m_LocalRotation", StringComparison.Ordinal));
             try { clip.SampleAnimation(root.gameObject, clip.length * Mathf.Clamp01(time)); }
-            finally { root.SetLocalPositionAndRotation(position, rotation); root.localScale = scale; }
+            finally { root.localPosition = position; root.localScale = scale; if (!rootRotation) root.localRotation = rotation; }
+        }
+        // Constant-pose open/close clips: turn smoothly between the two authored poses.
+        static void Blend(Transform root, AnimationClip from, AnimationClip to, float t)
+        {
+            Sample(root, from); var a = root.localRotation; Sample(root, to); var b = root.localRotation;
+            root.localRotation = Quaternion.Slerp(a, b, Mathf.SmoothStep(0, 1, Mathf.Clamp01(t)));
         }
         static Transform Edge(QAPlug part) => part.mates.Single(m => m.name.EndsWith("_Edge", StringComparison.Ordinal));
-        static void CableHead(ResearchS1TaskAMechanics a, int index, QAPlug part, S1Connector connector, float depth)
+        // S1_LAYOUT_CABLE_TRAY_20261110. index 0 SATA data, 1 SATA power, 2 PCIe. As in play: the folded cable leaves the tray with the
+        // board/PSU head, that head goes into its port (0-0.45), the other head waits in a tray corner, then goes to the SSD or card.
+        static void Cable(ResearchS1TaskAMechanics a, int index, double time)
         {
-            var end = a.wiring.ends[index]; var target = a.wiring.targets.Single(t => t.part == part && t.connector == connector);
-            Place(end.plug.transform, end.plug.mates.Single(), target.socket.seat, depth);
+            var end = a.wiring.ends[index]; var cable = end.cable; var source = end.sourcePlug; var device = end.plug;
+            var port = index == 2 ? a.wiring.targets.Single(t => t.part == a.gpus[1] && t.connector == S1Connector.GpuPcie8)
+                : a.wiring.targets.Single(t => t.part == a.ssds[0] && t.connector == (index == 0 ? S1Connector.SsdData : S1Connector.SsdPower));
+            Pose Park(QAPlug plug, int slot) => cable.SlotPose(cable.parks.Single(p => p.plug == plug).slots[slot]);
+            Pose Port(QAPlug plug, Transform seat, double depthMm)
+            {
+                var pose = SocketRules.RootPose(seat.localToWorldMatrix, (float)depthMm, 0, plug.transform.worldToLocalMatrix * plug.mates.Single().localToWorldMatrix);
+                return new Pose(pose.GetColumn(3), pose.rotation);
+            }
+            void Set(QAPlug plug, Pose pose) => plug.transform.SetPositionAndRotation(pose.position, pose.rotation);
+            Pose Carry(Pose from, Pose to, double t)
+            {
+                float k = Mathf.SmoothStep(0, 1, (float)t);
+                return new Pose(Vector3.Lerp(from.position, to.position, k) + Vector3.up * (.05f * Mathf.Sin(k * Mathf.PI)), Quaternion.Slerp(from.rotation, to.rotation, k));
+            }
+            const double Approach = 40;
+            var sourceSeat = end.sourceSockets[0].seat;
+            Set(source, time < .3 ? Carry(Park(source, 0), Port(source, sourceSeat, Approach), Plan.Ramp(time, .03, .3))
+                : Port(source, sourceSeat, Approach * (1 - Plan.Ramp(time, .3, .42))));
+            // The SSD ports are behind the board tray: the waiting head goes round the rear end of the case by the rear tray corner.
+            Pose wait = Park(device, 1), round = Park(device, index == 2 ? 1 : 2), near = Port(device, port.socket.seat, Approach);
+            if (time < .3) Set(device, cable.FoldedPose(device.transform));
+            else if (time < .5) Set(device, Carry(cable.FoldedPose(device.transform), wait, Plan.Ramp(time, .3, .46)));
+            else if (time < .62) Set(device, Carry(wait, round, Plan.Ramp(time, .5, .62)));
+            else if (time < .84) Set(device, Carry(round, near, Plan.Ramp(time, .62, .84)));
+            else Set(device, Port(device, port.socket.seat, Approach * (1 - Plan.Ramp(time, .84, .96))));
         }
 
         internal static string MotionA(ResearchS1TaskAMechanics a, string section, int fact, double time)
@@ -128,21 +161,42 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
                 Sample(latch.animationRoot.transform, closed ? latch.closeClip : latch.openClip);
                 return depth > .3f ? "partial" : closed ? "seated" : "released";
             }
+            if (section == "A.latch")
+            {
+                // Video v8: the latch itself opens (its own open clip), with the module still held above the slot.
+                var slot = a.ramSlots[1]; var part = a.ram[0];
+                Place(part.transform, Edge(part), slot.seat, 35);
+                var latch = slot.latches.Single();
+                Blend(latch.animationRoot.transform, latch.closeClip, latch.openClip, (float)Plan.Ramp(time, .15, .7));
+                return time < .15 ? "closed" : time < .7 ? "opening" : "open";
+            }
             if (section == "A.ssd")
             {
                 var motion = Plan.Ssd(fact, time); var sled = a.sleds[0]; Place(sled.transform, sled.mate, a.traySeats[0], (float)motion.DepthMm);
                 float fastener = (float)motion.Fastener; var thumb = sled.thumb;
                 Place(thumb.transform, thumb.mate, thumb.captiveSeat, thumb.travelMm * (1 - fastener), -thumb.FullDegrees * fastener);
-                CableHead(a, 0, a.ssds[0], S1Connector.SsdData, (float)motion.DataDepthMm);
-                CableHead(a, 1, a.ssds[0], S1Connector.SsdPower, (float)motion.PowerDepthMm);
                 return null;
+            }
+            if (section == "A.cable")
+            {
+                var sled = a.sleds[0]; Place(sled.transform, sled.mate, a.traySeats[0], 0);
+                Place(sled.thumb.transform, sled.thumb.mate, sled.thumb.captiveSeat, 0, -sled.thumb.FullDegrees);
+                if (fact == 2)
+                {
+                    // An installed card covers the board's SATA ports from the front, so the SATA chapters show the slot still empty.
+                    var card = a.gpus[1]; Place(card.transform, Edge(card), a.gpuSlots[0].seat, 0);
+                    var screw = a.gpuScrews[0]; Place(screw.transform, screw.mate, a.gpuScrewSeats[0], 0, -screw.FullDegrees);
+                    var latch = a.gpuSlots[0].latches.Single(); Sample(latch.animationRoot.transform, latch.closeClip);
+                }
+                for (int done = 0; done < fact; done++) Cable(a, done, 1);
+                Cable(a, fact, time);
+                return time < .45 ? "source" : "device";
             }
             if (section == "A.gpu")
             {
                 var motion = Plan.Gpu(fact, time); var part = a.gpus[1]; Place(part.transform, Edge(part), a.gpuSlots[0].seat, (float)motion.DepthMm);
                 var screw = a.gpuScrews[0]; float progress = (float)motion.Fastener;
                 Place(screw.transform, screw.mate, a.gpuScrewSeats[0], screw.travelMm * (1 - progress), -screw.FullDegrees * progress);
-                CableHead(a, 2, part, S1Connector.GpuPcie8, (float)motion.PowerDepthMm);
                 var latch = a.gpuSlots[0].latches.Single(); bool closed = motion.DepthMm <= .3 && !(fact == 2 && time >= .7);
                 Sample(latch.animationRoot.transform, closed ? latch.closeClip : latch.openClip);
                 return null;
@@ -195,7 +249,7 @@ namespace VRMaintenanceResearch.ResearchFlow.Editor
             }
             if (section == "B.access")
             {
-                Sample(b.frontClip.clipAnimationRoot.transform, b.frontClip.clipOpen, (float)Plan.Ramp(time, 0, .1));
+                Blend(b.frontClip.clipAnimationRoot.transform, b.frontClip.clipClose, b.frontClip.clipOpen, (float)Plan.Ramp(time, 0, .1));
                 Fan(b.frontGuard, 450 * (float)Plan.Ramp(time, .2, .4), b.frontGuard.insertTurnDegrees * (float)Plan.Ramp(time, .1, .2));
                 if (fact >= 1) { Thread(b.spinner, b.spinner.fullTurnDegrees * (1 - Plan.Ramp(time, .4, .7))); if (time > .7) Fan(b.spinner, b.spinner.threadTravelMm + 200 * (float)Plan.Ramp(time, .7, .8)); }
                 if (fact >= 2) Fan(b.blade, 250 * (float)Plan.Ramp(time, .8, 1));
